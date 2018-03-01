@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,7 +66,8 @@ class Renderer {
 
         /**
          * @brief Listener position
-         * @see @ref setListenerPosition(), @fn_al{GetListenerfv} with @def_al{POSITION}
+         * @see @ref setListenerPosition(), @fn_al_keyword{GetListenerfv} with
+         *      @def_al{POSITION}
          */
         static Vector3 listenerPosition() {
             Vector3 position;
@@ -77,15 +78,15 @@ class Renderer {
         /**
          * @brief Set listener position
          *
-         * Default is `{0.0f, 0.0f, 0.0f}`.
-         * @see @fn_al{Listenerfv} with @def_al{POSITION}
+         * Default is @cpp {0.0f, 0.0f, 0.0f} @ce.
+         * @see @fn_al_keyword{Listenerfv} with @def_al{POSITION}
          */
         static void setListenerPosition(const Vector3& position) {
             alListenerfv(AL_POSITION, position.data());
         }
 
         /** @overload
-         * @see @fn_al{Listeneriv} with @def_al{POSITION}
+         * @see @fn_al_keyword{Listeneriv} with @def_al{POSITION}
          */
         static void setListenerPosition(const Vector3i& position) {
             alListeneriv(AL_POSITION, position.data());
@@ -95,7 +96,8 @@ class Renderer {
          * @brief Listener orientation
          *
          * The returned array consists of forward (index 0) and up (index 1) vectors.
-         * @see @ref setListenerOrientation(), @fn_al{GetListenerfv} with @def_al{ORIENTATION}
+         * @see @ref setListenerOrientation(), @fn_al_keyword{GetListenerfv}
+         *      with @def_al{ORIENTATION}
          */
         static std::array<Vector3, 2> listenerOrientation() {
             std::array<Vector3, 2> data;
@@ -108,7 +110,7 @@ class Renderer {
          *
          * The values must be linearly independent and don't need to be
          * normalized. Default is -Z and +Y.
-         * @see @fn_al{Listenerfv} with @def_al{ORIENTATION}
+         * @see @fn_al_keyword{Listenerfv} with @def_al{ORIENTATION}
          */
         static void setListenerOrientation(const Vector3& forward, const Vector3& up) {
             const Vector3 data[] = {forward, up};
@@ -116,7 +118,7 @@ class Renderer {
         }
 
         /** @overload
-         * @see @fn_al{Listeneriv} with @def_al{ORIENTATION}
+         * @see @fn_al_keyword{Listeneriv} with @def_al{ORIENTATION}
          */
         static void setListenerOrientation(const Vector3i& forward, const Vector3i& up) {
             const Vector3i data[] = {forward, up};
@@ -125,7 +127,8 @@ class Renderer {
 
         /**
          * @brief Listener position
-         * @see @ref setListenerVelocity(), @fn_al{GetListenerfv} with @def_al{VELOCITY}
+         * @see @ref setListenerVelocity(), @fn_al_keyword{GetListenerfv} with
+         *      @def_al{VELOCITY}
          */
         static Vector3 listenerVelocity() {
             Vector3 velocity;
@@ -136,15 +139,15 @@ class Renderer {
         /**
          * @brief Set listener velocity
          *
-         * Default is `{0.0f, 0.0f, 0.0f}`.
-         * @see @fn_al{Listenerfv} with @def_al{VELOCITY}
+         * Default is @cpp {0.0f, 0.0f, 0.0f} @ce.
+         * @see @fn_al_keyword{Listenerfv} with @def_al{VELOCITY}
          */
         static void setListenerVelocity(const Vector3& velocity) {
             alListenerfv(AL_VELOCITY, velocity.data());
         }
 
         /** @overload
-         * @see @fn_al{Listeneriv} with @def_al{VELOCITY}
+         * @see @fn_al_keyword{Listeneriv} with @def_al{VELOCITY}
          */
         static void setListenerVelocity(const Vector3i& velocity) {
             alListeneriv(AL_VELOCITY, velocity.data());
@@ -184,7 +187,8 @@ class Renderer {
 
         /**
          * @brief Listener gain
-         * @see @ref setListenerGain(), @fn_al{GetListenerf} with @def_al{GAIN}
+         * @see @ref setListenerGain(), @fn_al_keyword{GetListenerf} with
+         *      @def_al{GAIN}
          */
         static Float listenerGain() {
             Float gain;
@@ -195,9 +199,9 @@ class Renderer {
         /**
          * @brief Set listener gain
          *
-         * Default is `1.0f`, which means that the sound is unattenuated.
-         * If set to `0.0f`, all sound is muted.
-         * @see @fn_al{Listenerf} with @def_al{GAIN}
+         * Default is @cpp 1.0f @ce, which means that the sound is
+         * unattenuated. If set to @cpp 0.0f @ce, all sound is muted.
+         * @see @fn_al_keyword{Listenerf} with @def_al{GAIN}
          */
         static void setListenerGain(Float gain) {
             alListenerf(AL_GAIN, gain);
@@ -205,7 +209,8 @@ class Renderer {
 
         /**
          * @brief Doppler factor
-         * @see @ref setDopplerFactor(), @fn_al{GetFloat} with @def_al{DOPPLER_FACTOR}
+         * @see @ref setDopplerFactor(), @fn_al{GetFloat} with
+         *      @def_al_keyword{DOPPLER_FACTOR}
          */
         static Float dopplerFactor() {
             return alGetFloat(AL_DOPPLER_FACTOR);
@@ -214,8 +219,9 @@ class Renderer {
         /**
          * @brief Set Doppler factor
          *
-         * Default is `1.0f`. If set to `0.0f`, the effect is disabled.
-         * @see @ref setSpeedOfSound(), @fn_al{DopplerFactor}
+         * Default is @cpp 1.0f @ce. If set to @cpp 0.0f @ce, the effect is
+         * disabled.
+         * @see @ref setSpeedOfSound(), @fn_al_keyword{DopplerFactor}
          */
         static void setDopplerFactor(Float factor) {
             alDopplerFactor(factor);
@@ -223,7 +229,8 @@ class Renderer {
 
         /**
          * @brief Speed of sound
-         * @see @ref setSpeedOfSound(), @fn_al{GetFloat} with @def_al{SPEED_OF_SOUND}
+         * @see @ref setSpeedOfSound(), @fn_al{GetFloat} with
+         *      @def_al_keyword{SPEED_OF_SOUND}
          */
         static Float speedOfSound() {
             return alGetFloat(AL_SPEED_OF_SOUND);
@@ -232,8 +239,8 @@ class Renderer {
         /**
          * @brief Set speed of sound
          *
-         * Default is `343.3f` (meters per second).
-         * @see @ref setDopplerFactor(), @fn_al{SpeedOfSound}
+         * Default is @cpp 343.3f @ce (meters per second).
+         * @see @ref setDopplerFactor(), @fn_al_keyword{SpeedOfSound}
          */
         static void setSpeedOfSound(Float speed) {
             alSpeedOfSound(speed);
@@ -241,7 +248,8 @@ class Renderer {
 
         /**
          * @brief Distance model
-         * @see @ref setDistanceModel(), @fn_al{GetInteger} with @def_al{DISTANCE_MODEL}
+         * @see @ref setDistanceModel(), @fn_al{GetInteger} with
+         *      @def_al_keyword{DISTANCE_MODEL}
          */
         static DistanceModel distanceModel() {
             return DistanceModel(alGetInteger(AL_DISTANCE_MODEL));
@@ -251,7 +259,7 @@ class Renderer {
          * @brief Set distance model
          *
          * Default is @ref DistanceModel::InverseClamped.
-         * @see @fn_al{DistanceModel}
+         * @see @fn_al_keyword{DistanceModel}
          */
         static void setDistanceModel(DistanceModel model) {
             alDistanceModel(ALenum(model));

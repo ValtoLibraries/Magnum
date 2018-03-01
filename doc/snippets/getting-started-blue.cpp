@@ -1,9 +1,7 @@
-#ifndef Magnum_SceneGraph_Camera2D_h
-#define Magnum_SceneGraph_Camera2D_h
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,17 +23,42 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-/** @file
- * @deprecated Use @ref Magnum/SceneGraph/Camera.h instead.
- */
+#include <Magnum/DefaultFramebuffer.h>
+#include <Magnum/Platform/Sdl2Application.h>
+/** [0] */
+#include <Magnum/Context.h>
+#include <Magnum/Renderer.h>
+#include <Magnum/Version.h>
+#include <Magnum/Math/Color.h>
+/** [0] */
 
-#include "Magnum/configure.h"
+using namespace Magnum;
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "Magnum/SceneGraph/Camera.h"
-CORRADE_DEPRECATED_FILE("use Magnum/SceneGraph/Camera.h instead")
-#else
-#error use Magnum/SceneGraph/Camera.h instead
-#endif
+class MyApplication: public Platform::Application {
+    public:
+        explicit MyApplication(const Arguments& arguments);
 
-#endif
+    private:
+        void drawEvent() override;
+};
+
+/** [1] */
+MyApplication::MyApplication(const Arguments& arguments): Platform::Application{arguments} {
+    using namespace Magnum::Math::Literals;
+
+    Renderer::setClearColor(0xa5c9ea_rgbf);
+
+    Debug{} << "Hello! This application is running on" << Context::current().version()
+            << "using" << Context::current().rendererString();
+}
+/** [1] */
+
+void MyApplication::drawEvent() {
+    defaultFramebuffer.clear(FramebufferClear::Color);
+
+    // TODO: Add your drawing code here
+
+    swapBuffers();
+}
+
+MAGNUM_APPLICATION_MAIN(MyApplication)

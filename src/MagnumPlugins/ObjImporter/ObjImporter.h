@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,9 @@
     #define MAGNUM_OBJIMPORTER_EXPORT CORRADE_VISIBILITY_STATIC
 #endif
 #define MAGNUM_OBJIMPORTER_LOCAL CORRADE_VISIBILITY_LOCAL
+#else
+#define MAGNUM_OBJIMPORTER_EXPORT
+#define MAGNUM_OBJIMPORTER_LOCAL
 #endif
 
 namespace Magnum { namespace Trade {
@@ -57,15 +60,18 @@ Loads Wavefront OBJ (`*.obj`) files, with the following supported features:
 -   vertex positions, normals and 2D texture coordinates
 -   triangles, lines and points
 
+This plugin depends on the @ref Trade library and is built if `WITH_OBJIMPORTER`
+is enabled when building Magnum. To use as a dynamic plugin, you need to load
+the @cpp "ObjImporter" @ce plugin from `MAGNUM_PLUGINS_IMPORTER_DIR`. To use as
+a static plugin or as a dependency of another plugin with CMake, you need to
+request the `ObjImporter` component of the `Magnum` package and link to the
+`Magnum::ObjImporter` target. See @ref building, @ref cmake and @ref plugins
+for more information.
+
+@section Trade-ObjImporter-limitations Behavior and limitations
+
 Polygons (quads etc.), automatic normal generation and material properties are
 currently not supported.
-
-This plugin is built if `WITH_OBJIMPORTER` is enabled when building Magnum. To
-use dynamic plugin, you need to load `ObjImporter` plugin from
-`MAGNUM_PLUGINS_IMPORTER_DIR`. To use static plugin or use this as a dependency
-of another plugin, you need to request `ObjImporter` component of `Magnum`
-package in CMake and link to `Magnum::ObjImporter` target. See @ref building,
-@ref cmake and @ref plugins for more information.
 */
 class MAGNUM_OBJIMPORTER_EXPORT ObjImporter: public AbstractImporter {
     public:
@@ -90,7 +96,7 @@ class MAGNUM_OBJIMPORTER_EXPORT ObjImporter: public AbstractImporter {
         MAGNUM_OBJIMPORTER_LOCAL UnsignedInt doMesh3DCount() const override;
         MAGNUM_OBJIMPORTER_LOCAL Int doMesh3DForName(const std::string& name) override;
         MAGNUM_OBJIMPORTER_LOCAL std::string doMesh3DName(UnsignedInt id) override;
-        MAGNUM_OBJIMPORTER_LOCAL std::optional<MeshData3D> doMesh3D(UnsignedInt id) override;
+        MAGNUM_OBJIMPORTER_LOCAL Containers::Optional<MeshData3D> doMesh3D(UnsignedInt id) override;
 
         MAGNUM_OBJIMPORTER_LOCAL void parseMeshNames();
 

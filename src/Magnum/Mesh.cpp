@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,10 +58,6 @@ struct Mesh::AttributeLayout {
     GLsizei stride;
     GLuint divisor;
 };
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-Int Mesh::maxVertexAttributes() { return AbstractShaderProgram::maxVertexAttributes(); }
-#endif
 
 #ifndef MAGNUM_TARGET_GLES2
 #ifndef MAGNUM_TARGET_WEBGL
@@ -209,7 +205,7 @@ inline void Mesh::createIfNotAlready() {
 #ifndef MAGNUM_TARGET_WEBGL
 std::string Mesh::label() {
     createIfNotAlready();
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     return Context::current().state().debug->getLabelImplementation(GL_VERTEX_ARRAY, _id);
     #else
     return Context::current().state().debug->getLabelImplementation(GL_VERTEX_ARRAY_KHR, _id);
@@ -218,7 +214,7 @@ std::string Mesh::label() {
 
 Mesh& Mesh::setLabelInternal(const Containers::ArrayView<const char> label) {
     createIfNotAlready();
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     Context::current().state().debug->labelImplementation(GL_VERTEX_ARRAY, _id, label);
     #else
     Context::current().state().debug->labelImplementation(GL_VERTEX_ARRAY_KHR, _id, label);
@@ -347,16 +343,20 @@ void Mesh::drawInternal(Int count, Int baseVertex, Int instanceCount, GLintptr i
 
         /* Indexed mesh with base vertex */
         } else if(baseVertex) {
+            #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
             #ifndef MAGNUM_TARGET_GLES
             /* Indexed mesh with base vertex and base instance */
-            if(baseInstance)
+            if(baseInstance) {
                 glDrawElementsInstancedBaseVertexBaseInstance(GLenum(_primitive), count, GLenum(_indexType), reinterpret_cast<GLvoid*>(indexOffset), instanceCount, baseVertex, baseInstance);
 
             /* Indexed mesh with base vertex */
-            else
+            } else
+            #endif
+            {
                 glDrawElementsInstancedBaseVertex(GLenum(_primitive), count, GLenum(_indexType), reinterpret_cast<GLvoid*>(indexOffset), instanceCount, baseVertex);
+            }
             #else
-            CORRADE_ASSERT(false, "Mesh::draw(): desktop OpenGL is required for base vertex specification in indexed meshes", );
+            CORRADE_ASSERT(false, "Mesh::draw(): OpenGL ES 3.2 or desktop GL is required for base vertex specification in indexed meshes", );
             #endif
 
         /* Indexed mesh */
@@ -418,16 +418,23 @@ void Mesh::draw(AbstractShaderProgram& shader, TransformFeedback& xfb, UnsignedI
 }
 #endif
 
+void Mesh::bindVAOImplementationDefault(GLuint) {}
+
+void Mesh::bindVAOImplementationVAO(const GLuint id) {
+    #ifndef MAGNUM_TARGET_GLES2
+    glBindVertexArray
+    #else
+    glBindVertexArrayOES
+    #endif
+        (Context::current().state().mesh->currentVAO = id);
+}
+
 void Mesh::bindVAO() {
     GLuint& current = Context::current().state().mesh->currentVAO;
     if(current != _id) {
         /* Binding the VAO finally creates it */
         _flags |= ObjectFlag::Created;
-        #ifndef MAGNUM_TARGET_GLES2
-        glBindVertexArray(current = _id);
-        #else
-        glBindVertexArrayOES(current = _id);
-        #endif
+        bindVAOImplementationVAO(_id);
     }
 }
 
@@ -632,14 +639,14 @@ Debug& operator<<(Debug& debug, MeshPrimitive value) {
         _c(LineStrip)
         _c(LineLoop)
         _c(Lines)
-        #ifndef MAGNUM_TARGET_GLES
+        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
         _c(LineStripAdjacency)
         _c(LinesAdjacency)
         #endif
         _c(TriangleStrip)
         _c(TriangleFan)
         _c(Triangles)
-        #ifndef MAGNUM_TARGET_GLES
+        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
         _c(TriangleStripAdjacency)
         _c(TrianglesAdjacency)
         _c(Patches)
@@ -677,14 +684,14 @@ std::string ConfigurationValue<Magnum::MeshPrimitive>::toString(Magnum::MeshPrim
         _c(LineStrip)
         _c(LineLoop)
         _c(Lines)
-        #ifndef MAGNUM_TARGET_GLES
+        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
         _c(LineStripAdjacency)
         _c(LinesAdjacency)
         #endif
         _c(TriangleStrip)
         _c(TriangleFan)
         _c(Triangles)
-        #ifndef MAGNUM_TARGET_GLES
+        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
         _c(TriangleStripAdjacency)
         _c(TrianglesAdjacency)
         _c(Patches)
@@ -700,14 +707,14 @@ Magnum::MeshPrimitive ConfigurationValue<Magnum::MeshPrimitive>::fromString(cons
     _c(LineStrip)
     _c(LineLoop)
     _c(Lines)
-    #ifndef MAGNUM_TARGET_GLES
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     _c(LineStripAdjacency)
     _c(LinesAdjacency)
     #endif
     _c(TriangleStrip)
     _c(TriangleFan)
     _c(Triangles)
-    #ifndef MAGNUM_TARGET_GLES
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     _c(TriangleStripAdjacency)
     _c(TrianglesAdjacency)
     _c(Patches)

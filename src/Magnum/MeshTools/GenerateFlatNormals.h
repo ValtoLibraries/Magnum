@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,14 +45,9 @@ namespace Magnum { namespace MeshTools {
 
 For each face generates one normal vector, removes duplicates before
 returning. Example usage:
-@code
-std::vector<UnsignedInt> vertexIndices;
-std::vector<Vector3> positions;
 
-std::vector<UnsignedInt> normalIndices;
-std::vector<Vector3> normals;
-std::tie(normalIndices, normals) = MeshTools::generateFlatNormals(vertexIndices, positions);
-@endcode
+@snippet MagnumMeshTools.cpp generateFlatNormals
+
 You can then use @ref combineIndexedArrays() to combine normal and vertex array
 to use the same indices.
 

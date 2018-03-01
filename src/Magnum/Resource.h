@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -119,8 +119,6 @@ template<class T, class U = T>
 template<class T, class U>
 #endif
 class Resource {
-    friend Implementation::ResourceManagerData<T>;
-
     public:
         /**
          * @brief Default constructor
@@ -168,10 +166,10 @@ class Resource {
         /**
          * @brief Whether the resource is available
          *
-         * Returns `false` when resource is not loaded and no fallback is
-         * available (i.e. @ref state() is either
+         * Returns @cpp false @ce when resource is not loaded and no fallback
+         * is available (i.e. @ref state() is either
          * @ref ResourceState::NotLoaded, @ref ResourceState::Loading or
-         * @ref ResourceState::NotFound), `true` otherwise.
+         * @ref ResourceState::NotFound), @cpp true @ce otherwise.
          */
         operator bool() {
             acquire();
@@ -181,7 +179,7 @@ class Resource {
         /**
          * @brief Pointer to resource data
          *
-         * Returns `nullptr` if the resource is not loaded.
+         * Returns @cpp nullptr @ce if the resource is not loaded.
          */
         operator U*() {
             acquire();
@@ -215,6 +213,10 @@ class Resource {
         }
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Implementation::ResourceManagerData<T>;
+        #endif
+
         Resource(Implementation::ResourceManagerData<T>* manager, ResourceKey key): manager(manager), _key(key), lastCheck(0), _state(ResourceState::NotLoaded), data(nullptr) {
             manager->incrementReferenceCount(key);
         }

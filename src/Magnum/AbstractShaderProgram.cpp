@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -301,7 +301,7 @@ AbstractShaderProgram& AbstractShaderProgram::operator=(AbstractShaderProgram&& 
 
 #ifndef MAGNUM_TARGET_WEBGL
 std::string AbstractShaderProgram::label() const {
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     return Context::current().state().debug->getLabelImplementation(GL_PROGRAM, _id);
     #else
     return Context::current().state().debug->getLabelImplementation(GL_PROGRAM_KHR, _id);
@@ -309,7 +309,7 @@ std::string AbstractShaderProgram::label() const {
 }
 
 AbstractShaderProgram& AbstractShaderProgram::setLabelInternal(const Containers::ArrayView<const char> label) {
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     Context::current().state().debug->labelImplementation(GL_PROGRAM, _id, label);
     #else
     Context::current().state().debug->labelImplementation(GL_PROGRAM_KHR, _id, label);

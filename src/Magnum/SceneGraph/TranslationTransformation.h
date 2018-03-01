@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,28 +94,6 @@ class TranslationTransformation: public AbstractTranslation<dimensions, T, Trans
             return translate(transformation);
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief transform()
-         * @deprecated Use @ref transform() instead.
-         */
-        CORRADE_DEPRECATED("use transform() instead") Object<TranslationTransformation<dimensions, T, TranslationType>>& transform(const VectorTypeFor<dimensions, TranslationType>& transformation, TransformationType) {
-            return transform(transformation);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
-
         /**
          * @brief Translate object
          * @return Reference to self (for method chaining)
@@ -129,28 +107,6 @@ class TranslationTransformation: public AbstractTranslation<dimensions, T, Trans
             _transformation += vector;
             return static_cast<Object<TranslationTransformation<dimensions, T, TranslationType>>&>(*this);
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief translate()
-         * @deprecated Use @ref translate() instead.
-         */
-        CORRADE_DEPRECATED("use translate() instead") Object<TranslationTransformation<dimensions, T, TranslationType>>& translate(const VectorTypeFor<dimensions, TranslationType>& vector, TransformationType) {
-            return translate(vector);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
 
     protected:
         /* Allow construction only from Object */
@@ -172,7 +128,7 @@ class TranslationTransformation: public AbstractTranslation<dimensions, T, Trans
 /**
 @brief Base transformation for two-dimensional scenes supporting translation
 
-Convenience alternative to `TranslationTransformation<2, T, TranslationType>`.
+Convenience alternative to @cpp TranslationTransformation<2, T, TranslationType> @ce.
 See @ref TranslationTransformation for more information.
 @see @ref TranslationTransformation2D, @ref BasicTranslationTransformation3D
 */
@@ -195,7 +151,7 @@ typedef BasicTranslationTransformation2D<Float> TranslationTransformation2D;
 /**
 @brief Base transformation for three-dimensional scenes supporting translation
 
-Convenience alternative to `TranslationTransformation<3, T, TranslationType>`.
+Convenience alternative to @cpp TranslationTransformation<3, T, TranslationType> @ce.
 See @ref TranslationTransformation for more information.
 @see @ref TranslationTransformation3D, @ref BasicTranslationTransformation2D
 */

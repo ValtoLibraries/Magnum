@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,13 +34,16 @@ set(TgaImporter_SRCS
     TgaImporter.cpp)
 
 set(TgaImporter_HEADERS
-    TgaHeader.h
     TgaImporter.h)
+
+set(TgaImporter_PRIVATE_HEADERS
+    TgaHeader.h)
 
 # Objects shared between plugin and test library
 add_library(TgaImporterObjects OBJECT
     ${TgaImporter_SRCS}
-    ${TgaImporter_HEADERS})
+    ${TgaImporter_HEADERS}
+    ${TgaImporter_PRIVATE_HEADERS})
 target_include_directories(TgaImporterObjects PUBLIC $<TARGET_PROPERTY:Magnum,INTERFACE_INCLUDE_DIRECTORIES>)
 if(NOT BUILD_PLUGINS_STATIC)
     target_compile_definitions(TgaImporterObjects PRIVATE "TgaImporterObjects_EXPORTS")

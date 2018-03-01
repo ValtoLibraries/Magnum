@@ -1,9 +1,7 @@
-#ifndef Magnum_DebugMessage_h
-#define Magnum_DebugMessage_h
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,17 +23,30 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-/** @file
- * @deprecated Use @ref Magnum/DebugOutput.h instead.
- */
+/* [windowless] */
+#include <Magnum/Context.h>
+#include <Magnum/Platform/WindowlessEglApplication.h>
 
-#include "Magnum/configure.h"
+using namespace Magnum;
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "Magnum/DebugOutput.h"
-CORRADE_DEPRECATED_FILE("use Magnum/DebugOutput.h instead")
-#else
-#error use Magnum/DebugOutput.h instead
-#endif
+class MyApplication: public Platform::WindowlessApplication {
+    public:
+        MyApplication(const Arguments& arguments);
 
-#endif
+        int exec() override;
+};
+
+MyApplication::MyApplication(const Arguments& arguments):
+    Platform::WindowlessApplication{arguments} {}
+
+int MyApplication::exec() {
+    Debug{} << "OpenGL version:" << Context::current().versionString();
+    Debug{} << "OpenGL renderer:" << Context::current().rendererString();
+
+    /* Exit with success */
+    return 0;
+}
+
+/* main() function implementation */
+MAGNUM_WINDOWLESSAPPLICATION_MAIN(MyApplication)
+/* [windowless] */

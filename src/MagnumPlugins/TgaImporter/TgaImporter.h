@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,9 @@
     #define MAGNUM_TGAIMPORTER_EXPORT CORRADE_VISIBILITY_STATIC
 #endif
 #define MAGNUM_TGAIMPORTER_LOCAL CORRADE_VISIBILITY_LOCAL
+#else
+#define MAGNUM_TGAIMPORTER_EXPORT
+#define MAGNUM_TGAIMPORTER_LOCAL
 #endif
 
 namespace Magnum { namespace Trade {
@@ -57,12 +60,13 @@ namespace Magnum { namespace Trade {
 Supports Truevision TGA (`*.tga`, `*.vda`, `*.icb`, `*.vst`) uncompressed BGR,
 BGRA or grayscale images with 8 bits per channel.
 
-This plugin is built if `WITH_TGAIMPORTER` is enabled when building Magnum. To
-use dynamic plugin, you need to load `TgaImporter` plugin from
-`MAGNUM_PLUGINS_IMPORTER_DIR`. To use static plugin or use this as a dependency
-of another plugin, you need to request `TgaImporter` component of `Magnum`
-package in CMake and link to `Magnum::TgaImporter` target. See @ref building,
-@ref cmake and @ref plugins for more information.
+This plugin depends on the @ref Trade library and is built if `WITH_TGAIMPORTER`
+is enabled when building Magnum. To use as a dynamic plugin, you need to load
+the @cpp "TgaImporter" @ce plugin from `MAGNUM_PLUGINS_IMPORTER_DIR`. To use as
+a static plugin or use this as a dependency of another plugin with CMake, you
+need to request the `TgaImporter` component of the `Magnum` package and link to
+the `Magnum::TgaImporter` target. See @ref building, @ref cmake and
+@ref plugins for more information.
 
 The images are imported with @ref PixelType::UnsignedByte and @ref PixelFormat::RGB,
 @ref PixelFormat::RGBA or @ref PixelFormat::Red, respectively. Grayscale images
@@ -90,7 +94,7 @@ class MAGNUM_TGAIMPORTER_EXPORT TgaImporter: public AbstractImporter {
         void MAGNUM_TGAIMPORTER_LOCAL doOpenData(Containers::ArrayView<const char> data) override;
         void MAGNUM_TGAIMPORTER_LOCAL doClose() override;
         UnsignedInt MAGNUM_TGAIMPORTER_LOCAL doImage2DCount() const override;
-        std::optional<ImageData2D> MAGNUM_TGAIMPORTER_LOCAL doImage2D(UnsignedInt id) override;
+        Containers::Optional<ImageData2D> MAGNUM_TGAIMPORTER_LOCAL doImage2D(UnsignedInt id) override;
 
         Containers::Array<char> _in;
 };

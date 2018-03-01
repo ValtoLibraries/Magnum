@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,7 +40,7 @@ namespace Magnum {
 
 Provides (a)synchronous resource loading for @ref ResourceManager.
 
-## Usage and subclassing
+@section AbstractResourceLoader-usage Usage and subclassing
 
 Usage is done by subclassing. Subclass instances can be added to
 @ref ResourceManager using @ref ResourceManager::setLoader(). After adding the
@@ -64,7 +64,8 @@ You can also implement @ref doName() to provide meaningful names for resource
 keys.
 
 Example implementation for synchronous mesh loader:
-@code
+
+@code{.cpp}
 class MeshResourceLoader: public AbstractResourceLoader<Mesh> {
     void doLoad(ResourceKey key) override {
         // Load the mesh...
@@ -87,7 +88,8 @@ all resources. It allows you to use resources in the loader itself without
 having to delete the loader explicitly to ensure proper resource unloading. In
 the following code, however, the loader destroys itself (and removes itself
 from the manager) before the manager is destroyed.
-@code
+
+@code{.cpp}
 MyResourceManager manager;
 MeshResourceLoader loader;
 
@@ -101,8 +103,6 @@ Resource<Mesh> myMesh = manager->get<Mesh>("my-mesh");
     buffers), should that be allowed?
 */
 template<class T> class AbstractResourceLoader {
-    friend Implementation::ResourceManagerData<T>;
-
     public:
         explicit AbstractResourceLoader(): manager(nullptr), _requestedCount(0), _loadedCount(0), _notFoundCount(0) {}
 
@@ -213,6 +213,10 @@ template<class T> class AbstractResourceLoader {
         virtual void doLoad(ResourceKey key) = 0;
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Implementation::ResourceManagerData<T>;
+        #endif
+
         Implementation::ResourceManagerData<T>* manager;
         std::size_t _requestedCount,
             _loadedCount,

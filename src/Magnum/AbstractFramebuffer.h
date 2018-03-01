@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,6 @@
  */
 
 #include <Corrade/Containers/EnumSet.h>
-#include <Corrade/Utility/Macros.h>
 
 #include "Magnum/AbstractObject.h"
 #include "Magnum/Math/Range.h"
@@ -65,6 +64,7 @@ typedef Containers::EnumSet<FramebufferClear> FramebufferClearMask;
 @brief Mask for framebuffer blitting
 
 @see @ref AbstractFramebuffer, @ref FramebufferBlitMask
+@m_enum_values_as_keywords
 @requires_gl30 Extension @extension{ARB,framebuffer_object}
 @requires_gles30 Extension @extension{ANGLE,framebuffer_blit} or
     @extension{NV,framebuffer_blit} in OpenGL ES 2.0.
@@ -96,6 +96,7 @@ typedef Containers::EnumSet<FramebufferBlit> FramebufferBlitMask;
 @brief Framebuffer blit filtering
 
 @see @ref AbstractFramebuffer::blit()
+@m_enum_values_as_keywords
 @requires_gl30 Extension @extension{ARB,framebuffer_object}
 @requires_gles30 Extension @extension{ANGLE,framebuffer_blit} or
     @extension{NV,framebuffer_blit} in OpenGL ES 2.0.
@@ -111,6 +112,7 @@ enum class FramebufferBlitFilter: GLenum {
 @brief Framebuffer target
 
 @see @ref DefaultFramebuffer::checkStatus(), @ref Framebuffer::checkStatus()
+@m_enum_values_as_keywords
 @requires_gl30 Extension @extension{ARB,framebuffer_object}
 */
 enum class FramebufferTarget: GLenum {
@@ -131,21 +133,6 @@ enum class FramebufferTarget: GLenum {
     #else
     Draw,
     #endif
-
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    /**
-     * Framebuffer drawing target
-     * @deprecated Use @ref FramebufferTarget::Draw instead.
-     */
-    ReadDraw CORRADE_DEPRECATED_ENUM("use FramebufferTarget::Draw instead") =
-        #ifndef MAGNUM_TARGET_GLES2
-        GL_DRAW_FRAMEBUFFER
-        #elif !defined(MAGNUM_TARGET_WEBGL)
-        GL_DRAW_FRAMEBUFFER_APPLE
-        #else
-        1
-        #endif
-    #endif
 };
 
 namespace Implementation { struct FramebufferState; }
@@ -155,11 +142,10 @@ namespace Implementation { struct FramebufferState; }
 
 See @ref DefaultFramebuffer and @ref Framebuffer for more information.
 
-@anchor AbstractFramebuffer-performance-optimization
-## Performance optimizations and security
+@section AbstractFramebuffer-performance-optimization Performance optimizations and security
 
 The engine tracks currently bound framebuffer and current viewport to avoid
-unnecessary calls to @fn_gl{BindFramebuffer} and @fn_gl{Viewport} when
+unnecessary calls to @fn_gl_keyword{BindFramebuffer} and @fn_gl{Viewport} when
 switching framebuffers. Framebuffer limits and implementation-defined values
 (such as @ref maxViewportSize()) are cached, so repeated queries don't result
 in repeated @fn_gl{Get} calls. See also @ref Context::resetState() and
@@ -184,7 +170,8 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls.
-         * @see @ref setViewport(), @fn_gl{Get} with @def_gl{MAX_VIEWPORT_DIMS}
+         * @see @ref setViewport(), @fn_gl{Get} with
+         *      @def_gl_keyword{MAX_VIEWPORT_DIMS}
          */
         static Vector2i maxViewportSize();
 
@@ -197,7 +184,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * @webgl_extension{WEBGL,draw_buffers} is not available in WebGL 1.0,
          * returns `0`.
          * @see @ref DefaultFramebuffer::mapForDraw(), @ref Framebuffer::mapForDraw(),
-         *      @fn_gl{Get} with @def_gl{MAX_DRAW_BUFFERS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_DRAW_BUFFERS}
          */
         static Int maxDrawBuffers();
 
@@ -209,7 +196,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * OpenGL calls. If extension @extension{ARB,blend_func_extended} (part
          * of OpenGL 3.3) is not available, returns `0`.
          * @see @ref DefaultFramebuffer::mapForDraw(), @ref Framebuffer::mapForDraw(),
-         *      @fn_gl{Get} with @def_gl{MAX_DUAL_SOURCE_DRAW_BUFFERS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_DUAL_SOURCE_DRAW_BUFFERS}
          * @requires_gl Multiple blending inputs are not available in
          *      OpenGL ES or WebGL.
          */
@@ -233,8 +220,8 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, @p source framebuffer is bound to @ref FramebufferTarget::Read
          * and @p destination framebuffer to @ref FramebufferTarget::Draw
          * before the operation (if not already).
-         * @see @fn_gl2{BlitNamedFramebuffer,BlitFramebuffer}, eventually
-         *      @fn_gl{BlitFramebuffer}
+         * @see @fn_gl2_keyword{BlitNamedFramebuffer,BlitFramebuffer}, eventually
+         *      @fn_gl_keyword{BlitFramebuffer}
          * @requires_gles30 Extension @extension{ANGLE,framebuffer_blit} or
          *      @extension{NV,framebuffer_blit} in OpenGL ES 2.0.
          * @requires_webgl20 Framebuffer blit is not available in WebGL 1.0.
@@ -261,20 +248,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * dimensions.
          * @see @ref setViewport(), @ref DefaultFramebuffer::mapForRead(),
          *      @ref Framebuffer::mapForRead(), @ref DefaultFramebuffer::mapForDraw(),
-         *      @ref Framebuffer::mapForDraw(), @fn_gl{BindFramebuffer},
+         *      @ref Framebuffer::mapForDraw(), @fn_gl_keyword{BindFramebuffer},
          *      @fn_gl{Viewport}
          */
         void bind();
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief bind()
-         * @deprecated Use parameter-less @ref bind() instead.
-         */
-        CORRADE_DEPRECATED("use parameter-less bind() instead") void bind(FramebufferTarget) {
-            bind();
-        }
-        #endif
 
         /** @brief Viewport rectangle */
         Range2Di viewport() const { return _viewport; }
@@ -288,7 +265,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * rectangle. Initial value in @ref DefaultFramebuffer is set to cover
          * whole window, in @ref Framebuffer the initial value is specified in
          * constructor.
-         * @see @ref maxViewportSize(), @fn_gl{Viewport}
+         * @see @ref maxViewportSize(), @fn_gl_keyword{Viewport}
          */
         AbstractFramebuffer& setViewport(const Range2Di& rectangle);
 
@@ -303,7 +280,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * fully overwrite it later.
          * @see @ref Renderer::setClearColor(), @ref Renderer::setClearDepth(),
          *      @ref Renderer::setClearStencil(), @fn_gl{BindFramebuffer},
-         *      @fn_gl{Clear}
+         *      @fn_gl_keyword{Clear}
          * @deprecated_gl Prefer to use @ref Framebuffer::clearColor() "*Framebuffer::clearColor()"
          *      / @ref clearDepth() / @ref clearDepthStencil() instead of
          *      @ref Renderer::setClearColor() / @ref Renderer::setClearDepth()
@@ -318,8 +295,8 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * @param depth         Value to clear with
          * @return Reference to self (for method chaining)
          *
-         * @see @ref clear(), @fn_gl{ClearNamedFramebuffer}, eventually
-         *      @fn_gl{BindFramebuffer}, then @fn_gl{ClearBuffer}
+         * @see @ref clear(), @fn_gl_keyword{ClearNamedFramebuffer}, eventually
+         *      @fn_gl{BindFramebuffer}, then @fn_gl_keyword{ClearBuffer}
          * @requires_gl30 Direct framebuffer clearing is not available in
          *      OpenGL 2.1.
          * @requires_gles30 Direct framebuffer clearing is not available in
@@ -332,8 +309,8 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * @param stencil       Value to clear with
          * @return Reference to self (for method chaining)
          *
-         * @see @ref clear(), @fn_gl{ClearNamedFramebuffer}, eventually
-         *      @fn_gl{BindFramebuffer}, then @fn_gl{ClearBuffer}
+         * @see @ref clear(), @fn_gl_keyword{ClearNamedFramebuffer}, eventually
+         *      @fn_gl{BindFramebuffer}, then @fn_gl_keyword{ClearBuffer}
          * @requires_gl30 Direct framebuffer clearing is not available in
          *      OpenGL 2.1.
          * @requires_gles30 Direct framebuffer clearing is not available in
@@ -347,8 +324,8 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * @param stencil       Stencil value to clear with
          * @return Reference to self (for method chaining)
          *
-         * @see @ref clear(), @fn_gl{ClearNamedFramebuffer}, eventually
-         *      @fn_gl{BindFramebuffer}, then @fn_gl{ClearBuffer}
+         * @see @ref clear(), @fn_gl_keyword{ClearNamedFramebuffer}, eventually
+         *      @fn_gl{BindFramebuffer}, then @fn_gl_keyword{ClearBuffer}
          * @requires_gl30 Direct framebuffer clearing is not available in
          *      OpenGL 2.1.
          * @requires_gles30 Direct framebuffer clearing is not available in
@@ -369,28 +346,18 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * If @extension{ARB,robustness} is available, the operation is
          * protected from buffer overflow.
          * @see @fn_gl{BindFramebuffer}, then @fn_gl{PixelStore} and
-         *      @fn_gl{ReadPixels} or @fn_gl_extension{ReadnPixels,ARB,robustness}
+         *      @fn_gl_keyword{ReadPixels} or
+         *      @fn_gl_extension_keyword{ReadnPixels,ARB,robustness}
          */
         void read(const Range2Di& rectangle, Image2D& image);
 
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * Image2D image = framebuffer.read(framebuffer.viewport(), {PixelFormat::RGBA, PixelType::UnsignedByte});
-         * @endcode
+         *
+         * @snippet Magnum.cpp AbstractFramebuffer-read1
          */
         Image2D read(const Range2Di& rectangle, Image2D&& image);
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief read(const Range2Di&, Image2D&)
-         * @deprecated Use @ref read(const Range2Di&, Image2D&) instead.
-         */
-        CORRADE_DEPRECATED("use read(const Range2Di&, Image2D& instead) instead") void read(const Vector2i& offset, const Vector2i& size, Image2D& image) {
-            read({offset, size}, image);
-        }
-        #endif
 
         #ifndef MAGNUM_TARGET_GLES2
         /**
@@ -399,9 +366,9 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * @param image             Buffer image where to put the data
          * @param usage             Buffer usage
          *
-         * See @ref read(const Vector2i&, const Vector2i&, Image2D&) for more
-         * information. The storage is not reallocated if it is large enough to
-         * contain the new data, which means that @p usage might get ignored.
+         * See @ref read(const Range2Di&, Image2D&) for more information. The
+         * storage is not reallocated if it is large enough to contain the new
+         * data, which means that @p usage might get ignored.
          * @requires_gles30 Pixel buffer objects are not available in OpenGL ES
          *      2.0.
          * @requires_webgl20 Pixel buffer objects are not available in WebGL
@@ -414,22 +381,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * BufferImage2D image = framebuffer.read(framebuffer.viewport(), {PixelFormat::RGBA, PixelType::UnsignedByte}, BufferUsage::StaticRead);
-         * @endcode
+         *
+         * @snippet Magnum.cpp AbstractFramebuffer-read2
          */
         BufferImage2D read(const Range2Di& rectangle, BufferImage2D&& image, BufferUsage usage);
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief read(const Range2Di&, BufferImage2D&, BufferUsage)
-         * @deprecated Use @ref read(const Range2Di&, BufferImage2D&, BufferUsage)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use read(const Range2Di&, BufferImage2D&, BufferUsage) instead") void read(const Vector2i& offset, const Vector2i& size, BufferImage2D& image, BufferUsage usage) {
-            read({offset, size}, image, usage);
-        }
-        #endif
         #endif
 
         #ifndef MAGNUM_TARGET_GLES
@@ -449,7 +404,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * operation.
          * @see @ref Texture1D::maxSize(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexImage1D}
+         *      @fn_gl_keyword{CopyTexImage1D}
          * @requires_gl 1D textures are not available in OpenGL ES or WebGL.
          * @deprecated_gl Prefer to use @ref Texture1D::setStorage() and
          *      @ref copySubImage() instead.
@@ -472,7 +427,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * operation.
          * @see @ref Texture2D::maxSize(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexImage2D}
+         *      @fn_gl_keyword{CopyTexImage2D}
          * @deprecated_gl Prefer to use @ref Texture2D::setStorage() and
          *      @ref copySubImage() instead.
          */
@@ -493,7 +448,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * operation.
          * @see @ref Texture2D::maxSize(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexImage2D}
+         *      @fn_gl_keyword{CopyTexImage2D}
          * @requires_gl31 Extension @extension{ARB,texture_rectangle}
          * @requires_gl Rectangle textures are not available in OpenGL ES and
          *      WebGL.
@@ -519,7 +474,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * operation.
          * @see @ref Texture2D::maxSize(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexImage2D}
+         *      @fn_gl_keyword{CopyTexImage2D}
          * @deprecated_gl Prefer to use @ref CubeMapTexture::setStorage() and
          *      @ref copySubImage() instead.
          */
@@ -541,7 +496,7 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * operation.
          * @see @ref Texture2D::maxSize(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexImage2D}
+         *      @fn_gl_keyword{CopyTexImage2D}
          * @requires_gl 1D array textures are not available in OpenGL ES or
          *      WebGL, only 2D ones.
          * @deprecated_gl Prefer to use @ref Texture1DArray::setStorage() and
@@ -564,10 +519,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture1D::setStorage(), @fn_gl{BindFramebuffer}, then
-         *      @fn_gl2{CopyTextureSubImage1D,CopyTexSubImage1D},
-         *      @fn_gl_extension{CopyTextureSubImage1D,EXT,direct_state_access},
+         *      @fn_gl2_keyword{CopyTextureSubImage1D,CopyTexSubImage1D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage1D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexSubImage1D}
+         *      @fn_gl_keyword{CopyTexSubImage1D}
          * @requires_gl 1D textures are not available in OpenGL ES or WebGL.
          */
         void copySubImage(const Range2Di& rectangle, Texture1D& texture, Int level, Int offset);
@@ -585,8 +540,8 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture2D::setStorage(), @fn_gl{BindFramebuffer}, then
-         *      @fn_gl2{CopyTextureSubImage2D,CopyTexSubImage2D},
-         *      @fn_gl_extension{CopyTextureSubImage2D,EXT,direct_state_access},
+         *      @fn_gl2_keyword{CopyTextureSubImage2D,CopyTexSubImage2D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl{CopyTexSubImage2D}
          */
@@ -604,10 +559,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, the texture is bound before the operation (if not
          * already).
          * @see @ref RectangleTexture::setStorage(), @fn_gl{BindFramebuffer},
-         *      then @fn_gl2{CopyTextureSubImage2D,CopyTexSubImage2D},
-         *      @fn_gl_extension{CopyTextureSubImage2D,EXT,direct_state_access},
+         *      then @fn_gl2_keyword{CopyTextureSubImage2D,CopyTexSubImage2D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexSubImage2D}
+         *      @fn_gl_keyword{CopyTexSubImage2D}
          * @requires_gl Rectangle textures are not available in OpenGL ES and
          *      WebGL.
          */
@@ -627,10 +582,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * @extension{EXT,direct_state_access} desktop extension is available,
          * the texture is bound before the operation (if not already).
          * @see @ref CubeMapTexture::setStorage(), @fn_gl{BindFramebuffer},
-         *      then @fn_gl2{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension{CopyTextureSubImage2D,EXT,direct_state_access},
+         *      then @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexSubImage2D}
+         *      @fn_gl_keyword{CopyTexSubImage2D}
          */
         void copySubImage(const Range2Di& rectangle, CubeMapTexture& texture, Int level, const Vector3i& offset);
 
@@ -647,10 +602,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture3D::setStorage(), @fn_gl{BindFramebuffer}, then
-         *      @fn_gl2{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension{CopyTextureSubImage3D,EXT,direct_state_access},
+         *      @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexSubImage3D}
+         *      @fn_gl_keyword{CopyTexSubImage3D}
          * @requires_gles30 Extension @extension{OES,texture_3D} in OpenGL
          *      ES 2.0.
          * @requires_webgl20 Only 2D textures are available in WebGL 1.0.
@@ -671,10 +626,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture1DArray::setStorage(), @fn_gl{BindFramebuffer},
-         *      then @fn_gl2{CopyTextureSubImage2D,CopyTexSubImage2D},
-         *      @fn_gl_extension{CopyTextureSubImage2D,EXT,direct_state_access},
+         *      then @fn_gl2_keyword{CopyTextureSubImage2D,CopyTexSubImage2D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexSubImage2D}
+         *      @fn_gl_keyword{CopyTexSubImage2D}
          * @requires_gl 1D array textures are not available in OpenGL ES or
          *      WebGL, only 2D ones.
          */
@@ -694,10 +649,10 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture2DArray::setStorage(), @fn_gl{BindFramebuffer},
-         *      then @fn_gl2{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension{CopyTextureSubImage3D,EXT,direct_state_access},
+         *      then @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexSubImage3D}
+         *      @fn_gl_keyword{CopyTexSubImage3D}
          * @requires_gl30 Extension @extension{EXT,texture_array}
          * @requires_gles30 Array textures are not available in OpenGL ES 2.0.
          * @requires_webgl20 Array textures are not available in WebGL 1.0.
@@ -720,13 +675,13 @@ class MAGNUM_EXPORT AbstractFramebuffer {
          * available, the texture is bound before the operation (if not
          * already).
          * @see @ref CubeMapTextureArray::setStorage(), @fn_gl{BindFramebuffer},
-         *      then @fn_gl2{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension{CopyTextureSubImage3D,EXT,direct_state_access},
+         *      then @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
+         *      @fn_gl_extension_keyword{CopyTextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
-         *      @fn_gl{CopyTexSubImage3D}
+         *      @fn_gl_keyword{CopyTexSubImage3D}
          * @requires_gl40 Extension @extension{ARB,texture_cube_map_array}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
-         * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+         * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
          *      @extension{EXT,texture_cube_map_array}
          * @requires_gles Cube map texture arrays are not available in WebGL.
          */

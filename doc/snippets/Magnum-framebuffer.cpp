@@ -1,9 +1,7 @@
-#ifndef Magnum_SceneGraph_AbstractCamera_hpp
-#define Magnum_SceneGraph_AbstractCamera_hpp
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,17 +23,46 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-/** @file
- * @deprecated Use @ref Magnum/SceneGraph/Camera.hpp instead.
- */
+#include "Magnum/DefaultFramebuffer.h"
+#include "Magnum/Framebuffer.h"
+#include "Magnum/Platform/Sdl2Application.h"
 
-#include "Magnum/configure.h"
+using namespace Magnum;
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "Magnum/SceneGraph/Camera.hpp"
-CORRADE_DEPRECATED_FILE("use Magnum/SceneGraph/Camera.hpp instead")
-#else
-#error use Magnum/SceneGraph/Camera.hpp instead
-#endif
+struct A: Platform::Sdl2Application {
+/* [DefaultFramebuffer-usage-viewport] */
+void viewportEvent(const Vector2i& size) override {
+    defaultFramebuffer.setViewport({{}, size});
 
-#endif
+    // ...
+}
+/* [DefaultFramebuffer-usage-viewport] */
+
+/* [DefaultFramebuffer-usage-clear] */
+void drawEvent() override {
+    defaultFramebuffer.clear(FramebufferClear::Color|FramebufferClear::Depth);
+
+    // ...
+}
+/* [DefaultFramebuffer-usage-clear] */
+};
+
+struct B: Platform::Sdl2Application {
+
+Framebuffer framebuffer;
+
+/* [Framebuffer-usage-draw] */
+void drawEvent() override {
+    defaultFramebuffer.clear(FramebufferClear::Color);
+    framebuffer.clear(FramebufferClear::Color|FramebufferClear::Depth|FramebufferClear::Stencil);
+
+    framebuffer.bind();
+    // ...
+
+    defaultFramebuffer.bind();
+    // ...
+
+    swapBuffers();
+}
+/* [Framebuffer-usage-draw] */
+};

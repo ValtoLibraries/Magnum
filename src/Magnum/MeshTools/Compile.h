@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,7 +49,7 @@ attribute. No data compression or index optimization (except for index buffer
 packing) is done. The @p usage parameter is used for both vertex and index
 buffer.
 
-The second returned buffer may be `nullptr` if the mesh is not indexed.
+The second returned buffer may be @cpp nullptr @ce if the mesh is not indexed.
 
 This is just a convenience function for creating generic meshes, you might want
 to use @ref interleave() and @ref compressIndices() functions instead for
@@ -70,7 +70,7 @@ bound to @ref Shaders::Generic2D::TextureCoordinates attribute. No data
 compression or index optimization (except for index buffer packing) is done.
 The @p usage parameter is used for both vertex and index buffer.
 
-The second returned buffer may be `nullptr` if the mesh is not indexed.
+The second returned buffer may be @cpp nullptr @ce if the mesh is not indexed.
 
 This is just a convenience function for creating generic meshes, you might want
 to use @ref interleave() and @ref compressIndices() functions instead for

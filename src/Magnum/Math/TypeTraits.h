@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -145,7 +145,8 @@ template<class T> struct TypeTraits: Implementation::TypeTraitsDefault<T> {
      * comparing e.g. a calculated nearly-zero difference with zero, knowing
      * the magnitude of original values so the epsilon can be properly scaled.
      * In other words, the following lines are equivalent:
-     * @code
+     *
+     * @code{.cpp}
      * Float a, b;
      * Math::TypeTraits<Float>::equals(a, b);
      * Math::TypeTraits<Float>::equalsZero(a - b, Math::max(Math::abs(a), Math::abs(b)));

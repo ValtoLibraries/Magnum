@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,9 +51,9 @@ namespace Implementation {
 See @ref BasicScreenedApplication for more information.
 
 If exactly one application header is included, this class is also aliased to
-`Platform::Screen`.
+@cpp Platform::Screen @ce.
 
-## Explicit template specializations
+@section Platform-BasicScreen-template-specializations Explicit template specializations
 
 The following specialization are explicitly compiled into each particular
 `*Application` library. For other specializations you have to use
@@ -66,10 +66,6 @@ The following specialization are explicitly compiled into each particular
 -   @ref XEglApplication "BasicScreen<XEglApplication>"
 */
 template<class Application> class BasicScreen: private Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>> {
-    friend Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>>;
-    friend Containers::LinkedList<BasicScreen<Application>>;
-    friend BasicScreenedApplication<Application>;
-
     public:
         #ifdef DOXYGEN_GENERATING_OUTPUT
         /**
@@ -145,8 +141,9 @@ template<class Application> class BasicScreen: private Containers::LinkedListIte
         /**
          * @brief Next nearer screen
          *
-         * @see @ref BasicScreenedApplication::frontScreen(),
-         *      @ref BasicScreenedApplication::backScreen()
+         * Use @cpp application().screens().first() @ce to access the front
+         * screen and @cpp application().screens().last() @ce to access the
+         * back screen.
          */
         BasicScreen<Application>* nextNearerScreen() {
             return Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>>::previous();
@@ -159,8 +156,9 @@ template<class Application> class BasicScreen: private Containers::LinkedListIte
         /**
          * @brief Next farther screen
          *
-         * @see @ref BasicScreenedApplication::frontScreen(),
-         *      @ref BasicScreenedApplication::backScreen()
+         * Use @cpp application().screens().first() @ce to access the front
+         * screen and @cpp application().screens().last() @ce to access the
+         * back screen.
          */
         BasicScreen<Application>* nextFartherScreen() {
             return Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>>::next();
@@ -257,6 +255,12 @@ template<class Application> class BasicScreen: private Containers::LinkedListIte
         virtual void mouseMoveEvent(MouseMoveEvent& event);
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>>;
+        friend Containers::LinkedList<BasicScreen<Application>>;
+        friend BasicScreenedApplication<Application>;
+        #endif
+
         PropagatedEvents _propagatedEvents;
 };
 

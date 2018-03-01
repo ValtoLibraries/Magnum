@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -77,16 +77,16 @@ template<UnsignedInt dimensions> class MAGNUM_SHAPES_EXPORT Composition {
         /** @brief Shape type */
         #ifdef DOXYGEN_GENERATING_OUTPUT
         enum class Type {
-            Point,          /**< Point */
-            Line,           /**< Line */
+            Point,          /**< @ref Point */
+            Line,           /**< @ref Line */
             LineSegment,    /**< @ref LineSegment "Line segment" */
-            Sphere,         /**< Sphere */
+            Sphere,         /**< @ref Sphere */
             InvertedSphere, /**< @ref InvertedSphere "Inverted sphere" */
             Cylinder,       /**< @ref Cylinder */
-            Capsule,        /**< Capsule */
+            Capsule,        /**< @ref Capsule */
             AxisAlignedBox, /**< @ref AxisAlignedBox "Axis aligned box" */
-            Box,            /**< Box */
-            Plane           /**< Plane (3D only) */
+            Box,            /**< @ref Box */
+            Plane           /**< @ref Plane (3D only) */
         };
         #else
         typedef typename Implementation::ShapeDimensionTraits<dimensions>::Type Type;

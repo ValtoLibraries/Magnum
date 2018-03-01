@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -132,14 +132,6 @@ set(Magnum_PRIVATE_HEADERS
     Implementation/State.h
     Implementation/TextureState.h)
 
-# Deprecated stuff
-if(BUILD_DEPRECATED)
-    list(APPEND Magnum_HEADERS
-        Color.h
-        ColorFormat.h
-        ImageReference.h)
-endif()
-
 # Desktop-only stuff
 if(NOT TARGET_GLES)
     list(APPEND Magnum_SRCS RectangleTexture.cpp)
@@ -193,11 +185,6 @@ if(NOT TARGET_WEBGL)
             ImageFormat.h
             MultisampleTexture.h)
     endif()
-
-    if(BUILD_DEPRECATED)
-        list(APPEND Magnum_HEADERS
-            DebugMessage.h)
-    endif()
 endif()
 
 # Desktop, OpenGL ES and WebGL 2.0 stuff that is not available in WebGL 1.0
@@ -213,11 +200,6 @@ if(NOT (TARGET_WEBGL AND TARGET_GLES2))
 
     list(APPEND Magnum_PRIVATE_HEADERS
         Implementation/QueryState.h)
-
-    if(BUILD_DEPRECATED)
-        list(APPEND Magnum_HEADERS
-            Query.h)
-    endif()
 endif()
 
 # Link in GL function pointer variables on platforms that support it
@@ -254,6 +236,7 @@ set_target_properties(Magnum PROPERTIES
     FOLDER "Magnum")
 if(NOT BUILD_STATIC)
     target_compile_definitions(Magnum PRIVATE "FlextGL_EXPORTS")
+    set_target_properties(Magnum PROPERTIES VERSION ${MAGNUM_LIBRARY_VERSION} SOVERSION ${MAGNUM_LIBRARY_SOVERSION})
 elseif(BUILD_STATIC_PIC)
     set_target_properties(Magnum PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()

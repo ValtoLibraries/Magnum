@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -93,12 +93,15 @@ template<class T> T exp(T exponent) { return std::exp(exponent); }
 @brief Integer division with remainder
 
 Example usage:
-@code
+
+@code{.cpp}
 Int quotient, remainder;
 std::tie(quotient, remainder) = Math::div(57, 6); // {9, 3}
 @endcode
+
 Equivalent to the following, but possibly done in a single CPU instruction:
-@code
+
+@code{.cpp}
 Int quotient = 57/6;
 Int remainder = 57%6;
 @endcode
@@ -370,9 +373,11 @@ template<class T> inline std::pair<T, T> minmax(std::initializer_list<T> list) {
 
 Values smaller than @p min are set to @p min, values larger than @p max are
 set to @p max. Equivalent to:
-@code
+
+@code{.cpp}
 Math::min(Math::max(value, min), max)
 @endcode
+
 <em>NaN</em>s passed in @p value parameter are propagated.
 @see @ref min(), @ref max()
 */
@@ -512,6 +517,7 @@ template<std::size_t size, class T> Vector<size, T> sqrt(const Vector<size, T>& 
 @brief Inverse square root
 
 @see @ref sqrt(), @ref Vector::lengthInverted()
+@m_keyword{inversesqrt(),GLSL inversesqrt(),}
 */
 #ifdef DOXYGEN_GENERATING_OUTPUT
 template<class T> inline T sqrtInverted(const T& a);
@@ -534,6 +540,7 @@ The interpolation for vectors is done as in following, similarly for scalars: @f
     \boldsymbol v_{LERP} = (1 - t) \boldsymbol v_A + t \boldsymbol v_B
 @f]
 @see @ref lerpInverted(), @ref lerp(const Quaternion<T>&, const Quaternion<T>&, T)
+@m_keyword{mix(),GLSL mix(),}
 */
 #ifdef DOXYGEN_GENERATING_OUTPUT
 template<class T, class U> inline T lerp(const T& a, const T& b, U t);
@@ -546,11 +553,10 @@ template<std::size_t size, class T, class U> inline typename std::enable_if<!Imp
 }
 #endif
 
-/**
-@overload
-
+/** @overload
 Similar to the above, but instead of multiplication and addition it just does
 component-wise selection from either @p a or @p b based on values in @p t.
+@m_keyword{mix(),GLSL mix(),}
 */
 template<std::size_t size, class T> inline Vector<size, T> lerp(const Vector<size, T>& a, const Vector<size, T>& b, const BoolVector<size>& t) {
     Vector<size, T> out{NoInit};
@@ -559,7 +565,9 @@ template<std::size_t size, class T> inline Vector<size, T> lerp(const Vector<siz
     return out;
 }
 
-/** @overload */
+/** @overload
+@m_keyword{mix(),GLSL mix(),}
+*/
 template<std::size_t size> inline BoolVector<size> lerp(const BoolVector<size>& a, const BoolVector<size>& b, const BoolVector<size>& t) {
     /* Not using NoInit because it causes some compilers to report unitialized
        value */

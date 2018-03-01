@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,7 +43,7 @@ namespace Magnum { namespace Platform {
 Manages list of screens and propagates events to them.
 
 If exactly one application header is included, this class is also aliased to
-`Platform::ScreenedApplication`.
+@cpp Platform::ScreenedApplication @ce.
 
 Each @ref BasicScreen "Screen" specifies which set of events should be
 propagated to it using @ref BasicScreen::setPropagatedEvents(). When
@@ -66,7 +66,8 @@ application gets an event, they are propagated to the screens:
 Uses @ref Corrade::Containers::LinkedList for efficient screen management.
 Traversing front-to-back through the list of screens can be done using
 range-based for:
-@code
+
+@code{.cpp}
 MyApplication app;
 for(Screen& screen: app.screens()) {
     // ...
@@ -76,13 +77,14 @@ for(Screen& screen: app.screens()) {
 Or, if you need more flexibility, like in the following code. Traversing
 back-to-front can be done using @ref Corrade::Containers::LinkedList::last()
 and @ref BasicScreen::nextNearerScreen().
-@code
+
+@code{.cpp}
 for(Screen* s = app.screens().first(); s; s = s->nextFartherScreen()) {
     // ...
 }
 @endcode
 
-## Explicit template specializations
+@section Platform-ScreenedApplication-template-specializations Explicit template specializations
 
 The following specialization are explicitly compiled into each particular
 `*Application` library. For other specializations you have to use
@@ -95,10 +97,6 @@ The following specialization are explicitly compiled into each particular
 -   @ref XEglApplication "BasicScreenedApplication<XEglApplication>"
 */
 template<class Application> class BasicScreenedApplication: public Application, private Containers::LinkedList<BasicScreen<Application>> {
-    friend Containers::LinkedList<BasicScreen<Application>>;
-    friend Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>>;
-    friend BasicScreen<Application>;
-
     public:
         /**
          * @brief Default constructor
@@ -124,7 +122,7 @@ template<class Application> class BasicScreenedApplication: public Application, 
 
         #ifdef MAGNUM_BUILD_DEPRECATED
         /**
-         * @copybrief BasicScreenedApplication(const typename Application::Arguments&, NoCreateT)
+         * @brief @copybrief BasicScreenedApplication(const typename Application::Arguments&, NoCreateT)
          * @deprecated Use @ref BasicScreenedApplication(const typename Application::Arguments&, NoCreateT) instead.
          */
         CORRADE_DEPRECATED("use BasicScreenedApplication(const Arguments&, NoCreateT) instead") explicit BasicScreenedApplication(const typename Application::Arguments& arguments, std::nullptr_t): BasicScreenedApplication{arguments, NoCreate} {}
@@ -178,31 +176,6 @@ template<class Application> class BasicScreenedApplication: public Application, 
             return static_cast<const Containers::LinkedList<BasicScreen<Application>>&>(*this);
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief Front screen
-         * @deprecated Use `screens().first()` instead.
-         */
-        CORRADE_DEPRECATED("use screens().first() instead") BasicScreen<Application>* frontScreen() { return screens().first(); }
-
-        /** @overload
-         * @deprecated Use `screens().first()` instead.
-         */
-        CORRADE_DEPRECATED("use screens().first() instead") const BasicScreen<Application>* frontScreen() const { return screens().first(); }
-
-        /**
-         * @brief Back screen
-         * @deprecated Use `screens().last()` instead.
-         */
-        CORRADE_DEPRECATED("use screens().last() instead") BasicScreen<Application>* backScreen() { return screens().last(); }
-
-        /**
-         * @overload
-         * @deprecated Use `screens().last()` instead.
-         */
-        CORRADE_DEPRECATED("use screens().last() instead") const BasicScreen<Application>* backScreen() const { return screens().last(); }
-        #endif
-
     protected:
         /* Nobody will need to have (and delete) ScreenedApplication*, thus
            this is faster than public pure virtual destructor */
@@ -234,6 +207,12 @@ template<class Application> class BasicScreenedApplication: public Application, 
         virtual void globalDrawEvent() = 0;
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Containers::LinkedList<BasicScreen<Application>>;
+        friend Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>>;
+        friend BasicScreen<Application>;
+        #endif
+
         /* The user is supposed to override only globalViewportEvent() and
            globalDrawEvent(), these implementations are dispatching the events
            to attached screens. */

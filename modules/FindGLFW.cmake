@@ -16,7 +16,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 #
@@ -43,8 +43,7 @@ find_library(GLFW_LIBRARY NAMES glfw glfw3)
 
 # Include dir
 find_path(GLFW_INCLUDE_DIR
-    NAMES glfw3.h
-    PATH_SUFFIXES GLFW)
+    NAMES GLFW/glfw3.h)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args("GLFW" DEFAULT_MSG

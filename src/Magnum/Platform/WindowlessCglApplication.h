@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2013 <https://github.com/ArEnSc>
     Copyright © 2014 Travis Watkins <https://github.com/amaranth>
@@ -54,7 +54,7 @@ CMake.
 Meant to be used when there is a need to manage (multiple) GL contexts
 manually. See @ref platform-windowless-contexts for more information. If no
 other application header is included, this class is also aliased to
-`Platform::WindowlessGLContext`.
+@cpp Platform::WindowlessGLContext @ce.
 */
 class WindowlessCglContext {
     public:
@@ -109,8 +109,8 @@ class WindowlessCglContext {
         /**
          * @brief Make the context current
          *
-         * Prints error message and returns `false` on failure, otherwise
-         * returns `true`.
+         * Prints error message and returns @cpp false @ce on failure,
+         * otherwise returns @cpp true @ce.
          */
         bool makeCurrent();
 
@@ -139,7 +139,7 @@ Application for offscreen rendering using @ref WindowlessCglContext. This
 application library is available on desktop OpenGL on macOS. It is built if
 `WITH_WINDOWLESSCGLAPPLICATION` is enabled in CMake.
 
-## Bootstrap application
+@section Platform-WindowlessCglApplication-bootstrap Bootstrap application
 
 Fully contained windowless application using @ref WindowlessCglApplication
 along with CMake setup is available in `base-windowless` branch of
@@ -149,27 +149,41 @@ or [zip](https://github.com/mosra/magnum-bootstrap/archive/base-windowless.zip)
 file. After extracting the downloaded archive you can build and run the
 application with these four commands:
 
-    mkdir build && cd build
-    cmake ..
-    cmake --build .
-    ./src/MyApplication # or ./src/Debug/MyApplication
+@code{.sh}
+mkdir build && cd build
+cmake ..
+cmake --build .
+./src/MyApplication # or ./src/Debug/MyApplication
+@endcode
 
 See @ref cmake for more information.
 
-## General usage
+@section Platform-WindowlessCglApplication-usage General usage
 
-In CMake you need to request `WindowlessCglApplication` component, add
-`${MAGNUM_WINDOWLESSCGLAPPLICATION_INCLUDE_DIRS}` to include path and link to
-`${MAGNUM_WINDOWLESSCGLAPPLICATION_LIBRARIES}`. If no other windowless
-application is requested, you can also use generic
-`${MAGNUM_WINDOWLESSAPPLICATION_INCLUDE_DIRS}` and
-`${MAGNUM_WINDOWLESSAPPLICATION_LIBRARIES}` aliases to simplify porting. Again,
-see @ref building and @ref cmake for more information.
+In order to use this library from CMake, you need to request the
+`WindowlessCglApplication` component of the `Magnum` package and link to the `Magnum::WindowlessCglApplication` target:
+
+@code{.cmake}
+find_package(Magnum REQUIRED)
+if(CORRADE_TARGET_APPLE)
+    find_package(Magnum REQUIRED WindowlessCglApplication)
+endif()
+
+# ...
+if(CORRADE_TARGET_APPLE)
+    target_link_libraries(your-app Magnum::WindowlessCglApplication)
+endif()
+@endcode
+
+If no other application is requested, you can also use the generic
+`Magnum::WindowlessApplication` alias to simplify porting. Again, see
+@ref building and @ref cmake for more information.
 
 Place your code into @ref exec(). The subclass can be then used directly in
-`main()` -- see convenience macro @ref MAGNUM_WINDOWLESSCGLAPPLICATION_MAIN().
+`main()` --- see convenience macro @ref MAGNUM_WINDOWLESSCGLAPPLICATION_MAIN().
 See @ref platform for more information.
-@code
+
+@code{.sh}
 class MyApplication: public Platform::WindowlessCglApplication {
     // implement required methods...
 };
@@ -177,8 +191,8 @@ MAGNUM_WINDOWLESSCGLAPPLICATION_MAIN(MyApplication)
 @endcode
 
 If no other application header is included, this class is also aliased to
-`Platform::WindowlessApplication` and the macro is aliased to
-`MAGNUM_WINDOWLESSAPPLICATION_MAIN()` to simplify porting.
+@cpp Platform::WindowlessApplication @ce and the macro is aliased to
+@cpp MAGNUM_WINDOWLESSAPPLICATION_MAIN() @ce to simplify porting.
 */
 class WindowlessCglApplication {
     public:
@@ -229,7 +243,7 @@ class WindowlessCglApplication {
 
         #ifdef MAGNUM_BUILD_DEPRECATED
         /**
-         * @copybrief WindowlessCglApplication(const Arguments&, NoCreateT)
+         * @brief @copybrief WindowlessCglApplication(const Arguments&, NoCreateT)
          * @deprecated Use @ref WindowlessCglApplication(const Arguments&, NoCreateT) instead.
          */
         CORRADE_DEPRECATED("use WindowlessCglApplication(const Arguments&, NoCreateT) instead") explicit WindowlessCglApplication(const Arguments& arguments, std::nullptr_t): WindowlessCglApplication{arguments, NoCreate} {}
@@ -249,7 +263,7 @@ class WindowlessCglApplication {
 
         /**
          * @brief Execute application
-         * @return Value for returning from `main()`
+         * @return Value for returning from @cpp main() @ce
          *
          * See @ref MAGNUM_WINDOWLESSCGLAPPLICATION_MAIN() for usage
          * information.
@@ -281,8 +295,8 @@ class WindowlessCglApplication {
         /**
          * @brief Try to create context with given configuration
          *
-         * Unlike @ref createContext() returns `false` if the context cannot be
-         * created, `true` otherwise.
+         * Unlike @ref createContext() returns @cpp false @ce if the context
+         * cannot be created, @cpp true @ce otherwise.
          */
         bool tryCreateContext(const Configuration& configuration);
 
@@ -299,14 +313,16 @@ See @ref Magnum::Platform::WindowlessCglApplication "Platform::WindowlessCglAppl
 for usage information. This macro abstracts out platform-specific entry point
 code and is equivalent to the following, see @ref portability-applications for
 more information.
-@code
+
+@code{.cpp}
 int main(int argc, char** argv) {
     className app({argc, argv});
     return app.exec();
 }
 @endcode
+
 When no other windowless application header is included this macro is also
-aliased to `MAGNUM_WINDOWLESSAPPLICATION_MAIN()`.
+aliased to @cpp MAGNUM_WINDOWLESSAPPLICATION_MAIN() @ce.
 */
 #define MAGNUM_WINDOWLESSCGLAPPLICATION_MAIN(className)                     \
     int main(int argc, char** argv) {                                       \

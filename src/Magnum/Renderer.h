@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,6 +61,7 @@ class MAGNUM_EXPORT Renderer {
          *      @ref setStencilFunction(PolygonFacing, StencilFunction, Int, UnsignedInt),
          *      @ref setStencilOperation(PolygonFacing, StencilOperation, StencilOperation, StencilOperation),
          *      @ref setStencilMask(PolygonFacing, UnsignedInt)
+         * @m_enum_values_as_keywords
          */
         enum class PolygonFacing: GLenum {
             Front = GL_FRONT,                   /**< Front-facing polygons */
@@ -75,6 +76,7 @@ class MAGNUM_EXPORT Renderer {
          *
          * All features are disabled by default unless specified otherwise.
          * @see @ref enable(), @ref disable(), @ref setFeature()
+         * @m_enum_values_as_keywords
          */
         enum class Feature: GLenum {
             #ifndef MAGNUM_TARGET_WEBGL
@@ -83,7 +85,8 @@ class MAGNUM_EXPORT Renderer {
              * extension @extension2{KHR,blend_equation_advanced_coherent,blend_equation_advanced}
              * is available. See @ref blendBarrier() for more information.
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in WebGL.
              */
             BlendAdvancedCoherent = GL_BLEND_ADVANCED_COHERENT_KHR,
@@ -103,11 +106,11 @@ class MAGNUM_EXPORT Renderer {
              * @see @ref DebugOutput, @ref Feature::DebugOutputSynchronous,
              *      @ref Platform::Sdl2Application::Configuration::Flag::Debug "Platform::*Application::Configuration::Flag::Debug"
              * @requires_gl43 Extension @extension{KHR,debug}
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension2{KHR,debug,debug}
              * @requires_gles Debug output is not available in WebGL.
              */
-            #ifndef MAGNUM_TARGET_GLES
+            #ifndef MAGNUM_TARGET_GLES2
             DebugOutput = GL_DEBUG_OUTPUT,
             #else
             DebugOutput = GL_DEBUG_OUTPUT_KHR,
@@ -118,11 +121,11 @@ class MAGNUM_EXPORT Renderer {
              * @ref Feature::DebugOutput is enabled.
              * @see @ref DebugMessage
              * @requires_gl43 Extension @extension{KHR,debug}
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension2{KHR,debug,debug}
              * @requires_gles Debug output is not available in WebGL.
              */
-            #ifndef MAGNUM_TARGET_GLES
+            #ifndef MAGNUM_TARGET_GLES2
             DebugOutputSynchronous = GL_DEBUG_OUTPUT_SYNCHRONOUS,
             #else
             DebugOutputSynchronous = GL_DEBUG_OUTPUT_SYNCHRONOUS_KHR,
@@ -231,7 +234,7 @@ class MAGNUM_EXPORT Renderer {
             #ifndef MAGNUM_TARGET_GLES
             /**
              * Programmable point size. If enabled, the point size is taken
-             * from vertex/geometry shader builtin `gl_PointSize`.
+             * from vertex/geometry shader builtin @glsl gl_PointSize @ce.
              * @see @ref setPointSize()
              * @requires_gl Always enabled on OpenGL ES and WebGL.
              */
@@ -278,14 +281,14 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Enable feature
          *
-         * @see @ref disable(), @ref setFeature(), @fn_gl{Enable}
+         * @see @ref disable(), @ref setFeature(), @fn_gl_keyword{Enable}
          */
         static void enable(Feature feature);
 
         /**
          * @brief Disable feature
          *
-         * @see @ref enable(), @ref setFeature(), @fn_gl{Disable}
+         * @see @ref enable(), @ref setFeature(), @fn_gl_keyword{Disable}
          */
         static void disable(Feature feature);
 
@@ -293,9 +296,11 @@ class MAGNUM_EXPORT Renderer {
          * @brief Enable or disable feature
          *
          * Convenience equivalent to the following:
-         * @code
+         *
+         * @code{.cpp}
          * enabled ? Renderer::enable(feature) : Renderer::disable(feature)
          * @endcode
+         *
          * Prefer to use @ref enable() and @ref disable() directly to avoid
          * unnecessary branching.
          */
@@ -305,6 +310,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Hint
          *
          * @see @ref setHint()
+         * @m_enum_values_as_keywords
          * @todo other hints
          */
         enum class Hint: GLenum {
@@ -335,6 +341,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Hint mode
          *
          * @see @ref setHint()
+         * @m_enum_values_as_keywords
          */
         enum class HintMode: GLenum {
             Fastest = GL_FASTEST,   /**< Most efficient option. */
@@ -346,7 +353,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Set hint
          *
          * Initial value is @ref HintMode::DontCare for all targets.
-         * @see @fn_gl{Hint}
+         * @see @fn_gl_keyword{Hint}
          */
         static void setHint(Hint target, HintMode mode);
 
@@ -357,9 +364,9 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Set clear color
          *
-         * Initial value is `{0.125f, 0.125f, 0.125f, 1.0f}`.
+         * Initial value is @cpp 0x1f1f1f_rgbf @ce.
          * @see @ref Framebuffer::clearColor() "*Framebuffer::clearColor()",
-         *      @fn_gl{ClearColor}
+         *      @fn_gl_keyword{ClearColor}
          * @deprecated_gl Prefer to use @ref Framebuffer::clearColor() "*Framebuffer::clearColor()"
          *      instead of @ref setClearColor() and
          *      @ref AbstractFramebuffer::clear() as it leads to less state
@@ -371,9 +378,10 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Set clear depth
          *
-         * Initial value is `1.0`.
+         * Initial value is @cpp 1.0 @ce.
          * @see @ref Feature::DepthTest, @ref AbstractFramebuffer::clearDepth(),
-         *      @ref AbstractFramebuffer::clearDepthStencil(), @fn_gl{ClearDepth}
+         *      @ref AbstractFramebuffer::clearDepthStencil(),
+         *      @fn_gl_keyword{ClearDepth}
          * @requires_gl See @ref setClearDepth(Float), which is available in
          *      OpenGL ES and WebGL.
          * @deprecated_gl Prefer to use @ref AbstractFramebuffer::clearDepth()
@@ -391,7 +399,8 @@ class MAGNUM_EXPORT Renderer {
          * is not available, this function behaves exactly as
          * @ref setClearDepth(Double).
          * @see @ref Feature::DepthTest, @ref AbstractFramebuffer::clearDepth(),
-         *      @ref AbstractFramebuffer::clearDepthStencil(), @fn_gl{ClearDepth}
+         *      @ref AbstractFramebuffer::clearDepthStencil(),
+         *      @fn_gl_keyword{ClearDepth}
          * @deprecated_gl Prefer to use @ref AbstractFramebuffer::clearDepth()
          *      / @ref AbstractFramebuffer::clearDepthStencil() instead of
          *      @ref setClearDepth() and @ref AbstractFramebuffer::clear() as
@@ -402,9 +411,10 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Set clear stencil
          *
-         * Initial value is `0`.
+         * Initial value is @cpp 0 @ce.
          * @see @ref Feature::StencilTest, @ref AbstractFramebuffer::clearStencil(),
-         *      @ref AbstractFramebuffer::clearDepthStencil(), @fn_gl{ClearStencil}
+         *      @ref AbstractFramebuffer::clearDepthStencil(),
+         *      @fn_gl_keyword{ClearStencil}
          * @deprecated_gl Prefer to use @ref AbstractFramebuffer::clearStencil()
          *      / @ref AbstractFramebuffer::clearDepthStencil() instead of
          *      @ref setClearStencil() and @ref AbstractFramebuffer::clear() as
@@ -420,12 +430,13 @@ class MAGNUM_EXPORT Renderer {
          * @brief Front facing polygon winding
          *
          * @see @ref setFrontFace()
+         * @m_enum_values_as_keywords
          */
         enum class FrontFace: GLenum {
-            /** @brief Counterclockwise polygons are front facing (default). */
+            /** Counterclockwise polygons are front facing (default). */
             CounterClockWise = GL_CCW,
 
-            /** @brief Clockwise polygons are front facing. */
+            /** Clockwise polygons are front facing. */
             ClockWise = GL_CW
         };
 
@@ -433,7 +444,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Set front-facing polygon winding
          *
          * Initial value is @ref FrontFace::CounterClockWise.
-         * @see @ref setFaceCullingMode(), @fn_gl{FrontFace}
+         * @see @ref setFaceCullingMode(), @fn_gl_keyword{FrontFace}
          */
         static void setFrontFace(FrontFace mode);
 
@@ -443,7 +454,7 @@ class MAGNUM_EXPORT Renderer {
          * Initial value is @ref PolygonFacing::Back. If set to both front and
          * back, only points and lines are drawn.
          * @see @ref Feature::FaceCulling, @ref setFrontFace(),
-         *      @fn_gl{CullFace}
+         *      @fn_gl_keyword{CullFace}
          */
         static void setFaceCullingMode(PolygonFacing mode);
 
@@ -452,16 +463,17 @@ class MAGNUM_EXPORT Renderer {
          * @brief Provoking vertex
          *
          * @see @ref setProvokingVertex()
+         * @m_enum_values_as_keywords
          * @requires_gl32 Extension @extension{ARB,provoking_vertex}. Older
          *      versions behave always like @ref ProvokingVertex::LastVertexConvention.
          * @requires_gl OpenGL ES and WebGL behave always like
          *      @ref ProvokingVertex::LastVertexConvention.
          */
         enum class ProvokingVertex: GLenum {
-            /** @brief Use first vertex of each polygon. */
+            /** Use first vertex of each polygon. */
             FirstVertexConvention = GL_FIRST_VERTEX_CONVENTION,
 
-            /** @brief Use last vertex of each polygon (default). */
+            /** Use last vertex of each polygon (default). */
             LastVertexConvention = GL_LAST_VERTEX_CONVENTION
         };
 
@@ -469,7 +481,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Set provoking vertex
          *
          * Initial value is @ref ProvokingVertex::LastVertexConvention.
-         * @see @fn_gl{ProvokingVertex}
+         * @see @fn_gl_keyword{ProvokingVertex}
          * @requires_gl32 Extension @extension{ARB,provoking_vertex}. Older
          *      versions behave always like the default.
          * @requires_gl OpenGL ES and WebGL behave always like the default.
@@ -482,6 +494,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Polygon mode
          *
          * @see @ref setPolygonMode()
+         * @m_enum_values_as_keywords
          * @requires_es_extension Extension @extension{NV,polygon_mode}.
          *      Otherwise behaves always like @ref PolygonMode::Fill. See
          *      @ref Mesh::setPrimitive() for possible workaround.
@@ -522,7 +535,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Set polygon drawing mode
          *
          * Initial value is @ref PolygonMode::Fill.
-         * @see @fn_gl{PolygonMode}
+         * @see @fn_gl_keyword{PolygonMode}
          * @requires_es_extension Extension @extension{NV,polygon_mode}.
          *      Otherwise behaves always like the default. See
          *      @ref Mesh::setPrimitive() for possible workaround.
@@ -545,8 +558,8 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Set line width
          *
-         * Initial value is `1.0f`.
-         * @see @fn_gl{LineWidth}
+         * Initial value is @cpp 1.0f @ce.
+         * @see @fn_gl_keyword{LineWidth}
          */
         static void setLineWidth(Float width);
 
@@ -554,8 +567,8 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Set point size
          *
-         * Initial value is `1.0f`.
-         * @see @ref Feature::ProgramPointSize, @fn_gl{PointSize}
+         * Initial value is @cpp 1.0f @ce.
+         * @see @ref Feature::ProgramPointSize, @fn_gl_keyword{PointSize}
          * @requires_gl Use `gl_PointSize` builtin vertex shader variable in
          *      OpenGL ES and WebGL instead.
          */
@@ -570,7 +583,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Set scissor rectangle
          *
          * Initial value is set to cover whole window.
-         * @see @ref Feature::ScissorTest, @fn_gl{Scissor}
+         * @see @ref Feature::ScissorTest, @fn_gl_keyword{Scissor}
          */
         static void setScissor(const Range2Di& rectangle);
 
@@ -582,6 +595,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Stencil function
          *
          * @see @ref setStencilFunction(), @ref DepthFunction
+         * @m_enum_values_as_keywords
          */
         enum class StencilFunction: GLenum {
             Never = GL_NEVER,           /**< Never pass the test. */
@@ -598,10 +612,11 @@ class MAGNUM_EXPORT Renderer {
          * @brief Stencil operation
          *
          * @see @ref setStencilOperation()
+         * @m_enum_values_as_keywords
          */
         enum class StencilOperation: GLenum {
             Keep = GL_KEEP, /**< Keep the current value. */
-            Zero = GL_ZERO, /**< Set the stencil buffer value to `0`. */
+            Zero = GL_ZERO, /**< Set the stencil buffer value to @cpp 0 @ce. */
 
             /**
              * Set the stencil value to reference value specified by
@@ -644,9 +659,9 @@ class MAGNUM_EXPORT Renderer {
          * @param facing            Affected polygon facing
          * @param function          Stencil function. Initial value is
          *      @ref StencilFunction::Always.
-         * @param referenceValue    Reference value. Initial value is `0`.
+         * @param referenceValue    Reference value. Initial value is @cpp 0 @ce.
          * @param mask              Mask for both reference and buffer value.
-         *      Initial value is all `1`s.
+         *      Initial value is all @cpp 1 @ce s.
          *
          * @see @ref Feature::StencilTest, @ref setStencilFunction(StencilFunction, Int, UnsignedInt),
          *      @ref setStencilOperation(), @fn_gl{StencilFuncSeparate}
@@ -661,7 +676,7 @@ class MAGNUM_EXPORT Renderer {
          * The same as @ref setStencilFunction(PolygonFacing, StencilFunction, Int, UnsignedInt)
          * with @p facing set to @ref PolygonFacing::FrontAndBack.
          * @see @ref Feature::StencilTest, @ref setStencilOperation(),
-         *      @fn_gl{StencilFunc}
+         *      @fn_gl_keyword{StencilFunc}
          */
         static void setStencilFunction(StencilFunction function, Int referenceValue, UnsignedInt mask);
 
@@ -676,7 +691,7 @@ class MAGNUM_EXPORT Renderer {
          *
          * Initial value for all fields is @ref StencilOperation::Keep.
          * @see @ref Feature::StencilTest, @ref setStencilOperation(StencilOperation, StencilOperation, StencilOperation),
-         *      @ref setStencilFunction(), @fn_gl{StencilOpSeparate}
+         *      @ref setStencilFunction(), @fn_gl_keyword{StencilOpSeparate}
          */
         static void setStencilOperation(PolygonFacing facing, StencilOperation stencilFail, StencilOperation depthFail, StencilOperation depthPass);
 
@@ -686,7 +701,7 @@ class MAGNUM_EXPORT Renderer {
          * The same as @ref setStencilOperation(PolygonFacing, StencilOperation, StencilOperation, StencilOperation)
          * with @p facing set to @ref PolygonFacing::FrontAndBack.
          * @see @ref Feature::StencilTest, @ref setStencilFunction(),
-         *      @fn_gl{StencilOp}
+         *      @fn_gl_keyword{StencilOp}
          */
         static void setStencilOperation(StencilOperation stencilFail, StencilOperation depthFail, StencilOperation depthPass);
 
@@ -705,7 +720,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Set depth function
          *
          * Initial value is @ref DepthFunction::Less.
-         * @see @ref Feature::DepthTest, @fn_gl{DepthFunc}
+         * @see @ref Feature::DepthTest, @fn_gl_keyword{DepthFunc}
          */
         static void setDepthFunction(DepthFunction function);
 
@@ -716,9 +731,10 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Mask color writes
          *
-         * Set to `false` to disallow writing to given color channel. Initial
-         * values are all `true`.
-         * @see @ref setDepthMask(), @ref setStencilMask(), @fn_gl{ColorMask}
+         * Set to @cpp false @ce to disallow writing to given color channel.
+         * Initial values are all @cpp true @ce.
+         * @see @ref setDepthMask(), @ref setStencilMask(),
+         *      @fn_gl_keyword{ColorMask}
          * @todo Masking only given draw buffer
          */
         static void setColorMask(GLboolean allowRed, GLboolean allowGreen, GLboolean allowBlue, GLboolean allowAlpha);
@@ -726,20 +742,21 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Mask depth writes
          *
-         * Set to `false` to disallow writing to depth buffer. Initial value
-         * is `true`.
-         * @see @ref setColorMask(), @ref setStencilMask(), @fn_gl{DepthMask}
+         * Set to @cpp false @ce to disallow writing to depth buffer. Initial
+         * value is @cpp true @ce.
+         * @see @ref setColorMask(), @ref setStencilMask(),
+         *      @fn_gl_keyword{DepthMask}
          */
         static void setDepthMask(GLboolean allow);
 
         /**
          * @brief Mask stencil writes
          *
-         * Set given bit to `0` to disallow writing stencil value for given
-         * faces to it. Initial value is all `1`s.
+         * Set given bit to @cpp 0 @ce to disallow writing stencil value for
+         * given faces to it. Initial value is all @cpp 1 @ce s.
          *
          * @see @ref setStencilMask(UnsignedInt), @ref setColorMask(),
-         *      @ref setDepthMask(), @fn_gl{StencilMaskSeparate}
+         *      @ref setDepthMask(), @fn_gl_keyword{StencilMaskSeparate}
          * @requires_gles In WebGL the mask must be the same for both front and
          *      back polygon facing.
          */
@@ -750,7 +767,7 @@ class MAGNUM_EXPORT Renderer {
          *
          * The same as calling @ref setStencilMask(PolygonFacing, UnsignedInt)
          * with `facing` set to @ref PolygonFacing::FrontAndBack.
-         * @see @fn_gl{StencilMask}
+         * @see @fn_gl_keyword{StencilMask}
          */
         static void setStencilMask(UnsignedInt allowBits);
 
@@ -767,6 +784,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Blend equation
          *
          * @see @ref setBlendEquation()
+         * @m_enum_values_as_keywords
          */
         enum class BlendEquation: GLenum {
             Add = GL_FUNC_ADD,                          /**< `source + destination` */
@@ -806,7 +824,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -818,7 +837,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -830,7 +850,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -842,7 +863,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -854,7 +876,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -866,7 +889,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -878,7 +902,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -890,7 +915,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -902,7 +928,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -914,7 +941,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -926,7 +954,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -938,7 +967,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -950,7 +980,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -962,7 +993,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -974,7 +1006,8 @@ class MAGNUM_EXPORT Renderer {
              * @ref setBlendEquation(BlendEquation).
              * @see @ref blendBarrier()
              * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-             * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+             *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
              * @requires_gles Advanced blend equations are not available in
              *      WebGL.
              */
@@ -986,6 +1019,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Blend function
          *
          * @see @ref setBlendFunction()
+         * @m_enum_values_as_keywords
          */
         enum class BlendFunction: GLenum {
             /** Zero (@f$ RGB = (0.0, 0.0, 0.0); A = 0.0 @f$) */
@@ -1117,7 +1151,7 @@ class MAGNUM_EXPORT Renderer {
          * (framebuffer). Initial value is @ref BlendEquation::Add.
          * @see @ref Feature::Blending, @ref setBlendEquation(BlendEquation, BlendEquation),
          *      @ref setBlendFunction(), @ref setBlendColor(),
-         *      @fn_gl{BlendEquation}
+         *      @fn_gl_keyword{BlendEquation}
          */
         static void setBlendEquation(BlendEquation equation);
 
@@ -1126,7 +1160,7 @@ class MAGNUM_EXPORT Renderer {
          *
          * See @ref setBlendEquation(BlendEquation) for more information.
          * @see @ref Feature::Blending, @ref setBlendFunction(),
-         *      @ref setBlendColor(), @fn_gl{BlendEquationSeparate}
+         *      @ref setBlendColor(), @fn_gl_keyword{BlendEquationSeparate}
          */
         static void setBlendEquation(BlendEquation rgb, BlendEquation alpha);
 
@@ -1139,7 +1173,7 @@ class MAGNUM_EXPORT Renderer {
          *
          * @see @ref Feature::Blending, @ref setBlendFunction(BlendFunction, BlendFunction, BlendFunction, BlendFunction),
          *      @ref setBlendEquation(), @ref setBlendColor(),
-         *      @fn_gl{BlendFunc}
+         *      @fn_gl_keyword{BlendFunc}
          * @requires_gles In WebGL, constant color and constant alpha cannot be
          *      used together as source and destination factors.
          */
@@ -1151,7 +1185,7 @@ class MAGNUM_EXPORT Renderer {
          * See @ref setBlendFunction(BlendFunction, BlendFunction) for more
          * information.
          * @see @ref Feature::Blending, @ref setBlendEquation(),
-         *      @ref setBlendColor(), @fn_gl{BlendFuncSeparate}
+         *      @ref setBlendColor(), @fn_gl_keyword{BlendFuncSeparate}
          */
         static void setBlendFunction(BlendFunction sourceRgb, BlendFunction destinationRgb, BlendFunction sourceAlpha, BlendFunction destinationAlpha);
 
@@ -1162,7 +1196,7 @@ class MAGNUM_EXPORT Renderer {
          * @ref BlendFunction::ConstantColor, @ref BlendFunction::OneMinusConstantColor,
          * @ref BlendFunction::ConstantAlpha and @ref BlendFunction::OneMinusConstantAlpha.
          * @see @ref Feature::Blending, @ref setBlendEquation(),
-         *      @ref setBlendFunction(), @fn_gl{BlendColor}
+         *      @ref setBlendFunction(), @fn_gl_keyword{BlendColor}
          */
         static void setBlendColor(const Color4& color);
 
@@ -1178,9 +1212,10 @@ class MAGNUM_EXPORT Renderer {
          * @extension2{KHR,blend_equation_advanced_coherent,blend_equation_advanced}
          * is not available or when @extension2{KHR,blend_equation_advanced_coherent,blend_equation_advanced}
          * is available and @ref Feature::BlendAdvancedCoherent is turned off.
-         * @see @ref BlendEquation, @fn_gl_extension{BlendBarrier,KHR,blend_equation_advanced}
+         * @see @ref BlendEquation, @fn_gl_extension_keyword{BlendBarrier,KHR,blend_equation_advanced}
          * @requires_extension Extension @extension{KHR,blend_equation_advanced}
-         * @requires_es_extension Extension @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
+         * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
+         *      @extension2{KHR,blend_equation_advanced,blend_equation_advanced}
          * @requires_gles Advanced blend equations are not available in WebGL.
          */
         static void blendBarrier() { glBlendBarrierKHR(); }
@@ -1195,12 +1230,13 @@ class MAGNUM_EXPORT Renderer {
          * @brief Logical operation
          *
          * @see @ref setLogicOperation()
+         * @m_enum_values_as_keywords
          * @requires_gl Logical operations on framebuffer are not available in
          *      OpenGL ES and WebGL.
          */
         enum class LogicOperation: GLenum {
-            Clear = GL_CLEAR,               /**< `0` */
-            Set = GL_SET,                   /**< `1` */
+            Clear = GL_CLEAR,               /**< @cpp 0 @ce <b></b> */
+            Set = GL_SET,                   /**< @cpp 1 @ce <b></b> */
             Copy = GL_COPY,                 /**< `source` */
             CopyInverted = GL_COPY_INVERTED,/**< `~source` */
             Noop = GL_NOOP,                 /**< `destination` */
@@ -1220,7 +1256,7 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Set logical operation
          *
-         * @see @ref Feature::LogicOperation, @fn_gl{LogicOp}
+         * @see @ref Feature::LogicOperation, @fn_gl_keyword{LogicOp}
          * @requires_gl Logical operations on framebuffer are not available in
          *      OpenGL ES and WebGL.
          */
@@ -1234,7 +1270,7 @@ class MAGNUM_EXPORT Renderer {
         /**
          * @brief Flush the pipeline
          *
-         * @see @ref finish(), @fn_gl{Flush}
+         * @see @ref finish(), @fn_gl_keyword{Flush}
          */
         static void flush() { glFlush(); }
 
@@ -1242,7 +1278,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Finish the pipeline
          *
          * Blocks until all commands in the pipeline are finished.
-         * @see @ref flush(), @fn_gl{Finish}
+         * @see @ref flush(), @fn_gl_keyword{Finish}
          */
         static void finish() { glFinish(); }
 
@@ -1252,6 +1288,7 @@ class MAGNUM_EXPORT Renderer {
          *
          * @see @ref MemoryBarriers, @ref setMemoryBarrier(),
          *      @ref setMemoryBarrierByRegion()
+         * @m_enum_values_as_keywords
          * @requires_gl42 Extension @extension{ARB,shader_image_load_store}
          * @requires_gles31 Shader image load/store is not available in OpenGL
          *      ES 3.0 and older.
@@ -1325,7 +1362,7 @@ class MAGNUM_EXPORT Renderer {
          * Calling the function ensures that operations on particular data
          * after the barrier will reflect all data modifications before the
          * barrier.
-         * @see @ref setMemoryBarrierByRegion(), @fn_gl{MemoryBarrier}
+         * @see @ref setMemoryBarrierByRegion(), @fn_gl_keyword{MemoryBarrier}
          * @requires_gl42 Extension @extension{ARB,shader_image_load_store}
          * @requires_gles31 Shader load/store is not available in OpenGL ES 3.0 and older.
          * @requires_gles Shader load/store is not available in WebGL.
@@ -1348,7 +1385,7 @@ class MAGNUM_EXPORT Renderer {
          * - @ref MemoryBarrier::TextureFetch
          * - @ref MemoryBarrier::Uniform
          *
-         * @see @fn_gl{MemoryBarrierByRegion}
+         * @see @fn_gl_keyword{MemoryBarrierByRegion}
          * @requires_gl45 Extension @extension{ARB,ES3_1_compatibility}
          * @requires_gles31 Shader load/store is not available in OpenGL ES 3.0
          *      and older.
@@ -1366,7 +1403,7 @@ class MAGNUM_EXPORT Renderer {
          * Calling the function ensures that texel fetches in drawing
          * operations after the barrier will reflect texel writes before the
          * barrier.
-         * @see @fn_gl{TextureBarrier}
+         * @see @fn_gl_keyword{TextureBarrier}
          * @requires_gl45 Extension @extension{ARB,texture_barrier}
          * @requires_gl Texture barrier is not available in OpenGL ES or WebGL.
          */
@@ -1383,6 +1420,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Error status
          *
          * @see @ref error()
+         * @m_enum_values_as_keywords
          */
         enum class Error: GLenum {
             /** No error has been recorded */
@@ -1399,7 +1437,8 @@ class MAGNUM_EXPORT Renderer {
 
             /**
              * The framebuffer object is not complete.
-             * @see AbstractFramebuffer::checkStatus()
+             * @see @ref DefaultFramebuffer::checkStatus(),
+             *      @ref Framebuffer::checkStatus()
              * @requires_gl30 Extension @extension{ARB,framebuffer_object}
              */
             InvalidFramebufferOperation = GL_INVALID_FRAMEBUFFER_OPERATION,
@@ -1412,11 +1451,11 @@ class MAGNUM_EXPORT Renderer {
              * Given operation would cause an internal stack to underflow.
              * @see @ref DebugGroup
              * @requires_gl43 Extension @extension{KHR,debug}
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension2{KHR,debug,debug}
              * @requires_gles Debug output is not available in WebGL.
              */
-            #ifndef MAGNUM_TARGET_GLES
+            #ifndef MAGNUM_TARGET_GLES2
             StackUnderflow = GL_STACK_UNDERFLOW,
             #else
             StackUnderflow = GL_STACK_UNDERFLOW_KHR,
@@ -1426,11 +1465,11 @@ class MAGNUM_EXPORT Renderer {
              * Given operation would cause an internal stack to overflow.
              * @see @ref DebugGroup
              * @requires_gl43 Extension @extension{KHR,debug}
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension2{KHR,debug,debug}
              * @requires_gles Debug output is not available in WebGL.
              */
-            #ifndef MAGNUM_TARGET_GLES
+            #ifndef MAGNUM_TARGET_GLES2
             StackOverflow = GL_STACK_OVERFLOW
             #else
             StackOverflow = GL_STACK_OVERFLOW_KHR
@@ -1444,7 +1483,7 @@ class MAGNUM_EXPORT Renderer {
          * Returns error flag, if any set. If there aren't any more error
          * flags, returns @ref Error::NoError. Thus this function should be
          * always called in a loop until it returns @ref Error::NoError.
-         * @see @fn_gl{GetError}
+         * @see @fn_gl_keyword{GetError}
          */
         static Error error() { return static_cast<Error>(glGetError()); }
 
@@ -1494,8 +1533,8 @@ class MAGNUM_EXPORT Renderer {
          * @ref Platform::Sdl2Application::Configuration::Flag::RobustAccess "Platform::*Application::Configuration::Flag::RobustAccess"
          * flag.
          *
-         * @see @ref graphicsResetStatus(), @fn_gl{Get} with
-         *      @def_gl{RESET_NOTIFICATION_STRATEGY_ARB}
+         * @see @ref graphicsResetStatus(), @fn_gl_keyword{Get} with
+         *      @def_gl_keyword{RESET_NOTIFICATION_STRATEGY_ARB}
          * @requires_gles Graphics reset notification is not available in
          *      WebGL.
          */
@@ -1505,6 +1544,7 @@ class MAGNUM_EXPORT Renderer {
          * @brief Graphics reset status
          *
          * @see @ref resetNotificationStrategy(), @ref graphicsResetStatus()
+         * @m_enum_values_as_keywords
          * @requires_gles Graphics reset notification is not available in
          *      WebGL.
          */
@@ -1567,7 +1607,7 @@ class MAGNUM_EXPORT Renderer {
          * @extension{ARB,robustness_share_group_isolation} indicates that no
          * other share group will be affected by the graphics reset.
          * @see @ref resetNotificationStrategy(),
-         *      @fn_gl_extension{GetGraphicsResetStatus,ARB,robustness}
+         *      @fn_gl_extension_keyword{GetGraphicsResetStatus,ARB,robustness}
          * @requires_gles Graphics reset notification is not available in
          *      WebGL.
          */

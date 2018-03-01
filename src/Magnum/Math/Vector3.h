@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Math::Vector3
+ * @brief Class @ref Magnum::Math::Vector3, function @ref Magnum::Math::cross()
  */
 
 #include "Magnum/Math/Vector2.h"
@@ -70,10 +70,12 @@ template<class T> class Vector3: public Vector<3, T> {
          * @brief Vector in direction of X axis (right)
          *
          * Usable for translation or rotation along given axis, for example:
-         * @code
+         *
+         * @code{.cpp}
          * Matrix4::translation(Vector3::xAxis(5.0f)); // same as Matrix4::translation({5.0f, 0.0f, 0.0f});
          * Matrix4::rotation(30.0_degf, Vector3::xAxis()); // same as Matrix::rotation(30.0_degf, {1.0f, 0.0f, 0.0f});
          * @endcode
+         *
          * @see @ref yAxis(), @ref zAxis(), @ref xScale(), @ref Color3::red(),
          *      @ref Matrix4::right()
          */
@@ -99,9 +101,11 @@ template<class T> class Vector3: public Vector<3, T> {
          * @brief Scaling vector in direction of X axis (width)
          *
          * Usable for scaling along given direction, for example:
-         * @code
+         *
+         * @code{.cpp}
          * Matrix4::scaling(Vector3::xScale(-2.0f)); // same as Matrix4::scaling({-2.0f, 1.0f, 1.0f});
          * @endcode
+         *
          * @see @ref yScale(), @ref zScale(), @ref Color3::cyan(), @ref xAxis()
          */
         constexpr static Vector3<T> xScale(T scale) { return {scale, T(1), T(1)}; }
@@ -121,17 +125,6 @@ template<class T> class Vector3: public Vector<3, T> {
          * @see @ref zAxis(), @ref Color3::yellow()
          */
         constexpr static Vector3<T> zScale(T scale) { return {T(1), T(1), scale}; }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief Math::cross(const Vector3<T>&, const Vector3<T>&)
-         * @deprecated Use @ref Math::cross(const Vector3<T>&, const Vector3<T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::cross() instead") static Vector3<T> cross(const Vector3<T>& a, const Vector3<T>& b) {
-            return Math::cross(a, b);
-        }
-        #endif
 
         /** @copydoc Vector::Vector(ZeroInitT) */
         constexpr /*implicit*/ Vector3(ZeroInitT = ZeroInit) noexcept

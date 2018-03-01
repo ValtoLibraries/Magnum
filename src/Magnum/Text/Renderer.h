@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -171,67 +171,32 @@ class MAGNUM_TEXT_EXPORT AbstractRenderer {
 Lays out the text into mesh using given font. Use of ligatures, kerning etc.
 depends on features supported by particular font and its layouter.
 
-## Usage
+@section Text-Renderer-usage Usage
 
 Immutable text (e.g. menu items, credits) can be simply rendered using static
 methods, returning result either as data arrays or as fully configured mesh.
 The text can be then drawn as usual by configuring the shader and drawing the
 mesh:
-@code
-// Font instance, received from plugin manager
-std::unique_ptr<Text::AbstractFont> font;
 
-// Configured glyph cache
-Text::GlyphCache cache;
+@snippet MagnumText.cpp Renderer-usage1
 
-Shaders::Vector2D shader;
-Buffer vertexBuffer, indexBuffer;
-Mesh mesh;
-
-// Render the text, centered
-std::tie(mesh, std::ignore) = Text::Renderer2D::render(*font, cache, 0.15f,
-    "Hello World!", vertexBuffer, indexBuffer, BufferUsage::StaticDraw, Text::Alignment::LineCenter);
-
-// Draw the text on the screen
-shader.setTransformationProjectionMatrix(projection)
-    .setColor(Color3(1.0f))
-    .setVectorTexture(glyphCache->texture());
-mesh.draw(shader);
-@endcode
-See @ref render(AbstractFont&, const GlyphCache&, Float, const std::string&, Alignment) and
-@ref render(AbstractFont&, const GlyphCache&, Float, const std::string&, Buffer&, Buffer&, BufferUsage, Alignment)
+See @ref render(AbstractFont&, const GlyphCache&, Float, const std::string&, Alignment)
+and @ref render(AbstractFont&, const GlyphCache&, Float, const std::string&, Buffer&, Buffer&, BufferUsage, Alignment)
 for more information.
 
 While this method is sufficient for one-shot rendering of static texts, for
 mutable texts (e.g. FPS counters, chat messages) there is another approach
 that doesn't recreate everything on each text change:
-@code
-std::unique_ptr<Text::AbstractFont> font;
-Text::GlyphCache cache;
-Shaders::Vector2D shader;
 
-// Initialize renderer and reserve memory for enough glyphs
-Text::Renderer2D renderer(*font, cache, 0.15f);
-renderer.reserve(32, BufferUsage::DynamicDraw, BufferUsage::StaticDraw, Text::Alignment::LineCenter);
+@snippet MagnumText.cpp Renderer-usage2
 
-// Update the text occasionally
-renderer.render("Hello World Countdown: 10");
-
-// Draw the text on the screen
-shader.setTransformationProjectionMatrix(projection)
-    .setColor(Color3(1.0f))
-    .setVectorTexture(glyphCache->texture());
-renderer.mesh().draw(shader);
-@endcode
-
-## Required OpenGL functionality
+@section Text-Renderer-required-opengl-functionality Required OpenGL functionality
 
 Mutable text rendering requires @extension{ARB,map_buffer_range} on desktop
-OpenGL (also part of OpenGL ES 3.0). If neither @extension{EXT,map_buffer_range}
-nor @extension{CHROMIUM,map_sub} is not available in ES 2.0, at least
-@extension{OES,mapbuffer} must be supported for asynchronous buffer updates.
-There is no similar extension in WebGL, thus plain (and slow) buffer updates
-are used there.
+OpenGL (also part of OpenGL ES 3.0). If @extension{EXT,map_buffer_range} is not
+available in ES 2.0, at least @extension{OES,mapbuffer} must be supported for
+asynchronous buffer updates. There is no similar extension in WebGL, thus plain
+(and slow) buffer updates are used there.
 
 @see @ref Renderer2D, @ref Renderer3D, @ref AbstractFont,
     @ref Shaders::AbstractVector
@@ -264,7 +229,9 @@ template<UnsignedInt dimensions> class MAGNUM_TEXT_EXPORT Renderer: public Abstr
         explicit Renderer(AbstractFont& font, const GlyphCache& cache, Float size, Alignment alignment = Alignment::LineLeft);
         Renderer(AbstractFont&, GlyphCache&&, Float, Alignment alignment = Alignment::LineLeft) = delete; /**< @overload */
 
+        #ifndef DOXYGEN_GENERATING_OUTPUT
         using AbstractRenderer::render;
+        #endif
 };
 
 /** @brief Two-dimensional text renderer */

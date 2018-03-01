@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,26 +43,37 @@ This application library is available on both desktop OpenGL and
 @ref MAGNUM_TARGET_GLES "OpenGL ES" on Linux. It depends on **X11** and **EGL**
 libraries and is built if `WITH_XEGLAPPLICATION` is enabled in CMake.
 
-## Bootstrap application
+@section Platform-XEglApplication-bootstrap Bootstrap application
 
 The usage is very similar to @ref Sdl2Application, for which fully contained
 base application along with CMake setup is available, see its documentation for
 more information.
 
-## General usage
+@section Platform-XEglApplication-usage General usage
 
-For CMake you need to copy `FindEGL.cmake` from `modules/` directory in Magnum
-source to `modules/` dir in your project (so it is able to find EGL), request
-`XEglApplication` component of `Magnum` package and link to
-`Magnum::XEglApplication` target.  If no other application is requested, you
-can also use generic `Magnum::Application` alias to simplify porting. See
-@ref building and @ref cmake for more information.
+In order to use this library from CMake, you need to copy `FindEGL.cmake` from
+the modules directory in Magnum source to the `modules/` dir in your project
+(so it is able to find the EGL library). Request the `XEglApplication`
+component of the `Magnum` package and link to the `Magnum::XEglApplication`
+target:
+
+@code{.cmake}
+find_package(Magnum REQUIRED XEglApplication)
+
+# ...
+target_link_libraries(your-app Magnum::XEglApplication)
+@endcode
+
+If no other application is requested, you can also use the generic
+`Magnum::Application` alias to simplify porting. Again, see @ref building and
+@ref cmake for more information.
 
 In C++ code you need to implement at least @ref drawEvent() to be able to draw
-on the screen.  The subclass can be then used directly in `main()` -- see
-convenience macro @ref MAGNUM_XEGLAPPLICATION_MAIN(). See @ref platform for
-more information.
-@code
+on the screen. The subclass can be then used directly in @cpp main() @ce
+--- see convenience macro @ref MAGNUM_XEGLAPPLICATION_MAIN(). See @ref platform
+for more information.
+
+@code{.cpp}
 class MyApplication: public Platform::XEglApplication {
     // implement required methods...
 };
@@ -70,8 +81,8 @@ MAGNUM_XEGLAPPLICATION_MAIN(MyApplication)
 @endcode
 
 If no other application header is included, this class is also aliased to
-`Platform::Application` and the macro is aliased to `MAGNUM_APPLICATION_MAIN()`
-to simplify porting.
+@cpp Platform::Application @ce and the macro is aliased to
+@cpp MAGNUM_APPLICATION_MAIN() @ce to simplify porting.
 */
 class XEglApplication: public AbstractXApplication {
     public:
@@ -94,7 +105,7 @@ class XEglApplication: public AbstractXApplication {
 
         #ifdef MAGNUM_BUILD_DEPRECATED
         /**
-         * @copybrief XEglApplication(const Arguments&, NoCreateT)
+         * @brief @copybrief XEglApplication(const Arguments&, NoCreateT)
          * @deprecated Use @ref XEglApplication(const Arguments&, NoCreateT) instead.
          */
         CORRADE_DEPRECATED("use XEglApplication(const Arguments&, NoCreateT) instead") explicit XEglApplication(const Arguments& arguments, std::nullptr_t): XEglApplication{arguments, NoCreate} {}
@@ -114,14 +125,16 @@ See @ref Magnum::Platform::XEglApplication "Platform::XEglApplication" for
 usage information. This macro abstracts out platform-specific entry point code
 and is equivalent to the following, see @ref portability-applications for more
 information.
-@code
+
+@code{.cpp}
 int main(int argc, char** argv) {
     className app({argc, argv});
     return app.exec();
 }
 @endcode
+
 When no other application header is included this macro is also aliased to
-`MAGNUM_APPLICATION_MAIN()`.
+@cpp MAGNUM_APPLICATION_MAIN() @ce.
 */
 #define MAGNUM_XEGLAPPLICATION_MAIN(className)                              \
     int main(int argc, char** argv) {                                       \

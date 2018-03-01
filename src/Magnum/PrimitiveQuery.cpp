@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,30 +34,13 @@ void PrimitiveQuery::begin() {
     AbstractQuery::begin();
 }
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-void PrimitiveQuery::begin(const Target target) {
-    #ifndef MAGNUM_TARGET_GLES
-    _index = 0;
-    #endif
-    AbstractQuery::begin(GLenum(target));
-}
-#endif
-
 #ifndef MAGNUM_TARGET_GLES
 void PrimitiveQuery::begin(const UnsignedInt index) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    CORRADE_INTERNAL_ASSERT(_target);
-    #endif
-
     glBeginQueryIndexed(_target, _index = index, _id);
 }
 #endif
 
 void PrimitiveQuery::end() {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    CORRADE_INTERNAL_ASSERT(_target);
-    #endif
-
     #ifndef MAGNUM_TARGET_GLES
     if(!_index) glEndQuery(_target);
     else glEndQueryIndexed(_target, _index);

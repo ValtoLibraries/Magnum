@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,15 +50,14 @@ namespace Magnum { namespace Platform {
 /** @nosubgrouping
 @brief Android application
 
-Application running in Android.
+Application running on Android.
 
-This application library is available only in
+This application library is available only on
 @ref CORRADE_TARGET_ANDROID "Android", see respective sections
-in @ref building-corrade-cross-android "Corrade's" and @ref building-cross-android "Magnum's"
-building documentation. It is built if `WITH_ANDROIDAPPLICATION` is enabled in
-CMake.
+in the @ref building-corrade-cross-android "Corrade" and
+@ref building-cross-android "Magnum" building documentation. It is built if `WITH_ANDROIDAPPLICATION` is enabled when building Magnum.
 
-## Bootstrap application
+@section Platform-AndroidApplication-bootstrap Bootstrap application
 
 Fully contained base application using @ref Sdl2Application for desktop build
 and @ref AndroidApplication for Android build along with full Android packaging
@@ -80,23 +79,27 @@ will create `build.xml` file for Ant and a bunch of other files. You need to
 specify the target for which you will build in the `-t` parameter. List of all
 targets can be obtained by calling `android list target`.
 
-    android update project -p . -t "android-19"
+@code{.sh}
+android update project -p . -t "android-19"
+@endcode
 
 Then create build directories for ARM and x86 and run `cmake` and build command
 in them. Set `CMAKE_PREFIX_PATH` to the directory where you have all the
 dependencies.
 
-    mkdir build-android-arm && cd build-android-arm
-    cmake .. \
-        -DCMAKE_TOOLCHAIN_FILE="../toolchains/generic/Android-ARM.cmake" \
-        -DCMAKE_PREFIX_PATH=/opt/android-ndk/platforms/android-19/arch-arm/usr
-    cmake --build .
+@code{.sh}
+mkdir build-android-arm && cd build-android-arm
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE="../toolchains/generic/Android-ARM.cmake" \
+    -DCMAKE_PREFIX_PATH=/opt/android-ndk/platforms/android-19/arch-arm/usr
+cmake --build .
 
-    mkdir build-android-x86 && cd build-android-x86
-    cmake .. \
-        -DCMAKE_TOOLCHAIN_FILE="../toolchains/generic/Android-x86.cmake" \
-        -DCMAKE_PREFIX_PATH=/opt/android-ndk/platforms/android-19/arch-x86/usr
-    cmake --build .
+mkdir build-android-x86 && cd build-android-x86
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE="../toolchains/generic/Android-x86.cmake" \
+    -DCMAKE_PREFIX_PATH=/opt/android-ndk/platforms/android-19/arch-x86/usr
+cmake --build .
+@endcode
 
 See @ref cmake for more information.
 
@@ -104,30 +107,50 @@ The compiled binaries will be put into `lib/armeabi-v7a` and `lib/x86`. You can
 then build the APK package simply by running `ant`. The resulting APK package
 can be then installed directly on the device or emulator using `adb install`.
 
-    ant debug
-    adb install bin/NativeActivity-debug.apk
+@code{.sh}
+ant debug
+adb install bin/NativeActivity-debug.apk
+@endcode
 
-## General usage
+@section Platform-AndroidApplication-usage General usage
 
-For CMake you need to copy `FindEGL.cmake` and `FindOpenGLES2.cmake` (or
-`FindOpenGLES3.cmake`) from `modules/` directory in Magnum source to `modules/`
-dir in your project (so it is able to find EGL and OpenGL ES libraries).
-Request `AndroidApplication` component of `Magnum` package and link to
-`Magnum::AndroidApplication` target. If no other application is requested, you
-can also use generic `Magnum::Application` alias to simplify porting. Again,
-see @ref building and @ref cmake for more information. Note that unlike on
-other platforms you need to create *shared library* instead of executable. The
-resulting binary then needs to be copied to `lib/armeabi-v7a` and `lib/x86`,
-you can do that automatically in CMake using the following commands:
+In order to use this library from CMake, you need to copy `FindEGL.cmake`
+and `FindOpenGLES2.cmake` (or `FindOpenGLES3.cmake`) from the `modules/`
+directory in Magnum source to the `modules/` dir in your project (so it is able
+to find EGL and OpenGL ES libraries). Request the `AndroidApplication`
+component of the `Magnum` package and link to the `Magnum::AndroidApplication`
+target:
 
-    file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}")
+@code{.cmake}
+find_package(Magnum REQUIRED)
+if(CORRADE_TARGET_ANDROID)
+    find_package(Magnum REQUIRED AndroidApplication)
+endif()
+
+# ...
+if(CORRADE_TARGET_ANDROID)
+    target_link_libraries(your-app Magnum::AndroidApplication)
+endif()
+@endcode
+
+If no other application is requested, you can also use the generic
+`Magnum::Application` alias to simplify porting. Again, see @ref building and
+@ref cmake for more information. Note that unlike on other platforms you need
+to create *shared library* instead of executable. The resulting binary then
+needs to be copied to `lib/armeabi-v7a` and `lib/x86`, you can do that
+automatically in CMake using the following commands:
+
+@code{.cmake}
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}")
+@endcode
 
 In C++ code you need to implement at least @ref drawEvent() to be able to draw
 on the screen. The subclass must be then made accessible from JNI using
 @ref MAGNUM_ANDROIDAPPLICATION_MAIN() macro. See @ref platform for more
 information.
-@code
+
+@code{.cpp}
 class MyApplication: public Platform::AndroidApplication {
     // implement required methods...
 };
@@ -135,28 +158,30 @@ MAGNUM_ANDROIDAPPLICATION_MAIN(MyApplication)
 @endcode
 
 If no other application header is included, this class is also aliased to
-`Platform::Application` and the macro is aliased to `MAGNUM_APPLICATION_MAIN()`
+@cpp Platform::Application @ce and the macro is aliased to @cpp MAGNUM_APPLICATION_MAIN() @ce
 to simplify porting.
 
-### Android packaging stuff
+@subsection Platform-AndroidApplication-packaging Android packaging stuff
 
 The application needs at least the `AndroidManifest.xml` with the following
 contents:
 
-    <?xml version="1.0" encoding="utf-8"?>
-    <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="cz.mosra.magnum.application" android:versionCode="1" android:versionName="1.0">
-        <uses-sdk android:minSdkVersion="9" />
-        <uses-feature android:glEsVersion="0x00020000" />
-        <application android:label="Magnum Android Application" android:hasCode="false">
-            <activity android:name="android.app.NativeActivity" android:label="Magnum Android Application">
-                <meta-data android:name="android.app.lib_name" android:value="{{application}}" />
-                <intent-filter>
-                    <action android:name="android.intent.action.MAIN" />
-                    <category android:name="android.intent.category.LAUNCHER" />
-                </intent-filter>
-            </activity>
-        </application>
-    </manifest>
+@code{.xml}
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="cz.mosra.magnum.application" android:versionCode="1" android:versionName="1.0">
+  <uses-sdk android:minSdkVersion="9" />
+  <uses-feature android:glEsVersion="0x00020000" />
+  <application android:label="Magnum Android Application" android:hasCode="false">
+    <activity android:name="android.app.NativeActivity" android:label="Magnum Android Application">
+      <meta-data android:name="android.app.lib_name" android:value="{{application}}" />
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
+@endcode
 
 Modify `android:label` to your liking, set unique `package` name and replace
 `{{application}}` with name of the binary file (without extension). If you plan
@@ -165,7 +190,7 @@ file will be named `NativeActivity.apk` by default, you can change that either
 by passing `-n` parameter to `android update project` or later by editing first
 line of the generated `build.xml` file.
 
-## Redirecting output to Android log buffer
+@section Platform-AndroidApplication-output-redirection Redirecting output to Android log buffer
 
 The application by default redirects @ref Corrade::Utility::Debug "Debug",
 @ref Corrade::Utility::Warning "Warning" and @ref Corrade::Utility::Error "Error"
@@ -210,7 +235,7 @@ class AndroidApplication {
 
         #ifdef MAGNUM_BUILD_DEPRECATED
         /**
-         * @copybrief AndroidApplication(const Arguments&, NoCreateT)
+         * @brief @copybrief AndroidApplication(const Arguments&, NoCreateT)
          * @deprecated Use @ref AndroidApplication(const Arguments&, NoCreateT) instead.
          */
         CORRADE_DEPRECATED("use AndroidApplication(const Arguments&, NoCreateT) instead") explicit AndroidApplication(const Arguments& arguments, std::nullptr_t): AndroidApplication{arguments, NoCreate} {}
@@ -353,9 +378,9 @@ class AndroidApplication::Configuration {
          * @brief Set window size
          * @return Reference to self (for method chaining)
          *
-         * Default is `{0, 0}`, which means that the size of the physical
-         * window will be used. If set to different value than the physical
-         * size, the surface will be scaled.
+         * Default is @cpp {0, 0} @ce, which means that the size of the
+         * physical window will be used. If set to different value than the
+         * physical size, the surface will be scaled.
          */
         Configuration& setSize(const Vector2i& size) {
             _size = size;
@@ -578,9 +603,9 @@ CORRADE_ENUMSET_OPERATORS(AndroidApplication::MouseMoveEvent::Buttons)
 
 See @ref Magnum::Platform::AndroidApplication "Platform::AndroidApplication"
 for usage information. This macro abstracts out platform-specific entry point
-code (the classic `main()` function cannot be used in Android). See
+code (the classic @cpp main() @ce function cannot be used in Android). See
 @ref portability-applications for more information. When no other application
-header is included this macro is also aliased to `MAGNUM_APPLICATION_MAIN()`.
+header is included this macro is also aliased to @cpp MAGNUM_APPLICATION_MAIN() @ce.
 */
 #define MAGNUM_ANDROIDAPPLICATION_MAIN(className)                           \
     void android_main(android_app* state) {                                 \

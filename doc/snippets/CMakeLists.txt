@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,24 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+set_directory_properties(PROPERTIES
+    CORRADE_CXX_STANDARD 11
+    CORRADE_USE_PEDANTIC_FLAGS ON)
+
+# Emscripten needs special flag to use WebGL 2
+if(CORRADE_TARGET_EMSCRIPTEN AND NOT TARGET_GLES2)
+    # TODO: give me INTERFACE_LINK_OPTIONS or something, please
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_WEBGL2=1")
+endif()
+
+add_library(snippets STATIC
+    Magnum.cpp
+    MagnumMeshTools.cpp
+    MagnumShaders.cpp
+    MagnumText.cpp)
+target_link_libraries(snippets PRIVATE Magnum)
+set_target_properties(snippets PROPERTIES FOLDER "Magnum/doc/snippets")
+
 find_package(Corrade COMPONENTS TestSuite)
 
 # TODO: causes spurious linker errors on Travis iOS build, so I'm disabling it
@@ -32,11 +50,55 @@ if(WITH_DEBUGTOOLS AND Corrade_TestSuite_FOUND AND NOT CORRADE_TARGET_IOS)
                    ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
     # CompareImage documentation snippet. I need it executable so I can
-    # copy&paste the output to the documentation. Also mot using
+    # copy&paste the output to the documentation. Also not using
     # corrade_add_test() because it shouldn't be run as part of CTest as it
     # purposedly fails.
     add_executable(debugtools-compareimage debugtools-compareimage.cpp)
     target_link_libraries(debugtools-compareimage PRIVATE MagnumDebugTools)
     target_include_directories(debugtools-compareimage PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     set_target_properties(debugtools-compareimage PROPERTIES FOLDER "Magnum/doc/snippets")
+endif()
+
+if(WITH_SDL2APPLICATION)
+    add_executable(getting-started getting-started.cpp)
+    add_executable(getting-started-blue getting-started-blue.cpp)
+    target_link_libraries(getting-started PRIVATE MagnumSdl2Application)
+    target_link_libraries(getting-started-blue PRIVATE MagnumSdl2Application)
+
+    add_library(snippets-MagnumPlatform STATIC
+        MagnumPlatform.cpp
+        Magnum-framebuffer.cpp)
+    target_link_libraries(snippets-MagnumPlatform PRIVATE MagnumSdl2Application)
+
+    set_target_properties(
+        getting-started
+        getting-started-blue
+        snippets-MagnumPlatform
+        PROPERTIES FOLDER "Magnum/doc/snippets")
+    # Otherwise it's not linked correctly. I have no idea why, but whatever.
+    if(CMAKE_VERSION VERSION_LESS 3.0)
+        find_package(SDL2 REQUIRED)
+        target_link_libraries(getting-started PRIVATE SDL2::SDL2)
+        target_link_libraries(getting-started-blue PRIVATE SDL2::SDL2)
+        target_link_libraries(snippets-MagnumPlatform PRIVATE SDL2::SDL2)
+    endif()
+endif()
+
+if(WITH_WINDOWLESSEGLAPPLICATION)
+    add_library(snippets-MagnumPlatform-custom STATIC MagnumPlatform-custom.cpp)
+    add_library(snippets-MagnumPlatform-windowless STATIC MagnumPlatform-windowless.cpp)
+    add_library(snippets-MagnumPlatform-windowless-custom STATIC MagnumPlatform-windowless-custom.cpp)
+    add_library(snippets-MagnumPlatform-windowless-thread STATIC MagnumPlatform-windowless-thread.cpp)
+
+    target_link_libraries(snippets-MagnumPlatform-custom PRIVATE MagnumWindowlessEglApplication)
+    target_link_libraries(snippets-MagnumPlatform-windowless PRIVATE MagnumWindowlessEglApplication)
+    target_link_libraries(snippets-MagnumPlatform-windowless-custom PRIVATE MagnumWindowlessEglApplication)
+    target_link_libraries(snippets-MagnumPlatform-windowless-thread PRIVATE MagnumWindowlessEglApplication)
+
+    set_target_properties(
+        snippets-MagnumPlatform-windowless
+        snippets-MagnumPlatform-windowless-custom
+        snippets-MagnumPlatform-windowless-thread
+        snippets-MagnumPlatform-custom
+        PROPERTIES FOLDER "Magnum/doc/snippets")
 endif()

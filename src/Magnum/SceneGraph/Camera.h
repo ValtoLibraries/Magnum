@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,21 +64,22 @@ displays OpenGL unit cube `[(-1, -1, -1); (1, 1, 1)]` and doesn't do any aspect
 ratio correction.
 
 Common setup example for 2D scenes:
-@code
+
+@code{.cpp}
 SceneGraph::Camera2D camera{&cameraObject};
 camera.setProjectionMatrix(Matrix3::projection({4.0f/3.0f, 1.0f}))
       .setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend);
 @endcode
 
 Common setup example for 3D scenes:
-@code
+
+@code{.cpp}
 SceneGraph::Camera3D camera{&cameraObject};
 camera.setProjectionMatrix(Matrix3::perspectiveProjection(35.0_degf, 1.0f, 0.001f, 100.0f))
       .setAspectRatioPolicy(SceneGraph::AspectRatioPolicy::Extend);
 @endcode
 
-@anchor SceneGraph-Camera-explicit-specializations
-## Explicit template specializations
+@section SceneGraph-Camera-explicit-specializations Explicit template specializations
 
 The following specializations are explicitly compiled into @ref SceneGraph
 library. For other specializations (e.g. using @ref Magnum::Double "Double"
@@ -156,43 +157,6 @@ template<UnsignedInt dimensions, class T> class Camera: public AbstractFeature<d
          */
         Camera<dimensions, T>& setProjectionMatrix(const MatrixTypeFor<dimensions, T>& matrix);
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief Set projection
-         * @deprecated Use @ref setProjectionMatrix() with @ref Matrix3::projection() instead.
-         */
-        template<UnsignedInt d = dimensions, class = typename std::enable_if<d == 2>::type> CORRADE_DEPRECATED("use setProjectionMatrix() with Matrix3::projection() instead") BasicCamera2D<T>& setProjection(const Math::Vector2<T>& size) {
-            return setProjectionMatrix(Math::Matrix3<T>::projection(size));
-        }
-
-        /**
-         * @brief Set orthographic projection
-         * @deprecated Use @ref setProjectionMatrix() with
-         *      @ref Matrix4::orthographicProjection() instead.
-         */
-        template<UnsignedInt d = dimensions, class = typename std::enable_if<d == 3>::type> CORRADE_DEPRECATED("use setProjectionMatrix() with Matrix4::orthographicProjection() instead") BasicCamera3D<T>& setOrthographic(const Math::Vector2<T>& size, T near, T far) {
-            return setProjectionMatrix(Math::Matrix4<T>::orthographicProjection(size, near, far));
-        }
-
-        /**
-         * @brief Set perspective projection
-         * @deprecated Use @ref setProjectionMatrix() with
-         *      @ref Matrix4::perspectiveProjection() instead.
-         */
-        template<UnsignedInt d = dimensions, class = typename std::enable_if<d == 3>::type> CORRADE_DEPRECATED("use setProjectionMatrix() with Matrix4::perspectiveProjection() instead") BasicCamera3D<T>& setPerspective(const Math::Vector2<T>& size, T near, T far) {
-            return setProjectionMatrix(Math::Matrix4<T>::perspectiveProjection(size, near, far));
-        }
-
-        /**
-         * @brief Set perspective projection
-         * @deprecated Use @ref setProjectionMatrix() with
-         *      @ref Matrix4::perspectiveProjection() instead.
-         */
-        template<UnsignedInt d = dimensions, class = typename std::enable_if<d == 3>::type> CORRADE_DEPRECATED("use setProjectionMatrix() with Matrix4::perspectiveProjection() instead") BasicCamera3D<T>& setPerspective(Math::Rad<T> fov, T aspectRatio, T near, T far) {
-            return setProjectionMatrix(Math::Matrix4<T>::perspectiveProjection(fov, aspectRatio, near, far));
-        }
-        #endif
-
         /**
          * @brief Size of (near) XY plane in current projection
          *
@@ -203,13 +167,16 @@ template<UnsignedInt dimensions, class T> class Camera: public AbstractFeature<d
          * @ref Platform::Sdl2Application::MouseEvent "Platform::*Application::MouseEvent")
          * to floating-point coordinates on near XY plane with origin at camera
          * position and Y up can be done using the following snippet:
-         * @code
+         *
+         * @code{.cpp}
          * Vector2 position = (Vector2{event.position()}/defaultFramebuffer.viewport().size() - Vector2{0.5f})*Vector2::yScale(-1.0f)*camera.projectionSize();
          * @endcode
+         *
          * This is position relative to camera transformation, getting absolute
          * transformation in 2D scene can be done for example using
          * @ref SceneGraph::Object::absoluteTransformation():
-         * @code
+         *
+         * @code{.cpp}
          * Vector2 absolutePosition = cameraObject->absoluteTransformation().transformPoint(position);
          * @endcode
          *
@@ -258,7 +225,7 @@ template<UnsignedInt dimensions, class T> class Camera: public AbstractFeature<d
 /**
 @brief Camera for two-dimensional scenes
 
-Convenience alternative to `Camera<2, T>`. See @ref Camera for more
+Convenience alternative to @cpp Camera<2, T> @ce. See @ref Camera for more
 information.
 @see @ref Camera2D, @ref BasicCamera3D
 */
@@ -276,7 +243,7 @@ typedef BasicCamera2D<Float> Camera2D;
 /**
 @brief Camera for three-dimensional scenes
 
-Convenience alternative to `Camera<3, T>`. See @ref Camera for more
+Convenience alternative to @cpp Camera<3, T> @ce. See @ref Camera for more
 information.
 @see @ref Camera3D, @ref BasicCamera2D
 */

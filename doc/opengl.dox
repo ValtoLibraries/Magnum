@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,11 +62,13 @@ is supported on older Intel GPUs even if they are capable of OpenGL 2.1 only).
 -   @subpage requires-gl43
 -   @subpage requires-gl44
 -   @subpage requires-gl45
+-   @subpage requires-gl46
 -   @subpage requires-extension
 -   @subpage requires-gl
 -   @subpage requires-gles20
 -   @subpage requires-gles30
 -   @subpage requires-gles31
+-   @subpage requires-gles32
 -   @subpage requires-es-extension
 -   @subpage requires-gles
 -   @subpage requires-webgl20
@@ -116,6 +118,10 @@ is supported on older Intel GPUs even if they are capable of OpenGL 2.1 only).
  * @m_footernavigation
  */
 
+/** @page requires-gl46 Functionality requiring OpenGL 4.6
+ * @m_footernavigation
+ */
+
 /** @page requires-extension Functionality requiring specific OpenGL extension
  * @m_footernavigation
  */
@@ -144,6 +150,12 @@ or desktop OpenGL.
 */
 
 /** @page requires-gles31 Functionality requiring OpenGL ES 3.1
+@m_footernavigation
+
+The following symbols are not defined when targeting OpenGL ES 2.0.
+*/
+
+/** @page requires-gles32 Functionality requiring OpenGL ES 3.2
 @m_footernavigation
 
 The following symbols are not defined when targeting OpenGL ES 2.0.

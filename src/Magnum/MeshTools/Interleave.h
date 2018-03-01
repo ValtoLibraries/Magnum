@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,29 +99,14 @@ This function takes list of attribute arrays and returns them interleaved, so
 data for each attribute are in continuous place in memory.
 
 Example usage:
-@code
-MeshPrimitive primitive;
-std::vector<Vector3> positions;
-std::vector<Vector2> textureCoordinates;
 
-Buffer vertexBuffer;
-vertexBuffer.setData(MeshTools::interleave(positions, textureCoordinates), BufferUsage::StaticDraw);
-
-Mesh mesh;
-mesh.setPrimitive(primitive)
-    .setCount(positions.count())
-    .addVertexBuffer(vertexBuffer, 0, MyShader::Position{}, MyShader::TextureCoordinates{});
-@endcode
+@snippet MagnumMeshTools.cpp interleave1
 
 It's often desirable to align data for one vertex on 32bit boundaries. To
 achieve that, you can specify gaps between the attributes:
-@code
-std::vector<Vector4> positions;
-std::vector<UnsignedShort> weights;
-std::vector<Color3ub> vertexColors;
 
-auto data = MeshTools::interleave(positions, weights, 2, textureCoordinates, 1);
-@endcode
+@snippet MagnumMeshTools.cpp interleave2
+
 All gap bytes are set zero. This way vertex stride is 24 bytes, without gaps it
 would be 21 bytes, causing possible performance loss.
 
@@ -130,7 +115,7 @@ would be 21 bytes, causing possible performance loss.
 @note The only requirements to attribute array type is that it must have
     typedef `T::value_type`, forward iterator (to be used with range-based
     for) and function `size()` returning count of elements. In most cases it
-    will be `std::vector` or `std::array`.
+    will be @ref std::vector or @ref std::array.
 
 @see @ref interleaveInto()
 */

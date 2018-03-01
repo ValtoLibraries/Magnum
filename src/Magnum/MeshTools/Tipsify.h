@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,7 +68,7 @@ class MAGNUM_MESHTOOLS_EXPORT Tipsify {
 
 Optimizes the mesh for vertex-bound applications by rearranging its index
 array for beter usage of post-transform vertex cache. Algorithm used:
-*Pedro V. Sander, Diego Nehab, and Joshua Barczak - Fast Triangle Reordering
+*Pedro V. Sander, Diego Nehab, and Joshua Barczak --- Fast Triangle Reordering
 for Vertex Locality and Reduced Overdraw, SIGGRAPH 2007,
 http://gfx.cs.princeton.edu/pubs/Sander_2007_%3ETR/index.php*.
 @todo Ability to compute vertex count automatically

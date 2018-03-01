@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,7 +104,7 @@ auto MagnumFont::doOpenData(const std::vector<std::pair<std::string, Containers:
         Error() << "Text::MagnumFont::openData(): cannot open image file";
         return {};
     }
-    std::optional<Trade::ImageData2D> image = importer.image2D(0);
+    Containers::Optional<Trade::ImageData2D> image = importer.image2D(0);
     if(!image) {
         Error() << "Text::MagnumFont::openData(): cannot load image file";
         return {};
@@ -135,7 +135,7 @@ auto MagnumFont::doOpenFile(const std::string& filename, Float) -> Metrics {
         Error() << "Text::MagnumFont::openFile(): cannot open image file" << imageFilename;
         return {};
     }
-    std::optional<Trade::ImageData2D> image = importer.image2D(0);
+    Containers::Optional<Trade::ImageData2D> image = importer.image2D(0);
     if(!image) {
         Error() << "Text::MagnumFont::openFile(): cannot load image file";
         return {};

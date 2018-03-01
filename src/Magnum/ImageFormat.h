@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,7 @@
  */
 #endif
 
-#include <Magnum/OpenGL.h>
+#include "Magnum/OpenGL.h"
 
 #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 namespace Magnum {
@@ -41,6 +41,7 @@ namespace Magnum {
 
 @see @ref Texture::bindImage() "*Texture::bindImage()",
     @ref Texture::bindImageLayered() "*Texture::bindImageLayered()"
+@m_enum_values_as_keywords
 @requires_gl42 Extension @extension{ARB,shader_image_load_store}
 @requires_gles31 Shader image load/store is not available in OpenGL ES 3.0 and
     older.
@@ -57,6 +58,7 @@ enum class ImageAccess: GLenum {
 
 @see @ref Texture::bindImage() "*Texture::bindImage()",
     @ref Texture::bindImageLayered() "*Texture::bindImageLayered()"
+@m_enum_values_as_keywords
 @requires_gl42 Extension @extension{ARB,shader_image_load_store}
 @requires_gles31 Shader image load/store is not available in OpenGL ES 3.0 and
     older.

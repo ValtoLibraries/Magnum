@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -379,13 +379,14 @@ void Framebuffer::textureCubeMapImplementationDSA(const BufferAttachment attachm
 
 #if !defined(MAGNUM_TARGET_WEBGL) && !defined(MAGNUM_TARGET_GLES2)
 void Framebuffer::textureImplementationDefault(BufferAttachment attachment, GLuint textureId, GLint mipLevel) {
-    #ifndef MAGNUM_TARGET_GLES
-    glFramebufferTexture
-    #else
-    glFramebufferTextureEXT
-    #endif
-        (GLenum(bindInternal()), GLenum(attachment), textureId, mipLevel);
+    glFramebufferTexture(GLenum(bindInternal()), GLenum(attachment), textureId, mipLevel);
 }
+
+#ifdef MAGNUM_TARGET_GLES
+void Framebuffer::textureImplementationEXT(BufferAttachment attachment, GLuint textureId, GLint mipLevel) {
+    glFramebufferTextureEXT(GLenum(bindInternal()), GLenum(attachment), textureId, mipLevel);
+}
+#endif
 #endif
 
 #ifndef MAGNUM_TARGET_GLES

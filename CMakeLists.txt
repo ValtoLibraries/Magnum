@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,14 +25,12 @@
 
 cmake_minimum_required(VERSION 2.8.12)
 
-# Configuration fails on < 3.4 if only C++ is enabled (CheckFunctionExists
-# macro called from FindX11)
-if(NOT CMAKE_VERSION VERSION_LESS 3.4.0)
-    set(LANG CXX)
+# CMake policies. 0025 needs to be before project(), so putting all there.
+# Use AppleClang instead of Clang on Apple
+if(POLICY CMP0025)
+    cmake_policy(SET CMP0025 NEW)
 endif()
-project(Magnum ${LANG})
-
-# CMake policies: don't treat imported targets with :: as files
+# Don't treat imported targets with :: as files
 if(POLICY CMP0028)
     cmake_policy(SET CMP0028 NEW)
 endif()
@@ -44,6 +42,13 @@ endif()
 if(POLICY CMP0054)
     cmake_policy(SET CMP0054 NEW)
 endif()
+
+# Configuration fails on < 3.4 if only C++ is enabled (CheckFunctionExists
+# macro called from FindX11)
+if(NOT CMAKE_VERSION VERSION_LESS 3.4.0)
+    set(LANG CXX)
+endif()
+project(Magnum ${LANG})
 
 # Use folders for nice tree in Visual Studio and XCode
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -142,7 +147,7 @@ endif()
 
 # Platform-independent (almost) application libraries
 if(NOT CORRADE_TARGET_ANDROID)
-    option(WITH_GLFWAPPLICATION "Build GlfwApplication library")
+    option(WITH_GLFWAPPLICATION "Build GlfwApplication library" OFF)
     cmake_dependent_option(WITH_GLUTAPPLICATION "Build GlutApplication library" OFF "NOT TARGET_GLES" OFF)
     option(WITH_SDL2APPLICATION "Build Sdl2Application library" OFF)
 endif()
@@ -336,6 +341,10 @@ set(MAGNUM_PLUGINS_IMPORTER_RELEASE_DIR ${MAGNUM_PLUGINS_RELEASE_DIR}/importers)
 set(MAGNUM_PLUGINS_AUDIOIMPORTER_DIR ${MAGNUM_PLUGINS_DIR}/audioimporters)
 set(MAGNUM_PLUGINS_AUDIOIMPORTER_DEBUG_DIR ${MAGNUM_PLUGINS_DEBUG_DIR}/audioimporters)
 set(MAGNUM_PLUGINS_AUDIOIMPORTER_RELEASE_DIR ${MAGNUM_PLUGINS_RELEASE_DIR}/audioimporters)
+
+# Library version
+set(MAGNUM_LIBRARY_VERSION 1.0)
+set(MAGNUM_LIBRARY_SOVERSION 1)
 
 add_subdirectory(modules)
 add_subdirectory(src)

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,41 +50,16 @@ value passed to @ref setSmoothness(). You need to provide @ref Position and
 @ref setVectorTexture().
 
 @image html shaders-distancefieldvector.png
-@image latex shaders-distancefieldvector.png
 
-## Example usage
+@section Shaders-DistanceFieldVector-usage Example usage
 
 Common mesh setup:
-@code
-struct Vertex {
-    Vector2 position;
-    Vector2 textureCoordinates;
-};
-Vertex data[] = { ... };
 
-Buffer vertices;
-vertices.setData(data, BufferUsage::StaticDraw);
-
-Mesh mesh;
-mesh.addVertexBuffer(vertices, 0,
-    Shaders::DistanceFieldVector2D::Position{},
-    Shaders::DistanceFieldVector2D::TextureCoordinates{});
-@endcode
+@snippet MagnumShaders.cpp DistanceFieldVector-usage1
 
 Common rendering setup:
-@code
-Matrix3 transformationMatrix, projectionMatrix;
-Texture2D texture;
 
-Shaders::DistanceFieldVector2D shader;
-shader.setColor(Color3::fromHSV(216.0_degf, 0.85f, 1.0f))
-    .setOutlineColor(Color3{0.95f})
-    .setOutlineRange(0.6f, 0.4f)
-    .setVectorTexture(texture)
-    .setTransformationProjectionMatrix(projectionMatrix*transformationMatrix);
-
-mesh.draw(shader);
-@endcode
+@snippet MagnumShaders.cpp DistanceFieldVector-usage2
 
 @see @ref shaders, @ref DistanceFieldVector2D, @ref DistanceFieldVector3D
 @todo Use fragment shader derivations to have proper smoothness in perspective/
@@ -148,12 +123,12 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT DistanceFieldVector
          * @return Reference to self (for method chaining)
          *
          * Parameter @p start describes where fill ends and possible outline
-         * starts. Initial value is `0.5f`, larger values will make the vector
-         * art look thinner, smaller will make it look thicker.
+         * starts. Initial value is @cpp 0.5f @ce, larger values will make the
+         * vector art look thinner, smaller will make it look thicker.
          *
          * Parameter @p end describes where outline ends. If set to value
          * larger than @p start the outline is not drawn. Initial value is
-         * `1.0f`.
+         * @cpp 1.0f @ce.
          *
          * @see @ref setOutlineColor()
          */
@@ -168,7 +143,7 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT DistanceFieldVector
          *
          * Larger values will make edges look less aliased (but blurry),
          * smaller values will make them look more crisp (but possibly
-         * aliased). Initial value is `0.04f`.
+         * aliased). Initial value is @cpp 0.04f @ce.
          */
         DistanceFieldVector& setSmoothness(Float value) {
             AbstractShaderProgram::setUniform(_smoothnessUniform, value);

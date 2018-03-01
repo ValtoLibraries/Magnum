@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,33 +23,23 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#include <Magnum/Context.h>
-#include <Magnum/DefaultFramebuffer.h>
-#include <Magnum/Renderer.h>
-#include <Magnum/Version.h>
-#include <Magnum/Math/Color.h>
-#include <Magnum/Platform/Sdl2Application.h>
+#include <Magnum/Platform/Context.h>
 
 using namespace Magnum;
-using namespace Magnum::Math::Literals;
 
-class Hello: public Platform::Application {
-public:
-    explicit Hello(const Arguments& arguments);
+/* [custom] */
+int main() {
+    // Create OpenGL context ...
 
-private:
-    void drawEvent() override;
-};
+    {
+        /* Initialize Magnum */
+        Platform::Context context;
 
-Hello::Hello(const Arguments& arguments): Platform::Application(arguments) {
-    Renderer::setClearColor(Color3::fromHSV(216.0_degf, 0.85f, 1.0f));
-    Debug() << "Hello! This application is running on" << Context::current().version()
-            << "using" << Context::current().rendererString();
+        // Main loop ...
+
+        /* Magnum context gets destroyed */
+    }
+
+    // Delete OpenGL context ...
 }
-
-void Hello::drawEvent() {
-    defaultFramebuffer.clear(FramebufferClear::Color);
-    swapBuffers();
-}
-
-MAGNUM_APPLICATION_MAIN(Hello)
+/* [custom] */

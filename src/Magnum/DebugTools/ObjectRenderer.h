@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,7 @@ class ObjectRendererOptions {
          * @brief Set size of the rendered axes
          * @return Reference to self (for method chaining)
          *
-         * Default is `1.0f`.
+         * Default is @cpp 1.0f @ce.
          */
         ObjectRendererOptions& setSize(Float size) {
             _size = size;
@@ -69,11 +69,11 @@ class ObjectRendererOptions {
 Visualizes object position, rotation and scale using colored axes. See
 @ref debug-tools-renderers for more information.
 
-@anchor DebugTools-ObjectRenderer-usage
-## Basic usage
+@section DebugTools-ObjectRenderer-usage Basic usage
 
 Example code:
-@code
+
+@code{.cpp}
 // Create some options
 DebugTools::ResourceManager::instance().set("my", DebugTools::ObjectRendererOptions().setSize(0.3f));
 

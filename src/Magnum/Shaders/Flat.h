@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,68 +60,28 @@ texturing is enabled.
 For coloring the texture based on intensity you can use the @ref Vector shader.
 
 @image html shaders-flat.png
-@image latex shaders-flat.png
 
-## Example usage
+@section Shaders-Flat-usage Example usage
 
-### Colored mesh
-
-Common mesh setup:
-@code
-struct Vertex {
-    Vector3 position;
-};
-Vertex data[] = { ... };
-
-Buffer vertices;
-vertices.setData(data, BufferUsage::StaticDraw);
-
-Mesh mesh;
-mesh.addVertexBuffer(vertices, 0, Shaders::Flat3D::Position{});
-@endcode
-
-Common rendering setup:
-@code
-Matrix4 transformationMatrix = Matrix4::translation(Vector3::zAxis(-5.0f));
-Matrix4 projectionMatrix = Matrix4::perspectiveProjection(35.0_degf, 1.0f, 0.001f, 100.0f);
-
-Shaders::Flat3D shader;
-shader.setColor(Color3::fromHSV(216.0_degf, 0.85f, 1.0f))
-    .setTransformationProjectionMatrix(projectionMatrix*transformationMatrix);
-
-mesh.draw(shader);
-@endcode
-
-### Textured mesh
+@subsection Shaders-Flat-usage-colored Colored mesh
 
 Common mesh setup:
-@code
-struct Vertex {
-    Vector3 position;
-    Vector2 textureCoordinates;
-};
-Vertex data[] = { ... };
 
-Buffer vertices;
-vertices.setData(data, BufferUsage::StaticDraw);
-
-Mesh mesh;
-mesh.addVertexBuffer(vertices, 0,
-    Shaders::Flat3D::Position{},
-    Shaders::Flat3D::TextureCoordinates{});
-@endcode
+@snippet MagnumShaders.cpp Flat-usage-colored1
 
 Common rendering setup:
-@code
-Matrix4 transformationMatrix, projectionMatrix;
-Texture2D texture;
 
-Shaders::Flat3D shader{Shaders::Flat3D::Textured};
-shader.setTransformationProjectionMatrix(projectionMatrix*transformationMatrix)
-    .setTexture(texture);
+@snippet MagnumShaders.cpp Flat-usage-colored2
 
-mesh.draw(shader);
-@endcode
+@subsection Shaders-Flat-usage-textured Textured mesh
+
+Common mesh setup:
+
+@snippet MagnumShaders.cpp Flat-usage-textured1
+
+Common rendering setup:
+
+@snippet MagnumShaders.cpp Flat-usage-textured2
 
 @see @ref shaders, @ref Flat2D, @ref Flat3D
 */
@@ -198,8 +158,9 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public Abstra
          * @brief Set color
          * @return Reference to self (for method chaining)
          *
-         * If @ref Flag::Textured is set, default value is `{1.0f, 1.0f, 1.0f}`
-         * and the color will be multiplied with texture.
+         * If @ref Flag::Textured is set, default value is
+         * @cpp 0xffffffff_rgbaf @ce and the color will be multiplied with
+         * texture.
          * @see @ref setTexture()
          */
         Flat<dimensions>& setColor(const Color4& color){

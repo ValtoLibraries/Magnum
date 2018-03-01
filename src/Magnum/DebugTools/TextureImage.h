@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,7 +44,7 @@ is available, it's just an alias to @ref Texture2D::subImage().
 
 Note that only @ref Magnum::PixelFormat "PixelFormat" and @ref PixelType values
 that are marked as framebuffer readable are supported. In addition, on OpenGL
-ES 3.0, images with @ref PixelType::Float are supported -- they are
+ES 3.0, images with @ref PixelType::Float are supported --- they are
 reinterpreted as @ref PixelType::UnsignedInt using additional shader and
 `floatBitsToUint()` GLSL function and then reinterpreted back to
 @ref PixelType::Float when read to client memory.
@@ -55,7 +55,8 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(Texture2D& texture, Int level, con
 @brief Read range of given texture mip level to image
 
 Convenience alternative to the above, example usage:
-@code
+
+@code{.cpp}
 Image2D image = DebugTools::textureSubImage(texture, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte});
 @endcode
 */
@@ -77,7 +78,8 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(CubeMapTexture& texture, CubeMapCo
 @brief Read range of given cube map texture coordinate mip level to image
 
 Convenience alternative to the above, example usage:
-@code
+
+@code{.cpp}
 Image2D image = DebugTools::textureSubImage(texture, CubeMapCoordinate::PositiveX, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte});
 @endcode
 */
@@ -103,7 +105,8 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(Texture2D& texture, Int level, con
 @brief Read range of given texture mip level to buffer image
 
 Convenience alternative to the above, example usage:
-@code
+
+@code{.cpp}
 BufferImage2D image = DebugTools::textureSubImage(texture, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte}, BufferUsage::StaticRead);
 @endcode
 */
@@ -127,7 +130,8 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(CubeMapTexture& texture, CubeMapCo
 @brief Read range of given cube map texture coordinate mip level to buffer image
 
 Convenience alternative to the above, example usage:
-@code
+
+@code{.cpp}
 BufferImage2D image = DebugTools::textureSubImage(texture, CubeMapCoordinate::PositiveX, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte}, BufferUsage::StaticRead);
 @endcode
 */

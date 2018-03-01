@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -164,9 +164,9 @@ have to add a *feature* to it.
 Magnum provides the following builtin features. See documentation of each class
 for more detailed information and usage examples:
 
--   @ref SceneGraph::AbstractCamera "SceneGraph::Camera*D" --- Handles
-    projection matrix, aspect ratio correction etc.. Used for rendering parts
-    of the scene.
+-   @ref SceneGraph::Camera "SceneGraph::Camera*D" --- Handles projection
+    matrix, aspect ratio correction etc.. Used for rendering parts of the
+    scene.
 -   @ref SceneGraph::Drawable "SceneGraph::Drawable*D" --- Adds drawing
     functionality to given object. Group of drawables can be then rendered
     using the camera feature.

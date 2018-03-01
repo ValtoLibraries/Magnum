@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,10 +33,6 @@
 
 #include "Magnum/AbstractQuery.h"
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include <Corrade/Utility/Macros.h>
-#endif
-
 #ifndef MAGNUM_TARGET_GLES2
 namespace Magnum {
 
@@ -45,20 +41,9 @@ namespace Magnum {
 
 Queries count of generated primitives from vertex shader, geometry shader or
 transform feedback. Example usage:
-@code
-PrimitiveQuery q;
 
-q.begin(PrimitiveQuery::Target::PrimitivesGenerated);
-// rendering...
-q.end();
+@snippet Magnum.cpp PrimitiveQuery-usage
 
-if(!q.resultAvailable()) {
-    // do some work until to give OpenGL some time...
-}
-
-// ...or block until the result is available
-UnsignedInt primitiveCount = q.result<UnsignedInt>();
-@endcode
 @see @ref SampleQuery, @ref TimeQuery, @ref TransformFeedback
 @requires_gl30 Extension @extension{EXT,transform_feedback}
 @requires_gles30 Only sample queries are available in OpenGL ES 2.0.
@@ -66,7 +51,12 @@ UnsignedInt primitiveCount = q.result<UnsignedInt>();
 */
 class MAGNUM_EXPORT PrimitiveQuery: public AbstractQuery {
     public:
-        /** @brief Query target */
+        /**
+         * @brief Query target
+         *
+         * @see @ref PrimitiveQuery(Target)
+         * @m_enum_values_as_keywords
+         */
         enum class Target: GLenum {
             #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
             /**
@@ -76,7 +66,7 @@ class MAGNUM_EXPORT PrimitiveQuery: public AbstractQuery {
              * @ref result<UnsignedInt>() or @ref result<Int>() to retrieve the
              * result.
              * @requires_gles30 Not defined in OpenGL ES 2.0.
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension{EXT,geometry_shader}
              * @requires_gles Geometry shaders are not available in WebGL.
              */
@@ -101,22 +91,22 @@ class MAGNUM_EXPORT PrimitiveQuery: public AbstractQuery {
              * Transform feedback overflow. When used with @ref begin(UnsignedInt),
              * the index must be `0`. Use @ref result<bool>() to retrieve the
              * result.
-             * @requires_extension Extension @extension{ARB,transform_feedback_overflow_query}
+             * @requires_gl46 Extension @extension{ARB,transform_feedback_overflow_query}
              * @requires_gl Transform feedback overflow query is not available
              *      in OpenGL ES or WebGL.
              */
-            TransformFeedbackOverflow = GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB,
+            TransformFeedbackOverflow = GL_TRANSFORM_FEEDBACK_OVERFLOW,
 
             /**
              * Transform feedback stream overflow. When used with
              * @ref begin(UnsignedInt), the index must be lower than
              * @ref TransformFeedback::maxVertexStreams(). Use @ref result<bool>()
              * to retrieve the result.
-             * @requires_extension Extension @extension{ARB,transform_feedback_overflow_query}
+             * @requires_gl46 Extension @extension{ARB,transform_feedback_overflow_query}
              * @requires_gl Transform feedback overflow query is not available
              *      in OpenGL ES or WebGL.
              */
-            TransformFeedbackStreamOverflow = GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB
+            TransformFeedbackStreamOverflow = GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW
             #endif
         };
 
@@ -136,14 +126,6 @@ class MAGNUM_EXPORT PrimitiveQuery: public AbstractQuery {
             return PrimitiveQuery{id, target, flags};
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief PrimitiveQuery(Target)
-         * @deprecated Use @ref PrimitiveQuery(Target) instead.
-         */
-        CORRADE_DEPRECATED("use PrimitiveQuery(Target) instead") explicit PrimitiveQuery() {}
-        #endif
-
         /**
          * @brief Constructor
          *
@@ -151,7 +133,8 @@ class MAGNUM_EXPORT PrimitiveQuery: public AbstractQuery {
          * (part of OpenGL 4.5) is not available, the query is created on first
          * use.
          * @see @ref PrimitiveQuery(NoCreateT), @ref wrap(),
-         *      @fn_gl{CreateQueries}, eventually @fn_gl{GenQueries}
+         *      @fn_gl_keyword{CreateQueries}, eventually
+         *      @fn_gl_keyword{GenQueries}
          */
         explicit PrimitiveQuery(Target target): AbstractQuery(GLenum(target)) {}
 
@@ -172,25 +155,17 @@ class MAGNUM_EXPORT PrimitiveQuery: public AbstractQuery {
          * @brief Begin query
          *
          * Begins counting until @ref end() is called. Equivalent to calling
-         * @ref begin(UnsignedInt) with @p index set to `0`.
-         * @see @fn_gl{BeginQuery}
+         * @ref begin(UnsignedInt) with @p index set to @cpp 0 @ce.
+         * @see @fn_gl_keyword{BeginQuery}
          */
         void begin();
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief begin()
-         * @deprecated Use @ref begin() instead.
-         */
-        CORRADE_DEPRECATED("use begin() instead") void begin(Target target);
-        #endif
 
         #ifndef MAGNUM_TARGET_GLES
         /**
          * @brief Begin indexed query
          *
          * Begins counting until @ref end() is called.
-         * @see @fn_gl{BeginQueryIndexed}
+         * @see @fn_gl_keyword{BeginQueryIndexed}
          * @requires_gl40 Extension @extension{ARB,transform_feedback3}
          * @requires_gl Indexed queries are not available in OpenGL ES or WebGL.
          */
@@ -203,7 +178,7 @@ class MAGNUM_EXPORT PrimitiveQuery: public AbstractQuery {
          * Ends the non-indexed or indexed query started with @ref begin() or
          * @ref begin(UnsignedInt). The result can be then retrieved by calling
          * @ref result().
-         * @see @fn_gl{EndQuery}, @fn_gl2{EndQueryIndexed,BeginQueryIndexed}
+         * @see @fn_gl_keyword{EndQuery}, @fn_gl2_keyword{EndQueryIndexed,BeginQueryIndexed}
          * @requires_gl40 Extension @extension{ARB,transform_feedback3} for
          *      indexed queries
          * @requires_gl Indexed queries are not available in OpenGL ES or

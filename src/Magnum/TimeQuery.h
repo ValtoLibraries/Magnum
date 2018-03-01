@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,10 +33,6 @@
 
 #include "Magnum/AbstractQuery.h"
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include <Corrade/Utility/Macros.h>
-#endif
-
 #ifndef MAGNUM_TARGET_WEBGL
 namespace Magnum {
 
@@ -46,40 +42,28 @@ namespace Magnum {
 Queries timestamp after all previous OpenGL calls have been processed. It can
 query either duration of sequence of commands or absolute timestamp. Example
 usage of both methods:
-@code
-TimeQuery q1, q2;
-q1.begin(TimeQuery::Target::TimeElapsed);
-// rendering...
-q1.end();
-q2.begin(TimeQuery::Target::TimeElapsed);
-// another rendering...
-q2.end();
-UnsignedInt timeElapsed1 = q1.result<UnsignedInt>();
-UnsignedInt timeElapsed2 = q2.result<UnsignedInt>();
-@endcode
-@code
-TimeQuery q1, q2, q3;
-q1.timestamp();
-// rendering...
-q2.timestamp();
-// another rendering...
-q3.timestamp();
-UnsignedInt tmp = q2.result<UnsignedInt>();
-UnsignedInt timeElapsed1 = tmp-q1.result<UnsignedInt>();
-UnsignedInt timeElapsed2 = q3.result<UnsignedInt>()-tmp;
-@endcode
+
+@snippet Magnum.cpp TimeQuery-usage1
+
+@snippet Magnum.cpp TimeQuery-usage2
+
 Using the latter results in fewer OpenGL calls when doing more measures.
+
 @requires_gl33 Extension @extension{ARB,timer_query}
 @requires_es_extension Extension @extension{EXT,disjoint_timer_query}
 @requires_gles Time query is not available in WebGL.
 
 @see @ref PrimitiveQuery, @ref SampleQuery
 @todo timestamp with glGet + example usage
-@todo @extension{EXT,disjoint_timer_query} -- GL_GPU_DISJOINT_EXT support? where?
+@todo @extension{EXT,disjoint_timer_query} --- GL_GPU_DISJOINT_EXT support? where?
 */
 class TimeQuery: public AbstractQuery {
     public:
-        /** @brief Query target */
+        /**
+         * @brief Query target
+         *
+         * @m_enum_values_as_keywords
+         */
         enum class Target: GLenum {
             /**
              * Elapsed time. Use @ref result<UnsignedLong>() or @ref result<Long>()
@@ -104,14 +88,6 @@ class TimeQuery: public AbstractQuery {
             #endif
         };
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief TimeQuery(Target)
-         * @deprecated Use @ref TimeQuery(Target) instead.
-         */
-        CORRADE_DEPRECATED("use TimeQuery(Target) instead") explicit TimeQuery() {}
-        #endif
-
         /**
          * @brief Wrap existing OpenGL time query object
          * @param id            OpenGL time query ID
@@ -134,8 +110,8 @@ class TimeQuery: public AbstractQuery {
          * Creates new OpenGL query object. If @extension{ARB,direct_state_access}
          * (part of OpenGL 4.5) is not available, the query is created on first
          * use.
-         * @see @ref TimeQuery(NoCreateT), @ref wrap(), @fn_gl{CreateQueries},
-         *      eventually @fn_gl{GenQueries}
+         * @see @ref TimeQuery(NoCreateT), @ref wrap(), @fn_gl_keyword{CreateQueries},
+         *      eventually @fn_gl_keyword{GenQueries}
          */
         explicit TimeQuery(Target target): AbstractQuery(GLenum(target)) {}
 
@@ -169,7 +145,7 @@ class TimeQuery: public AbstractQuery {
          *
          * Use @ref result<UnsignedLong>() or @ref result<Long>() to retrieve
          * the result.
-         * @see @fn_gl{QueryCounter} with @def_gl{TIMESTAMP}
+         * @see @fn_gl_keyword{QueryCounter} with @def_gl{TIMESTAMP}
          */
         void timestamp() {
             #ifndef MAGNUM_TARGET_GLES
@@ -180,18 +156,6 @@ class TimeQuery: public AbstractQuery {
             CORRADE_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
             #endif
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief AbstractQuery::begin()
-         * @deprecated Use @ref AbstractQuery::begin() instead.
-         */
-        CORRADE_DEPRECATED("use begin() instead") void begin(Target target) {
-            AbstractQuery::begin(GLenum(target));
-        }
-
-        using AbstractQuery::begin;
-        #endif
 
     private:
         explicit TimeQuery(GLuint id, Target target, ObjectFlags flags) noexcept: AbstractQuery{id, GLenum(target), flags} {}

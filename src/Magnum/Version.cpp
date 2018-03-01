@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,7 @@ Debug& operator<<(Debug& debug, Version value) {
         _c(GL430, "OpenGL 4.3")
         _c(GL440, "OpenGL 4.4")
         _c(GL450, "OpenGL 4.5")
+        _c(GL460, "OpenGL 4.6")
         #endif
         #ifdef MAGNUM_TARGET_WEBGL
         _c(GLES200, "WebGL 1.0")
@@ -55,6 +56,7 @@ Debug& operator<<(Debug& debug, Version value) {
         _c(GLES200, "OpenGL ES 2.0")
         _c(GLES300, "OpenGL ES 3.0")
         _c(GLES310, "OpenGL ES 3.1")
+        _c(GLES320, "OpenGL ES 3.2")
         #endif
         #undef _c
         /* LCOV_EXCL_STOP */

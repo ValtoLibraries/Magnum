@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -85,9 +85,11 @@ namespace Magnum {
 
 @m_footernavigation
 
+@m_div{m-button m-primary} <a href="http://magnum.graphics/showcase/magnum-info/">@m_div{m-big}Live web version @m_enddiv @m_div{m-small} uses WebAssembly & WebGL @m_enddiv </a> @m_enddiv
+
 @section magnum-info-usage Usage
 
-@code{.shell-session}
+@code{.sh}
 magnum-info [--magnum-...] [-h|--help] [-s|--short] [--all-extensions]
     [--limits]
 @endcode
@@ -293,10 +295,12 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
         Version::GL430,
         Version::GL440,
         Version::GL450,
+        Version::GL460,
         #else
         Version::GLES300,
         #ifndef MAGNUM_TARGET_WEBGL
         Version::GLES310,
+        Version::GLES320,
         #endif
         #endif
         Version::None
@@ -690,6 +694,13 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
     }
     #endif
 
+    #ifndef MAGNUM_TARGET_GLES
+    if(c.isExtensionSupported<Extensions::GL::ARB::texture_filter_anisotropic>()) {
+        _h(ARB::texture_filter_anisotropic)
+
+        _l(Sampler::maxMaxAnisotropy())
+    } else
+    #endif
     if(c.isExtensionSupported<Extensions::GL::EXT::texture_filter_anisotropic>()) {
         _h(EXT::texture_filter_anisotropic)
 

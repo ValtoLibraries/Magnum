@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 
 #include "Magnum/configure.h"
 
+#ifndef DOXYGEN_GENERATING_OUTPUT
 #ifndef MAGNUM_BUILD_STATIC
     #if defined(MagnumSceneGraph_EXPORTS) || defined(MagnumSceneGraphObjects_EXPORTS)
         #define MAGNUM_SCENEGRAPH_EXPORT CORRADE_VISIBILITY_EXPORT
@@ -39,5 +40,9 @@
     #define MAGNUM_SCENEGRAPH_EXPORT CORRADE_VISIBILITY_STATIC
 #endif
 #define MAGNUM_SCENEGRAPH_LOCAL CORRADE_VISIBILITY_LOCAL
+#else
+#define MAGNUM_SCENEGRAPH_EXPORT
+#define MAGNUM_SCENEGRAPH_LOCAL
+#endif
 
 #endif

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,7 +60,7 @@ class MAGNUM_EXPORT MeshData2D {
         explicit MeshData2D(MeshPrimitive primitive, std::vector<UnsignedInt> indices, std::vector<std::vector<Vector2>> positions, std::vector<std::vector<Vector2>> textureCoords2D, std::vector<std::vector<Color4>> colors, const void* importerState = nullptr);
 
         #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @copybrief MeshData2D(MeshPrimitive, std::vector<UnsignedInt>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Color4>>, const void*)
+        /** @brief @copybrief MeshData2D(MeshPrimitive, std::vector<UnsignedInt>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Color4>>, const void*)
          * @deprecated Use @ref MeshData2D(MeshPrimitive, std::vector<UnsignedInt>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Color4>>, const void*) instead.
          */
         CORRADE_DEPRECATED("Use MeshData2D(MeshPrimitive, std::vector<UnsignedInt>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Color4>>, const void*) instead") explicit MeshData2D(MeshPrimitive primitive, std::vector<UnsignedInt> indices, std::vector<std::vector<Vector2>> positions, std::vector<std::vector<Vector2>> textureCoords2D, const void* importerState = nullptr);

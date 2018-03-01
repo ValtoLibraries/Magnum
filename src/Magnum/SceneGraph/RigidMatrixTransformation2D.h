@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -114,28 +114,6 @@ template<class T> class BasicRigidMatrixTransformation2D: public AbstractBasicTr
             return transformLocalInternal(transformation);
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief transform()
-         * @deprecated Use @ref transform() or @ref transformLocal() instead.
-         */
-        CORRADE_DEPRECATED("use transform() or transformLocal() instead") Object<BasicRigidMatrixTransformation2D<T>>& transform(const Math::Matrix3<T>& transformation, TransformationType type) {
-            return type == TransformationType::Global ? transform(transformation) : transformLocal(transformation);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
-
         /**
          * Translate object
          * @return Reference to self (for method chaining)
@@ -158,28 +136,6 @@ template<class T> class BasicRigidMatrixTransformation2D: public AbstractBasicTr
         Object<BasicRigidMatrixTransformation2D<T>>& translateLocal(const Math::Vector2<T>& vector) {
             return transformLocalInternal(Math::Matrix3<T>::translation(vector));
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief translate()
-         * @deprecated Use @ref translate() or @ref translateLocal() instead.
-         */
-        CORRADE_DEPRECATED("use translate() or translateLocal() instead") Object<BasicRigidMatrixTransformation2D<T>>& translate(const Math::Vector2<T>& vector, TransformationType type) {
-            return type == TransformationType::Global ? translate(vector) : translateLocal(vector);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
 
         /**
          * @brief Rotate object
@@ -205,28 +161,6 @@ template<class T> class BasicRigidMatrixTransformation2D: public AbstractBasicTr
             return transformLocalInternal(Math::Matrix3<T>::rotation(angle));
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief rotate()
-         * @deprecated Use @ref rotate() or @ref rotateLocal() instead.
-         */
-        CORRADE_DEPRECATED("use rotate() or rotateLocal() instead") Object<BasicRigidMatrixTransformation2D<T>>& rotate(Math::Rad<T> angle, TransformationType type) {
-            return type == TransformationType::Global ? rotate(angle) : rotateLocal(angle);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
-
         /**
          * @brief Reflect object
          * @param normal    Normal of the line through which to reflect
@@ -250,28 +184,6 @@ template<class T> class BasicRigidMatrixTransformation2D: public AbstractBasicTr
         Object<BasicRigidMatrixTransformation2D<T>>& reflectLocal(const Math::Vector2<T>& normal) {
             return transformLocalInternal(Math::Matrix3<T>::reflection(normal));
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief reflect()
-         * @deprecated Use @ref reflect() or @ref reflectLocal() instead.
-         */
-        CORRADE_DEPRECATED("use reflect() or reflectInternal() instead") Object<BasicRigidMatrixTransformation2D<T>>& reflect(const Math::Vector2<T>& normal, TransformationType type) {
-            return type == TransformationType::Global ? reflect(normal) : reflectLocal(normal);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
 
     protected:
         /* Allow construction only from Object */

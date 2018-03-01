@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -105,7 +105,7 @@ RendererState::PixelStorage::PixelStorage():
 
 void RendererState::PixelStorage::reset() {
     #ifndef MAGNUM_TARGET_GLES
-    swapBytes = std::nullopt;
+    swapBytes = Containers::NullOpt;
     #endif
     alignment = DisengagedValue;
     #if !(defined(MAGNUM_TARGET_GLES2) && defined(MAGNUM_TARGET_WEBGL))

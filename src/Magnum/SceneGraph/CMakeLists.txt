@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,16 +65,6 @@ set(MagnumSceneGraph_HEADERS
 
     visibility.h)
 
-if(MAGNUM_BUILD_DEPRECATED)
-    list(APPEND MagnumSceneGraph_HEADERS
-        AbstractCamera.h
-        AbstractCamera.hpp
-        Camera2D.h
-        Camera2D.hpp
-        Camera3D.h
-        Camera3D.hpp)
-endif()
-
 # Objects shared between main and test library
 add_library(MagnumSceneGraphObjects OBJECT
     ${MagnumSceneGraph_SRCS}
@@ -95,7 +85,9 @@ add_library(MagnumSceneGraph ${SHARED_OR_STATIC}
 set_target_properties(MagnumSceneGraph PROPERTIES
     DEBUG_POSTFIX "-d"
     FOLDER "Magnum/SceneGraph")
-if(BUILD_STATIC_PIC)
+if(NOT BUILD_STATIC)
+    set_target_properties(MagnumSceneGraph PROPERTIES VERSION ${MAGNUM_LIBRARY_VERSION} SOVERSION ${MAGNUM_LIBRARY_SOVERSION})
+elseif(BUILD_STATIC_PIC)
     set_target_properties(MagnumSceneGraph PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 target_link_libraries(MagnumSceneGraph Magnum)

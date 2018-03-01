@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -49,9 +49,9 @@ namespace Magnum { namespace Audio {
 Feature which manages the position, orientation and gain of a @ref Source for
 an @ref SceneGraph::Object.
 
-## Usage
+@section Audio-Playable-usage Usage
 
-@code
+@code{.cpp}
 Object3D object;
 Source source;
 Playable3D playable{object, source};
@@ -85,10 +85,10 @@ template<UnsignedInt dimensions> class Playable: public SceneGraph::AbstractGrou
          * @param object    Object this playable belongs to
          * @param group     Group this playable belongs to
          *
-         * Creates playable with a source and a forward vector of `{0.0f, -1.0f}`
-         * for 2D and `{0.0f, 0.0f, -1.0f}` for 3D scenes. This forward vector
-         * cannot be changed, the sources orientation and translation can be
-         * instead affected by `object` or via
+         * Creates playable with a source and a forward vector of @cpp {0.0f, -1.0f} @ce
+         * for 2D and @cpp {0.0f, 0.0f, -1.0f} @ce for 3D scenes. This forward
+         * vector cannot be changed, the sources orientation and translation
+         * can be instead affected by @p object or via
          * @ref PlayableGroup::setSoundTransformation().
          * @see @ref setGain(), @ref PlayableGroup::add()
          */
@@ -116,8 +116,8 @@ template<UnsignedInt dimensions> class Playable: public SceneGraph::AbstractGrou
          * @brief Set gain of the playable and source respecting the PlayableGroups gain
          * @return Reference to self (for method chaining)
          *
-         * The sources gain is computed as `sourceGain = playableGain*groupGain`.
-         * Default for the playables gain is `1.0f`.
+         * The sources gain is computed as @cpp sourceGain = playableGain*groupGain @ce.
+         * Default for the playables gain is @cpp 1.0f @ce.
          * @see @ref PlayableGroup::setGain(), @ref Source::setGain()
          */
         Playable& setGain(const Float gain) {
@@ -129,7 +129,7 @@ template<UnsignedInt dimensions> class Playable: public SceneGraph::AbstractGrou
         /**
          * @brief Group containing this playable
          *
-         * If the playable doesn't belong to any group, returns `nullptr`.
+         * If the playable doesn't belong to any group, returns @cpp nullptr @ce.
          */
         PlayableGroup<dimensions>* playables() {
             return static_cast<PlayableGroup<dimensions>*>(this->group());
@@ -140,7 +140,6 @@ template<UnsignedInt dimensions> class Playable: public SceneGraph::AbstractGrou
         }
 
     private:
-
         void clean(const MatrixTypeFor<dimensions, Float>& absoluteTransformationMatrix) override {
             Vector3 position = Vector3::pad(absoluteTransformationMatrix.translation(), 0);
             if(playables()) {

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,9 +40,10 @@ namespace Magnum {
 @brief Internal buffer texture format
 
 @see @ref BufferTexture
+@m_enum_values_as_keywords
 @requires_gl31 Extension @extension{ARB,texture_buffer_object}
 @requires_gles30 Not defined in OpenGL ES 2.0.
-@requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+@requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
     @extension{EXT,texture_buffer}
 @requires_gles Texture buffers are not available in WebGL.
 */

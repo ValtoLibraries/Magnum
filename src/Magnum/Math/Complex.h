@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Math::Complex
+ * @brief Class @ref Magnum::Math::Complex, function @ref Magnum::Math::dot(), @ref Magnum::math::angle()
  */
 
 #include <Corrade/Utility/Assert.h>
@@ -87,26 +87,6 @@ template<class T> class Complex {
 
     public:
         typedef T Type; /**< @brief Underlying data type */
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief Math::dot(const Complex<T>&, const Complex<T>&)
-         * @deprecated Use @ref Math::dot(const Complex<T>&, const Complex<T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::dot() instead") static T dot(const Complex<T>& a, const Complex<T>& b) {
-            return Math::dot(a, b);
-        }
-
-        /**
-         * @copybrief Math::angle(const Complex<T>&, const Complex<T>&)
-         * @deprecated Use @ref Math::angle(const Complex<T>&, const Complex<T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::angle() instead") static Rad<T> angle(const Complex<T>& normalizedA, const Complex<T>& normalizedB) {
-            return Math::angle(normalizedA, normalizedB);
-        }
-        #endif
 
         /**
          * @brief Rotation complex number

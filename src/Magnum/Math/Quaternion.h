@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Math::Quaternion
+ * @brief Class @ref Magnum::Math::Quaternion, function @ref Magnum::Math::dot(), @ref Magnum::Math::angle(), @ref Magnum::Math::lerp(), @ref Magnum::Math::slerp()
  */
 
 #include <cmath>
@@ -88,7 +88,7 @@ Expects that both quaternions are normalized. @f[
     q_{LERP} = \frac{(1 - t) q_A + t q_B}{|(1 - t) q_A + t q_B|}
 @f]
 @see @ref Quaternion::isNormalized(), @ref slerp(const Quaternion<T>&, const Quaternion<T>&, T),
-    @ref lerp(const T&, const T&, U)
+    @ref lerp(const T&, const T&, U), @ref sclerp()
 */
 template<class T> inline Quaternion<T> lerp(const Quaternion<T>& normalizedA, const Quaternion<T>& normalizedB, T t) {
     CORRADE_ASSERT(normalizedA.isNormalized() && normalizedB.isNormalized(),
@@ -108,7 +108,8 @@ or one is a negation of the other, returns the first argument. @f[
     ~ ~ ~ ~ ~ ~ ~
     \theta = acos \left( \frac{q_A \cdot q_B}{|q_A| \cdot |q_B|} \right) = acos(q_A \cdot q_B)
 @f]
-@see @ref Quaternion::isNormalized(), @ref lerp(const Quaternion<T>&, const Quaternion<T>&, T)
+@see @ref Quaternion::isNormalized(), @ref lerp(const Quaternion<T>&, const Quaternion<T>&, T),
+    @ref sclerp()
  */
 template<class T> inline Quaternion<T> slerp(const Quaternion<T>& normalizedA, const Quaternion<T>& normalizedB, T t) {
     CORRADE_ASSERT(normalizedA.isNormalized() && normalizedB.isNormalized(),
@@ -135,44 +136,6 @@ template<class T> class Quaternion {
 
     public:
         typedef T Type; /**< @brief Underlying data type */
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief Math::dot(const Quaternion<T>&, const Quaternion<T>&)
-         * @deprecated Use @ref Math::dot(const Quaternion<T>&, const Quaternion<T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::dot() instead") static T dot(const Quaternion<T>& a, const Quaternion<T>& b) {
-            return Math::dot(a, b);
-        }
-
-        /**
-         * @copybrief Math::angle(const Quaternion<T>&, const Quaternion<T>&)
-         * @deprecated Use @ref Math::angle(const Quaternion<T>&, const Quaternion<T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::angle() instead") static Rad<T> angle(const Quaternion<T>& normalizedA, const Quaternion<T>& normalizedB) {
-            return Math::angle(normalizedA, normalizedB);
-        }
-
-        /**
-         * @copybrief Math::lerp(const Quaternion<T>&, const Quaternion<T>&, T)
-         * @deprecated Use @ref Math::lerp(const Quaternion<T>&, const Quaternion<T>&, T)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::lerp() instead") static Quaternion<T> lerp(const Quaternion<T>& normalizedA, const Quaternion<T>& normalizedB, T t) {
-            return Math::lerp(normalizedA, normalizedB, t);
-        }
-
-        /**
-         * @copybrief Math::slerp(const Quaternion<T>&, const Quaternion<T>&, T)
-         * @deprecated Use @ref Math::slerp(const Quaternion<T>&, const Quaternion<T>&, T)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::slerp() instead") static Quaternion<T> slerp(const Quaternion<T>& normalizedA, const Quaternion<T>& normalizedB, T t) {
-            return Math::slerp(normalizedA, normalizedB, t);
-        }
-        #endif
 
         /**
          * @brief Rotation quaternion

@@ -1,9 +1,7 @@
-#ifndef Magnum_SceneGraph_Camera2D_hpp
-#define Magnum_SceneGraph_Camera2D_hpp
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,17 +23,31 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-/** @file
- * @deprecated Use @ref Magnum/SceneGraph/Camera.hpp instead.
- */
+/** [0] */
+#include <Magnum/DefaultFramebuffer.h>
+#include <Magnum/Platform/Sdl2Application.h>
 
-#include "Magnum/configure.h"
+using namespace Magnum;
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "Magnum/SceneGraph/Camera.hpp"
-CORRADE_DEPRECATED_FILE("use Magnum/SceneGraph/Camera.hpp instead")
-#else
-#error use Magnum/SceneGraph/Camera.hpp instead
-#endif
+class MyApplication: public Platform::Application {
+    public:
+        explicit MyApplication(const Arguments& arguments);
 
-#endif
+    private:
+        void drawEvent() override;
+};
+
+MyApplication::MyApplication(const Arguments& arguments): Platform::Application{arguments} {
+    // TODO: Add your initialization code here
+}
+
+void MyApplication::drawEvent() {
+    defaultFramebuffer.clear(FramebufferClear::Color);
+
+    // TODO: Add your drawing code here
+
+    swapBuffers();
+}
+
+MAGNUM_APPLICATION_MAIN(MyApplication)
+/** [0] */

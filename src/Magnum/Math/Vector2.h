@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Math::Vector2
+ * @brief Class @ref Magnum::Math::Vector2, function @ref Magnum::Math::cross()
  */
 
 #include "Magnum/Math/Vector.h"
@@ -66,9 +66,11 @@ template<class T> class Vector2: public Vector<2, T> {
          * @brief Vector in direction of X axis (right)
          *
          * Usable for translation in given axis, for example:
-         * @code
+         *
+         * @code{.cpp}
          * Matrix3::translation(Vector2::xAxis(5.0f)); // same as Matrix3::translation({5.0f, 0.0f});
          * @endcode
+         *
          * @see @ref yAxis(), @ref xScale(), @ref Matrix3::right()
          */
         constexpr static Vector2<T> xAxis(T length = T(1)) { return {length, T(0)}; }
@@ -85,9 +87,11 @@ template<class T> class Vector2: public Vector<2, T> {
          * @brief Scaling vector in direction of X axis (width)
          *
          * Usable for scaling along given direction, for example:
-         * @code
+         *
+         * @code{.cpp}
          * Matrix3::scaling(Vector2::xScale(-2.0f)); // same as Matrix3::scaling({-2.0f, 1.0f});
          * @endcode
+         *
          * @see @ref yScale(), @ref xAxis()
          */
         constexpr static Vector2<T> xScale(T scale) { return {scale, T(1)}; }
@@ -99,17 +103,6 @@ template<class T> class Vector2: public Vector<2, T> {
          * @see @ref yAxis()
          */
         constexpr static Vector2<T> yScale(T scale) { return {T(1), scale}; }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief Math::cross(const Vector2<T>&, const Vector2<T>&)
-         * @deprecated Use @ref Math::cross(const Vector2<T>&, const Vector2<T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::cross() instead") static T cross(const Vector2<T>& a, const Vector2<T>& b) {
-            return Math::cross(a, b);
-        }
-        #endif
 
         /** @copydoc Vector::Vector(ZeroInitT) */
         constexpr /*implicit*/ Vector2(ZeroInitT = ZeroInit) noexcept

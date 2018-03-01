@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -420,7 +420,7 @@ void AbstractTexture::setLodBias(const Float bias) {
 #ifndef MAGNUM_TARGET_WEBGL
 void AbstractTexture::setBorderColor(const Color4& color) {
     (this->*Context::current().state().texture->parameterfvImplementation)(
-        #ifndef MAGNUM_TARGET_GLES
+        #ifndef MAGNUM_TARGET_GLES2
         GL_TEXTURE_BORDER_COLOR,
         #else
         GL_TEXTURE_BORDER_COLOR_EXT,
@@ -430,23 +430,11 @@ void AbstractTexture::setBorderColor(const Color4& color) {
 
 #ifndef MAGNUM_TARGET_GLES2
 void AbstractTexture::setBorderColor(const Vector4ui& color) {
-    (this->*Context::current().state().texture->parameterIuivImplementation)(
-        #ifndef MAGNUM_TARGET_GLES
-        GL_TEXTURE_BORDER_COLOR,
-        #else
-        GL_TEXTURE_BORDER_COLOR_EXT,
-        #endif
-        color.data());
+    (this->*Context::current().state().texture->parameterIuivImplementation)(GL_TEXTURE_BORDER_COLOR, color.data());
 }
 
 void AbstractTexture::setBorderColor(const Vector4i& color) {
-    (this->*Context::current().state().texture->parameterIivImplementation)(
-        #ifndef MAGNUM_TARGET_GLES
-        GL_TEXTURE_BORDER_COLOR,
-        #else
-        GL_TEXTURE_BORDER_COLOR_EXT,
-        #endif
-        color.data());
+    (this->*Context::current().state().texture->parameterIivImplementation)(GL_TEXTURE_BORDER_COLOR, color.data());
 }
 #endif
 #endif
@@ -1146,13 +1134,15 @@ void AbstractTexture::parameterImplementationDSAEXT(GLenum parameter, const GLfl
 #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void AbstractTexture::parameterIImplementationDefault(GLenum parameter, const GLuint* values) {
     bindInternal();
-    #ifndef MAGNUM_TARGET_GLES
-    glTexParameterIuiv
-    #else
-    glTexParameterIuivEXT
-    #endif
-        (_target, parameter, values);
+    glTexParameterIuiv(_target, parameter, values);
 }
+
+#ifdef MAGNUM_TARGET_GLES
+void AbstractTexture::parameterIImplementationEXT(GLenum parameter, const GLuint* values) {
+    bindInternal();
+    glTexParameterIuivEXT(_target, parameter, values);
+}
+#endif
 
 #ifndef MAGNUM_TARGET_GLES
 void AbstractTexture::parameterIImplementationDSA(const GLenum parameter, const GLuint* const values) {
@@ -1167,13 +1157,15 @@ void AbstractTexture::parameterIImplementationDSAEXT(GLenum parameter, const GLu
 
 void AbstractTexture::parameterIImplementationDefault(GLenum parameter, const GLint* values) {
     bindInternal();
-    #ifndef MAGNUM_TARGET_GLES
-    glTexParameterIiv
-    #else
-    glTexParameterIivEXT
-    #endif
-        (_target, parameter, values);
+    glTexParameterIiv(_target, parameter, values);
 }
+
+#ifdef MAGNUM_TARGET_GLES
+void AbstractTexture::parameterIImplementationEXT(GLenum parameter, const GLint* values) {
+    bindInternal();
+    glTexParameterIivEXT(_target, parameter, values);
+}
+#endif
 
 #ifndef MAGNUM_TARGET_GLES
 void AbstractTexture::parameterIImplementationDSA(const GLenum parameter, const GLint* const values) {
@@ -1188,6 +1180,12 @@ void AbstractTexture::parameterIImplementationDSAEXT(GLenum parameter, const GLi
 #endif
 
 void AbstractTexture::setMaxAnisotropyImplementationNoOp(GLfloat) {}
+
+#ifndef MAGNUM_TARGET_GLES
+void AbstractTexture::setMaxAnisotropyImplementationArb(GLfloat anisotropy) {
+    (this->*Context::current().state().texture->parameterfImplementation)(GL_TEXTURE_MAX_ANISOTROPY, anisotropy);
+}
+#endif
 
 void AbstractTexture::setMaxAnisotropyImplementationExt(GLfloat anisotropy) {
     (this->*Context::current().state().texture->parameterfImplementation)(GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
@@ -1408,13 +1406,15 @@ void AbstractTexture::storageMultisampleImplementationFallback(const GLsizei sam
 #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void AbstractTexture::storageMultisampleImplementationDefault(const GLsizei samples, const TextureFormat internalFormat, const Vector3i& size, const GLboolean fixedSampleLocations) {
     bindInternal();
-    #ifndef MAGNUM_TARGET_GLES
-    glTexStorage3DMultisample
-    #else
-    glTexStorage3DMultisampleOES
-    #endif
-        (_target, samples, GLenum(internalFormat), size.x(), size.y(), size.z(), fixedSampleLocations);
+    glTexStorage3DMultisample(_target, samples, GLenum(internalFormat), size.x(), size.y(), size.z(), fixedSampleLocations);
 }
+
+#ifdef MAGNUM_TARGET_GLES
+void AbstractTexture::storageMultisampleImplementationOES(const GLsizei samples, const TextureFormat internalFormat, const Vector3i& size, const GLboolean fixedSampleLocations) {
+    bindInternal();
+    glTexStorage3DMultisampleOES(_target, samples, GLenum(internalFormat), size.x(), size.y(), size.z(), fixedSampleLocations);
+}
+#endif
 #endif
 
 #ifndef MAGNUM_TARGET_GLES

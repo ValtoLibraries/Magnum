@@ -1,9 +1,7 @@
-#ifndef Magnum_ColorFormat_h
-#define Magnum_ColorFormat_h
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,36 +23,34 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-/** @file
- * @deprecated Use @ref Magnum/PixelFormat.h instead.
- */
+#include <Magnum/Platform/WindowlessEglApplication.h>
+#include <Magnum/Platform/Context.h>
 
-#include "Magnum/configure.h"
+using namespace Magnum;
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "Magnum/PixelFormat.h"
-CORRADE_DEPRECATED_FILE("use Magnum/PixelFormat.h instead")
+EGLDisplay display{};
+EGLSurface surface{};
+EGLContext anotherContext{};
 
-namespace Magnum {
+/* [custom] */
+int main(int argc, char** argv) {
+    Platform::WindowlessGLContext glContext{{}};
+    glContext.makeCurrent();
+    Platform::Context context{argc, argv};
 
-/** @copybrief PixelFormat
- * @deprecated Use @ref PixelFormat instead.
- */
-typedef CORRADE_DEPRECATED("use PixelFormat instead") PixelFormat ColorFormat;
+    // Your GL code ...
 
-/** @copybrief PixelType
- * @deprecated Use @ref PixelType instead.
- */
-typedef CORRADE_DEPRECATED("use PixelType instead") PixelType ColorType;
+    /* Make another context current */
+    eglMakeCurrent(display, surface, surface, anotherContext);
 
-/** @copybrief CompressedPixelFormat
- * @deprecated Use @ref CompressedPixelFormat instead.
- */
-typedef CORRADE_DEPRECATED("use CompressedPixelFormat instead") CompressedPixelFormat CompressedColorFormat;
+    // Someone else's code ...
 
+    /* Make Magnum context current again */
+    glContext.makeCurrent();
+
+    // Your GL code again ...
+
+    /* Magnum context gets destroyed */
+    /* Windowless GL context gets destroyed */
 }
-#else
-#error use Magnum/PixelFormat.h instead
-#endif
-
-#endif
+/* [custom] */

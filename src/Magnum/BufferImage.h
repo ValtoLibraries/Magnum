@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,8 +83,8 @@ template<UnsignedInt dimensions> class BufferImage {
          * @param buffer            Buffer
          * @param dataSize          Buffer data size
          *
-         * If @p dataSize is 0, the buffer is unconditionally reallocated on
-         * the first call to @ref setData().
+         * If @p dataSize is @cpp 0 @ce, the buffer is unconditionally
+         * reallocated on the first call to @ref setData().
          */
         explicit BufferImage(PixelStorage storage, PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, Buffer&& buffer, std::size_t dataSize) noexcept;
 
@@ -92,23 +92,6 @@ template<UnsignedInt dimensions> class BufferImage {
          * Similar to the above, but uses default @ref PixelStorage parameters.
          */
         explicit BufferImage(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, Buffer&& buffer, std::size_t dataSize) noexcept: BufferImage{{}, format, type, size, std::move(buffer), dataSize} {}
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @copybrief BufferImage(PixelFormat, PixelType, const VectorTypeFor<dimensions, Int>&, Containers::ArrayView<const void>, BufferUsage)
-         * @deprecated Use @ref BufferImage(PixelFormat, PixelType, const VectorTypeFor<dimensions, Int>&, Containers::ArrayView<const void>, BufferUsage)
-         *      instead.
-         */
-        explicit CORRADE_DEPRECATED("use BufferImage(PixelFormat, PixelType, const VectorTypeFor&, Containers::ArrayView, BufferUsage) instead") BufferImage(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, const void* data, BufferUsage usage): BufferImage{{}, format, type, size, {data, Implementation::imageDataSizeFor(format, type, size)}, usage} {}
-
-        #ifndef DOXYGEN_GENERATING_OUTPUT
-        /* To avoid decay of sized arrays and nullptr to const void* and
-           unwanted use of deprecated function */
-        template<class T, std::size_t dataSize> explicit BufferImage(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, const T(&data)[dataSize], BufferUsage usage): BufferImage{{}, format, type, size, Containers::ArrayView<const void>{data}, usage} {}
-        /* To avoid ambiguous overload when passing Containers::Array[View] */
-        template<class T> explicit BufferImage(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, const Containers::Array<T>& data, BufferUsage usage): BufferImage{{}, format, type, size, Containers::ArrayView<const void>{data}, usage} {}
-        template<class T> explicit BufferImage(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, const Containers::ArrayView<T>& data, BufferUsage usage): BufferImage{{}, format, type, size, Containers::ArrayView<const void>{data}, usage} {}
-        #endif
-        #endif
 
         /**
          * @brief Constructor
@@ -202,7 +185,7 @@ template<UnsignedInt dimensions> class BufferImage {
          * @param data              Image data
          * @param usage             Image buffer usage
          *
-         * Updates the image buffer with given data. Passing `nullptr`
+         * Updates the image buffer with given data. Passing @cpp nullptr @ce
          * zero-sized @p data will not reallocate current storage, but expects
          * that current data size is large enough for the new parameters.
          * @see @ref Buffer::setData()
@@ -217,28 +200,6 @@ template<UnsignedInt dimensions> class BufferImage {
         void setData(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, Containers::ArrayView<const void> data, BufferUsage usage) {
             setData({}, format, type, size, data, usage);
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @copybrief setData(PixelFormat, PixelType, const VectorTypeFor<dimensions, Int>&, Containers::ArrayView<const void>, BufferUsage)
-         * @deprecated Use @ref setData(PixelFormat, PixelType, const VectorTypeFor<dimensions, Int>&, Containers::ArrayView<const void>, BufferUsage)
-         *      instead.
-         */
-        void CORRADE_DEPRECATED("use setData(PixelFormat, PixelType, const VectorTypeFor&, Containers::ArrayView, BufferUsage) instead") setData(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, const void* data, BufferUsage usage) {
-            setData({}, format, type, size, {data, Implementation::imageDataSizeFor(format, type, size)}, usage);
-        }
-
-        #ifndef DOXYGEN_GENERATING_OUTPUT
-        /* To avoid decay of sized char arrays and nullptr to const void* and
-           unwanted use of deprecated function */
-        template<class T, std::size_t dataSize> void setData(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, const T(&data)[dataSize], BufferUsage usage) {
-            setData({}, format, type, size, Containers::ArrayView<const void>{data}, usage);
-        }
-        /* To avoid ambiguous overload when passing Containers::Array */
-        template<class T> void setData(PixelFormat format, PixelType type, const VectorTypeFor<dimensions, Int>& size, const Containers::Array<T>& data, BufferUsage usage) {
-            setData({}, format, type, size, Containers::ArrayView<const void>(data), usage);
-        }
-        #endif
-        #endif
 
         /**
          * @brief Release the image buffer

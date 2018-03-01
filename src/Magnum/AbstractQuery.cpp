@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,12 +40,6 @@ AbstractQuery::AbstractQuery(GLenum target): _target{target}, _flags{ObjectFlag:
     (this->*Context::current().state().query->createImplementation)();
 }
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-AbstractQuery::AbstractQuery(): _target{}, _flags{ObjectFlag::DeleteOnDestruction} {
-    createImplementationDefault();
-}
-#endif
-
 AbstractQuery::~AbstractQuery() {
     /* Moved out or not deleting on destruction, nothing to do */
     if(!_id || !(_flags & ObjectFlag::DeleteOnDestruction)) return;
@@ -78,7 +72,7 @@ void AbstractQuery::createImplementationDSA() {
 
 #ifndef MAGNUM_TARGET_WEBGL
 std::string AbstractQuery::label() const {
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     return Context::current().state().debug->getLabelImplementation(GL_QUERY, _id);
     #else
     return Context::current().state().debug->getLabelImplementation(GL_QUERY_KHR, _id);
@@ -86,7 +80,7 @@ std::string AbstractQuery::label() const {
 }
 
 AbstractQuery& AbstractQuery::setLabelInternal(const Containers::ArrayView<const char> label) {
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     Context::current().state().debug->labelImplementation(GL_QUERY, _id, label);
     #else
     Context::current().state().debug->labelImplementation(GL_QUERY_KHR, _id, label);
@@ -152,10 +146,6 @@ template<> Long AbstractQuery::result<Long>() {
 #endif
 
 void AbstractQuery::begin() {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    CORRADE_INTERNAL_ASSERT(_target);
-    #endif
-
     #ifndef MAGNUM_TARGET_GLES2
     glBeginQuery(_target, _id);
     #else
@@ -163,20 +153,7 @@ void AbstractQuery::begin() {
     #endif
 }
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-void AbstractQuery::begin(const GLenum target) {
-    CORRADE_INTERNAL_ASSERT(!_target || _target == target);
-
-    _target = target;
-    begin();
-}
-#endif
-
 void AbstractQuery::end() {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    CORRADE_INTERNAL_ASSERT(_target);
-    #endif
-
     #ifndef MAGNUM_TARGET_GLES2
     glEndQuery(_target);
     #else

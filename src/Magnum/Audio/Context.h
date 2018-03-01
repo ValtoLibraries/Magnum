@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -87,6 +87,7 @@ class MAGNUM_AUDIO_EXPORT Context {
          * @brief HRTF status
          *
          * @see @ref hrtfStatus(), @ref isHrtfEnabled()
+         * @m_enum_values_as_keywords
          * @requires_al_extension Extension @alc_extension{SOFTX,HRTF} or
          *      @alc_extension{SOFT,HRTF}
          */
@@ -130,7 +131,7 @@ class MAGNUM_AUDIO_EXPORT Context {
          * @brief All device specifier strings
          *
          * @see @ref deviceSpecifierString(), @ref Configuration::setDeviceSpecifier()
-         *      @fn_al{GetString} with @def_alc{DEVICE_SPECIFIER}
+         *      @fn_alc{GetString} with @def_alc_keyword{DEVICE_SPECIFIER}
          */
         static std::vector<std::string> deviceSpecifierStrings();
 
@@ -181,7 +182,7 @@ class MAGNUM_AUDIO_EXPORT Context {
          * HRFTs may not be enabled/disabled in a running context. Instead
          * create a new @ref Context with HRFTs enabled or disabled.
          * @see @ref hrtfStatus(), @ref Audio::Context::Configuration::setHrtf(),
-         *      @fn_alc{GetIntegerv} with @def_alc{HRTF_SOFT}
+         *      @fn_alc{GetIntegerv} with @def_alc_keyword{HRTF_SOFT}
          * @requires_al_extension Extension @alc_extension{SOFTX,HRTF} or
          *      @alc_extension{SOFT,HRTF}
          */
@@ -191,54 +192,58 @@ class MAGNUM_AUDIO_EXPORT Context {
          * @brief HRTF status
          *
          * @see @ref isHrtfEnabled(), @fn_alc{GetIntegerv} with
-         *      @def_alc{HRTF_STATUS_SOFT}
+         *      @def_alc_keyword{HRTF_STATUS_SOFT}
          * @requires_al_extension Extension @alc_extension{SOFTX,HRTF} or
          *      @alc_extension{SOFT,HRTF}
          */
         HrtfStatus hrtfStatus() const;
 
         /**
-         * @brief Hrtf specifier
+         * @brief HRTF specifier
          *
-         * Name of the hrtf being used.
-         *
-         * @see @fn_al{GetString} with @def_alc{HRTF_SPECIFIER_SOFT}
+         * Name of the HRTF being used.
+         * @see @fn_al{GetString} with @def_alc_keyword{HRTF_SPECIFIER_SOFT}
          * @requires_al_extension @alc_extension{SOFT,HRTF}
          */
-        std::string hrtfSpecifier() const {
-            return alcGetString(_device, ALC_HRTF_SPECIFIER_SOFT);
-        }
+        std::string hrtfSpecifierString() const;
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief hrtfSpecifierString()
+         * @deprecated Use @ref hrtfSpecifierString() instead.
+         */
+        CORRADE_DEPRECATED("use hrtfSpecifierString() instead") std::string hrtfSpecifier() const { return hrtfSpecifierString(); }
+        #endif
 
         /**
          * @brief Device specifier string
          *
          * @see @ref deviceSpecifierStrings(), @ref vendorString(), @ref rendererString(),
-         *      @fn_al{GetString} with @def_alc{DEVICE_SPECIFIER}
+         *      @fn_al{GetString} with @def_alc_keyword{DEVICE_SPECIFIER}
          */
-        std::string deviceSpecifierString() const { return alcGetString(_device, ALC_DEVICE_SPECIFIER); }
+        std::string deviceSpecifierString() const;
 
         /**
          * @brief Vendor string
          *
          * @see @ref deviceSpecifierString(), @ref rendererString(),
-         *      @fn_al{GetString} with @def_al{VENDOR}
+         *      @fn_al{GetString} with @def_al_keyword{VENDOR}
          */
-        std::string vendorString() const { return alGetString(AL_VENDOR); }
+        std::string vendorString() const;
 
         /**
          * @brief Renderer string
          *
          * @see @ref deviceSpecifierString(), @ref vendorString(),
-         *      @fn_al{GetString} with @def_al{RENDERER}
+         *      @fn_al{GetString} with @def_al_keyword{RENDERER}
          */
-        std::string rendererString() const { return alGetString(AL_RENDERER); }
+        std::string rendererString() const;
 
         /**
          * @brief Version string
          *
-         * @see @fn_al{GetString} with @def_al{VERSION}
+         * @see @fn_al{GetString} with @def_al_keyword{VERSION}
          */
-        std::string versionString() const { return alGetString(AL_VERSION); }
+        std::string versionString() const;
 
         /**
          * @brief Extension strings
@@ -248,9 +253,9 @@ class MAGNUM_AUDIO_EXPORT Context {
          * reported by the driver (even those not supported by Magnum), see
          * @ref supportedExtensions(), @ref Extension::extensions() or
          * @ref isExtensionSupported() for alternatives.
-         * @see @fn_al{Get} with @def_al{NUM_EXTENSIONS}, @fn_al{GetString}
-         *      with @def_al{EXTENSIONS}, @fn_alc{GetString} with
-         *      @def_alc{EXTENSIONS}
+         * @see @fn_al{Get} with @def_al_keyword{NUM_EXTENSIONS},
+         *      @fn_al{GetString} with @def_al_keyword{EXTENSIONS},
+         *      @fn_alc{GetString} with @def_alc_keyword{EXTENSIONS}
          */
         std::vector<std::string> extensionStrings() const;
 
@@ -270,7 +275,8 @@ class MAGNUM_AUDIO_EXPORT Context {
          *
          * Extensions usable with this function are listed in @ref Extensions
          * namespace in header @ref Extensions.h. Example usage:
-         * @code
+         *
+         * @code{.cpp}
          * if(Context::current().isExtensionSupported<Extensions::ALC::SOFTX::HRTF>()) {
          *     // amazing binaural audio
          * } else {
@@ -445,7 +451,8 @@ Useful for initial checks on availability of required features.
 By default, if assertion fails, an message is printed to error output and the
 application aborts. If `CORRADE_NO_ASSERT` is defined, this macro does nothing.
 Example usage:
-@code
+
+@code{.cpp}
 MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED(Extensions::ALC::SOFTX::HRTF);
 @endcode
 
@@ -466,21 +473,6 @@ MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED(Extensions::ALC::SOFTX::HRTF);
 
 /** @debugoperatorclassenum{Magnum::Audio::Context,Magnum::Audio::Context::HrtfStatus} */
 MAGNUM_AUDIO_EXPORT Debug& operator<<(Debug& debug, Context::HrtfStatus value);
-
-inline bool Context::isHrtfEnabled() const {
-    Int enabled;
-    alcGetIntegerv(_device, ALC_HRTF_SOFT, 1, &enabled);
-    return enabled == ALC_TRUE;
-}
-
-inline Context::HrtfStatus Context::hrtfStatus() const {
-    if(!isExtensionSupported<Extensions::ALC::SOFT::HRTF>())
-        return isHrtfEnabled() ? HrtfStatus::Enabled : HrtfStatus::Disabled;
-
-    Int status;
-    alcGetIntegerv(_device, ALC_HRTF_STATUS_SOFT, 1, &status);
-    return Context::HrtfStatus(status);
-}
 
 }}
 

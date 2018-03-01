@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -109,28 +109,6 @@ template<class T> class BasicDualComplexTransformation: public AbstractBasicTran
             return transformLocalInternal(transformation);
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief transform()
-         * @deprecated Use @ref transform() or @ref transformLocal() instead.
-         */
-        CORRADE_DEPRECATED("use transform() or transformLocal() instead") Object<BasicDualComplexTransformation<T>>& transform(const Math::DualComplex<T>& transformation, TransformationType type) {
-            return type == TransformationType::Global ? transform(transformation) : transformLocal(transformation);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
-
         /**
          * @brief Translate object
          * @return Reference to self (for method chaining)
@@ -154,28 +132,6 @@ template<class T> class BasicDualComplexTransformation: public AbstractBasicTran
             return transformLocalInternal(Math::DualComplex<T>::translation(vector));
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief translate()
-         * @deprecated Use @ref translate() or @ref translateLocal() instead.
-         */
-        CORRADE_DEPRECATED("use translate() or translateLocal() instead") Object<BasicDualComplexTransformation<T>>& translate(const Math::Vector2<T>& vector, TransformationType type) {
-            return type == TransformationType::Global ? translate(vector) : translateLocal(vector);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
-
         /**
          * @brief Rotate object
          * @param angle     Angle (counterclockwise)
@@ -197,28 +153,6 @@ template<class T> class BasicDualComplexTransformation: public AbstractBasicTran
         Object<BasicDualComplexTransformation<T>>& rotateLocal(Math::Rad<T> angle) {
             return transformLocalInternal(Math::DualComplex<T>::rotation(angle));
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief rotate()
-         * @deprecated Use @ref rotate() or @ref rotateLocal() instead.
-         */
-        CORRADE_DEPRECATED("use rotate() or rotateLocal() instead") Object<BasicDualComplexTransformation<T>>& rotate(Math::Rad<T> angle, TransformationType type) {
-            return type == TransformationType::Global ? rotate(angle) : rotateLocal(angle);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
 
     protected:
         /* Allow construction only from Object */

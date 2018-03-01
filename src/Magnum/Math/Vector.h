@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Math::Vector
+ * @brief Class @ref Magnum::Math::Vector, function @ref Magnum::Math::dot(), @ref Magnum::Math::angle()
  */
 
 #include <cmath>
@@ -41,10 +41,6 @@
 #include "Magnum/Math/Angle.h"
 #include "Magnum/Math/BoolVector.h"
 #include "Magnum/Math/TypeTraits.h"
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include <Corrade/Utility/Macros.h>
-#endif
 
 namespace Magnum { namespace Math {
 
@@ -148,26 +144,6 @@ template<std::size_t size, class T> class Vector {
             return padInternal<otherSize>(typename Implementation::GenerateSequence<size>::Type(), a, value);
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief Math::dot(const Vector<size, T>&, const Vector<size, T>&)
-         * @deprecated Use @ref Math::dot(const Vector<size, T>&, const Vector<size, T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::dot() instead") static T dot(const Vector<size, T>& a, const Vector<size, T>& b) {
-            return Math::dot(a, b);
-        }
-
-        /**
-         * @copybrief Math::angle(const Vector<size, T>&, const Vector<size, T>&)
-         * @deprecated Use @ref Math::angle(const Vector<size, T>&, const Vector<size, T>&)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use Math::angle() instead") static Rad<T> angle(const Vector<size, T>& normalizedA, const Vector<size, T>& normalizedB) {
-            return Math::angle(normalizedA, normalizedB);
-        }
-        #endif
-
         /**
          * @brief Default constructor
          *
@@ -199,7 +175,8 @@ template<std::size_t size, class T> class Vector {
          *
          * Performs only default casting on the values, no rounding or
          * anything else. Example usage:
-         * @code
+         *
+         * @code{.cpp}
          * Vector<4, Float> floatingPoint(1.3f, 2.7f, -15.0f, 7.0f);
          * Vector<4, Byte> integral(floatingPoint);
          * // integral == {1, 2, -15, 7}
@@ -248,16 +225,32 @@ template<std::size_t size, class T> class Vector {
             return !operator==(other);
         }
 
-        /** @brief Component-wise less than */
+        /**
+         * @brief Component-wise less than
+         *
+         * @m_keyword{lessThan(),GLSL lessThan(),}
+         */
         BoolVector<size> operator<(const Vector<size, T>& other) const;
 
-        /** @brief Component-wise less than or equal */
+        /**
+         * @brief Component-wise less than or equal
+         *
+         * @m_keyword{lessThanEqual(),GLSL lessThanEqual(),}
+         */
         BoolVector<size> operator<=(const Vector<size, T>& other) const;
 
-        /** @brief Component-wise greater than or equal */
+        /**
+         * @brief Component-wise greater than or equal
+         *
+         * @m_keyword{greaterThanEqual(),GLSL greaterThanEqual(),}
+         */
         BoolVector<size> operator>=(const Vector<size, T>& other) const;
 
-        /** @brief Component-wise greater than */
+        /**
+         * @brief Component-wise greater than
+         *
+         * @m_keyword{greaterThan(),GLSL greaterThan(),}
+         */
         BoolVector<size> operator>(const Vector<size, T>& other) const;
 
         /**
@@ -487,6 +480,7 @@ template<std::size_t size, class T> class Vector {
          * @brief Normalized vector (of unit length)
          *
          * @see @ref isNormalized(), @ref lengthInverted(), @ref resized()
+         * @m_keyword{normalize(),GLSL normalize(),}
          */
         Vector<size, T> normalized() const { return *this*lengthInverted(); }
 
@@ -496,9 +490,11 @@ template<std::size_t size, class T> class Vector {
          * Convenience equivalent to the following code. Due to operation order
          * this function is faster than the obvious way of sizing
          * @ref normalized() vector.
-         * @code
-         * vec*(vec.lengthInverted()*length) // the brackets are important
+         *
+         * @code{.cpp}
+         * vec*(vec.lengthInverted()*length) // the parentheses are important
          * @endcode
+         *
          * @see @ref normalized()
          */
         Vector<size, T> resized(T length) const {
@@ -511,7 +507,7 @@ template<std::size_t size, class T> class Vector {
          * Returns vector projected onto @p line. @f[
          *      \boldsymbol a_1 = \frac{\boldsymbol a \cdot \boldsymbol b}{\boldsymbol b \cdot \boldsymbol b} \boldsymbol b
          * @f]
-         * @see @ref dot(), @ref projectedOntoNormalized()
+         * @see @ref Math::dot(), @ref projectedOntoNormalized()
          */
         Vector<size, T> projected(const Vector<size, T>& line) const {
             return line*Math::dot(*this, line)/line.dot();
@@ -525,7 +521,7 @@ template<std::size_t size, class T> class Vector {
          *      \boldsymbol a_1 = \frac{\boldsymbol a \cdot \boldsymbol b}{\boldsymbol b \cdot \boldsymbol b} \boldsymbol b =
          *          (\boldsymbol a \cdot \boldsymbol b) \boldsymbol b
          * @f]
-         * @see @ref dot() const
+         * @see @ref Math::dot()
          */
         Vector<size, T> projectedOntoNormalized(const Vector<size, T>& line) const;
 

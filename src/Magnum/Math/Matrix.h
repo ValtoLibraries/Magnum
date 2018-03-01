@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,30 +53,6 @@ template<std::size_t size, class T> class Matrix: public RectangularMatrix<size,
             Size = size         /**< Matrix size */
         };
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief Pass to constructor to create zero-filled matrix
-         * @deprecated Use @ref ZeroInitT and @ref ZeroInit instead.
-         */
-        #ifdef DOXYGEN_GENERATING_OUTPUT
-        enum ZeroType { Zero };
-        #else
-        CORRADE_DEPRECATED("use Math::ZeroInitT instead") typedef ZeroInitT ZeroType;
-        CORRADE_DEPRECATED("use Math::ZeroInit instead") constexpr static ZeroInitT Zero{ZeroInitT::Init{}};
-        #endif
-
-        /**
-         * @brief Pass to constructor to create identity matrix
-         * @deprecated Use @ref IdentityInitT and @ref IdentityInit instead.
-         */
-        #ifdef DOXYGEN_GENERATING_OUTPUT
-        enum IdentityType { Identity };
-        #else
-        CORRADE_DEPRECATED("use Math::IdentityInitT instead") typedef IdentityInitT IdentityType;
-        CORRADE_DEPRECATED("use Math::IdentityInit instead") constexpr static IdentityInitT Identity{IdentityInitT::Init{}};
-        #endif
-        #endif
-
         /**
          * @brief Default constructor
          *
@@ -122,7 +98,8 @@ template<std::size_t size, class T> class Matrix: public RectangularMatrix<size,
          *
          * Performs only default casting on the values, no rounding or
          * anything else. Example usage:
-         * @code
+         *
+         * @code{.cpp}
          * Matrix2x2<Float> floatingPoint({1.3f, 2.7f},
          *                                {-15.0f, 7.0f});
          * Matrix2x2<Byte> integral(floatingPoint);
@@ -185,6 +162,7 @@ template<std::size_t size, class T> class Matrix: public RectangularMatrix<size,
          * @ref Matrix4::invertedRigid() which are faster alternatives for
          * particular matrix types.
          * @see @ref Algorithms::gaussJordanInverted()
+         * @m_keyword{inverse(),GLSL inverse(),}
          */
         Matrix<size, T> inverted() const;
 

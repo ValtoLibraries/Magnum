@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,10 +87,18 @@ class MAGNUM_SHAPES_EXPORT Plane {
         Vector3 _position, _normal;
 };
 
-/** @collisionoccurenceoperator{Line,Plane} */
+/** @relatesalso Line
+@brief Collision occurence of @ref Line and @ref Plane
+
+@see @ref Plane::operator%(const Line3D&) const
+*/
 inline bool operator%(const Line3D& a, const Plane& b) { return b % a; }
 
-/** @collisionoccurenceoperator{LineSegment,Plane} */
+/** @relatesalso LineSegment
+@brief Collision occurence of @ref LineSegment and @ref Plane
+
+@see @ref Plane::operator%(const LineSegment3D&) const
+*/
 inline bool operator%(const LineSegment3D& a, const Plane& b) { return b % a; }
 
 

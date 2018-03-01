@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,7 +44,7 @@ namespace Magnum {
 
 See @ref AbstractShaderProgram for usage information.
 
-## Performance optimizations
+@section Shader-performance-optimizations Performance optimizations
 
 Shader limits and implementation-defined values (such as @ref maxUniformComponents())
 are cached, so repeated queries don't result in repeated @fn_gl{Get} calls.
@@ -63,6 +63,7 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *      @ref maxUniformBlocks(),
          *      @ref maxUniformComponents(),
          *      @ref maxCombinedUniformComponents()
+         * @m_enum_values_as_keywords
          */
         enum class Type: GLenum {
             Vertex = GL_VERTEX_SHADER,      /**< Vertex shader */
@@ -72,43 +73,31 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
              * Tessellation control shader
              * @requires_gl40 Extension @extension{ARB,tessellation_shader}
              * @requires_gles30 Not defined in OpenGL ES 2.0.
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension{EXT,tessellation_shader}
              * @requires_gles Tessellation shaders are not available in WebGL.
              */
-            #ifndef MAGNUM_TARGET_GLES
             TessellationControl = GL_TESS_CONTROL_SHADER,
-            #else
-            TessellationControl = GL_TESS_CONTROL_SHADER_EXT,
-            #endif
 
             /**
              * Tessellation evaluation shader
              * @requires_gl40 Extension @extension{ARB,tessellation_shader}
              * @requires_gles30 Not defined in OpenGL ES 2.0.
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension{EXT,tessellation_shader}
              * @requires_gles Tessellation shaders are not available in WebGL.
              */
-            #ifndef MAGNUM_TARGET_GLES
             TessellationEvaluation = GL_TESS_EVALUATION_SHADER,
-            #else
-            TessellationEvaluation = GL_TESS_EVALUATION_SHADER_EXT,
-            #endif
 
             /**
              * Geometry shader
              * @requires_gl32 Extension @extension{ARB,geometry_shader4}
              * @requires_gles30 Not defined in OpenGL ES 2.0.
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension{EXT,geometry_shader}
              * @requires_gles Geometry shaders are not available in WebGL.
              */
-            #ifndef MAGNUM_TARGET_GLES
             Geometry = GL_GEOMETRY_SHADER,
-            #else
-            Geometry = GL_GEOMETRY_SHADER_EXT,
-            #endif
 
             /**
              * Compute shader
@@ -129,9 +118,9 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. In OpenGL ES 2.0 the four-component vector count is
          * queried and multiplied with 4.
-         * @see @fn_gl{Get} with @def_gl{MAX_VERTEX_OUTPUT_COMPONENTS},
-         *      @def_gl{MAX_VARYING_COMPONENTS} in OpenGL <3.2 or
-         *      @def_gl{MAX_VARYING_VECTORS} in OpenGL ES 2.0
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_OUTPUT_COMPONENTS},
+         *      @def_gl_keyword{MAX_VARYING_COMPONENTS} in OpenGL <3.2 or
+         *      @def_gl_keyword{MAX_VARYING_VECTORS} in OpenGL ES 2.0
          */
         static Int maxVertexOutputComponents();
 
@@ -143,12 +132,12 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,tessellation_shader} (part
-         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a}/
+         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a} /
          * @extension{EXT,tessellation_shader} ES extension is available,
-         * returns `0`.
-         * @see @fn_gl{Get} with @def_gl{MAX_TESS_CONTROL_INPUT_COMPONENTS}
+         * returns @cpp 0 @ce.
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_TESS_CONTROL_INPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
-         * @requires_gl Tessellation shaders are not available in WebGL.
+         * @requires_gles Tessellation shaders are not available in WebGL.
          */
         static Int maxTessellationControlInputComponents();
 
@@ -157,12 +146,12 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,tessellation_shader} (part
-         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a}/
-         * @extension{EXT,tessellation_shader} ES extension is available,
-         * returns `0`.
-         * @see @fn_gl{Get} with @def_gl{MAX_TESS_CONTROL_OUTPUT_COMPONENTS}
+         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a} /
+         * @extension{EXT,tessellation_shader} (part of OpenGL ES 3.2) is
+         * available, returns @cpp 0 @ce.
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_TESS_CONTROL_OUTPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
-         * @requires_gl Tessellation shaders are not available in WebGL.
+         * @requires_gles Tessellation shaders are not available in WebGL.
          */
         static Int maxTessellationControlOutputComponents();
 
@@ -171,12 +160,12 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,tessellation_shader} (part
-         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a}/
-         * @extension{EXT,tessellation_shader} ES extension is available,
-         * returns `0`.
-         * @see @fn_gl{Get} with @def_gl{MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS}
+         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a} /
+         * @extension{EXT,tessellation_shader} (part of OpenGL ES 3.2) is
+         * available, returns @cpp 0 @ce.
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
-         * @requires_gl Tessellation shaders are not available in WebGL.
+         * @requires_gles Tessellation shaders are not available in WebGL.
          */
         static Int maxTessellationControlTotalOutputComponents();
 
@@ -185,12 +174,12 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,tessellation_shader} (part
-         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a}/
-         * @extension{EXT,tessellation_shader} ES extension is available,
-         * returns `0`.
-         * @see @fn_gl{Get} with @def_gl{MAX_TESS_EVALUATION_INPUT_COMPONENTS}
+         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a} /
+         * @extension{EXT,tessellation_shader} (part of OpenGL ES 3.2) is
+         * available, returns @cpp 0 @ce.
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_TESS_EVALUATION_INPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
-         * @requires_gl Tessellation shaders are not available in WebGL.
+         * @requires_gles Tessellation shaders are not available in WebGL.
          */
         static Int maxTessellationEvaluationInputComponents();
 
@@ -199,12 +188,12 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,tessellation_shader} (part
-         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a}/
-         * @extension{EXT,tessellation_shader} ES extension is available,
-         * returns `0`.
+         * of OpenGL 4.0) nor @extension{ANDROID,extension_pack_es31a} /
+         * @extension{EXT,tessellation_shader} (part of OpenGL ES 3.2) is
+         * available, returns @cpp 0 @ce.
          * @see @fn_gl{Get} with @def_gl{MAX_TESS_EVALUATION_OUTPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
-         * @requires_gl Tessellation shaders are not available in WebGL.
+         * @requires_gles Tessellation shaders are not available in WebGL.
          */
         static Int maxTessellationEvaluationOutputComponents();
 
@@ -213,10 +202,10 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,geometry_shader4} (part of
-         * OpenGL 3.2) nor @extension{ANDROID,extension_pack_es31a}/
-         * @extension{EXT,geometry_shader} ES extension is not available,
-         * returns `0`.
-         * @see @fn_gl{Get} with @def_gl{MAX_GEOMETRY_INPUT_COMPONENTS}
+         * OpenGL 3.2) nor @extension{ANDROID,extension_pack_es31a} /
+         * @extension{EXT,geometry_shader} (part of OpenGL ES 3.2) is not
+         * available, returns @cpp 0 @ce.
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_GEOMETRY_INPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Geometry shaders are not available in WebGL.
          */
@@ -227,10 +216,10 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,geometry_shader4} (part of
-         * OpenGL 3.2) nor @extension{ANDROID,extension_pack_es31a}/
-         * @extension{EXT,geometry_shader} ES extension is not available,
-         * returns `0`.
-         * @see @fn_gl{Get} with @def_gl{MAX_GEOMETRY_OUTPUT_COMPONENTS}
+         * OpenGL 3.2) nor @extension{ANDROID,extension_pack_es31a} /
+         * @extension{EXT,geometry_shader} (part of OpenGL ES 3.2) is not
+         * available, returns @cpp 0 @ce.
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_GEOMETRY_OUTPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Geometry shaders are not available in WebGL.
          */
@@ -241,10 +230,10 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither @extension{ARB,geometry_shader4} (part of
-         * OpenGL 3.2) nor @extension{ANDROID,extension_pack_es31a}/
-         * @extension{EXT,geometry_shader} ES extension is not available,
-         * returns `0`.
-         * @see @fn_gl{Get} with @def_gl{MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS}
+         * OpenGL 3.2) nor @extension{ANDROID,extension_pack_es31a} /
+         * @extension{EXT,geometry_shader} (part of OpenGL ES 3.2) is not
+         * available, returns @cpp 0 @ce.
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Geometry shaders are not available in WebGL.
          */
@@ -257,9 +246,9 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. In OpenGL ES 2.0 the four-component vector count is
          * queried and multiplied with 4.
-         * @see @fn_gl{Get} with @def_gl{MAX_FRAGMENT_INPUT_COMPONENTS},
-         *      @def_gl{MAX_VARYING_COMPONENTS} in OpenGL <3.2 or
-         *      @def_gl{MAX_VARYING_VECTORS} in OpenGL ES 2.0
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_FRAGMENT_INPUT_COMPONENTS},
+         *      @def_gl_keyword{MAX_VARYING_COMPONENTS} in OpenGL <3.2 or
+         *      @def_gl_keyword{MAX_VARYING_VECTORS} in OpenGL ES 2.0
          */
         static Int maxFragmentInputComponents();
 
@@ -268,17 +257,17 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If particular shader stage is not available, returns
-         * `0`. In OpenGL ES 2.0 the four-component vector count is queried and
-         * multiplied with 4.
+         * @cpp 0 @ce. In OpenGL ES 2.0 the four-component vector count is
+         * queried and multiplied with 4.
          * @see @ref maxCombinedUniformComponents(),
-         *      @fn_gl{Get} with @def_gl{MAX_VERTEX_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_TESS_CONTROL_UNIFORM_COMPOENTS},
-         *      @def_gl{MAX_TESS_EVALUATION_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_GEOMETRY_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_COMPUTE_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_FRAGMENT_UNIFORM_COMPONENTS} or
-         *      @def_gl{MAX_VERTEX_UNIFORM_VECTORS},
-         *      @def_gl{MAX_FRAGMENT_UNIFORM_VECTORS} in OpenGL ES 2.0
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_TESS_CONTROL_UNIFORM_COMPOENTS},
+         *      @def_gl_keyword{MAX_TESS_EVALUATION_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_GEOMETRY_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_COMPUTE_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_FRAGMENT_UNIFORM_COMPONENTS} or
+         *      @def_gl_keyword{MAX_VERTEX_UNIFORM_VECTORS},
+         *      @def_gl_keyword{MAX_FRAGMENT_UNIFORM_VECTORS} in OpenGL ES 2.0
          */
         static Int maxUniformComponents(Type type);
 
@@ -289,14 +278,14 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_atomic_counters}
          * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available or if particular
-         * shader stage is not available, returns `0`.
+         * shader stage is not available, returns @cpp 0 @ce.
          * @see @ref maxCombinedAtomicCounterBuffers(), @ref maxAtomicCounters(),
-         *      @fn_gl{Get} with @def_gl{MAX_VERTEX_ATOMIC_COUNTER_BUFFERS},
-         *      @def_gl{MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS},
-         *      @def_gl{MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS},
-         *      @def_gl{MAX_GEOMETRY_ATOMIC_COUNTER_BUFFERS},
-         *      @def_gl{MAX_COMPUTE_ATOMIC_COUNTER_BUFFERS} or
-         *      @def_gl{MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_ATOMIC_COUNTER_BUFFERS},
+         *      @def_gl_keyword{MAX_TESS_CONTROL_ATOMIC_COUNTER_BUFFERS},
+         *      @def_gl_keyword{MAX_TESS_EVALUATION_ATOMIC_COUNTER_BUFFERS},
+         *      @def_gl_keyword{MAX_GEOMETRY_ATOMIC_COUNTER_BUFFERS},
+         *      @def_gl_keyword{MAX_COMPUTE_ATOMIC_COUNTER_BUFFERS} or
+         *      @def_gl_keyword{MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Atomic counters are not available in WebGL.
          */
@@ -307,9 +296,9 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_atomic_counters}
-         * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available, returns `0`.
+         * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available, returns @cpp 0 @ce.
          * @see @ref maxAtomicCounterBuffers(), @ref maxCombinedAtomicCounters(),
-         *      @fn_gl{Get} with @def_gl{MAX_COMBINED_ATOMIC_COUNTER_BUFFERS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_COMBINED_ATOMIC_COUNTER_BUFFERS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Atomic counters are not available in WebGL.
          */
@@ -321,14 +310,14 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_atomic_counters}
          * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available or if particular
-         * shader stage is not available, returns `0`.
+         * shader stage is not available, returns @cpp 0 @ce.
          * @see @ref maxCombinedAtomicCounters(), @ref maxAtomicCounterBuffers(),
-         *      @fn_gl{Get} with @def_gl{MAX_VERTEX_ATOMIC_COUNTERS},
-         *      @def_gl{MAX_TESS_CONTROL_ATOMIC_COUNTERS},
-         *      @def_gl{MAX_TESS_EVALUATION_ATOMIC_COUNTERS},
-         *      @def_gl{MAX_GEOMETRY_ATOMIC_COUNTERS},
-         *      @def_gl{MAX_COMPUTE_ATOMIC_COUNTERS} or
-         *      @def_gl{MAX_FRAGMENT_ATOMIC_COUNTERS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_ATOMIC_COUNTERS},
+         *      @def_gl_keyword{MAX_TESS_CONTROL_ATOMIC_COUNTERS},
+         *      @def_gl_keyword{MAX_TESS_EVALUATION_ATOMIC_COUNTERS},
+         *      @def_gl_keyword{MAX_GEOMETRY_ATOMIC_COUNTERS},
+         *      @def_gl_keyword{MAX_COMPUTE_ATOMIC_COUNTERS} or
+         *      @def_gl_keyword{MAX_FRAGMENT_ATOMIC_COUNTERS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Atomic counters are not available in WebGL.
          */
@@ -339,9 +328,9 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_atomic_counters}
-         * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available, returns `0`.
+         * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available, returns @cpp 0 @ce.
          * @see @ref maxAtomicCounters(), @ref maxCombinedAtomicCounterBuffers(),
-         *      @fn_gl{Get} with @def_gl{MAX_COMBINED_ATOMIC_COUNTERS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_COMBINED_ATOMIC_COUNTERS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Atomic counters are not available in WebGL.
          */
@@ -353,14 +342,14 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_image_load_store}
          * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available or if particular
-         * shader stage is not available, returns `0`.
+         * shader stage is not available, returns @cpp 0 @ce.
          * @see @ref maxCombinedImageUniforms(),
-         *      @fn_gl{Get} with @def_gl{MAX_VERTEX_IMAGE_UNIFORMS},
-         *      @def_gl{MAX_TESS_CONTROL_IMAGE_UNIFORMS},
-         *      @def_gl{MAX_TESS_EVALUATION_IMAGE_UNIFORMS},
-         *      @def_gl{MAX_GEOMETRY_IMAGE_UNIFORMS},
-         *      @def_gl{MAX_COMPUTE_IMAGE_UNIFORMS} or
-         *      @def_gl{MAX_FRAGMENT_IMAGE_UNIFORMS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_IMAGE_UNIFORMS},
+         *      @def_gl_keyword{MAX_TESS_CONTROL_IMAGE_UNIFORMS},
+         *      @def_gl_keyword{MAX_TESS_EVALUATION_IMAGE_UNIFORMS},
+         *      @def_gl_keyword{MAX_GEOMETRY_IMAGE_UNIFORMS},
+         *      @def_gl_keyword{MAX_COMPUTE_IMAGE_UNIFORMS} or
+         *      @def_gl_keyword{MAX_FRAGMENT_IMAGE_UNIFORMS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Shader image load/store is not available in WebGL.
          */
@@ -371,9 +360,9 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_image_load_store}
-         * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available, returns `0`.
+         * (part of OpenGL 4.2) nor OpenGL ES 3.1 is available, returns @cpp 0 @ce.
          * @see @ref maxImageUniforms(),
-         *      @fn_gl{Get} with @def_gl{MAX_COMBINED_IMAGE_UNIFORMS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_COMBINED_IMAGE_UNIFORMS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Shader image load/store is not available in WebGL.
          */
@@ -385,14 +374,14 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_storage_buffer_object}
          * (part of OpenGL 4.3) nor OpenGL ES 3.1 is available or if particular
-         * shader stage is not available, returns `0`.
+         * shader stage is not available, returns @cpp 0 @ce.
          * @see @ref maxCombinedShaderStorageBlocks(),
-         *      @fn_gl{Get} with @def_gl{MAX_VERTEX_SHADER_STORAGE_BLOCKS},
-         *      @def_gl{MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS},
-         *      @def_gl{MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS},
-         *      @def_gl{MAX_GEOMETRY_SHADER_STORAGE_BLOCKS},
-         *      @def_gl{MAX_COMPUTE_SHADER_STORAGE_BLOCKS} or
-         *      @def_gl{MAX_FRAGMENT_SHADER_STORAGE_BLOCKS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_SHADER_STORAGE_BLOCKS},
+         *      @def_gl_keyword{MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS},
+         *      @def_gl_keyword{MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS},
+         *      @def_gl_keyword{MAX_GEOMETRY_SHADER_STORAGE_BLOCKS},
+         *      @def_gl_keyword{MAX_COMPUTE_SHADER_STORAGE_BLOCKS} or
+         *      @def_gl_keyword{MAX_FRAGMENT_SHADER_STORAGE_BLOCKS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Shader image load/store is not available in WebGL.
          */
@@ -403,9 +392,9 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If neither extension @extension{ARB,shader_storage_buffer_object}
-         * (part of OpenGL 4.3) nor OpenGL ES 3.1 is available, returns `0`.
+         * (part of OpenGL 4.3) nor OpenGL ES 3.1 is available, returns @cpp 0 @ce.
          * @see @ref maxShaderStorageBlocks(),
-         *      @fn_gl{Get} with @def_gl{MAX_COMBINED_SHADER_STORAGE_BLOCKS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_COMBINED_SHADER_STORAGE_BLOCKS}
          * @requires_gles30 Not defined in OpenGL ES 2.0.
          * @requires_gles Shader storage is not available in WebGL.
          */
@@ -417,14 +406,14 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If particular shader stage is not available, returns
-         * `0`.
+         * @cpp 0 @ce.
          * @see @ref maxCombinedTextureImageUnits(),
-         *      @fn_gl{Get} with @def_gl{MAX_VERTEX_TEXTURE_IMAGE_UNITS},
-         *      @def_gl{MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS},
-         *      @def_gl{MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS},
-         *      @def_gl{MAX_GEOMETRY_TEXTURE_IMAGE_UNITS},
-         *      @def_gl{MAX_COMPUTE_TEXTURE_IMAGE_UNITS},
-         *      @def_gl{MAX_TEXTURE_IMAGE_UNITS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_TEXTURE_IMAGE_UNITS},
+         *      @def_gl_keyword{MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS},
+         *      @def_gl_keyword{MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS},
+         *      @def_gl_keyword{MAX_GEOMETRY_TEXTURE_IMAGE_UNITS},
+         *      @def_gl_keyword{MAX_COMPUTE_TEXTURE_IMAGE_UNITS},
+         *      @def_gl_keyword{MAX_TEXTURE_IMAGE_UNITS}
          */
         static Int maxTextureImageUnits(Type type);
 
@@ -434,7 +423,7 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls.
          * @see @ref maxTextureImageUnits(), @fn_gl{Get} with
-         *      @def_gl{MAX_COMBINED_TEXTURE_IMAGE_UNITS}
+         *      @def_gl_keyword{MAX_COMBINED_TEXTURE_IMAGE_UNITS}
          */
         static Int maxCombinedTextureImageUnits();
 
@@ -445,15 +434,15 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If extension @extension{ARB,uniform_buffer_objects}
          * (part of OpenGL 3.1) or particular shader stage is not available,
-         * returns `0`.
+         * returns @cpp 0 @ce.
          * @see @ref maxCombinedUniformBlocks(), @ref maxUniformComponents(),
          *      @ref maxCombinedUniformComponents(),
-         *      @fn_gl{Get} with @def_gl{MAX_VERTEX_UNIFORM_BLOCKS},
-         *      @def_gl{MAX_TESS_CONTROL_UNIFORM_BLOCKS},
-         *      @def_gl{MAX_TESS_EVALUATION_UNIFORM_BLOCKS},
-         *      @def_gl{MAX_GEOMETRY_UNIFORM_BLOCKS},
-         *      @def_gl{MAX_COMPUTE_UNIFORM_BLOCKS} or
-         *      @def_gl{MAX_FRAGMENT_UNIFORM_BLOCKS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_VERTEX_UNIFORM_BLOCKS},
+         *      @def_gl_keyword{MAX_TESS_CONTROL_UNIFORM_BLOCKS},
+         *      @def_gl_keyword{MAX_TESS_EVALUATION_UNIFORM_BLOCKS},
+         *      @def_gl_keyword{MAX_GEOMETRY_UNIFORM_BLOCKS},
+         *      @def_gl_keyword{MAX_COMPUTE_UNIFORM_BLOCKS} or
+         *      @def_gl_keyword{MAX_FRAGMENT_UNIFORM_BLOCKS}
          * @requires_gles30 Uniform blocks are not available in OpenGL ES 2.0.
          * @requires_webgl20 Uniform blocks are not available in WebGL 1.0.
          */
@@ -464,10 +453,10 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If extension @extension{ARB,uniform_buffer_objects}
-         * (part of OpenGL 3.1) is not available, returns `0`.
+         * (part of OpenGL 3.1) is not available, returns @cpp 0 @ce.
          * @see @ref maxUniformBlocks(), @ref maxUniformComponents(),
          *      @ref maxCombinedUniformComponents(),
-         *      @fn_gl{Get} with @def_gl{MAX_COMBINED_UNIFORM_BLOCKS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_COMBINED_UNIFORM_BLOCKS}
          * @requires_gles30 Uniform blocks are not available in OpenGL ES 2.0.
          * @requires_webgl20 Uniform blocks are not available in WebGL 1.0.
          */
@@ -479,14 +468,14 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If extension @extension{ARB,uniform_buffer_objects}
          * (part of OpenGL 3.1) or particular shader stage is not available,
-         * returns `0`.
+         * returns @cpp 0 @ce.
          * @see @ref maxUniformComponents(), @ref maxUniformBlocks(),
-         *      @fn_gl{Get} with @def_gl{MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS},
-         *      @def_gl{MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS} or
-         *      @def_gl{MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS}
+         *      @fn_gl{Get} with @def_gl_keyword{MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_COMBINED_GEOMETRY_UNIFORM_COMPONENTS},
+         *      @def_gl_keyword{MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS} or
+         *      @def_gl_keyword{MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS}
          * @requires_gles30 Uniform blocks are not available in OpenGL ES 2.0.
          * @requires_webgl20 Uniform blocks are not available in WebGL 1.0.
          */
@@ -496,14 +485,14 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
         /**
          * @brief Compile multiple shaders simultaneously
          *
-         * Returns `false` if compilation of any shader failed, `true` if
-         * everything succeeded. Compiler messages (if any) are printed to
-         * error output. The operation is batched in a way that allows the
-         * driver to perform multiple compilations simultaneously (i.e. in
-         * multiple threads).
-         * @see @fn_gl{ShaderSource}, @fn_gl{CompileShader}, @fn_gl{GetShader}
-         *      with @def_gl{COMPILE_STATUS} and @def_gl{INFO_LOG_LENGTH},
-         *      @fn_gl{GetShaderInfoLog}
+         * Returns @cpp false @ce if compilation of any shader failed,
+         * @cpp true @ce if everything succeeded. Compiler messages (if any)
+         * are printed to error output. The operation is batched in a way that
+         * allows the driver to perform multiple compilations simultaneously
+         * (i.e. in multiple threads).
+         * @see @fn_gl_keyword{ShaderSource}, @fn_gl_keyword{CompileShader},
+         *      @fn_gl_keyword{GetShader} with @def_gl{COMPILE_STATUS} and
+         *      @def_gl{INFO_LOG_LENGTH}, @fn_gl_keyword{GetShaderInfoLog}
          */
         static bool compile(std::initializer_list<std::reference_wrapper<Shader>> shaders);
 
@@ -512,11 +501,11 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * @param version   Target version
          * @param type      Shader type
          *
-         * Creates empty OpenGL shader and adds @c \#version directive
+         * Creates empty OpenGL shader and adds @glsl #version @ce directive
          * corresponding to @p version parameter at the beginning. If
-         * @ref Version::None is specified, (not) adding the @c \#version
+         * @ref Version::None is specified, (not) adding the @glsl #version @ce
          * directive is left to the user.
-         * @see @fn_gl{CreateShader}
+         * @see @fn_gl_keyword{CreateShader}
          */
         explicit Shader(Version version, Type type);
 
@@ -530,7 +519,7 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * @brief Destructor
          *
          * Deletes associated OpenGL shader.
-         * @see @fn_gl{DeleteShader}
+         * @see @fn_gl_keyword{DeleteShader}
          */
         ~Shader();
 
@@ -548,12 +537,13 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * @brief Shader label
          *
          * The result is *not* cached, repeated queries will result in repeated
-         * OpenGL calls. If OpenGL 4.3 is not supported and neither
-         * @extension{KHR,debug} (covered also by @extension{ANDROID,extension_pack_es31a})
-         * nor @extension{EXT,debug_label} desktop or ES extension is
-         * available, this function returns empty string.
-         * @see @fn_gl{GetObjectLabel} with @def_gl{SHADER} or
-         *      @fn_gl_extension{GetObjectLabel,EXT,debug_label} with
+         * OpenGL calls. If OpenGL 4.3 / OpenGL ES 3.2 is not supported and
+         * neither @extension{KHR,debug} (covered also by
+         * @extension{ANDROID,extension_pack_es31a}) nor @extension{EXT,debug_label}
+         * desktop or ES extension is available, this function returns empty
+         * string.
+         * @see @fn_gl_keyword{GetObjectLabel} with @def_gl{SHADER} or
+         *      @fn_gl_extension_keyword{GetObjectLabel,EXT,debug_label} with
          *      @def_gl{SHADER_OBJECT_EXT}
          * @requires_gles Debug output is not available in WebGL.
          */
@@ -563,12 +553,12 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * @brief Set shader label
          * @return Reference to self (for method chaining)
          *
-         * Default is empty string. If OpenGL 4.3 is not supported and neither
-         * @extension{KHR,debug} (covered also by @extension{ANDROID,extension_pack_es31a})
-         * nor @extension{EXT,debug_label} desktop or ES extension is
-         * available, this function does nothing.
-         * @see @ref maxLabelLength(), @fn_gl{ObjectLabel} with
-         *      @def_gl{SHADER} or @fn_gl_extension{LabelObject,EXT,debug_label}
+         * Default is empty string. If OpenGL 4.3 / OpenGL ES 3.2 is not
+         * supported and neither @extension{KHR,debug} (covered also by
+         * @extension{ANDROID,extension_pack_es31a}) nor @extension{EXT,debug_label}
+         * desktop or ES extension is available, this function does nothing.
+         * @see @ref maxLabelLength(), @fn_gl_keyword{ObjectLabel} with
+         *      @def_gl{SHADER} or @fn_gl_extension_keyword{LabelObject,EXT,debug_label}
          *      with @def_gl{SHADER_OBJECT_EXT}
          * @requires_gles Debug output is not available in WebGL.
          */
@@ -593,11 +583,11 @@ class MAGNUM_EXPORT Shader: public AbstractObject {
          * @param source    String with shader source
          * @return Reference to self (for method chaining)
          *
-         * Adds given source to source list, preceeded with @c \#line directive
-         * marking first line of the source as `n(1)` where n is number of
-         * added source. The source number `0` is @c \#version directive added
-         * in constructor, if any. If passed string is empty, the function does
-         * nothing.
+         * Adds given source to source list, preceeded with @glsl #line @ce
+         * directive marking first line of the source as `n(1)` where `n` is
+         * number of the added source. The source number `0` is
+         * @glsl #version @ce directive added in the constructor, if any. If
+         * passed string is empty, the function does nothing.
          * @see @ref addFile()
          */
         Shader& addSource(std::string source);

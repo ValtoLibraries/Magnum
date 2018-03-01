@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -52,9 +52,9 @@ Manages @ref Audio::Playable features and provides means of setting gain or
 transformation of a group of Playables, aswell as the ability of playing,
 pausing, stopping or cleaning all sources of all Playables.
 
-## Usage
+@section Audio-PlayableGroup-usage Usage
 
-@code
+@code{.cpp}
 Object3D object;
 Source source;
 PlayableGroup3D group;
@@ -126,12 +126,12 @@ template<UnsignedInt dimensions> class PlayableGroup: public SceneGraph::Feature
         /**
          * @brief Set gain for all sound sources of Playables in this group
          * @param gain Gain
+         * @return Reference to self (for method chaining)
          *
          * Will calculate the sound sources gain relative to the gain of the
          * Playable and this playable group. The sources gain is computed as
-         * `sourceGain = playableGain*groupGain`. Default of the groups gain
-         * is `1.0f`.
-         * @return Reference to self (for method chaining)
+         * @cpp sourceGain = playableGain*groupGain @ce. Default of the groups
+         * gain is @cpp 1.0f @ce.
          */
         PlayableGroup& setGain(const Float gain) {
             _gain = gain;

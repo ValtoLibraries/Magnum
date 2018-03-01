@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,37 +51,15 @@ attributes in your triangle mesh and call at least
 @image html shaders-vector.png
 @image latex shaders-vector.png
 
-## Example usage
+@section Shaders-Vector-usage Example usage
 
 Common mesh setup:
-@code
-struct Vertex {
-    Vector2 position;
-    Vector2 textureCoordinates;
-};
-Vertex data[] = { ... };
 
-Buffer vertices;
-vertices.setData(data, BufferUsage::StaticDraw);
-
-Mesh mesh;
-mesh.addVertexBuffer(vertices, 0,
-    Shaders::Vector2D::Position{},
-    Shaders::Vector2D::TextureCoordinates{});
-@endcode
+@snippet MagnumShaders.cpp Vector-usage1
 
 Common rendering setup:
-@code
-Matrix3 transformationMatrix, projectionMatrix;
-Texture2D texture;
 
-Shaders::Vector2D shader;
-shader.setColor(Color3::fromHSV(216.0_degf, 0.85f, 1.0f))
-    .setVectorTexture(texture)
-    .setTransformationProjectionMatrix(projectionMatrix*transformationMatrix);
-
-mesh.draw(shader);
-@endcode
+@snippet MagnumShaders.cpp Vector-usage2
 
 @see @ref shaders, @ref Vector2D, @ref Vector3D
 */

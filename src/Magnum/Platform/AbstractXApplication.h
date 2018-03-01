@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,8 +56,8 @@ namespace Implementation {
 
 Supports keyboard and mouse handling. See @ref platform for brief introduction.
 
-@note Not meant to be used directly, see @ref GlxApplication and
-    @ref XEglApplication subclasses.
+@note Not meant to be used directly, see the @ref GlxApplication and
+    @ref XEglApplication subclasses instead.
 */
 class AbstractXApplication {
     public:
@@ -90,7 +90,7 @@ class AbstractXApplication {
 
         /**
          * @brief Execute main loop
-         * @return Value for returning from `main()`
+         * @return Value for returning from @cpp main() @ce
          *
          * See @ref MAGNUM_GLXAPPLICATION_MAIN() or
          * @ref MAGNUM_XEGLAPPLICATION_MAIN() for usage information.
@@ -218,7 +218,7 @@ class AbstractXApplication::Configuration {
          * @brief Set window title
          * @return Reference to self (for method chaining)
          *
-         * Default is `"Magnum X Application"`.
+         * Default is @cpp "Magnum X Application" @ce.
          */
         Configuration& setTitle(std::string title) {
             _title = std::move(title);
@@ -232,7 +232,7 @@ class AbstractXApplication::Configuration {
          * @brief Set window size
          * @return Reference to self (for method chaining)
          *
-         * Default is `{800, 600}`.
+         * Default is @cpp {800, 600} @ce.
          */
         Configuration& setSize(const Vector2i& size) {
             _size = size;

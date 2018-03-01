@@ -1,9 +1,7 @@
-#ifndef Magnum_SceneGraph_Camera3D_h
-#define Magnum_SceneGraph_Camera3D_h
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,17 +23,25 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-/** @file
- * @deprecated Use @ref Magnum/SceneGraph/Camera.h instead.
- */
+#include <thread>
+#include <Magnum/Platform/WindowlessEglApplication.h>
+#include <Magnum/Platform/Context.h>
 
-#include "Magnum/configure.h"
+using namespace Magnum;
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "Magnum/SceneGraph/Camera.h"
-CORRADE_DEPRECATED_FILE("use Magnum/SceneGraph/Camera.h instead")
-#else
-#error use Magnum/SceneGraph/Camera.h instead
-#endif
+/* [thread] */
+int main() {
+    Platform::WindowlessGLContext glContext{{}};
 
-#endif
+    std::thread worker{[&glContext]{
+        glContext.makeCurrent();
+        Platform::Context context;
+
+        // Use Magnum here ...
+    }};
+
+    // Independent main application code here ...
+
+    worker.join();
+}
+/* [thread] */

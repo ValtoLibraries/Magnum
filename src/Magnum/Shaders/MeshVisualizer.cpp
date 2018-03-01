@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,12 +25,12 @@
 
 #include "MeshVisualizer.h"
 
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Resource.h>
 
 #include "Magnum/Context.h"
 #include "Magnum/Extensions.h"
 #include "Magnum/Shader.h"
-#include "MagnumExternal/Optional/optional.hpp"
 
 #include "Implementation/CreateCompatibilityShader.h"
 
@@ -86,7 +86,7 @@ MeshVisualizer::MeshVisualizer(const Flags flags): _flags{flags} {
         .addSource(rs.get("MeshVisualizer.frag"));
 
     #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-    std::optional<Shader> geom;
+    Containers::Optional<Shader> geom;
     if(flags & Flag::Wireframe && !(flags & Flag::NoGeometryShader)) {
         geom = Implementation::createCompatibilityShader(rs, version, Shader::Type::Geometry);
         geom->addSource(rs.get("MeshVisualizer.geom"));

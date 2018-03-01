@@ -1,9 +1,9 @@
-#ifndef Magnum_Shaders_magnumShadersVisibility_h
-#define Magnum_Shaders_magnumShadersVisibility_h
+#ifndef Magnum_Shaders_visibility_h
+#define Magnum_Shaders_visibility_h
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 
 #include "Magnum/configure.h"
 
+#ifndef DOXYGEN_GENERATING_OUTPUT
 #ifndef MAGNUM_BUILD_STATIC
     #ifdef MagnumShaders_EXPORTS
         #define MAGNUM_SHADERS_EXPORT CORRADE_VISIBILITY_EXPORT
@@ -37,6 +38,9 @@
     #endif
 #else
     #define MAGNUM_SHADERS_EXPORT CORRADE_VISIBILITY_STATIC
+#endif
+#else
+#define MAGNUM_SHADERS_EXPORT
 #endif
 
 #endif

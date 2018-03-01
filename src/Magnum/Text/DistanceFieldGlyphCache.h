@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,17 +40,12 @@ Unlike original @ref GlyphCache converts each binary image to distance field.
 It is not possible to use non-binary colors with this cache, internal texture
 format is red channel only.
 
-## Usage
+@section Text-DistanceFieldGlyphCache-usage Usage
 
 Usage is similar to @ref GlyphCache, additionally you need to specify size of
 resulting distance field texture.
-@code
-Text::AbstractFont* font;
-Text::GlyphCache* cache = new Text::DistanceFieldGlyphCache(Vector2i(2048), Vector2i(384));
-font->createGlyphCache(cache, "abcdefghijklmnopqrstuvwxyz"
-                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                              "0123456789?!:;,. ");
-@endcode
+
+@snippet MagnumText.cpp DistanceFieldGlyphCache-usage
 
 @see @ref TextureTools::distanceField()
 */

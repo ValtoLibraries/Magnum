@@ -1,14 +1,10 @@
-# Copyright 1999-2014 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
-# $Header: $
-
 EAPI=5
 
 EGIT_REPO_URI="git://github.com/mosra/magnum.git"
 
 inherit cmake-utils git-r3
 
-DESCRIPTION="C++11/C++14 and OpenGL 2D/3D graphics engine"
+DESCRIPTION="C++11/C++14 graphics middleware for games and data visualization"
 HOMEPAGE="http://magnum.graphics"
 
 LICENSE="MIT"
@@ -29,6 +25,7 @@ src_configure() {
 		-DCMAKE_BUILD_TYPE=Release
 		-DWITH_AUDIO=ON
 		-DWITH_GLXAPPLICATION=ON
+		-DWITH_GLFWAPPLICATION=OFF
 		-DWITH_SDL2APPLICATION=ON
 		-DWITH_WINDOWLESSGLXAPPLICATION=ON
 		-DWITH_EGLCONTEXT=ON

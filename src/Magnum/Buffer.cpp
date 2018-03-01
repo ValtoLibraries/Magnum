@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -136,48 +136,20 @@ Int Buffer::maxUniformBindings() {
 }
 
 void Buffer::unbind(const Target target, const UnsignedInt index) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    #ifndef MAGNUM_TARGET_WEBGL
-    CORRADE_INTERNAL_ASSERT(target == Target::AtomicCounter || target == Target::ShaderStorage || target == Target::Uniform);
-    #else
-    CORRADE_INTERNAL_ASSERT(target == Target::Uniform);
-    #endif
-    #endif
     glBindBufferBase(GLenum(target), index, 0);
 }
 
 void Buffer::unbind(const Target target, const UnsignedInt firstIndex, const std::size_t count) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    #ifndef MAGNUM_TARGET_WEBGL
-    CORRADE_INTERNAL_ASSERT(target == Target::AtomicCounter || target == Target::ShaderStorage || target == Target::Uniform);
-    #else
-    CORRADE_INTERNAL_ASSERT(target == Target::Uniform);
-    #endif
-    #endif
     Context::current().state().buffer->bindBasesImplementation(target, firstIndex, {nullptr, count});
 }
 
 /** @todoc const std::initializer_list makes Doxygen grumpy */
 void Buffer::bind(const Target target, const UnsignedInt firstIndex, std::initializer_list<std::tuple<Buffer*, GLintptr, GLsizeiptr>> buffers) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    #ifndef MAGNUM_TARGET_WEBGL
-    CORRADE_INTERNAL_ASSERT(target == Target::AtomicCounter || target == Target::ShaderStorage || target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #else
-    CORRADE_INTERNAL_ASSERT(target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #endif
-    #endif
     Context::current().state().buffer->bindRangesImplementation(target, firstIndex, {buffers.begin(), buffers.size()});
 }
 
 /** @todoc const std::initializer_list makes Doxygen grumpy */
 void Buffer::bind(const Target target, const UnsignedInt firstIndex, std::initializer_list<Buffer*> buffers) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    #ifndef MAGNUM_TARGET_WEBGL
-    CORRADE_INTERNAL_ASSERT(target == Target::AtomicCounter || target == Target::ShaderStorage || target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #else
-    CORRADE_INTERNAL_ASSERT(target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #endif
-    #endif
     Context::current().state().buffer->bindBasesImplementation(target, firstIndex, {buffers.begin(), buffers.size()});
 }
 
@@ -230,7 +202,7 @@ inline void Buffer::createIfNotAlready() {
 #ifndef MAGNUM_TARGET_WEBGL
 std::string Buffer::label() {
     createIfNotAlready();
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     return Context::current().state().debug->getLabelImplementation(GL_BUFFER, _id);
     #else
     return Context::current().state().debug->getLabelImplementation(GL_BUFFER_KHR, _id);
@@ -239,7 +211,7 @@ std::string Buffer::label() {
 
 Buffer& Buffer::setLabelInternal(const Containers::ArrayView<const char> label) {
     createIfNotAlready();
-    #ifndef MAGNUM_TARGET_GLES
+    #ifndef MAGNUM_TARGET_GLES2
     Context::current().state().debug->labelImplementation(GL_BUFFER, _id, label);
     #else
     Context::current().state().debug->labelImplementation(GL_BUFFER_KHR, _id, label);
@@ -283,13 +255,8 @@ auto Buffer::bindSomewhereInternal(const TargetHint hint) -> TargetHint {
         auto& currentVAO = Context::current().state().mesh->currentVAO;
         /* It can be also State::DisengagedBinding, in which case we unbind as
            well to be sure */
-        if(currentVAO != 0) {
-            #ifndef MAGNUM_TARGET_GLES2
-            glBindVertexArray(currentVAO = 0);
-            #else
-            glBindVertexArrayOES(currentVAO = 0);
-            #endif
-        }
+        if(currentVAO != 0)
+            Context::current().state().mesh->bindVAOImplementation(0);
     }
 
     /* Bind the buffer to hint target otherwise */
@@ -301,25 +268,11 @@ auto Buffer::bindSomewhereInternal(const TargetHint hint) -> TargetHint {
 
 #ifndef MAGNUM_TARGET_GLES2
 Buffer& Buffer::bind(const Target target, const UnsignedInt index, const GLintptr offset, const GLsizeiptr size) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    #ifndef MAGNUM_TARGET_WEBGL
-    CORRADE_INTERNAL_ASSERT(target == Target::AtomicCounter || target == Target::ShaderStorage || target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #else
-    CORRADE_INTERNAL_ASSERT(target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #endif
-    #endif
     glBindBufferRange(GLenum(target), index, _id, offset, size);
     return *this;
 }
 
 Buffer& Buffer::bind(const Target target, const UnsignedInt index) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    #ifndef MAGNUM_TARGET_WEBGL
-    CORRADE_INTERNAL_ASSERT(target == Target::AtomicCounter || target == Target::ShaderStorage || target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #else
-    CORRADE_INTERNAL_ASSERT(target == Target::Uniform || GLenum(target) == GL_TRANSFORM_FEEDBACK_BUFFER);
-    #endif
-    #endif
     glBindBufferBase(GLenum(target), index, _id);
     return *this;
 }
@@ -648,7 +601,7 @@ Debug& operator<<(Debug& debug, Buffer::TargetHint value) {
         _c(ShaderStorage)
         #endif
         #endif
-        #ifndef MAGNUM_TARGET_GLES
+        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
         _c(Texture)
         #endif
         #ifndef MAGNUM_TARGET_GLES2
@@ -661,13 +614,10 @@ Debug& operator<<(Debug& debug, Buffer::TargetHint value) {
 
     return debug << "Buffer::TargetHint(" << Debug::nospace << reinterpret_cast<void*>(GLenum(value)) << Debug::nospace << ")";
 }
-#endif
 
-#if !defined(MAGNUM_TARGET_GLES2) || defined(MAGNUM_BUILD_DEPRECATED)
-#ifndef DOXYGEN_GENERATING_OUTPUT
+#ifndef MAGNUM_TARGET_GLES2
 Debug& operator<<(Debug& debug, Buffer::Target value) {
     switch(value) {
-        #ifndef MAGNUM_TARGET_GLES2
         #define _c(value) case Buffer::Target::value: return debug << "Buffer::Target::" #value;
         #ifndef MAGNUM_TARGET_WEBGL
         _c(AtomicCounter)
@@ -675,38 +625,6 @@ Debug& operator<<(Debug& debug, Buffer::Target value) {
         #endif
         _c(Uniform)
         #undef _c
-        #endif
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #endif
-        case Buffer::Target::Array:
-        #ifndef MAGNUM_TARGET_GLES2
-        case Buffer::Target::CopyRead:
-        case Buffer::Target::CopyWrite:
-        #ifndef MAGNUM_TARGET_WEBGL
-        case Buffer::Target::DispatchIndirect:
-        case Buffer::Target::DrawIndirect:
-        #endif
-        #endif
-        case Buffer::Target::ElementArray:
-        #ifndef MAGNUM_TARGET_GLES2
-        case Buffer::Target::PixelPack:
-        case Buffer::Target::PixelUnpack:
-        #endif
-        #ifndef MAGNUM_TARGET_GLES
-        case Buffer::Target::Texture:
-        #endif
-        #ifndef MAGNUM_TARGET_GLES2
-        case Buffer::Target::TransformFeedback:
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #endif
-        #endif
-            return debug << static_cast<Buffer::TargetHint>(value);
-        #endif
     }
 
     return debug << "Buffer::Target(" << Debug::nospace << reinterpret_cast<void*>(GLenum(value)) << Debug::nospace << ")";

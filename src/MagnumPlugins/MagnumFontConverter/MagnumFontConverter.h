@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,9 @@
     #define MAGNUM_MAGNUMFONTCONVERTER_EXPORT CORRADE_VISIBILITY_STATIC
 #endif
 #define MAGNUM_MAGNUMFONTCONVERTER_LOCAL CORRADE_VISIBILITY_LOCAL
+#else
+#define MAGNUM_MAGNUMFONTCONVERTER_EXPORT
+#define MAGNUM_MAGNUMFONTCONVERTER_LOCAL
 #endif
 
 namespace Magnum { namespace Text {
@@ -55,14 +58,15 @@ Expects filename prefix, creates two files, `prefix.conf` and `prefix.tga`. See
 @ref MagnumFont for more information about the font.
 
 This plugin is available only on desktop OpenGL, as it uses @ref Texture::image()
-to read back the generated data. It depends on
-@ref Trade::TgaImageConverter "TgaImageConverter" plugin and is built if
-`WITH_MAGNUMFONTCONVERTER` is enabled when building Magnum. To use dynamic
-plugin, you need to load `MagnumFontConverter` plugin from
-`MAGNUM_PLUGINS_FONTCONVERTER_DIR`. To use static plugin or use this as a
-dependency of another plugin, you need to request `MagnumFontConverter`
-component of `Magnum` package in CMake and link to `Magnum::MagnumFontConverter`
-target. See @ref building, @ref cmake and @ref plugins for more information.
+to read back the generated data. It depends on the @ref Text library and the
+@ref Trade::TgaImageConverter "TgaImageConverter" plugin. It is built if
+`WITH_MAGNUMFONTCONVERTER` is enabled when building Magnum. To use as a
+dynamic plugin, you need to load the @cpp "MagnumFontConverter" @ce plugin from
+`MAGNUM_PLUGINS_FONTCONVERTER_DIR`. To use as a static plugin or as a
+dependency of another plugin with CMake, you need to request the
+`MagnumFontConverter` component of the `Magnum` package and link to the
+`Magnum::MagnumFontConverter` target. See @ref building, @ref cmake and
+@ref plugins for more information.
 */
 class MAGNUM_MAGNUMFONTCONVERTER_EXPORT MagnumFontConverter: public Text::AbstractFontConverter {
     public:

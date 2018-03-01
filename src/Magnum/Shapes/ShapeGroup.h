@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -82,8 +82,8 @@ template<UnsignedInt dimensions> class MAGNUM_SHAPES_EXPORT ShapeGroup: public S
          * @brief First collision of given shape with other shapes in the group
          *
          * Returns first shape colliding with given one. If there aren't any
-         * collisions, returns `nullptr`. Calls @ref setClean() before the
-         * operation.
+         * collisions, returns @cpp nullptr @ce. Calls @ref setClean() before
+         * the operation.
          */
         AbstractShape<dimensions>* firstCollision(const AbstractShape<dimensions>& shape);
 

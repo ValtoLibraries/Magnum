@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -157,19 +157,8 @@ attribute array as reference, so it can be replaced with combined data. To
 avoid explicit verbose specification of tuple type, you can write it with help
 of some STL functions like shown below. Also if one index array is shared by
 more than one attribute array, just pass the index array more times. Example:
-@code
-std::vector<UnsignedInt> vertexIndices;
-std::vector<Vector3> positions;
-std::vector<UnsignedInt> normalTextureIndices;
-std::vector<Vector3> normals;
-std::vector<Vector2> textureCoordinates;
 
-std::vector<UnsignedInt> indices = MeshTools::combineIndexedArrays(
-    std::make_pair(std::cref(vertexIndices), std::ref(positions)),
-    std::make_pair(std::cref(normalTextureIndices), std::ref(normals)),
-    std::make_pair(std::cref(normalTextureIndices), std::ref(textureCoordinates))
-);
-@endcode
+@snippet MagnumMeshTools.cpp combineIndexedArrays
 
 See @ref combineIndexArrays() documentation for more information about the
 procedure.

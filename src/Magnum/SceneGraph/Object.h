@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,16 +58,18 @@ for introduction.
 
 Common usage is to typedef @ref Object with desired transformation type to save
 unnecessary typing later, along with @ref Scene and possibly other types, e.g.:
-@code
+
+@code{.cpp}
 typedef SceneGraph::Scene<SceneGraph::MatrixTransformation3D> Scene3D;
 typedef SceneGraph::Object<SceneGraph::MatrixTransformation3D> Object3D;
 @endcode
 
 Uses @ref Corrade::Containers::LinkedList for efficient hierarchy management.
 Traversing through the list of child objects can be done using range-based for:
-@code
+
+@code{.cpp}
 Object3D o;
-for(AbstractFeature3D& feature: o.features()) {
+for(Object3D& child: o.children()) {
     // ...
 }
 @endcode
@@ -75,14 +77,14 @@ for(AbstractFeature3D& feature: o.features()) {
 Or, if you need more flexibility, like in the following code. It is also
 possible to go in reverse order using @ref Corrade::Containers::LinkedList::last()
 and @ref previousSibling().
-@code
+
+@code{.cpp}
 for(Object3D* child = o->children().first(); child; child = child->nextSibling()) {
     // ...
 }
 @endcode
 
-@anchor SceneGraph-Object-explicit-specializations
-## Explicit template specializations
+@section SceneGraph-Object-explicit-specializations Explicit template specializations
 
 The following specializations are explicitly compiled into @ref SceneGraph
 library. For other specializations (e.g. using @ref Magnum::Double "Double"
@@ -111,9 +113,6 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
     , private Containers::LinkedList<Object<Transformation>>, private Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>
     #endif
 {
-    friend Containers::LinkedList<Object<Transformation>>;
-    friend Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>;
-
     public:
         /** @brief Matrix type */
         typedef MatrixTypeFor<Transformation::Dimensions, typename Transformation::Type> MatrixType;
@@ -197,36 +196,6 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
         const Containers::LinkedList<Object<Transformation>>& children() const {
             return static_cast<const Containers::LinkedList<Object<Transformation>>&>(*this);
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief Whether this object has children
-         * @deprecated Use `children().isEmpty()` instead.
-         */
-        CORRADE_DEPRECATED("use children().isEmpty()") bool hasChildren() const { return !children().isEmpty(); }
-
-        /**
-         * @brief First child object or `nullptr`, if this object has no children
-         * @deprecated Use `children().first()` instead.
-         */
-        CORRADE_DEPRECATED("use children().first()") Object<Transformation>* firstChild() { return children().first(); }
-
-        /** @overload
-         * @deprecated Use `children.first()` instead.
-         */
-        CORRADE_DEPRECATED("use children().first()") const Object<Transformation>* firstChild() const { return children().first(); }
-
-        /**
-         * @brief Last child object or `nullptr`, if this object has no children
-         * @deprecated Use `children().last()` instead.
-         */
-        CORRADE_DEPRECATED("use children().last()") Object<Transformation>* lastChild() { return children().last(); }
-
-        /** @overload
-         * @deprecated Use `children().last()` instead.
-         */
-        CORRADE_DEPRECATED("use children().last()") const Object<Transformation>* lastChild() const { return children().last(); }
-        #endif
 
         /**
          * @brief Add a child
@@ -360,6 +329,11 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
     #endif
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Containers::LinkedList<Object<Transformation>>;
+        friend Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>;
+        #endif
+
         Object<Transformation>* doScene() override final;
         const Object<Transformation>* doScene() const override final;
 

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,28 +43,21 @@ namespace Magnum {
 
 See also @ref AbstractTexture documentation for more information.
 
-## Usage
+@section RectangleTexture-usage Usage
 
 Common usage is to fully configure all texture parameters and then set the
 data from e.g. @ref Image2D. Example configuration:
-@code
-Image2D image(PixelFormat::RGBA, PixelType::UnsignedByte, {526, 137}, data);
 
-RectangleTexture texture;
-texture.setMagnificationFilter(Sampler::Filter::Linear)
-    .setMinificationFilter(Sampler::Filter::Linear)
-    .setWrapping(Sampler::Wrapping::ClampToEdge)
-    .setMaxAnisotropy(Sampler::maxMaxAnisotropy())
-    .setStorage(TextureFormat::RGBA8, {526, 137})
-    .setSubImage({}, image);
-@endcode
+@snippet Magnum.cpp RectangleTexture-usage
 
-In shader, the texture is used via sampler2DRect`, `sampler2DRectShadow`,
-`isampler2DRect` or `usampler2DRect`. See @ref AbstractShaderProgram
-documentation for more information about usage in shaders.
+In a shader, the texture is used via @glsl sampler2DRect @ce,
+@glsl sampler2DRectShadow @ce, @glsl isampler2DRect @ce or @glsl usampler2DRect @ce.
+See @ref AbstractShaderProgram documentation for more information about usage
+in shaders.
 
 @see @ref Texture, @ref TextureArray, @ref CubeMapTexture,
     @ref CubeMapTextureArray, @ref BufferTexture, @ref MultisampleTexture
+@m_keywords{GL_TEXTURE_RECTANGLE}
 @requires_gl31 Extension @extension{ARB,texture_rectangle}
 @requires_gl Rectangle textures are not available in OpenGL ES and WebGL.
  */
@@ -76,12 +69,12 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls. If @extension{ARB,texture_rectangle} (part of
          * OpenGL 3.1) is not available, returns zero vector.
-         * @see @fn_gl{Get} with @def_gl{MAX_RECTANGLE_TEXTURE_SIZE}
+         * @see @fn_gl{Get} with @def_gl_keyword{MAX_RECTANGLE_TEXTURE_SIZE}
          */
         static Vector2i maxSize();
 
         /**
-         * @copybrief Texture::compressedBlockSize()
+         * @brief @copybrief Texture::compressedBlockSize()
          *
          * See @ref Texture::compressedBlockSize() for more information.
          * @requires_gl43 Extension @extension{ARB,internalformat_query2}
@@ -91,12 +84,12 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::compressedBlockDataSize()
+         * @brief @copybrief Texture::compressedBlockDataSize()
          *
          * See @ref Texture::compressedBlockDataSize() for more information.
          * @requires_gl43 Extension @extension{ARB,internalformat_query2}
-         * @see @ref compressedBlockSize(), @fn_gl{Getinternalformat} with
-         *      @def_gl{TEXTURE_COMPRESSED_BLOCK_SIZE}
+         * @see @ref compressedBlockSize(), @fn_gl_keyword{GetInternalformat}
+         *      with @def_gl{TEXTURE_COMPRESSED_BLOCK_SIZE}
          */
         static Int compressedBlockDataSize(TextureFormat format) {
             return AbstractTexture::compressedBlockDataSize(GL_TEXTURE_RECTANGLE, format);
@@ -124,8 +117,8 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
          * (part of OpenGL 4.5) is not available, the texture is created on
          * first use.
          * @see @ref RectangleTexture(NoCreateT), @ref wrap(),
-         *      @fn_gl{CreateTextures} with @def_gl{TEXTURE_RECTANGLE},
-         *      eventually @fn_gl{GenTextures}
+         *      @fn_gl_keyword{CreateTextures} with @def_gl{TEXTURE_RECTANGLE},
+         *      eventually @fn_gl_keyword{GenTextures}
          */
         explicit RectangleTexture(): AbstractTexture(GL_TEXTURE_RECTANGLE) {}
 
@@ -154,7 +147,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
          * @see @ref bindImages(Int, std::initializer_list<AbstractTexture*>),
          *      @ref unbindImage(), @ref unbindImages(),
          *      @ref AbstractShaderProgram::maxImageUnits(),
-         *      @fn_gl{BindImageTexture}
+         *      @fn_gl_keyword{BindImageTexture}
          * @requires_gl42 Extension @extension{ARB,shader_image_load_store}
          */
         void bindImage(Int imageUnit, ImageAccess access, ImageFormat format) {
@@ -162,7 +155,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setMinificationFilter()
+         * @brief @copybrief Texture::setMinificationFilter()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setMinificationFilter() for more information.
@@ -174,7 +167,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setMagnificationFilter()
+         * @brief @copybrief Texture::setMagnificationFilter()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setMagnificationFilter() for more information.
@@ -185,7 +178,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setWrapping()
+         * @brief @copybrief Texture::setWrapping()
          * @return Reference to self (for method chaining)
          *
          * Sets wrapping type for coordinates out of @f$ [ 0, size - 1 ] @f$
@@ -201,7 +194,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setBorderColor(const Color4&)
+         * @brief @copybrief Texture::setBorderColor(const Color4&)
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setBorderColor(const Color4&) for more
@@ -213,7 +206,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setBorderColor(const Vector4ui&)
+         * @brief @copybrief Texture::setBorderColor(const Vector4ui&)
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setBorderColor(const Vector4ui&) for more
@@ -234,7 +227,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setMaxAnisotropy()
+         * @brief @copybrief Texture::setMaxAnisotropy()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setMaxAnisotropy() for more information.
@@ -245,7 +238,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setSRGBDecode()
+         * @brief @copybrief Texture::setSRGBDecode()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setSRGBDecode() for more information.
@@ -257,7 +250,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setSwizzle()
+         * @brief @copybrief Texture::setSwizzle()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setSwizzle() for more information.
@@ -269,7 +262,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setCompareMode()
+         * @brief @copybrief Texture::setCompareMode()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setCompareMode() for more information.
@@ -280,7 +273,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setCompareFunction()
+         * @brief @copybrief Texture::setCompareFunction()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setCompareFunction() for more information.
@@ -291,7 +284,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setDepthStencilMode()
+         * @brief @copybrief Texture::setDepthStencilMode()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setDepthStencilMode() for more information.
@@ -303,7 +296,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setStorage()
+         * @brief @copybrief Texture::setStorage()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setStorage() for more information.
@@ -333,9 +326,8 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * Image2D image = texture.image({PixelFormat::RGBA, PixelType::UnsignedByte});
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-image1
          */
         Image2D image(Image2D&& image);
 
@@ -352,9 +344,8 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * BufferImage2D image = texture.image({PixelFormat::RGBA, PixelType::UnsignedByte}, BufferUsage::StaticRead);
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-image2
          */
         BufferImage2D image(BufferImage2D&& image, BufferUsage usage);
 
@@ -371,9 +362,8 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * CompressedImage2D image = texture.compressedimage({});
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-compressedImage1
          */
         CompressedImage2D compressedImage(CompressedImage2D&& image);
 
@@ -390,14 +380,13 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * CompressedBufferImage2D image = texture.compressedImage({}, BufferUsage::StaticRead);
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-compressedImage2
          */
         CompressedBufferImage2D compressedImage(CompressedBufferImage2D&& image, BufferUsage usage);
 
         /**
-         * @copybrief Texture::subImage(Int, const RangeTypeFor<dimensions, Int>&, Image&)
+         * @brief @copybrief Texture::subImage(Int, const RangeTypeFor<dimensions, Int>&, Image&)
          *
          * See @ref Texture::subImage(Int, const RangeTypeFor<dimensions, Int>&, Image&)
          * for more information.
@@ -410,14 +399,13 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * Image2D image = texture.subImage(range, {PixelFormat::RGBA, PixelType::UnsignedByte});
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-subImage1
          */
         Image2D subImage(const Range2Di& range, Image2D&& image);
 
         /**
-         * @copybrief Texture::subImage(Int, const RangeTypeFor<dimensions, Int>&, BufferImage&, BufferUsage)
+         * @brief @copybrief Texture::subImage(Int, const RangeTypeFor<dimensions, Int>&, BufferImage&, BufferUsage)
          *
          * See @ref Texture::subImage(Int, const RangeTypeFor<dimensions, Int>&, BufferImage&, BufferUsage)
          * for more information.
@@ -430,14 +418,13 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * BufferImage2D image = texture.subImage(range, {PixelFormat::RGBA, PixelType::UnsignedByte}, BufferUsage::StaticRead);
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-subImage2
          */
         BufferImage2D subImage(const Range2Di& range, BufferImage2D&& image, BufferUsage usage);
 
         /**
-         * @copybrief Texture::compressedSubImage(Int, const RangeTypeFor<dimensions, Int>&, CompressedImage&)
+         * @brief @copybrief Texture::compressedSubImage(Int, const RangeTypeFor<dimensions, Int>&, CompressedImage&)
          *
          * See @ref Texture::compressedSubImage(Int, const RangeTypeFor<dimensions, Int>&, CompressedImage&)
          * for more information.
@@ -454,14 +441,13 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * CompressedImage2D image = texture.compressedSubImage(range, {});
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-compressedSubImage1
          */
         CompressedImage2D compressedSubImage(const Range2Di& range, CompressedImage2D&& image);
 
         /**
-         * @copybrief Texture::compressedSubImage(Int, const RangeTypeFor<dimensions, Int>&, CompressedBufferImage&, BufferUsage)
+         * @brief @copybrief Texture::compressedSubImage(Int, const RangeTypeFor<dimensions, Int>&, CompressedBufferImage&, BufferUsage)
          *
          * See @ref Texture::compressedSubImage(Int, const RangeTypeFor<dimensions, Int>&, CompressedBufferImage&, BufferUsage)
          * for more information.
@@ -478,14 +464,13 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         /** @overload
          *
          * Convenience alternative to the above, example usage:
-         * @code
-         * CompressedBufferImage2D image = texture.compressedSubImage(range, {}, BufferUsage::StaticRead);
-         * @endcode
+         *
+         * @snippet Magnum.cpp RectangleTexture-compressedSubImage2
          */
         CompressedBufferImage2D compressedSubImage(const Range2Di& range, CompressedBufferImage2D&& image, BufferUsage usage);
 
         /**
-         * @copybrief Texture::setImage()
+         * @brief @copybrief Texture::setImage()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setImage() for more information.
@@ -516,7 +501,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setCompressedImage()
+         * @brief @copybrief Texture::setCompressedImage()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setCompressedImage() for more information.
@@ -547,7 +532,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setSubImage()
+         * @brief @copybrief Texture::setSubImage()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setSubImage() for more information.
@@ -569,7 +554,7 @@ class MAGNUM_EXPORT RectangleTexture: public AbstractTexture {
         }
 
         /**
-         * @copybrief Texture::setCompressedSubImage()
+         * @brief @copybrief Texture::setCompressedSubImage()
          * @return Reference to self (for method chaining)
          *
          * See @ref Texture::setCompressedSubImage() for more information.

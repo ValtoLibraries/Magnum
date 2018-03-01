@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,7 +66,7 @@ namespace Magnum {
 
 @section magnum-fontconverter-usage Usage
 
-@code{.shell-session}
+@code{.sh}
 magnum-fontconverter [--magnum-...] [-h|--help] --font FONT
     --converter CONVERTER [--plugin-dir DIR] [--characters CHARACTERS]
     [--font-size N] [--atlas-size "X Y"] [--output-size "X Y"] [--radius N]
@@ -100,7 +100,7 @@ Making raster font from TTF file with default set of characters using
 @ref Text::FreeTypeFont "FreeTypeFont" font plugin and
 @ref Text::MagnumFontConverter "MagnumFontConverter" converter plugin:
 
-@code{.shell-session}
+@code{.sh}
 magnum-fontconverter --font FreeTypeFont --converter MagnumFontConverter DejaVuSans.ttf myfont
 @endcode
 

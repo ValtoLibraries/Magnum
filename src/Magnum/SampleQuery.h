@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,10 +33,6 @@
 
 #include "Magnum/AbstractQuery.h"
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include <Corrade/Utility/Macros.h>
-#endif
-
 #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
 namespace Magnum {
 
@@ -46,34 +42,16 @@ namespace Magnum {
 Queries count of samples passed from fragment shader or boolean value
 indicating whether any samples passed. Can be used for example for conditional
 rendering:
-@code
-SampleQuery q;
 
-q.begin(SampleQuery::Target::AnySamplesPassed);
-// render simplified object to test whether it is visible at all...
-q.end();
+@snippet Magnum.cpp SampleQuery-usage
 
-// render full version of the object only if it is visible
-if(q.result<bool>()) {
-    // ...
-}
-@endcode
 This approach has some drawbacks, as the rendering is blocked until result is
 available for the CPU to decide. This can be improved by using conditional
 rendering on GPU itself. The drawing commands will be sent to the GPU and
 processed or discarded later, so CPU can continue executing the code without
 waiting for the result.
-@code
-SampleQuery q;
 
-q.begin(SampleQuery::Target::AnySamplesPassed);
-// render simplified object to test whether it is visible at all...
-q.end();
-
-q.beginConditionalRender(SampleQuery::ConditionalRenderMode::Wait);
-// render full version of the object only if the query returns nonzero result
-q.endConditionalRender();
-@endcode
+@snippet Magnum.cpp SampleQuery-conditional-render
 
 @see @ref PrimitiveQuery, @ref TimeQuery
 @requires_gles30 Extension @extension{EXT,occlusion_query_boolean} in
@@ -82,7 +60,11 @@ q.endConditionalRender();
 */
 class SampleQuery: public AbstractQuery {
     public:
-        /** @brief Query target */
+        /**
+         * @brief Query target
+         *
+         * @m_enum_values_as_keywords
+         */
         enum class Target: GLenum {
             #ifndef MAGNUM_TARGET_GLES
             /**
@@ -124,6 +106,7 @@ class SampleQuery: public AbstractQuery {
         /**
          * @brief Conditional render mode
          *
+         * @m_enum_values_as_keywords
          * @requires_gl30 Extension @extension{NV,conditional_render}
          * @requires_gl Conditional rendering is not available in OpenGL ES or
          *      WebGL.
@@ -201,22 +184,14 @@ class SampleQuery: public AbstractQuery {
             return SampleQuery{id, target, flags};
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief SampleQuery(Target)
-         * @deprecated Use @ref SampleQuery(Target) instead.
-         */
-        CORRADE_DEPRECATED("use SampleQuery(Target) instead") explicit SampleQuery() {}
-        #endif
-
         /**
          * @brief Constructor
          *
          * Creates new OpenGL query object. If @extension{ARB,direct_state_access}
          * (part of OpenGL 4.5) is not available, the query is created on first
          * use.
-         * @see @ref SampleQuery(NoCreateT), @ref wrap(), @fn_gl{CreateQueries},
-         *      eventually @fn_gl{GenQueries}
+         * @see @ref SampleQuery(NoCreateT), @ref wrap(),
+         *      @fn_gl_keyword{CreateQueries}, eventually @fn_gl_keyword{GenQueries}
          */
         explicit SampleQuery(Target target): AbstractQuery(GLenum(target)) {}
 
@@ -233,23 +208,11 @@ class SampleQuery: public AbstractQuery {
          */
         explicit SampleQuery(NoCreateT) noexcept: AbstractQuery{NoCreate, GLenum(Target::AnySamplesPassed)} {}
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @copybrief AbstractQuery::begin()
-         * @deprecated Use @ref begin() instead.
-         */
-        CORRADE_DEPRECATED("use begin() instead") void begin(Target target) {
-            AbstractQuery::begin(GLenum(target));
-        }
-
-        using AbstractQuery::begin;
-        #endif
-
         #ifndef MAGNUM_TARGET_GLES
         /**
          * @brief Begin conditional rendering based on result value
          *
-         * @see @fn_gl{BeginConditionalRender}
+         * @see @fn_gl_keyword{BeginConditionalRender}
          * @requires_gl30 Extension @extension{NV,conditional_render}
          * @requires_gl Conditional rendering is not available in OpenGL ES or
          *      WebGL.
@@ -261,7 +224,7 @@ class SampleQuery: public AbstractQuery {
         /**
          * @brief End conditional render
          *
-         * @see @fn_gl{EndConditionalRender}
+         * @see @fn_gl_keyword{EndConditionalRender}
          * @requires_gl30 Extension @extension{NV,conditional_render}
          * @requires_gl Conditional rendering is not available in OpenGL ES or
          *      WebGL.

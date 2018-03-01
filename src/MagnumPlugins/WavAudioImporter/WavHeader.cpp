@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
 
 #include "Magnum/Magnum.h"
 
-namespace Magnum { namespace Audio {
+namespace Magnum { namespace Audio { namespace Implementation {
 
 static_assert(sizeof(RiffChunk) == 8, "RiffChunk size is not 8 bytes");
 static_assert(sizeof(WavHeaderChunk) == 12, "WavHeaderChunk size is not 12 bytes");
@@ -53,4 +53,4 @@ Debug& operator<<(Debug& debug, const WavAudioFormat value) {
     return debug << "Audio::WavAudioFormat(" << Debug::nospace << reinterpret_cast<void*>(UnsignedShort(value)) << Debug::nospace << ")";
 }
 
-}}
+}}}

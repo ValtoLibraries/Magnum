@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,4 +23,10 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-install(FILES optional.hpp DESTINATION ${MAGNUM_EXTERNAL_INCLUDE_INSTALL_DIR}/Optional)
+if(MAGNUM_BUILD_DEPRECATED)
+    install(FILES optional.hpp OptionalWrapper.h DESTINATION ${MAGNUM_EXTERNAL_INCLUDE_INSTALL_DIR}/Optional)
+endif()
+
+if(BUILD_TESTS)
+    add_subdirectory(Test)
+endif()

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -126,7 +126,7 @@ void TgaImageConverterTest::rgb() {
 
     TgaImporter importer;
     CORRADE_VERIFY(importer.openData(data));
-    std::optional<Trade::ImageData2D> converted = importer.image2D(0);
+    Containers::Optional<Trade::ImageData2D> converted = importer.image2D(0);
     CORRADE_VERIFY(converted);
 
     CORRADE_COMPARE(converted->storage().alignment(), 1);
@@ -142,7 +142,7 @@ void TgaImageConverterTest::rgba() {
 
     TgaImporter importer;
     CORRADE_VERIFY(importer.openData(data));
-    std::optional<Trade::ImageData2D> converted = importer.image2D(0);
+    Containers::Optional<Trade::ImageData2D> converted = importer.image2D(0);
     CORRADE_VERIFY(converted);
 
     CORRADE_COMPARE(converted->storage().alignment(), 4);

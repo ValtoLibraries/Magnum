@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,7 @@ Setting up a new project can be pretty gruesome and nobody likes repeating the
 same process every time. Magnum provides "bootstrap" project structures for
 many use cases, helping you get up and running in no time.
 
-@section getting-started-bootstrap Download bootstrap project
+@section getting-started-bootstrap Download the bootstrap project
 
 The [bootstrap repository](https://github.com/mosra/magnum-bootstrap) is
 located on GitHub. The `master` branch contains just a README file and the
@@ -47,8 +47,17 @@ better to init your new project from scratch with clean Git history.
 @section getting-started-download Download, build and install Corrade and Magnum
 
 Magnum libraries support both separate compilation/installation and CMake
-subprojects. We'll use the subproject approach now --- adding the dependencies
-means just cloning them into your project tree:
+subprojects. If you are lucky, you may already have Magnum packages ready for
+your platform and you can skip the rest of this section:
+
+-   @ref building-packages-vcpkg
+-   @ref building-packages-arch
+-   @ref building-packages-deb
+-   @ref building-packages-gentoo
+-   @ref building-packages-brew
+
+If you don't, don't worry, let's use the subproject approach instead. Adding
+the dependencies means just cloning them into your project tree:
 
 @code{.sh}
 cd /path/to/the/extracted/bootstrap/project
@@ -71,14 +80,15 @@ add_subdirectory(magnum)
 add_subdirectory(src)
 @endcode
 
-@note In the long run it's better to install Corrade and Magnum separately
-    instead of cloning them into your project tree, as that can vastly improve
+@note
+    In the long run it's better to install Corrade and Magnum separately
+    instead of cloning them into your project tree, as that vastly improves
     your iteration times. Follow @ref building "the full installation guide" if
     you want to go that route; don't forget to enable `WITH_SDL2APPLICATION`
     when building Magnum so the bootstrap project can use it later. There are
     also ready-to-use packages for various OSes and distributions.
-
-@note If you have that, you don't need to clone the subprojects and modify the
+@note
+    If you have that, you don't need to clone the subprojects and modify the
     `CMakeLists.txt` file like above, you might only need to set
     `CMAKE_PREFIX_PATH` if you installed Corrade and Magnum to a non-standard
     location.
@@ -115,34 +125,7 @@ The `src/` directory contains the actual project. To keep things simple, the
 project consists of just a single `MyApplication.cpp` file with the most
 minimal code possible:
 
-@code{.cpp}
-#include <Magnum/DefaultFramebuffer.h>
-#include <Magnum/Platform/Sdl2Application.h>
-
-using namespace Magnum;
-
-class MyApplication: public Platform::Application {
-    public:
-        explicit MyApplication(const Arguments& arguments);
-
-    private:
-        void drawEvent() override;
-};
-
-MyApplication::MyApplication(const Arguments& arguments): Platform::Application{arguments} {
-    // TODO: Add your initialization code here
-}
-
-void MyApplication::drawEvent() {
-    defaultFramebuffer.clear(FramebufferClear::Color);
-
-    // TODO: Add your drawing code here
-
-    swapBuffers();
-}
-
-MAGNUM_APPLICATION_MAIN(MyApplication)
-@endcode
+@snippet getting-started.cpp 0
 
 The application essentially does nothing, just clears the screen framebuffer to
 default (dark gray) color and then does buffer swap to actually display it on
@@ -164,7 +147,7 @@ In the following tutorials the code will be explained more thoroughly.
 
 @section getting-started-build Build it and run
 
-@subsection getting-started-linux Linux, macOS and other Unix-based OSs
+@subsection getting-started-linux Linux, macOS and other Unix-based OSes
 
 In Linux (and other Unix-based OSs) you can build the application along with
 the subprojects using the following three commands: create out-of-source build
@@ -229,24 +212,12 @@ the concepts of graphics programming, we can change the clear color to
 something else and also print basic information about the GPU the engine is
 running on. First include the needed headers:
 
-@code{.cpp}
-#include <Magnum/Context.h>
-#include <Magnum/Renderer.h>
-#include <Magnum/Version.h>
-#include <Magnum/Math/Color.h>
-@endcode
+@snippet getting-started-blue.cpp 0
 
 And in the constructor (which is currently empty) change the clear color and
 print something to debug output:
 
-@code{.cpp}
-    using namespace Magnum::Math::Literals;
-
-    Renderer::setClearColor(0xa5c9ea_rgbf);
-
-    Debug() << "Hello! This application is running on" << Context::current().version()
-            << "using" << Context::current().rendererString();
-@endcode
+@snippet getting-started-blue.cpp 1
 
 After rebuilding and starting the application, the clear color changes to
 blueish one and something like this would be printed to the console:

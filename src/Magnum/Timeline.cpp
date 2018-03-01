@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,15 +54,6 @@ void Timeline::nextFrame() {
     auto now = high_resolution_clock::now();
     auto duration = UnsignedInt(duration_cast<microseconds>(now-_previousFrameTime).count());
     _previousFrameDuration = duration/1e6f;
-
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    if(_previousFrameDuration < _minimalFrameTime) {
-        Utility::System::sleep(std::size_t(_minimalFrameTime*1000) - duration/1000);
-        now = high_resolution_clock::now();
-        _previousFrameDuration = duration_cast<microseconds>(now-_previousFrameTime).count()/1e6f;
-    }
-    #endif
-
     _previousFrameTime = now;
 }
 

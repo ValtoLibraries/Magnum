@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,8 +23,8 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-cmake_minimum_required(VERSION 2.8.9)
-project(MyApplication)
+cmake_minimum_required(VERSION 2.8.12)
+project(MagnumDocumentationImageGenerator)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/../../modules/")
 
@@ -48,11 +48,6 @@ endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
-
-add_executable(hello hello.cpp)
-target_link_libraries(hello
-    Magnum::Magnum
-    Magnum::Application)
 
 add_executable(shaders shaders.cpp)
 target_include_directories(shaders PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

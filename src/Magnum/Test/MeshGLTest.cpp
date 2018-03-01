@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -113,6 +113,7 @@ struct MeshGLTest: OpenGLTester {
     void setIndexBufferUnsignedInt();
 
     void unbindVAOWhenSettingIndexBufferData();
+    void unbindVAOBeforeEnteringExternalSection();
 
     #ifndef MAGNUM_TARGET_GLES
     void setBaseVertex();
@@ -209,6 +210,7 @@ MeshGLTest::MeshGLTest() {
               &MeshGLTest::setIndexBufferUnsignedInt,
 
               &MeshGLTest::unbindVAOWhenSettingIndexBufferData,
+              &MeshGLTest::unbindVAOBeforeEnteringExternalSection,
 
               #ifndef MAGNUM_TARGET_GLES
               &MeshGLTest::setBaseVertex,
@@ -1172,7 +1174,7 @@ void MeshGLTest::addVertexBufferFloatWithHalfFloat() {
     MAGNUM_VERIFY_NO_ERROR();
 
     const auto value = Checker(FloatShader("float", "vec4(valueInterpolated, 0.0, 0.0, 0.0)"),
-        RenderbufferFormat::RGBA8, mesh).get<UnsignedByte>(PixelFormat::RGBA, PixelType::UnsignedShort);
+        RenderbufferFormat::RGBA8, mesh).get<UnsignedByte>(PixelFormat::RGBA, PixelType::UnsignedByte);
 
     MAGNUM_VERIFY_NO_ERROR();
     CORRADE_COMPARE(value, 186);
@@ -1726,6 +1728,52 @@ void MeshGLTest::unbindVAOWhenSettingIndexBufferData() {
     /* This buffer should have no effect on the mesh above */
     Buffer otherIndices{Buffer::TargetHint::ElementArray};
     otherIndices.setData(std::vector<UnsignedByte>{100, 1}, BufferUsage::StaticDraw);
+
+    MAGNUM_VERIFY_NO_ERROR();
+
+    const auto value = Checker(FloatShader("float", "vec4(valueInterpolated, 0.0, 0.0, 0.0)"),
+        #ifndef MAGNUM_TARGET_GLES2
+        RenderbufferFormat::RGBA8,
+        #else
+        RenderbufferFormat::RGBA4,
+        #endif
+        mesh).get<UnsignedByte>(PixelFormat::RGBA, PixelType::UnsignedByte);
+
+    MAGNUM_VERIFY_NO_ERROR();
+    CORRADE_COMPARE(value, 92);
+}
+
+void MeshGLTest::unbindVAOBeforeEnteringExternalSection() {
+    #ifndef MAGNUM_TARGET_GLES
+    if(!Context::current().isExtensionSupported<Extensions::GL::ARB::vertex_array_object>())
+        CORRADE_SKIP(Extensions::GL::ARB::vertex_array_object::string() + std::string(" is not available."));
+    #elif defined(MAGNUM_TARGET_GLES2)
+    if(!Context::current().isExtensionSupported<Extensions::GL::OES::vertex_array_object>())
+        CORRADE_SKIP(Extensions::GL::OES::vertex_array_object::string() + std::string(" is not available."));
+    #endif
+
+    typedef Attribute<0, Float> Attribute;
+
+    const Float data[] = { -0.7f, Math::unpack<Float, UnsignedByte>(92), Math::unpack<Float, UnsignedByte>(32) };
+    Buffer buffer{Buffer::TargetHint::Array};
+    buffer.setData(data, BufferUsage::StaticDraw);
+
+    Buffer indices{Buffer::TargetHint::ElementArray};
+    indices.setData(std::vector<UnsignedByte>{5, 0}, BufferUsage::StaticDraw);
+
+    Mesh mesh;
+    mesh.addVertexBuffer(buffer, 4, Attribute{})
+        .setIndexBuffer(indices, 0, Mesh::IndexType::UnsignedByte);
+
+    {
+        /* Comment this out to watch the world burn */
+        Context::current().resetState(Context::State::MeshVao);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        /* Be nice to the other tests */
+        Context::current().resetState(Context::State::ExitExternal);
+    }
 
     MAGNUM_VERIFY_NO_ERROR();
 

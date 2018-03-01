@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -110,8 +110,8 @@ template<class T> class Matrix3: public Matrix3x3<T> {
          *
          * Expects that the normal is normalized. Reflection along axes can be
          * done in a slightly simpler way also using @ref scaling(), e.g.
-         * `Matrix3::reflection(Vector2::yAxis())` is equivalent to
-         * `Matrix3::scaling(Vector2::yScale(-1.0f))`. @f[
+         * @cpp Matrix3::reflection(Vector2::yAxis()) @ce is equivalent to
+         * @cpp Matrix3::scaling(Vector2::yScale(-1.0f)) @ce. @f[
          *      \boldsymbol{A} = \boldsymbol{I} - 2 \boldsymbol{NN}^T ~~~~~ \boldsymbol{N} = \begin{pmatrix} n_x \\ n_y \end{pmatrix}
          * @f]
          * @see @ref Matrix4::reflection(), @ref Vector::isNormalized()
@@ -175,6 +175,7 @@ template<class T> class Matrix3: public Matrix3x3<T> {
          * @f]
          * @see @ref Matrix4::orthographicProjection(),
          *      @ref Matrix4::perspectiveProjection()
+         * @m_keywords{gluOrtho2D()}
          */
         static Matrix3<T> projection(const Vector2<T>& size) {
             return scaling(2.0f/size);

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,12 +34,12 @@
 #include <bitset>
 #include <vector>
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Containers/Optional.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/OpenGL.h"
 #include "Magnum/Tags.h"
 #include "Magnum/visibility.h"
-#include "MagnumExternal/Optional/optional.hpp"
 
 namespace Magnum {
 
@@ -60,8 +60,6 @@ See also @ref Extensions namespace, which contain compile-time information
 about OpenGL extensions.
 */
 class MAGNUM_EXPORT Extension {
-    friend Context;
-
     public:
         /** @brief All extensions for given OpenGL version */
         static const std::vector<Extension>& extensions(Version version);
@@ -76,6 +74,10 @@ class MAGNUM_EXPORT Extension {
         constexpr const char* string() const { return _string; }
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Context;
+        #endif
+
         std::size_t _index;
         Version _requiredVersion;
         Version _coreVersion;
@@ -95,29 +97,33 @@ also possible to create the context without using any `*Application` class
 using @ref Platform::Context subclass, see @ref platform documentation for more
 information.
 
-## Command-line options
+@section Context-command-line Command-line options
 
 The context is configurable through command-line options, that are passed
 either from the `Platform::*Application` classes or from the @ref Platform::Context
 class. Usage:
 
-    <application> [--magnum-help] [--magnum-disable-workarounds LIST] [--magnum-disable-extensions LIST] ...
+@code{.sh}
+<application> [--magnum-help] [--magnum-disable-workarounds LIST]
+              [--magnum-disable-extensions LIST] ...
+@endcode
 
 Arguments:
 
--   `...` -- main application arguments (see `-h` or `--help` for details)
--   `--magnum-help` -- display this help message and exit
--   `--magnum-disable-workarounds LIST` -- driver workarounds to disable (see
-    `src/Magnum/Implementation/driverSpecific.cpp` for detailed info)
-    (environment: `MAGNUM_DISABLE_WORKAROUNDS`)
--   `--magnum-disable-extensions LIST` -- OpenGL extensions to disable
+-   `...` --- main application arguments (see `-h` or `--help` for details)
+-   `--magnum-help` --- display this help message and exit
+-   `--magnum-disable-workarounds LIST` --- driver workarounds to disable (see
+    [src/Magnum/Implementation/driverSpecific.cpp](https://github.com/mosra/magnum/blob/master/src/Magnum/Implementation/driverSpecific.cpp)
+    for detailed info) (environment: `MAGNUM_DISABLE_WORKAROUNDS`)
+-   `--magnum-disable-extensions LIST` --- OpenGL extensions to disable
     (environment: `MAGNUM_DISABLE_EXTENSIONS`)
 
+Note that all options are prefixed with `--magnum-` to avoid conflicts with
+options passed to the application itself. Options that don't have this prefix
+are completely ignored, see documentation of the
+@ref Utility-Arguments-delegating "Utility::Arguments" class for details.
 */
 class MAGNUM_EXPORT Context {
-    friend Implementation::ContextState;
-    friend Platform::Context;
-
     public:
         #ifndef MAGNUM_TARGET_WEBGL
         /**
@@ -125,16 +131,17 @@ class MAGNUM_EXPORT Context {
          *
          * @see @ref Flags, @ref flags(),
          *      @ref Platform::Sdl2Application::Configuration::setFlags() "Platform::*Application::Configuration::setFlags()"
+         * @m_enum_values_as_keywords
          * @requires_gles Context flags are not available in WebGL.
          */
         enum class Flag: GLint {
             /**
              * Debug context
              * @requires_gl43 Extension @extension{KHR,debug}
-             * @requires_es_extension Extension @extension{ANDROID,extension_pack_es31a}/
+             * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
              *      @extension2{KHR,debug,debug}
              */
-            #ifndef MAGNUM_TARGET_GLES
+            #ifndef MAGNUM_TARGET_GLES2
             Debug = GL_CONTEXT_FLAG_DEBUG_BIT,
             #else
             Debug = GL_CONTEXT_FLAG_DEBUG_BIT_KHR,
@@ -142,20 +149,26 @@ class MAGNUM_EXPORT Context {
 
             /**
              * Context without error reporting
-             * @requires_extension Extension @extension{KHR,no_error}
+             * @requires_gl46 Extension @extension{KHR,no_error}
              * @requires_es_extension Extension @extension2{KHR,no_error,no_error}
              */
-            NoError = GL_CONTEXT_FLAG_NO_ERROR_BIT_KHR,
-
             #ifndef MAGNUM_TARGET_GLES
+            NoError = GL_CONTEXT_FLAG_NO_ERROR_BIT,
+            #else
+            NoError = GL_CONTEXT_FLAG_NO_ERROR_BIT_KHR,
+            #endif
+
+            #ifndef MAGNUM_TARGET_GLES2
             /**
              * Context with robust access
-             * @requires_extension Extension @extension{ARB,robustness}
-             * @requires_es_extension Extension @extension{EXT,robustness}
-             * @todo In ES available under glGetIntegerv(CONTEXT_ROBUST_ACCESS_EXT),
+             * @requires_gl45 Extension @extension{KHR,robustness} or
+             *      @extension{ARB,robustness}
+             * @requires_gles32 Extension @extension{KHR,robustness} or
+             *      @extension{EXT,robustness}
+             * @todo In ES2 available under glGetIntegerv(CONTEXT_ROBUST_ACCESS_EXT),
              *      how to make it compatible?
              */
-            RobustAccess = GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT_ARB
+            RobustAccess = GL_CONTEXT_FLAG_ROBUST_ACCESS_BIT
             #endif
         };
 
@@ -171,7 +184,7 @@ class MAGNUM_EXPORT Context {
         /**
          * @brief State to reset
          *
-         * @see @ref States, @ref resetState()
+         * @see @ref States, @ref resetState(), @ref opengl-state-tracking
          */
         enum class State: UnsignedInt {
             /** Reset tracked buffer-related bindings and state */
@@ -183,22 +196,55 @@ class MAGNUM_EXPORT Context {
             /** Reset tracked mesh-related bindings */
             Meshes = 1 << 2,
 
+            /**
+             * Unbind currently bound VAO.
+             *
+             * Magnum by default uses VAOs --- each time a @ref Mesh is drawn
+             * or configured, its VAO is bound, but it is *not* unbound
+             * afterwards to avoid needless state changes. This may introduce
+             * problems when using third-party OpenGL code --- it may break
+             * internal state of a mesh that was used the most recently.
+             * Similar issue can happen the other way. Calling @ref resetState()
+             * with @ref State::MeshVao included unbounds any currently bound
+             * VAO to fix such case.
+             */
+            MeshVao = 1 << 3,
+
             /** Reset tracked pixel storage-related state */
-            PixelStorage = 1 << 3,
+            PixelStorage = 1 << 4,
 
             /** Reset tracked renderer-related state */
-            Renderer = 1 << 4,
+            Renderer = 1 << 5,
 
             /** Reset tracked shader-related bindings */
-            Shaders = 1 << 5,
+            Shaders = 1 << 6,
 
             /** Reset tracked texture-related bindings and state */
-            Textures = 1 << 6,
+            Textures = 1 << 7,
 
             #ifndef MAGNUM_TARGET_GLES2
             /** Reset tracked transform feedback-related bindings */
-            TransformFeedback = 1 << 7
+            TransformFeedback = 1 << 8,
             #endif
+
+            /**
+             * Reset state on entering section with external OpenGL code.
+             *
+             * Resets all state that could cause external code to accidentally
+             * modify Magnum objects. This includes only @ref State::MeshVao.
+             */
+            EnterExternal = MeshVao,
+
+            /**
+             * Reset state on exiting section with external OpenGL code.
+             *
+             * Resets Magnum state tracker to avoid being confused by external
+             * state changes. This resets all states.
+             */
+            ExitExternal = Buffers|Framebuffers|Meshes|MeshVao|PixelStorage|Renderer|Shaders|Textures
+                #ifndef MAGNUM_TARGET_GLES2
+                |TransformFeedback
+                #endif
         };
 
         /**
@@ -341,7 +387,8 @@ class MAGNUM_EXPORT Context {
          *
          * The result is *not* cached, repeated queries will result in repeated
          * OpenGL calls.
-         * @see @ref rendererString(), @fn_gl{GetString} with @def_gl{VENDOR}
+         * @see @ref rendererString(), @fn_gl{GetString} with
+         *      @def_gl_keyword{VENDOR}
          */
         std::string vendorString() const;
 
@@ -350,7 +397,8 @@ class MAGNUM_EXPORT Context {
          *
          * The result is *not* cached, repeated queries will result in repeated
          * OpenGL calls.
-         * @see @ref vendorString(), @fn_gl{GetString} with @def_gl{RENDERER}
+         * @see @ref vendorString(), @fn_gl{GetString} with
+         *      @def_gl_keyword{RENDERER}
          */
         std::string rendererString() const;
 
@@ -360,7 +408,7 @@ class MAGNUM_EXPORT Context {
          * The result is *not* cached, repeated queries will result in repeated
          * OpenGL calls.
          * @see @ref shadingLanguageVersionString(), @ref version(),
-         *      @fn_gl{GetString} with @def_gl{VERSION}
+         *      @fn_gl{GetString} with @def_gl_keyword{VERSION}
          */
         std::string versionString() const;
 
@@ -370,7 +418,7 @@ class MAGNUM_EXPORT Context {
          * The result is *not* cached, repeated queries will result in repeated
          * OpenGL calls.
          * @see @ref versionString(), @ref version(), @fn_gl{GetString} with
-         *      @def_gl{SHADING_LANGUAGE_VERSION}
+         *      @def_gl_keyword{SHADING_LANGUAGE_VERSION}
          */
         std::string shadingLanguageVersionString() const;
 
@@ -380,8 +428,8 @@ class MAGNUM_EXPORT Context {
          * The result is *not* cached, repeated queries will result in repeated
          * OpenGL calls.
          * @see @ref versionString(), @ref version(), @fn_gl{Get} with
-         *      @def_gl{NUM_SHADING_LANGUAGE_VERSIONS}, @fn_gl{GetString} with
-         *      @def_gl{SHADING_LANGUAGE_VERSION}
+         *      @def_gl_keyword{NUM_SHADING_LANGUAGE_VERSIONS}, @fn_gl{GetString}
+         *      with @def_gl_keyword{SHADING_LANGUAGE_VERSION}
          */
         std::vector<std::string> shadingLanguageVersionStrings() const;
 
@@ -393,8 +441,8 @@ class MAGNUM_EXPORT Context {
          * reported by the driver (even those not supported by Magnum), see
          * @ref supportedExtensions(), @ref Extension::extensions() or
          * @ref isExtensionSupported() for alternatives.
-         * @see @fn_gl{Get} with @def_gl{NUM_EXTENSIONS}, @fn_gl{GetString}
-         *      with @def_gl{EXTENSIONS}
+         * @see @fn_gl{Get} with @def_gl_keyword{NUM_EXTENSIONS},
+         *      @fn_gl{GetString} with @def_gl_keyword{EXTENSIONS}
          */
         std::vector<std::string> extensionStrings() const;
 
@@ -424,7 +472,7 @@ class MAGNUM_EXPORT Context {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls.
-         * @see @fn_gl{Get} with @def_gl{CORE_PROFILE_MASK}
+         * @see @fn_gl{Get} with @def_gl_keyword{CORE_PROFILE_MASK}
          * @requires_gl Not available on OpenGL ES or WebGL.
          */
         bool isCoreProfile();
@@ -441,11 +489,10 @@ class MAGNUM_EXPORT Context {
          * @brief Get supported OpenGL version
          *
          * Returns first supported OpenGL version from passed list. Convenient
-         * equivalent to subsequent @ref isVersionSupported() calls, e.g.:
-         * @code
-         * Version v = isVersionSupported(Version::GL330) ? Version::GL330 : Version::GL210;
-         * Version v = supportedVersion({Version::GL330, Version::GL210});
-         * @endcode
+         * equivalent to subsequent @ref isVersionSupported() calls --- the two
+         * following examples produce the same result:
+         *
+         * @snippet Magnum.cpp Context-supportedVersion
          *
          * If no version from the list is supported, returns lowest available
          * OpenGL version (@ref Version::GL210 for desktop OpenGL,
@@ -459,13 +506,8 @@ class MAGNUM_EXPORT Context {
          *
          * Extensions usable with this function are listed in @ref Extensions
          * namespace in header @ref Extensions.h. Example usage:
-         * @code
-         * if(Context::current().isExtensionSupported<Extensions::GL::ARB::tessellation_shader>()) {
-         *     // draw fancy detailed model
-         * } else {
-         *     // texture fallback
-         * }
-         * @endcode
+         *
+         * @snippet Magnum.cpp Context-isExtensionSupported
          *
          * @see @ref isExtensionSupported(const Extension&) const,
          *      @ref MAGNUM_ASSERT_EXTENSION_SUPPORTED(),
@@ -482,13 +524,8 @@ class MAGNUM_EXPORT Context {
          * minimal required version of the extension is larger or equal to
          * @p version. Useful mainly in shader compilation when the decisions
          * depend on selected GLSL version, for example:
-         * @code
-         * const Version version = Context::current()supportedVersion({Version::GL320, Version::GL300, Version::GL210});
-         * if(Context::current().isExtensionSupported<Extensions::GL::ARB::explicit_attrib_location>(version)) {
-         *     // Called only if ARB_explicit_attrib_location is supported
-         *     // *and* version is higher than GL 3.1
-         * }
-         * @endcode
+         *
+         * @snippet Magnum.cpp Context-isExtensionSupported-version
          */
         template<class T> bool isExtensionSupported(Version version) const {
             return _extensionRequiredVersion[T::Index] <= version && _extensionStatus[T::Index];
@@ -542,12 +579,21 @@ class MAGNUM_EXPORT Context {
 
         /**
          * @brief Reset internal state tracker
-         * @param states    Tracked states to reset. Default is all state.
          *
          * The engine internally tracks object bindings and other state to
          * avoid redundant OpenGL calls. In some cases (e.g. when non-Magnum
          * code makes GL calls) the internal tracker no longer reflects actual
-         * state and needs to be reset to avoid strange issues.
+         * state. Equivalently the third party code can cause accidental
+         * modifications of Magnum objects. It's thus advised to call this
+         * function as a barrier between Magnum code and third-party GL code.
+         *
+         * The default, when calling this function with no parameters, will
+         * reset all state. That's the safest option, but may have considerable
+         * performance impact when third-party and Magnum code is combined very
+         * often. For greater control it's possible to reset only particular
+         * states from the @ref State enum.
+         *
+         * See also @ref opengl-state-tracking for more information.
          */
         void resetState(States states = ~States{});
 
@@ -572,6 +618,11 @@ class MAGNUM_EXPORT Context {
         MAGNUM_LOCAL bool isCoreProfileInternal(Implementation::ContextState& state);
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Implementation::ContextState;
+        friend Platform::Context;
+        #endif
+
         explicit Context(NoCreateT, Int argc, const char** argv, void functionLoader());
 
         bool tryCreate();
@@ -598,7 +649,7 @@ class MAGNUM_EXPORT Context {
 
         Implementation::State* _state;
 
-        std::optional<DetectedDrivers> _detectedDrivers;
+        Containers::Optional<DetectedDrivers> _detectedDrivers;
 
         /* True means known and disabled, false means known */
         std::vector<std::pair<std::string, bool>> _driverWorkarounds;
@@ -634,9 +685,8 @@ Useful for initial checks on availability of required features.
 By default, if assertion fails, an message is printed to error output and the
 application aborts. If `CORRADE_NO_ASSERT` is defined, this macro does nothing.
 Example usage:
-@code
-MAGNUM_ASSERT_VERSION_SUPPORTED(Version::GL330);
-@endcode
+
+@snippet Magnum.cpp Context-MAGNUM_ASSERT_VERSION_SUPPORTED
 
 @see @ref Magnum::Context::isVersionSupported() "Context::isVersionSupported()",
     @ref MAGNUM_ASSERT_EXTENSION_SUPPORTED(), @ref CORRADE_ASSERT(),
@@ -664,9 +714,8 @@ Useful for initial checks on availability of required features.
 By default, if assertion fails, an message is printed to error output and the
 application aborts. If `CORRADE_NO_ASSERT` is defined, this macro does nothing.
 Example usage:
-@code
-MAGNUM_ASSERT_EXTENSION_SUPPORTED(Extensions::GL::ARB::geometry_shader4);
-@endcode
+
+@snippet Magnum.cpp Context-MAGNUM_ASSERT_EXTENSION_SUPPORTED
 
 @see @ref Magnum::Context::isExtensionSupported() "Context::isExtensionSupported()",
     @ref MAGNUM_ASSERT_VERSION_SUPPORTED(), @ref CORRADE_ASSERT(),

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,7 +43,7 @@ namespace Magnum {
 
 @section magnum-imageconverter-usage Usage
 
-@code{.shell-session}
+@code{.sh}
 magnum-imageconverter [-h|--help] [--importer IMPORTER] [--converter CONVERTER]
     [--plugin-dir DIR] [--] input output
 @endcode
@@ -64,7 +64,7 @@ Arguments:
 
 Converting a JPEG file to a PNG:
 
-@code{.shell-session}
+@code{.sh}
 magnum-imageconverter image.jpg image.png
 @endcode
 
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<Trade::AbstractImageConverter> converter = converterManager.instance(args.value("converter"));
 
     /* Open input file */
-    std::optional<Trade::ImageData2D> image;
+    Containers::Optional<Trade::ImageData2D> image;
     if(!importer->openFile(args.value("input")) || !(image = importer->image2D(0))) {
         Error() << "Cannot open file" << args.value("input");
         return 1;

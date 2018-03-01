@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,10 +26,8 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::SceneGraph::AbstractTransformation, alias @ref Magnum::SceneGraph::AbstractBasicTransformation2D, @ref Magnum::SceneGraph::AbstractBasicTransformation3D, typedef @ref Magnum::SceneGraph::AbstractTransformation2D, @ref Magnum::SceneGraph::AbstractTransformation3D, enum @ref Magnum::SceneGraph::TransformationType
+ * @brief Class @ref Magnum::SceneGraph::AbstractTransformation, alias @ref Magnum::SceneGraph::AbstractBasicTransformation2D, @ref Magnum::SceneGraph::AbstractBasicTransformation3D, typedef @ref Magnum::SceneGraph::AbstractTransformation2D, @ref Magnum::SceneGraph::AbstractTransformation3D
  */
-
-#include <Corrade/Utility/Macros.h>
 
 #include "Magnum/SceneGraph/SceneGraph.h"
 #include "Magnum/SceneGraph/visibility.h"
@@ -42,8 +40,7 @@ namespace Magnum { namespace SceneGraph {
 Provides transformation implementation for @ref Object instances. See
 @ref scenegraph-features-transformation for more information.
 
-@anchor SceneGraph-AbstractTransformation-explicit-specializations
-## Explicit template specializations
+@section SceneGraph-AbstractTransformation-explicit-specializations Explicit template specializations
 
 The following specializations are explicitly compiled into @ref SceneGraph
 library. For other specializations (e.g. using @ref Magnum::Double "Double"
@@ -89,25 +86,10 @@ template<UnsignedInt dimensions, class T> class AbstractTransformation {
         virtual void doResetTransformation() = 0;
 };
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-/**
-@brief Transformation type
-@deprecated Use `*Transformation*::*()` and `*Transformation::*Local*()`
-    overloads instead.
-*/
-enum class CORRADE_DEPRECATED_ENUM("use *() and *Local() overloads instead") TransformationType: UnsignedByte {
-    /** Global transformation, applied after all other transformations. */
-    Global = 0x00,
-
-    /** Local transformation, applied before all other transformations. */
-    Local = 0x01
-};
-#endif
-
 /**
 @brief Base transformation for two-dimensional scenes
 
-Convenience alternative to `AbstractTransformation<2, T>`. See
+Convenience alternative to @cpp AbstractTransformation<2, T> @ce. See
 @ref AbstractTransformation for more information.
 @see @ref AbstractTransformation2D, @ref AbstractBasicTransformation3D
 */
@@ -125,7 +107,7 @@ typedef AbstractBasicTransformation2D<Float> AbstractTransformation2D;
 /**
 @brief Base transformation for three-dimensional scenes
 
-Convenience alternative to `AbstractTransformation<3, T>`. See
+Convenience alternative to @cpp AbstractTransformation<3, T> @ce. See
 @ref AbstractTransformation for more information.
 @see @ref AbstractTransformation3D, @ref AbstractBasicTransformation2D
 */

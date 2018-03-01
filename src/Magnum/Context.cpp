@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -79,14 +79,10 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,ARB,robustness_share_group_isolation),
         _extension(GL,ARB,bindless_texture),
         _extension(GL,ARB,compute_variable_group_size),
-        _extension(GL,ARB,indirect_parameters),
         _extension(GL,ARB,seamless_cubemap_per_texture),
-        _extension(GL,ARB,shader_draw_parameters),
-        _extension(GL,ARB,shader_group_vote),
         _extension(GL,ARB,sparse_texture),
-        _extension(GL,ARB,pipeline_statistics_query),
         _extension(GL,ARB,sparse_buffer),
-        _extension(GL,ARB,transform_feedback_overflow_query),
+        _extension(GL,ARB,ES3_2_compatibility),
         _extension(GL,ATI,texture_mirror_once),
         _extension(GL,EXT,texture_filter_anisotropic),
         _extension(GL,EXT,texture_compression_s3tc),
@@ -100,8 +96,7 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,KHR,texture_compression_astc_ldr),
         _extension(GL,KHR,texture_compression_astc_hdr),
         _extension(GL,KHR,blend_equation_advanced),
-        _extension(GL,KHR,blend_equation_advanced_coherent),
-        _extension(GL,KHR,no_error)};
+        _extension(GL,KHR,blend_equation_advanced_coherent)};
     static const std::vector<Extension> extensions300{
         _extension(GL,ARB,map_buffer_range),
         _extension(GL,ARB,color_buffer_float),
@@ -231,14 +226,29 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,ARB,texture_barrier),
         _extension(GL,KHR,context_flush_control),
         _extension(GL,KHR,robustness)};
+    static const std::vector<Extension> extensions460{
+        _extension(GL,ARB,indirect_parameters),
+        _extension(GL,ARB,shader_draw_parameters),
+        _extension(GL,ARB,shader_group_vote),
+        _extension(GL,ARB,pipeline_statistics_query),
+        _extension(GL,ARB,transform_feedback_overflow_query),
+        _extension(GL,ARB,shader_atomic_counter_ops),
+        _extension(GL,ARB,gl_spirv),
+        _extension(GL,ARB,polygon_offset_clamp),
+        _extension(GL,ARB,spirv_extensions),
+        _extension(GL,ARB,texture_filter_anisotropic),
+        _extension(GL,KHR,no_error)};
     #elif defined(MAGNUM_TARGET_WEBGL)
     static const std::vector<Extension> extensions{
         _extension(GL,EXT,texture_filter_anisotropic),
         _extension(GL,EXT,disjoint_timer_query),
+        _extension(GL,EXT,color_buffer_float),
+        _extension(GL,OES,texture_float_linear),
         _extension(GL,WEBGL,compressed_texture_s3tc)};
     #ifdef MAGNUM_TARGET_GLES2
     static const std::vector<Extension> extensionsES300{
         _extension(GL,ANGLE,instanced_arrays),
+        _extension(GL,EXT,color_buffer_half_float),
         _extension(GL,EXT,sRGB),
         _extension(GL,EXT,blend_minmax),
         _extension(GL,EXT,shader_texture_lod),
@@ -247,10 +257,10 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,OES,standard_derivatives),
         _extension(GL,OES,vertex_array_object),
         _extension(GL,OES,element_index_uint),
-        _extension(GL,OES,texture_float_linear),
         _extension(GL,OES,texture_half_float_linear),
         _extension(GL,OES,fbo_render_mipmap),
         _extension(GL,WEBGL,depth_texture),
+        _extension(GL,WEBGL,color_buffer_float),
         _extension(GL,WEBGL,draw_buffers)};
     #endif
     #else
@@ -267,6 +277,9 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,EXT,multi_draw_arrays),
         _extension(GL,EXT,debug_label),
         _extension(GL,EXT,debug_marker),
+        _extension(GL,EXT,separate_shader_objects),
+        _extension(GL,EXT,multisampled_render_to_texture),
+        _extension(GL,EXT,robustness),
         _extension(GL,EXT,shader_framebuffer_fetch),
         _extension(GL,EXT,disjoint_timer_query),
         _extension(GL,EXT,texture_sRGB_decode),
@@ -274,31 +287,10 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,EXT,texture_compression_s3tc),
         #ifndef MAGNUM_TARGET_GLES2
         _extension(GL,EXT,shader_integer_mix),
-        _extension(GL,EXT,copy_image),
         #endif
-        _extension(GL,EXT,draw_buffers_indexed),
-        #ifndef MAGNUM_TARGET_GLES2
-        _extension(GL,EXT,geometry_shader),
-        _extension(GL,EXT,gpu_shader5),
-        _extension(GL,EXT,shader_io_blocks),
-        _extension(GL,EXT,tessellation_shader),
-        #endif
-        _extension(GL,EXT,texture_border_clamp),
-        #ifndef MAGNUM_TARGET_GLES2
-        _extension(GL,EXT,texture_buffer),
-        _extension(GL,EXT,texture_cube_map_array),
-        _extension(GL,EXT,primitive_bounding_box),
-        #endif
-        _extension(GL,EXT,separate_shader_objects),
-        _extension(GL,EXT,multisampled_render_to_texture),
-        _extension(GL,EXT,robustness),
-        _extension(GL,KHR,texture_compression_astc_ldr),
+        _extension(GL,EXT,polygon_offset_clamp),
         _extension(GL,KHR,texture_compression_astc_hdr),
-        _extension(GL,KHR,debug),
-        _extension(GL,KHR,blend_equation_advanced),
         _extension(GL,KHR,blend_equation_advanced_coherent),
-        _extension(GL,KHR,robustness),
-        _extension(GL,KHR,robust_buffer_access_behavior),
         _extension(GL,KHR,context_flush_control),
         _extension(GL,KHR,no_error),
         _extension(GL,NV,read_buffer_front),
@@ -314,17 +306,7 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,OES,mapbuffer),
         _extension(GL,OES,stencil1),
         _extension(GL,OES,stencil4),
-        #ifndef MAGNUM_TARGET_GLES2
-        _extension(GL,OES,sample_shading),
-        _extension(GL,OES,sample_variables),
-        _extension(GL,OES,shader_image_atomic),
-        _extension(GL,OES,shader_multisample_interpolation),
-        #endif
-        _extension(GL,OES,texture_stencil8),
-        #ifndef MAGNUM_TARGET_GLES2
-        _extension(GL,OES,texture_storage_multisample_2d_array)
-        #endif
-        };
+        _extension(GL,OES,texture_float_linear)};
     #ifdef MAGNUM_TARGET_GLES2
     static const std::vector<Extension> extensionsES300{
         _extension(GL,ANGLE,framebuffer_blit),
@@ -364,7 +346,6 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,OES,rgb8_rgba8),
         _extension(GL,OES,texture_3D),
         _extension(GL,OES,texture_half_float_linear),
-        _extension(GL,OES,texture_float_linear),
         _extension(GL,OES,texture_half_float),
         _extension(GL,OES,texture_float),
         _extension(GL,OES,texture_npot),
@@ -376,6 +357,41 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         _extension(GL,OES,required_internalformat),
         _extension(GL,OES,surfaceless_context)};
     #endif
+    static const std::vector<Extension> extensionsES320{
+        _extension(GL,EXT,color_buffer_half_float),
+        #ifndef MAGNUM_TARGET_GLES2
+        _extension(GL,EXT,color_buffer_float),
+        _extension(GL,EXT,copy_image),
+        #endif
+        _extension(GL,EXT,draw_buffers_indexed),
+        #ifndef MAGNUM_TARGET_GLES2
+        _extension(GL,EXT,geometry_shader),
+        _extension(GL,EXT,gpu_shader5),
+        _extension(GL,EXT,shader_io_blocks),
+        _extension(GL,EXT,tessellation_shader),
+        #endif
+        _extension(GL,EXT,texture_border_clamp),
+        #ifndef MAGNUM_TARGET_GLES2
+        _extension(GL,EXT,texture_buffer),
+        _extension(GL,EXT,texture_cube_map_array),
+        _extension(GL,EXT,primitive_bounding_box),
+        #endif
+        _extension(GL,KHR,texture_compression_astc_ldr),
+        _extension(GL,KHR,debug),
+        _extension(GL,KHR,blend_equation_advanced),
+        _extension(GL,KHR,robustness),
+        _extension(GL,KHR,robust_buffer_access_behavior),
+        #ifndef MAGNUM_TARGET_GLES2
+        _extension(GL,OES,sample_shading),
+        _extension(GL,OES,sample_variables),
+        _extension(GL,OES,shader_image_atomic),
+        _extension(GL,OES,shader_multisample_interpolation),
+        #endif
+        _extension(GL,OES,texture_stencil8),
+        #ifndef MAGNUM_TARGET_GLES2
+        _extension(GL,OES,texture_storage_multisample_2d_array)
+        #endif
+        };
     #endif
     #undef _extension
 
@@ -393,9 +409,11 @@ const std::vector<Extension>& Extension::extensions(Version version) {
         case Version::GL430: return extensions430;
         case Version::GL440: return extensions440;
         case Version::GL450: return extensions450;
+        case Version::GL460: return extensions460;
         case Version::GLES200:
         case Version::GLES300:
-        case Version::GLES310: return empty;
+        case Version::GLES310:
+        case Version::GLES320: return empty;
         #else
         case Version::GLES200: return empty;
         case Version::GLES300:
@@ -406,6 +424,7 @@ const std::vector<Extension>& Extension::extensions(Version version) {
             #endif
         #ifndef MAGNUM_TARGET_WEBGL
         case Version::GLES310: return empty;
+        case Version::GLES320: return extensionsES320;
         #endif
         #endif
     }
@@ -607,11 +626,13 @@ bool Context::tryCreate() {
         Version::GL430,
         Version::GL440,
         Version::GL450,
+        Version::GL460,
         #else
         Version::GLES200,
         Version::GLES300,
         #ifndef MAGNUM_TARGET_WEBGL
         Version::GLES310,
+        Version::GLES320,
         #endif
         #endif
         Version::None
@@ -813,6 +834,8 @@ bool Context::isVersionSupported(Version version) const {
         return isExtensionSupported<Extensions::GL::ARB::ES3_compatibility>();
     if(version == Version::GLES310)
         return isExtensionSupported<Extensions::GL::ARB::ES3_1_compatibility>();
+    if(version == Version::GLES320)
+        return isExtensionSupported<Extensions::GL::ARB::ES3_2_compatibility>();
     #endif
 
     return _version >= version;
@@ -836,6 +859,8 @@ void Context::resetState(const States states) {
         _state->framebuffer->reset();
     if(states & State::Meshes)
         _state->mesh->reset();
+    if(states & State::MeshVao)
+        _state->mesh->bindVAOImplementation(0);
 
     if(states & State::PixelStorage) {
         _state->renderer->unpackPixelStorage.reset();
@@ -865,7 +890,7 @@ Debug& operator<<(Debug& debug, const Context::Flag value) {
         #define _c(value) case Context::Flag::value: return debug << "Context::Flag::" #value;
         _c(Debug)
         _c(NoError)
-        #ifndef MAGNUM_TARGET_GLES
+        #ifndef MAGNUM_TARGET_GLES2
         _c(RobustAccess)
         #endif
         #undef _c
@@ -879,7 +904,7 @@ Debug& operator<<(Debug& debug, const Context::Flags value) {
     return Containers::enumSetDebugOutput(debug, value, "Context::Flags{}", {
         Context::Flag::Debug,
         Context::Flag::NoError,
-        #ifndef MAGNUM_TARGET_GLES
+        #ifndef MAGNUM_TARGET_GLES2
         Context::Flag::RobustAccess
         #endif
     });

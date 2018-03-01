@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -174,7 +174,7 @@ TextureState::TextureState(Context& context, std::vector<std::string>& extension
         parameterivImplementation = &AbstractTexture::parameterImplementationDefault;
         #endif
         parameterfvImplementation = &AbstractTexture::parameterImplementationDefault;
-        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+        #ifndef MAGNUM_TARGET_GLES
         parameterIuivImplementation = &AbstractTexture::parameterIImplementationDefault;
         parameterIivImplementation = &AbstractTexture::parameterIImplementationDefault;
         #endif
@@ -193,7 +193,7 @@ TextureState::TextureState(Context& context, std::vector<std::string>& extension
         compressedSubImage3DImplementation = &AbstractTexture::compressedSubImageImplementationDefault;
         #endif
 
-        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+        #ifndef MAGNUM_TARGET_GLES
         setBufferImplementation = &BufferTexture::setBufferImplementationDefault;
         setBufferRangeImplementation = &BufferTexture::setBufferRangeImplementationDefault;
         #endif
@@ -204,6 +204,32 @@ TextureState::TextureState(Context& context, std::vector<std::string>& extension
         cubeSubImageImplementation = &CubeMapTexture::subImageImplementationDefault;
         cubeCompressedSubImageImplementation = &CubeMapTexture::compressedSubImageImplementationDefault;
     }
+
+    #if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+    /* Integer parameter implementation for ES3 */
+    if(context.isVersionSupported(Version::GLES320)) {
+        parameterIuivImplementation = &AbstractTexture::parameterIImplementationDefault;
+        parameterIivImplementation = &AbstractTexture::parameterIImplementationDefault;
+    } else if(context.isExtensionSupported<Extensions::GL::EXT::texture_border_clamp>()) {
+        parameterIuivImplementation = &AbstractTexture::parameterIImplementationEXT;
+        parameterIivImplementation = &AbstractTexture::parameterIImplementationEXT;
+    } else {
+        parameterIuivImplementation = nullptr;
+        parameterIivImplementation = nullptr;
+    }
+
+    /* Buffer texture implementation for ES3 */
+    if(context.isVersionSupported(Version::GLES320)) {
+        setBufferImplementation = &BufferTexture::setBufferImplementationDefault;
+        setBufferRangeImplementation = &BufferTexture::setBufferRangeImplementationDefault;
+    } else if(context.isExtensionSupported<Extensions::GL::EXT::texture_buffer>()) {
+        setBufferImplementation = &BufferTexture::setBufferImplementationEXT;
+        setBufferRangeImplementation = &BufferTexture::setBufferRangeImplementationEXT;
+    } else {
+        setBufferImplementation = nullptr;
+        setBufferRangeImplementation = nullptr;
+    }
+    #endif
 
     /* Data invalidation implementation */
     #ifndef MAGNUM_TARGET_GLES
@@ -365,10 +391,23 @@ TextureState::TextureState(Context& context, std::vector<std::string>& extension
     }
     #elif !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     storage2DMultisampleImplementation = &AbstractTexture::storageMultisampleImplementationDefault;
-    storage3DMultisampleImplementation = &AbstractTexture::storageMultisampleImplementationDefault;
+
+    if(context.isVersionSupported(Version::GLES320))
+        storage3DMultisampleImplementation = &AbstractTexture::storageMultisampleImplementationDefault;
+    else if(context.isExtensionSupported<Extensions::GL::OES::texture_storage_multisample_2d_array>())
+        storage3DMultisampleImplementation = &AbstractTexture::storageMultisampleImplementationOES;
+    else
+        storage3DMultisampleImplementation = nullptr;
     #endif
 
     /* Anisotropic filter implementation */
+    #ifndef MAGNUM_TARGET_GLES
+    if(context.isExtensionSupported<Extensions::GL::EXT::texture_filter_anisotropic>()) {
+        extensions.emplace_back(Extensions::GL::ARB::texture_filter_anisotropic::string());
+
+        setMaxAnisotropyImplementation = &AbstractTexture::setMaxAnisotropyImplementationArb;
+    } else
+    #endif
     if(context.isExtensionSupported<Extensions::GL::EXT::texture_filter_anisotropic>()) {
         extensions.emplace_back(Extensions::GL::EXT::texture_filter_anisotropic::string());
 

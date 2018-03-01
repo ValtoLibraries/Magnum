@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,7 @@ namespace Implementation {
 /**
 @brief Remove duplicate floating-point vector data from given array
 @param[in,out] data Input data array
-@param[out] epsilon Epsilon value, vertices nearer than this distance will be
+@param[in] epsilon  Epsilon value, vertices nearer than this distance will be
     melt together
 @return Index array and unique data
 
@@ -65,29 +65,15 @@ the usual sorting method is much more efficient.
 If you want to remove duplicate data from already indexed array, first remove
 duplicates as if the array wasn't indexed at all and then use @ref duplicate()
 to combine the two index arrays:
-@code
-std::vector<UnsignedInt> indices;
-std::vector<Vector3> positions;
 
-indices = MeshTools::duplicate(indices, MeshTools::removeDuplicates(positions));
-@endcode
+@snippet MagnumMeshTools.cpp removeDuplicates1
 
-Removing duplicates in multiple indcidental arrays is also possible -- first
+Removing duplicates in multiple indcidental arrays is also possible --- first
 remove duplicates in each array separately and then use @ref combineIndexedArrays()
 to combine the resulting index arrays to single index array and reorder the
 data accordingly:
-@code
-std::vector<Vector3> positions;
-std::vector<Vector2> texCoords;
 
-std::vector<UnsignedInt> positionIndices = MeshTools::removeDuplicates(positions);
-std::vector<UnsignedInt> texCoordIndices = MeshTools::removeDuplicates(texCoords);
-
-std::vector<UnsignedInt> indices = MeshTools::combineIndexedArrays(
-    std::make_pair(std::cref(positionIndices), std::ref(positions)),
-    std::make_pair(std::cref(texCoordIndices), std::ref(texCoords))
-);
-@endcode
+@snippet MagnumMeshTools.cpp removeDuplicates2
 */
 template<class Vector> std::vector<UnsignedInt> removeDuplicates(std::vector<Vector>& data, typename Vector::Type epsilon = Math::TypeTraits<typename Vector::Type>::epsilon()) {
     /* Get bounds */

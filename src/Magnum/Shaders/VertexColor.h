@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,40 +47,19 @@ attributes in your triangle mesh and call at least
 @ref setTransformationProjectionMatrix().
 
 @image html shaders-vertexcolor.png
-@image latex shaders-vertexcolor.png
 
-## Example usage
+@section Shaders-VertexColor-example Example usage
 
 Common mesh setup. Note the explicit specification of components for the color
-attribute -- the shader accepts four-component color attribute but, similarly
+attribute --- the shader accepts four-component color attribute but, similarly
 to all other attributes, it's possible to supply also three-component colors if
 alpha is not important.
-@code
-struct Vertex {
-    Vector3 position;
-    Color3 color;
-};
-Vertex data[] = { ... };
 
-Buffer vertices;
-vertices.setData(data, BufferUsage::StaticDraw);
-
-Mesh mesh;
-mesh.addVertexBuffer(vertices, 0,
-    Shaders::VertexColor3D::Position{},
-    Shaders::VertexColor3D::Color{Shaders::VertexColor3D::Color::Components::Three});
-@endcode
+@snippet MagnumShaders.cpp VertexColor-usage1
 
 Common rendering setup:
-@code
-Matrix4 transformationMatrix = Matrix4::translation(Vector3::zAxis(-5.0f));
-Matrix4 projectionMatrix = Matrix4::perspectiveProjection(35.0_degf, 1.0f, 0.001f, 100.0f);
 
-Shaders::VertexColor3D shader;
-shader.setTransformationProjectionMatrix(projectionMatrix*transformationMatrix);
-
-mesh.draw(shader);
-@endcode
+@snippet MagnumShaders.cpp VertexColor-usage2
 
 @see @ref shaders, @ref VertexColor2D, @ref VertexColor3D
 */

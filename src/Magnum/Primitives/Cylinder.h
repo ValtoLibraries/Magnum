@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,8 +50,8 @@ class MAGNUM_PRIMITIVES_EXPORT Cylinder {
          * @see @ref Flags, @ref solid(), @ref wireframe()
          */
         enum class Flag {
-            GenerateTextureCoords = 1,  /**< @brief Generate texture coordinates */
-            CapEnds                     /**< @brief Cap ends */
+            GenerateTextureCoords = 1,  /**< Generate texture coordinates */
+            CapEnds                     /**< Cap ends */
         };
 
         /**
@@ -74,6 +74,12 @@ class MAGNUM_PRIMITIVES_EXPORT Cylinder {
          * texture coordinates and optional capped ends. If texture coordinates
          * are generated, vertices of one segment are duplicated for texture
          * wrapping.
+         *
+         * The cylinder is by default created with radius set to @cpp 1.0f @ce.
+         * In order to get radius @f$ r @f$, length @f$ l @f$ and preserve
+         * correct normals, set @p halfLength to @f$ 0.5 \frac{l}{r} @f$ and
+         * then scale all @ref Trade::MeshData3D::positions() by @f$ r @f$, for
+         * example using @ref MeshTools::transformPointsInPlace().
          */
         static Trade::MeshData3D solid(UnsignedInt rings, UnsignedInt segments, Float halfLength, Flags flags = Flags());
 

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -220,7 +220,7 @@ void PixelStorage::applyInternal(const bool isUnpack) {
 
     #ifndef MAGNUM_TARGET_GLES
     /* Byte swap */
-    if(state.swapBytes == std::nullopt || state.swapBytes != _swapBytes)
+    if(state.swapBytes == Containers::NullOpt || state.swapBytes != _swapBytes)
         glPixelStorei(isUnpack ? GL_UNPACK_SWAP_BYTES : GL_PACK_SWAP_BYTES,
           *(state.swapBytes = _swapBytes));
     #endif

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,14 +63,14 @@ void TgaImporter::doOpenData(const Containers::ArrayView<const char> data) {
 
 UnsignedInt TgaImporter::doImage2DCount() const { return 1; }
 
-std::optional<ImageData2D> TgaImporter::doImage2D(UnsignedInt) {
+Containers::Optional<ImageData2D> TgaImporter::doImage2D(UnsignedInt) {
     /* Check if the file is long enough */
-    if(_in.size() < std::streamoff(sizeof(TgaHeader))) {
+    if(_in.size() < std::streamoff(sizeof(Implementation::TgaHeader))) {
         Error() << "Trade::TgaImporter::image2D(): the file is too short:" << _in.size() << "bytes";
-        return std::nullopt;
+        return Containers::NullOpt;
     }
 
-    const TgaHeader& header = *reinterpret_cast<const TgaHeader*>(_in.data());
+    const Implementation::TgaHeader& header = *reinterpret_cast<const Implementation::TgaHeader*>(_in.data());
 
     /* Size in machine endian */
     const Vector2i size{Utility::Endianness::littleEndian(header.width),
@@ -80,7 +80,7 @@ std::optional<ImageData2D> TgaImporter::doImage2D(UnsignedInt) {
     PixelFormat format;
     if(header.colorMapType != 0) {
         Error() << "Trade::TgaImporter::image2D(): paletted files are not supported";
-        return std::nullopt;
+        return Containers::NullOpt;
     }
 
     /* Color */
@@ -94,7 +94,7 @@ std::optional<ImageData2D> TgaImporter::doImage2D(UnsignedInt) {
                 break;
             default:
                 Error() << "Trade::TgaImporter::image2D(): unsupported color bits-per-pixel:" << header.bpp;
-                return std::nullopt;
+                return Containers::NullOpt;
         }
 
     /* Grayscale */
@@ -109,17 +109,17 @@ std::optional<ImageData2D> TgaImporter::doImage2D(UnsignedInt) {
         #endif
         if(header.bpp != 8) {
             Error() << "Trade::TgaImporter::image2D(): unsupported grayscale bits-per-pixel:" << header.bpp;
-            return std::nullopt;
+            return Containers::NullOpt;
         }
 
     /* Compressed files */
     } else {
         Error() << "Trade::TgaImporter::image2D(): unsupported (compressed?) image type:" << header.imageType;
-        return std::nullopt;
+        return Containers::NullOpt;
     }
 
     Containers::Array<char> data{std::size_t(size.product())*header.bpp/8};
-    std::copy_n(_in + sizeof(TgaHeader), data.size(), data.begin());
+    std::copy_n(_in + sizeof(Implementation::TgaHeader), data.size(), data.begin());
 
     /* Adjust pixel storage if row size is not four byte aligned */
     PixelStorage storage;

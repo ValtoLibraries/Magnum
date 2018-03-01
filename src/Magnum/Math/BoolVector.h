@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,10 +58,10 @@ namespace Implementation {
 @brief Vector storing boolean values
 @tparam size    Bit count
 
-Result of component-wise comparison from Vector. The boolean values are stored
-as bits in array of unsigned bytes, unused bits have undefined value which
-doesn't affect comparison or @ref all() / @ref none() / @ref any() functions.
-See also @ref matrix-vector for brief introduction.
+Result of component-wise comparison from @ref Vector. The boolean values are
+stored as bits in array of unsigned bytes, unused bits have undefined value
+which doesn't affect comparison or @ref all() / @ref none() / @ref any()
+functions. See also @ref matrix-vector for brief introduction.
 */
 template<std::size_t size> class BoolVector {
     static_assert(size != 0, "BoolVector cannot have zero elements");

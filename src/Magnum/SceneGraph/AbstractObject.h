@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,10 +37,6 @@
 #include "Magnum/SceneGraph/SceneGraph.h"
 #include "Magnum/SceneGraph/visibility.h"
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include <Corrade/Utility/Macros.h>
-#endif
-
 namespace Magnum { namespace SceneGraph {
 
 /**
@@ -52,7 +48,8 @@ subclass instead. See also @ref scenegraph for more information.
 
 Uses @ref Corrade::Containers::LinkedList for efficient feature management.
 Traversing through the feature list can be done using range-based for:
-@code
+
+@code{.cpp}
 AbstractObject3D object;
 for(AbstractFeature3D& feature: object.features()) {
     // ...
@@ -62,14 +59,14 @@ for(AbstractFeature3D& feature: object.features()) {
 Or, if you need more flexibility, like in the following code. It is also
 possible to go in reverse order using @ref Corrade::Containers::LinkedList::last()
 and @ref AbstractFeature::previousFeature().
-@code
+
+@code{.cpp}
 for(AbstractFeature3D* feature = object.features().first(); feature; feature = feature->nextFeature()) {
     // ...
 }
 @endcode
 
-@anchor SceneGraph-AbstractObject-explicit-specializations
-## Explicit template specializations
+@section SceneGraph-AbstractObject-explicit-specializations Explicit template specializations
 
 The following specializations are explicitly compiled into @ref SceneGraph
 library. For other specializations (e.g. using @ref Magnum::Double "Double"
@@ -89,10 +86,6 @@ template<UnsignedInt dimensions, class T> class AbstractObject
     : private Containers::LinkedList<AbstractFeature<dimensions, T>>
     #endif
 {
-    friend Containers::LinkedList<AbstractFeature<dimensions, T>>;
-    friend Containers::LinkedListItem<AbstractFeature<dimensions, T>, AbstractObject<dimensions, T>>;
-    friend AbstractFeature<dimensions, T>;
-
     public:
         /** @brief Matrix type */
         typedef MatrixTypeFor<dimensions, T> MatrixType;
@@ -121,36 +114,6 @@ template<UnsignedInt dimensions, class T> class AbstractObject
             return static_cast<const Containers::LinkedList<AbstractFeature<dimensions, T>>&>(*this);
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief Whether this object has features
-         * @deprecated Use `features().isEmpty()` instead.
-         */
-        CORRADE_DEPRECATED("use features().isEmpty() instead") bool hasFeatures() const { return !features().isEmpty(); }
-
-        /**
-         * @brief First object feature or `nullptr`, if this object has no features
-         * @deprecated Use `features().first()` instead.
-         */
-        CORRADE_DEPRECATED("use features().first() instead") FeatureType* firstFeature() { return features().first(); }
-
-        /** @overload
-         * @deprecated Use `features().first()` instead.
-         */
-        CORRADE_DEPRECATED("use features().first() instead") const FeatureType* firstFeature() const { return features().first(); }
-
-        /**
-         * @brief Last object feature or `nullptr`, if this object has no features
-         * @deprecated Use `features().last()` instead.`
-         */
-        CORRADE_DEPRECATED("use features().last() instead") FeatureType* lastFeature() { return features().last(); }
-
-        /** @overload
-         * @deprecated Use `features().last()` instead.
-         */
-        CORRADE_DEPRECATED("use features().last() instead") const FeatureType* lastFeature() const { return features().last(); }
-        #endif
-
         /**
          * @brief Add a feature
          *
@@ -163,7 +126,8 @@ template<UnsignedInt dimensions, class T> class AbstractObject
 
         /**
          * @brief Scene
-         * @return Scene or `nullptr`, if the object is not part of any scene.
+         * @return Scene or @cpp nullptr @ce, if the object is not part of any
+         *      scene.
          */
         AbstractObject<dimensions, T>* scene() { return doScene(); }
 
@@ -234,9 +198,9 @@ template<UnsignedInt dimensions, class T> class AbstractObject
         /**
          * @brief Whether absolute transformation is dirty
          *
-         * Returns `true` if transformation of the object or any parent has
-         * changed since last call to @ref setClean(), `false` otherwise. All
-         * objects are dirty by default.
+         * Returns @cpp true @ce if transformation of the object or any parent
+         * has changed since last call to @ref setClean(), @cpp false @ce
+         * otherwise. All objects are dirty by default.
          * @see @ref scenegraph-features-caching
          */
         bool isDirty() const { return doIsDirty(); }
@@ -272,6 +236,12 @@ template<UnsignedInt dimensions, class T> class AbstractObject
         /*@}*/
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Containers::LinkedList<AbstractFeature<dimensions, T>>;
+        friend Containers::LinkedListItem<AbstractFeature<dimensions, T>, AbstractObject<dimensions, T>>;
+        friend AbstractFeature<dimensions, T>;
+        #endif
+
         virtual AbstractObject<dimensions, T>* doScene() = 0;
         virtual const AbstractObject<dimensions, T>* doScene() const = 0;
 
@@ -291,7 +261,7 @@ template<UnsignedInt dimensions, class T> class AbstractObject
 /**
 @brief Base object for two-dimensional scenes
 
-Convenience alternative to `AbstractObject<2, T>`. See
+Convenience alternative to @cpp AbstractObject<2, T> @ce. See
 @ref AbstractObject for more information.
 @see @ref AbstractObject2D, @ref AbstractBasicObject3D
 */
@@ -309,7 +279,7 @@ typedef AbstractBasicObject2D<Float> AbstractObject2D;
 /**
 @brief Base object for three-dimensional scenes
 
-Convenience alternative to `AbstractObject<3, T>`. See
+Convenience alternative to @cpp AbstractObject<3, T> @ce. See
 @ref AbstractObject for more information.
 @see @ref AbstractObject3D, @ref AbstractBasicObject2D
 */

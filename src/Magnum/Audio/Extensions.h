@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -37,9 +37,9 @@ namespace Magnum { namespace Audio {
 /**
 @brief Compile-time information about OpenAL extensions
 
-Each extension is `struct` named hierarchically by prefix, vendor and
+Each extension is a @cpp struct @ce named hierarchically by prefix, vendor and
 extension name taken from list at @ref openal-support, for example
-`ALC::SOFTX::HRTF`.
+@cpp ALC::SOFTX::HRTF @ce.
 
 Each struct has the same public methods as @ref Extension class
 (@ref Extension::requiredVersion() "requiredVersion()",
@@ -48,28 +48,33 @@ but these structs are better suited for compile-time decisions rather than
 @ref Extension instances. See @ref Context::isExtensionSupported() for example
 usage.
 
-This namespace is not built by default. It is built if `WITH_AUDIO` is
-enabled when building Magnum. To use this library, you need to request
-`Audio` component of `Magnum` package in CMake and link to `Magnum::Audio`
-target. See @ref building and @ref cmake for more information. Additional
-plugins are enabled separately, see particular `*Importer` class documentation,
-@ref building-plugins, @ref cmake-plugins and @ref plugins for more
-information.
+This namespace is built if `WITH_AUDIO` is enabled when building Magnum. To use
+this library with CMake, you need to request the `Audio` component of the
+`Magnum` package and link to the `Magnum::Audio` target.
+
+@code{.cmake}
+find_package(Magnum REQUIRED Audio)
+
+# ...
+target_link_libraries(your-app Magnum::Audio)
+@endcode
+
+See @ref building and @ref cmake for more information.
 @see @ref MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED()
 @todo Manual indices for extensions, this has gaps
 */
 namespace Extensions {
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
-#define _extension(prefix, vendor, extension) \
+#define _extension(prefix, vendor, extension)                               \
     struct extension {                                                      \
-        enum: std::size_t { Index = __LINE__-1 };                                \
+        enum: std::size_t { Index = __LINE__-1 };                           \
         constexpr static const char* string() { return #prefix "_" #vendor "_" #extension; } \
     };
 
-#define _extension_rev(prefix, vendor, extension) \
+#define _extension_rev(prefix, vendor, extension)                           \
     struct extension {                                                      \
-        enum: std::size_t { Index = __LINE__-1 };                                \
+        enum: std::size_t { Index = __LINE__-1 };                           \
         constexpr static const char* string() { return #prefix "_" #extension "_" #vendor; } \
     };
 

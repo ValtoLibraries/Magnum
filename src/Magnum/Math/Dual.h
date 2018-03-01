@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,7 +98,8 @@ template<class T> class Dual {
          *
          * Performs only default casting on the values, no rounding or anything
          * else. Example usage:
-         * @code
+         *
+         * @code{.cpp}
          * Dual<Float> floatingPoint(1.3f, 2.7f);
          * Dual<Byte> integral(floatingPoint);
          * // integral == {1, 2}

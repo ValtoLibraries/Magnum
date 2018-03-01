@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,7 +83,7 @@ template<UnsignedInt dimensions> struct Generic {
         constexpr explicit Color(Components components, DataType dataType = DataType::Float, DataOptions dataOptions = {});
 
         #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @copybrief Color(Components, DataType, DataOptions)
+        /** @brief @copybrief Color(Components, DataType, DataOptions)
          * @deprecated Use @ref Color(Components, DataType, DataOptions) instead.
          */
         CORRADE_DEPRECATED("use Color(Components, DataType, DataOptions) instead") constexpr explicit Color(DataType dataType = DataType::Float, DataOptions dataOptions = {});

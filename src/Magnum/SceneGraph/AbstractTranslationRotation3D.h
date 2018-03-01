@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -73,35 +73,13 @@ template<class T> class AbstractBasicTranslationRotation3D: public AbstractBasic
             return *this;
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief rotate()
-         * @deprecated Use @ref rotate() or @ref rotateLocal() instead.
-         */
-        CORRADE_DEPRECATED("use rotate() or rotateLocal() instead") AbstractBasicTranslationRotation3D<T>& rotate(Math::Rad<T> angle, const Math::Vector3<T>& normalizedAxis, TransformationType type) {
-            return type == TransformationType::Global ? rotate(angle, normalizedAxis) : rotateLocal(angle, normalizedAxis);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
-
         /**
          * @brief Rotate object around X axis
          * @param angle             Angle (counterclockwise)
          * @return Reference to self (for method chaining)
          *
          * In some implementations faster than calling
-         * `rotate(angle, Vector3::xAxis())`, see subclasses for more
+         * @cpp rotate(angle, Vector3::xAxis()) @ce, see subclasses for more
          * information.
          * @see @ref rotateXLocal()
          */
@@ -115,35 +93,13 @@ template<class T> class AbstractBasicTranslationRotation3D: public AbstractBasic
          *
          * Similar to the above, except that the transformation is applied
          * before all others. In some implementations faster than calling
-         * `rotateLocal(angle, Vector3::xAxis())`, see subclasses for more
-         * information.
+         * @cpp rotateLocal(angle, Vector3::xAxis()) @ce, see subclasses for
+         * more information.
          */
         AbstractBasicTranslationRotation3D<T>& rotateXLocal(Math::Rad<T> angle) {
             doRotateXLocal(angle);
             return *this;
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief rotateX()
-         * @deprecated Use @ref rotateX() or @ref rotateXLocal() instead.
-         */
-        CORRADE_DEPRECATED("use rotateX() or rotateXLocal() instead") AbstractBasicTranslationRotation3D<T>& rotateX(Math::Rad<T> angle, TransformationType type) {
-            return type == TransformationType::Global ? rotateX(angle) : rotateXLocal(angle);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
 
         /**
          * @brief Rotate object around Y axis
@@ -151,7 +107,7 @@ template<class T> class AbstractBasicTranslationRotation3D: public AbstractBasic
          * @return Reference to self (for method chaining)
          *
          * In some implementations faster than calling
-         * `rotate(angle, Vector3::yAxis())`, see subclasses for more
+         * @cpp rotate(angle, Vector3::yAxis()) @ce, see subclasses for more
          * information.
          * @see @ref rotateYLocal()
          */
@@ -165,35 +121,13 @@ template<class T> class AbstractBasicTranslationRotation3D: public AbstractBasic
          *
          * Similar to the above, except that the transformation is applied
          * before all others. In some implementations faster than calling
-         * `rotateLocal(angle, Vector3::yAxis())`, see subclasses for more
-         * information.
+         * @cpp rotateLocal(angle, Vector3::yAxis()) @ce, see subclasses for
+         * more information.
          */
         AbstractBasicTranslationRotation3D<T>& rotateYLocal(Math::Rad<T> angle) {
             doRotateY(angle);
             return *this;
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief rotateY()
-         * @deprecated Use @ref rotateY() or @ref rotateYLocal() instead.
-         */
-        CORRADE_DEPRECATED("use rotateY() or rotateYLocal() instead") AbstractBasicTranslationRotation3D<T>& rotateY(Math::Rad<T> angle, TransformationType type) {
-            return type == TransformationType::Global ? rotateY(angle) : rotateYLocal(angle);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
 
         /**
          * @brief Rotate object around Z axis
@@ -201,7 +135,7 @@ template<class T> class AbstractBasicTranslationRotation3D: public AbstractBasic
          * @return Reference to self (for method chaining)
          *
          * In some implementations faster than calling
-         * `rotate(angle, Vector3::zAxis())`, see subclasses for more
+         * @cpp rotate(angle, Vector3::zAxis()) @ce, see subclasses for more
          * information.
          * @see @ref rotateZLocal()
          */
@@ -215,35 +149,13 @@ template<class T> class AbstractBasicTranslationRotation3D: public AbstractBasic
          *
          * Similar to the above, except that the transformation is applied
          * before all others. In some implementations faster than calling
-         * `rotateLocal(angle, Vector3::zAxis())`, see subclasses for more
-         * information.
+         * @cpp rotateLocal(angle, Vector3::zAxis()) @ce, see subclasses for
+         * more information.
          */
         AbstractBasicTranslationRotation3D<T>& rotateZLocal(Math::Rad<T> angle) {
             doRotateZLocal(angle);
             return *this;
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        /**
-         * @copybrief rotateZ()
-         * @deprecated Use @ref rotateZ() or @ref rotateZLocal() instead.
-         */
-        CORRADE_DEPRECATED("use rotateZ() or rotateZLocal() instead") AbstractBasicTranslationRotation3D<T>& rotateZ(Math::Rad<T> angle, TransformationType type) {
-            return type == TransformationType::Global ? rotateZ(angle) : rotateZLocal(angle);
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
 
         /* Overloads to remove WTF-factor from method chaining order */
         #ifndef DOXYGEN_GENERATING_OUTPUT
@@ -259,24 +171,6 @@ template<class T> class AbstractBasicTranslationRotation3D: public AbstractBasic
             AbstractBasicTranslation3D<T>::translateLocal(vector);
             return *this;
         }
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #elif defined(_MSC_VER)
-        #pragma warning(push)
-        #pragma warning(disable: 4996)
-        #endif
-        CORRADE_DEPRECATED("use translate() or translateLocal() instead") AbstractBasicTranslationRotation3D<T>& translate(const Math::Vector3<T>& vector, TransformationType type) {
-            AbstractBasicTranslation3D<T>::translate(vector, type);
-            return *this;
-        }
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #elif defined(_MSC_VER)
-        #pragma warning(pop)
-        #endif
-        #endif
         #endif
 
     protected:

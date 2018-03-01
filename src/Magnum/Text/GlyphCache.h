@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,17 +43,12 @@ namespace Magnum { namespace Text {
 
 Contains font glyphs prerendered into texture atlas.
 
-## Usage
+@section Text-GlyphCache-usage Usage
 
 Create GlyphCache object with sufficient size and then call
 @ref AbstractFont::createGlyphCache() to fill it with glyphs.
-@code
-Text::AbstractFont* font;
-Text::GlyphCache* cache = new GlyphCache(Vector2i(512));
-font->createGlyphCache(cache, "abcdefghijklmnopqrstuvwxyz"
-                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                              "0123456789?!:;,. ");
-@endcode
+
+@snippet MagnumText.cpp GlyphCache-usage
 
 See @ref Renderer for information about text rendering.
 @todo Some way for Font to negotiate or check internal texture format
@@ -73,14 +68,14 @@ class MAGNUM_TEXT_EXPORT GlyphCache {
          * although the actual glyph cache texture has @p size. Glyph
          * @p padding can be used to account for e.g. glyph shadows.
          */
-        explicit GlyphCache(TextureFormat internalFormat, const Vector2i& originalSize, const Vector2i& size, const Vector2i& padding = Vector2i());
+        explicit GlyphCache(TextureFormat internalFormat, const Vector2i& originalSize, const Vector2i& size, const Vector2i& padding);
 
         /**
          * @brief Constructor
          *
          * Same as calling the above with @p originalSize and @p size the same.
          */
-        explicit GlyphCache(TextureFormat internalFormat, const Vector2i& size, const Vector2i& padding = Vector2i());
+        explicit GlyphCache(TextureFormat internalFormat, const Vector2i& size, const Vector2i& padding = {});
 
         /**
          * @brief Constructor
@@ -90,14 +85,14 @@ class MAGNUM_TEXT_EXPORT GlyphCache {
          * ES2 uses @extension{EXT,texture_rg}, if available, or
          * @ref TextureFormat::Luminance as fallback.
          */
-        explicit GlyphCache(const Vector2i& originalSize, const Vector2i& size, const Vector2i& padding = Vector2i());
+        explicit GlyphCache(const Vector2i& originalSize, const Vector2i& size, const Vector2i& padding);
 
         /**
          * @brief Constructor
          *
          * Same as calling the above with @p originalSize and @p size the same.
          */
-        explicit GlyphCache(const Vector2i& size, const Vector2i& padding = Vector2i());
+        explicit GlyphCache(const Vector2i& size, const Vector2i& padding = {});
 
         virtual ~GlyphCache();
 
@@ -126,9 +121,9 @@ class MAGNUM_TEXT_EXPORT GlyphCache {
          *
          * Returned values include padding.
          *
-         * If no glyph is found, glyph `0` is returned, which is by default on
-         * zero position and has zero region in texture atlas. You can reset it
-         * to some meaningful value in @ref insert().
+         * If no glyph is found, glyph @cpp 0 @ce is returned, which is by
+         * default on zero position and has zero region in texture atlas. You
+         * can reset it to some meaningful value in @ref insert().
          * @see @ref padding()
          */
         std::pair<Vector2i, Range2Di> operator[](UnsignedInt glyph) const {
@@ -170,7 +165,7 @@ class MAGNUM_TEXT_EXPORT GlyphCache {
          *
          * You can obtain unused non-overlapping regions with @ref reserve().
          * You can't overwrite already inserted glyph, however you can reset
-         * glyph `0` to some meaningful value.
+         * glyph @cpp 0 @ce to some meaningful value.
          *
          * Glyph parameters are expected to be without padding.
          *

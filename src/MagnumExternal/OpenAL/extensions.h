@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -37,6 +37,8 @@ extern "C" {
 #ifndef AL_APIENTRY
 #define AL_APIENTRY
 #endif
+
+#ifndef DOXYGEN_GENERATING_OUTPUT /* So the macro names are preserved in the docs */
 
 /* AL_EXT_float32 */
 #ifndef AL_EXT_float32
@@ -114,6 +116,8 @@ extern "C" {
 
 typedef ALCchar* (AL_APIENTRY*LPALGETSTRINGISOFT)(ALCdevice*,ALCenum,ALCsizei);
 typedef ALCboolean (AL_APIENTRY*LPALRESETDEVICESOFT)(ALCdevice*,const ALCint*);
+#endif
+
 #endif
 
 #ifdef __cplusplus

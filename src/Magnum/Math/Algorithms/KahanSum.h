@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,7 +48,8 @@ significantly reduces numerical error in the total. See Wikipedia for an
 in-depth explanation: https://en.wikipedia.org/wiki/Kahan_summation_algorithm
 
 Example with summation of a hundred million ones:
-@code
+
+@code{.cpp}
 std::vector<Float> data(100000000, 1.0f);
 Float a = std::accumulate(data.begin(), data.end());            // 1.667e7f
 Float b = Math::Algorithms::kahanSum(data.begin(), data.end()); // 1.000e8f
@@ -58,7 +59,8 @@ If required, it is also possible to use this algorithm on non-contiguous ranges
 or single values (for example when calculating sum of pixel values in an image
 with some row padding or when the inputs are generated / converted from other
 values):
-@code
+
+@code{.cpp}
 Containers::ArrayView<UnsignedByte> pixels;
 Float sum = 0.0f, c = 0.0f;
 for(UnsignedByte pixel: pixels) {

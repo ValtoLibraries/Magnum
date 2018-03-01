@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -157,7 +157,7 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
         #endif
         /* The default implementation is the same for both 2D and cube map textures */
         texture2DImplementation = &Framebuffer::texture2DImplementationDefault;
-        #if !defined(MAGNUM_TARGET_WEBGL) && !defined(MAGNUM_TARGET_GLES2)
+        #ifndef MAGNUM_TARGET_GLES
         textureImplementation = &Framebuffer::textureImplementationDefault;
         #endif
         textureCubeMapImplementation = &Framebuffer::texture2DImplementationDefault;
@@ -167,6 +167,16 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
 
         renderbufferStorageImplementation = &Renderbuffer::storageImplementationDefault;
     }
+
+    /* Framebuffer texture attachment on ES3 */
+    #if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_WEBGL) && !defined(MAGNUM_TARGET_GLES2)
+    if(context.isVersionSupported(Version::GLES320))
+        textureImplementation = &Framebuffer::textureImplementationDefault;
+    else if(context.isExtensionSupported<Extensions::GL::EXT::geometry_shader>())
+        textureImplementation = &Framebuffer::textureImplementationEXT;
+    else
+        textureImplementation = nullptr;
+    #endif
 
     #ifdef MAGNUM_TARGET_GLES2
     /* Framebuffer binding and checking on ES2 */
