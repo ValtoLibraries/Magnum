@@ -35,6 +35,7 @@ namespace Magnum {
 namespace {
     /* Search the code for the following strings to see where they are implemented. */
     std::vector<std::string> KnownWorkarounds{
+        /* [workarounds] */
         #if !defined(MAGNUM_TARGET_GLES) && !defined(CORRADE_TARGET_APPLE)
         /* Creating core context with specific version on AMD and NV
            proprietary drivers on Linux/Windows and Intel drivers on Windows
@@ -103,7 +104,16 @@ namespace {
            with copies from host memory, not with buffer images. Seems to be
            fixed in Mesa 13, but I have no such system to verify that on.
            https://github.com/mesa3d/mesa/commit/2aa9ff0cda1f6ad97c83d5583fab7a84efabe19e */
-        "svga3d-texture-upload-slice-by-slice"
+        "svga3d-texture-upload-slice-by-slice",
+
+        #if defined(CORRADE_TARGET_EMSCRIPTEN) && defined(__EMSCRIPTEN_PTHREADS__)
+        /* Shader sources containing UTF-8 characters are converted to empty
+           strings when running on Emscripten with -s USE_PTHREADS=1. Working
+           around that by replacing all chars > 127 with spaces. Relevant code:
+           https://github.com/kripken/emscripten/blob/7f89560101843198787530731f40a65288f6f15f/src/fetch-worker.js#L54-L58 */
+        "emscripten-pthreads-broken-unicode-shader-sources"
+        #endif
+        /* [workarounds] */
     };
 }
 

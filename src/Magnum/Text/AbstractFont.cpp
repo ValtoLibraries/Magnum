@@ -32,7 +32,29 @@
 #include "Magnum/Math/Functions.h"
 #include "Magnum/Text/GlyphCache.h"
 
+#ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+#include "Magnum/Text/configure.h"
+#endif
+
 namespace Magnum { namespace Text {
+
+std::string AbstractFont::pluginInterface() {
+    return "cz.mosra.magnum.Text.AbstractFont/0.2.4";
+}
+
+#ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+std::vector<std::string> AbstractFont::pluginSearchPaths() {
+    return {
+        #ifdef CORRADE_IS_DEBUG_BUILD
+        "magnum-d/fonts",
+        Utility::Directory::join(MAGNUM_PLUGINS_DEBUG_DIR, "fonts")
+        #else
+        "magnum/fonts",
+        Utility::Directory::join(MAGNUM_PLUGINS_DIR, "fonts")
+        #endif
+    };
+}
+#endif
 
 AbstractFont::AbstractFont(): _size(0.0f) {}
 

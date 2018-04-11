@@ -44,8 +44,9 @@ if(POLICY CMP0054)
 endif()
 
 # Configuration fails on < 3.4 if only C++ is enabled (CheckFunctionExists
-# macro called from FindX11)
-if(NOT CMAKE_VERSION VERSION_LESS 3.4.0)
+# macro called from FindX11). Also, Android needs C for compiling some glue
+# code.
+if(NOT CMAKE_VERSION VERSION_LESS 3.4.0 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
     set(LANG CXX)
 endif()
 project(Magnum ${LANG})
@@ -56,7 +57,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/modules/")
 
 # Find Corrade first so we can check on the target
-find_package(Corrade REQUIRED PluginManager Utility)
+find_package(Corrade REQUIRED Utility)
 
 include(CMakeDependentOption)
 
@@ -87,7 +88,14 @@ endif()
 # API-independent utilities
 option(WITH_IMAGECONVERTER "Build magnum-imageconverter utility" OFF)
 
+# Magnum AL Info
+option(WITH_AL_INFO "Build magnum-al-info utility" OFF)
+
 # Plugins
+option(WITH_ANYIMAGEIMPORTER "Build AnyImageImporter plugin" OFF)
+option(WITH_ANYAUDIOIMPORTER "Build AnyAudioImporter plugin" OFF)
+option(WITH_ANYIMAGECONVERTER "Build AnyImageConverter plugin" OFF)
+option(WITH_ANYSCENEIMPORTER "Build AnySceneImporter plugin" OFF)
 option(WITH_WAVAUDIOIMPORTER "Build WavAudioImporter plugin" OFF)
 option(WITH_MAGNUMFONT "Build MagnumFont plugin" OFF)
 cmake_dependent_option(WITH_MAGNUMFONTCONVERTER "Build MagnumFontConverter plugin" OFF "NOT TARGET_GLES" OFF)
@@ -96,18 +104,16 @@ cmake_dependent_option(WITH_TGAIMAGECONVERTER "Build TgaImageConverter plugin" O
 cmake_dependent_option(WITH_TGAIMPORTER "Build TgaImporter plugin" OFF "NOT WITH_MAGNUMFONT" ON)
 
 # Parts of the library
-cmake_dependent_option(WITH_AUDIO "Build Audio library" OFF "NOT WITH_WAVAUDIOIMPORTER" ON)
+cmake_dependent_option(WITH_AUDIO "Build Audio library" OFF "NOT WITH_AL_INFO;NOT WITH_ANYAUDIOIMPORTER;NOT WITH_WAVAUDIOIMPORTER" ON)
 option(WITH_DEBUGTOOLS "Build DebugTools library" ON)
 cmake_dependent_option(WITH_MESHTOOLS "Build MeshTools library" ON "( NOT WITH_DEBUGTOOLS OR ( NOT WITH_SHAPES AND NOT WITH_SCENEGRAPH ) ) AND NOT WITH_OBJIMPORTER" ON)
 cmake_dependent_option(WITH_PRIMITIVES "Builf Primitives library" ON "NOT WITH_DEBUGTOOLS OR NOT WITH_SHAPES" ON)
 option(WITH_SHAPES "Build Shapes library" ON)
 cmake_dependent_option(WITH_SCENEGRAPH "Build SceneGraph library" ON "NOT WITH_SHAPES" ON)
 cmake_dependent_option(WITH_SHADERS "Build Shaders library" ON "NOT WITH_DEBUGTOOLS OR ( NOT WITH_SHAPES AND NOT WITH_SCENEGRAPH )" ON)
-cmake_dependent_option(WITH_TEXT "Build Text library" ON "NOT WITH_MAGNUMFONT;NOT WITH_MAGNUMFONTCONVERTER" ON)
+cmake_dependent_option(WITH_TEXT "Build Text library" ON "NOT WITH_FONTCONVERTER;NOT WITH_MAGNUMFONT;NOT WITH_MAGNUMFONTCONVERTER" ON)
 cmake_dependent_option(WITH_TEXTURETOOLS "Build TextureTools library" ON "NOT WITH_TEXT;NOT WITH_DISTANCEFIELDCONVERTER" ON)
-
-# Magnum AL Info
-cmake_dependent_option(WITH_AL_INFO "Build magnum-al-info utility" OFF "WITH_AUDIO" OFF)
+cmake_dependent_option(WITH_TRADE "Build Trade library" ON "NOT WITH_MESHTOOLS;NOT WITH_PRIMITIVES;NOT WITH_IMAGECONVERTER;NOT WITH_ANYIMAGEIMPORTER;NOT WITH_ANYIMAGECONVERTER;NOT WITH_ANYSCENEIMPORTER;NOT WITH_OBJIMPORTER;NOT WITH_TGAIMAGECONVERTER;NOT WITH_TGAIMPORTER" ON)
 
 # EGL context and windowless EGL application, available everywhere
 cmake_dependent_option(WITH_WINDOWLESSEGLAPPLICATION "Build WindowlessEglApplication library" OFF "NOT TARGET_GLES OR TARGET_DESKTOP_GLES OR NOT WITH_MAGNUMINFO" ON)
@@ -162,6 +168,11 @@ if(BUILD_MULTITHREADED)
     set(MAGNUM_BUILD_MULTITHREADED 1)
 endif()
 
+set(MAGNUM_DEPLOY_PREFIX "."
+    CACHE STRING "Prefix where to put final application executables")
+set(MAGNUM_INCLUDE_INSTALL_PREFIX "."
+    CACHE STRING "Prefix where to put platform-independent include and other files")
+
 option(BUILD_STATIC "Build static libraries (default are shared)" OFF)
 option(BUILD_STATIC_PIC "Build static libraries and plugins with position-independent code" ON)
 option(BUILD_PLUGINS_STATIC "Build static plugins (default are dynamic)" OFF)
@@ -177,13 +188,14 @@ if(BUILD_TESTS)
 endif()
 
 # OpenGLTester library, built by default only if GL tests are enabled
-if(NOT CORRADE_TARGET_ANDROID AND NOT CORRADE_TARGET_EMSCRIPTEN)
-    cmake_dependent_option(WITH_OPENGLTESTER "Build OpenGLTester library" OFF "NOT BUILD_GL_TESTS" ON)
-endif()
+cmake_dependent_option(WITH_OPENGLTESTER "Build OpenGLTester library" OFF "NOT BUILD_GL_TESTS" ON)
 
 # Dynamic linking is meaningless on Emscripten and too inconvenient on Android
 if(CORRADE_TARGET_EMSCRIPTEN OR CORRADE_TARGET_ANDROID)
     set(BUILD_STATIC ON)
+    set(BUILD_PLUGINS_STATIC ON)
+# Dynamic plugins are not working on iOS or Windows RT at the moment
+elseif(CORRADE_TARGET_IOS OR CORRADE_TARGET_WINDOWS_RT)
     set(BUILD_PLUGINS_STATIC ON)
 endif()
 
@@ -225,7 +237,7 @@ if(CORRADE_TARGET_EMSCRIPTEN)
 endif()
 
 if(WITH_OPENGLTESTER)
-    if(MAGNUM_TARGET_HEADLESS)
+    if(MAGNUM_TARGET_HEADLESS OR CORRADE_TARGET_EMSCRIPTEN OR CORRADE_TARGET_ANDROID)
         set(WITH_WINDOWLESSEGLAPPLICATION ON)
         set(OPENGLTESTER_APPLICATION MagnumWindowlessEglApplication)
     elseif(CORRADE_TARGET_IOS)
@@ -266,11 +278,11 @@ endif()
 include(${CORRADE_LIB_SUFFIX_MODULE})
 set(MAGNUM_BINARY_INSTALL_DIR bin)
 set(MAGNUM_LIBRARY_INSTALL_DIR lib${LIB_SUFFIX})
-set(MAGNUM_DATA_INSTALL_DIR share/magnum)
-set(MAGNUM_CMAKE_MODULE_INSTALL_DIR share/cmake/Magnum)
-set(MAGNUM_INCLUDE_INSTALL_DIR include/Magnum)
-set(MAGNUM_EXTERNAL_INCLUDE_INSTALL_DIR include/MagnumExternal)
-set(MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR include/MagnumPlugins)
+set(MAGNUM_DATA_INSTALL_DIR ${MAGNUM_INCLUDE_INSTALL_PREFIX}/share/magnum)
+set(MAGNUM_CMAKE_MODULE_INSTALL_DIR ${MAGNUM_INCLUDE_INSTALL_PREFIX}/share/cmake/Magnum)
+set(MAGNUM_INCLUDE_INSTALL_DIR ${MAGNUM_INCLUDE_INSTALL_PREFIX}/include/Magnum)
+set(MAGNUM_EXTERNAL_INCLUDE_INSTALL_DIR ${MAGNUM_INCLUDE_INSTALL_PREFIX}/include/MagnumExternal)
+set(MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR ${MAGNUM_INCLUDE_INSTALL_PREFIX}/include/MagnumPlugins)
 
 # Separate install dirs for debug and release plugins
 set(MAGNUM_PLUGINS_DEBUG_BINARY_INSTALL_DIR ${MAGNUM_BINARY_INSTALL_DIR}/magnum-d)
@@ -302,11 +314,11 @@ set(MAGNUM_PLUGINS_AUDIOIMPORTER_RELEASE_LIBRARY_INSTALL_DIR ${MAGNUM_PLUGINS_RE
 # Plugin dirs based on wheter we are in debug or release build, needed by some
 # command-line tools
 if(CORRADE_TARGET_WINDOWS)
-    set(MAGNUM_PLUGINS_DEBUG_DIR_INIT ${MAGNUM_PLUGINS_DEBUG_BINARY_INSTALL_DIR})
-    set(MAGNUM_PLUGINS_RELEASE_DIR_INIT ${MAGNUM_PLUGINS_RELEASE_BINARY_INSTALL_DIR})
+    set(MAGNUM_PLUGINS_DEBUG_DIR_INIT ${CMAKE_INSTALL_PREFIX}/${MAGNUM_PLUGINS_DEBUG_BINARY_INSTALL_DIR})
+    set(MAGNUM_PLUGINS_RELEASE_DIR_INIT ${CMAKE_INSTALL_PREFIX}/${MAGNUM_PLUGINS_RELEASE_BINARY_INSTALL_DIR})
 else()
-    set(MAGNUM_PLUGINS_DEBUG_DIR_INIT ${MAGNUM_PLUGINS_DEBUG_LIBRARY_INSTALL_DIR})
-    set(MAGNUM_PLUGINS_RELEASE_DIR_INIT ${MAGNUM_PLUGINS_RELEASE_LIBRARY_INSTALL_DIR})
+    set(MAGNUM_PLUGINS_DEBUG_DIR_INIT ${CMAKE_INSTALL_PREFIX}/${MAGNUM_PLUGINS_DEBUG_LIBRARY_INSTALL_DIR})
+    set(MAGNUM_PLUGINS_RELEASE_DIR_INIT ${CMAKE_INSTALL_PREFIX}/${MAGNUM_PLUGINS_RELEASE_LIBRARY_INSTALL_DIR})
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(MAGNUM_PLUGINS_DIR_INIT ${MAGNUM_PLUGINS_DEBUG_DIR_INIT})

@@ -23,6 +23,8 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+find_package(Corrade REQUIRED PluginManager)
+
 if(BUILD_PLUGINS_STATIC)
     set(MAGNUM_OBJIMPORTER_BUILD_STATIC 1)
 endif()
@@ -30,47 +32,30 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
-set(ObjImporter_SRCS
-    ObjImporter.cpp)
-
-set(ObjImporter_HEADERS
-    ObjImporter.h)
-
-# Objects shared between plugin and test library
-add_library(ObjImporterObjects OBJECT
-    ${ObjImporter_SRCS}
-    ${ObjImporter_HEADERS})
-target_include_directories(ObjImporterObjects PUBLIC $<TARGET_PROPERTY:Magnum,INTERFACE_INCLUDE_DIRECTORIES>)
-if(NOT BUILD_PLUGINS_STATIC)
-    target_compile_definitions(ObjImporterObjects PRIVATE "ObjImporterObjects_EXPORTS")
-endif()
-if(NOT BUILD_PLUGINS_STATIC OR BUILD_STATIC_PIC)
-    set_target_properties(ObjImporterObjects PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
-set_target_properties(ObjImporterObjects PROPERTIES FOLDER "MagnumPlugins/ObjImporter")
-
 # ObjImporter plugin
 add_plugin(ObjImporter
     "${MAGNUM_PLUGINS_IMPORTER_DEBUG_BINARY_INSTALL_DIR};${MAGNUM_PLUGINS_IMPORTER_DEBUG_LIBRARY_INSTALL_DIR}"
     "${MAGNUM_PLUGINS_IMPORTER_RELEASE_BINARY_INSTALL_DIR};${MAGNUM_PLUGINS_IMPORTER_RELEASE_LIBRARY_INSTALL_DIR}"
     ObjImporter.conf
-    $<TARGET_OBJECTS:ObjImporterObjects>
-    pluginRegistration.cpp)
-if(BUILD_STATIC_PIC)
+    ObjImporter.cpp
+    ObjImporter.h)
+if(BUILD_PLUGINS_STATIC AND BUILD_STATIC_PIC)
     set_target_properties(ObjImporter PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-target_link_libraries(ObjImporter Magnum MagnumMeshTools)
+target_link_libraries(ObjImporter PUBLIC MagnumTrade MagnumMeshTools)
 
-install(FILES ${ObjImporter_HEADERS} DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/ObjImporter)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/configure.h DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/ObjImporter)
+install(FILES ObjImporter.h ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+    DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/ObjImporter)
+
+# Automatic static plugin import
+if(BUILD_PLUGINS_STATIC)
+    install(FILES importStaticPlugin.cpp DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/ObjImporter)
+    if(NOT CMAKE_VERSION VERSION_LESS 3.1)
+        target_sources(ObjImporter INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/importStaticPlugin.cpp)
+    endif()
+endif()
 
 if(BUILD_TESTS)
-    add_library(MagnumObjImporterTestLib STATIC
-        $<TARGET_OBJECTS:ObjImporterObjects>
-        ${PROJECT_SOURCE_DIR}/src/dummy.cpp) # XCode workaround, see file comment for details
-    set_target_properties(MagnumObjImporterTestLib PROPERTIES FOLDER "MagnumPlugins/ObjImporter")
-    target_link_libraries(MagnumObjImporterTestLib Magnum MagnumMeshTools)
-
     add_subdirectory(Test)
 endif()
 

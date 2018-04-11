@@ -188,9 +188,12 @@ Similarly to @ref developers-library except points 2 and 5, with:
     adapting plugin name and plugin interface string. It's needed to be in a
     separate file that gets compiled only to the plugin library, not to the
     test library.
-4.  Create `configure.h.cmake` for plugin-specific information about whether
+4.  Create `importStaticPlugin.cpp` by copypasting it from another plugin and
+    adapting plugin name. This will get installed along with plugin headers to
+    aid with automatic import.
+5.  Create `configure.h.cmake` for plugin-specific information about whether
     the library was built as static or not
-5.  Create a new `src/MagnumPlugins/PluginName/CMakeLists.txt`, copy over
+6.  Create a new `src/MagnumPlugins/PluginName/CMakeLists.txt`, copy over
     up-to-date license header from other CMake files and populate it (replaces
     point 5 in @ref developers-library):
     -   add source files to `PluginName_SRCS` variable
@@ -219,13 +222,16 @@ Similarly to @ref developers-library except points 2 and 5, with:
         @cmake add_plugin() @ce
     -   verify that @cmake set_target_properties(PluginName PROPERTIES POSITION_INDEPENDENT_CODE ON) @ce
         is done in case `BUILD_STATIC_PIC` is set
+    -   verify that in case of `BUILD_PLUGINS_STATIC` the
+        `importStaticPlugin.cpp` file is installed  is set and that an
+        *absolute* path to it is added to @cmake target_sources() @ce
     -   verify that @cmake add_library(MagnumPlugins::PluginName ALIAS PluginName) @ce
         (or equivalent) is added to make the library visible for CMake
         subprojects
-6.  If there is more than one interface header (other than just `PluginName.h`
+7.  If there is more than one interface header (other than just `PluginName.h`
     being installed), add a new `visibility.h` header. Otherwise put the
     visibility macros directly in `PluginName.h`.
-7.  If the plugin handles a new format:
+8.  If the plugin handles a new format:
     -   if the plugin is not named directly after the format, add an alias to
         it (for example the @ref Trade::MiniExrImageConverter "MiniExrImageConverter"
         plugin is aliased to `OpenExrImageConverter`)
@@ -484,8 +490,15 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
     -   to @cpp Context::tryCreate() @ce in `src/Magnum/Context.cpp`
     -   to specify GLSL version in `src/Magnum/Shader.cpp`
     -   to the list in `src/Magnum/Platform/magnum-info.cpp`
-12. Add new extensions to `src/Magnum/Extensions.h`, order them by extension
-    ID that is mentioned in every extension spec file
+    -   to the test in `src/Magnum/Test/ContextTest.cpp`
+12. Add new extensions to `src/Magnum/Extensions.h`
+    -   order them by extension ID that is mentioned in every extension spec
+        file
+    -   update the numbering to stay monotonic and unique, round up start index
+        of next section to nearest ten to make the updates bearable
+    -   in case there's a lot of new extensions, @cpp Implementation::ExtensionCount @ce
+        might needed to be increased
+    -   run `ContextTest` to verify everything is still okay
 13. Update existing extensions with version in which they become core (last
     parameter of the `_extension()` macro)
 14. Update extension list in `src/magnum/Context.cpp` according to changes in
@@ -553,6 +566,40 @@ In order to remove GL functionality, be sure to touch all places mentioned
 above, only in inverse --- but usually @ref developers-deprecation "deprecate first",
 unless it doesn't affect public API at all.
 
+@section developers-driver-workaround Checklist for adding / removing a driver workaround
+
+1.  Put a descriptive string with even more descriptive comment into the
+    `KnownWorkarounds` array in `src/Magnum/Implementation/driverSpecific.cpp`,
+    ideally reuse some of the already existing vendor prefixes
+2.  If the workaround can be tied down to a particular platform / target, add
+    apropriate @cpp #ifdef @ce around it
+3.  Create (or extend) a pair of (member) @cpp private @ce `MAGNUM_LOCAL`
+    `*Implementation*()` functions in the affected class, `*ImplementationDefault()`
+    having the optimistic default behavior, the other having the workaround.
+    Add the appropriate @cpp #ifdef @ce around, if any.
+4.  Add a new (member) function pointer in `src/Implementation/SomeState.h` and
+    call it from the affected class instead of executing the implementation
+    directly. Add the appropriate @cpp #ifdef @ce around, if any.
+5.  Add a branch into `src/Implementation/SomeState.cpp` (with appropriate
+    @cpp #ifdef @ce around, if any). First check for driver and other
+    circumstances and call the @cpp !context.isDriverWorkaroundDisabled("the-workaround-string") @ce
+    <em>last</em> after you are really sure you need to use it --- calling this
+    function will append the workaround string to the engine startup log and
+    it's not desirable to list workarounds that weren't used.
+6.  Test the affected functionality with the workaround enabled and verify it
+    works
+7.  Disable the workaround using `--magnum-disable-workarounds` on command-line
+    and verify it's still broken --- if not, there's something off!
+8.  Add a changelog entry.
+9.  Verify the driver workaround is listed in the snippet in
+    @ref opengl-workarounds
+
+Removeing a workaround is simply a matter of searching for its string, removing
+all occurences of that string and removing all `*Implementation*()` functions
+that were used only if the workaround was in place. No need to deprecate
+anything, users explicitly disabling given workaround will only be informed
+that such workaround does not exist anymore.
+
 @section developers-dependency Checklist for adding, removing or updating a dependency
 
 1.  Verify that there are no important clients stuck on the old version with no
@@ -596,7 +643,7 @@ only in inverse.
 
 1.  Add a new `TARGET_*` variable:
     -   to root `CMakeLists.txt`, which either gets enabled automatically based
-        on system introspection or is exposed through a @cmake option() @ce
+        on system introspection or is exposed through an @cmake option() @ce
         command
     -   to the list of variables extracted out of `configure.h` in
         `modules/FindMagnum.cmake`

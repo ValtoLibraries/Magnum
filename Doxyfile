@@ -837,6 +837,7 @@ WARN_LOGFILE           =
 INPUT                  = src/Magnum \
                          src/MagnumPlugins \
                          doc/ \
+                         ../magnum-plugins/src/Magnum \
                          ../magnum-plugins/src/MagnumPlugins \
                          ../magnum-plugins/doc/ \
                          ../magnum-integration/src/Magnum \
@@ -917,6 +918,8 @@ EXCLUDE_SYMBOLS        = Magnum::*Implementation \
 # command).
 
 EXAMPLE_PATH           = doc/snippets/ \
+                         src/ \
+                         ../magnum-plugins/src/ \
                          ../magnum-examples/src/ \
                          ../magnum-integration/doc/snippets/ \
 
@@ -2045,8 +2048,10 @@ INCLUDE_FILE_PATTERNS  =
 
 PREDEFINED             = DOXYGEN_GENERATING_OUTPUT \
     CORRADE_DEPRECATED(message)= CORRADE_DEPRECATED_ALIAS(message)= \
-    CORRADE_DEPRECATED_ENUM(message)= CORRADE_ENUMSET_OPERATORS(message)= \
-    MAGNUM_BUILD_DEPRECATED
+    CORRADE_DEPRECATED_ENUM(message)= CORRADE_DEPRECATED_NAMESPACE(message)= \
+    CORRADE_DEPRECATED_FILE(message)= CORRADE_VISIBILITY_EXPORT= \
+    CORRADE_VISIBILITY_LOCAL= CORRADE_VISIBILITY_IMPORT= \
+    CORRADE_ENUMSET_OPERATORS(message)= MAGNUM_BUILD_DEPRECATED
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

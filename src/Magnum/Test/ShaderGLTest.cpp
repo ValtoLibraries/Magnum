@@ -42,12 +42,15 @@ struct ShaderGLTest: OpenGLTester {
     void constructCopy();
     void constructMove();
 
+    #ifndef MAGNUM_TARGET_WEBGL
     void label();
+    #endif
 
     void addSource();
     void addSourceNoVersion();
     void addFile();
     void compile();
+    void compileUtf8();
     void compileNoVersion();
 };
 
@@ -57,12 +60,15 @@ ShaderGLTest::ShaderGLTest() {
               &ShaderGLTest::constructCopy,
               &ShaderGLTest::constructMove,
 
+              #ifndef MAGNUM_TARGET_WEBGL
               &ShaderGLTest::label,
+              #endif
 
               &ShaderGLTest::addSource,
               &ShaderGLTest::addSourceNoVersion,
               &ShaderGLTest::addFile,
               &ShaderGLTest::compile,
+              &ShaderGLTest::compileUtf8,
               &ShaderGLTest::compileNoVersion});
 }
 
@@ -139,6 +145,7 @@ void ShaderGLTest::constructMove() {
     #endif
 }
 
+#ifndef MAGNUM_TARGET_WEBGL
 void ShaderGLTest::label() {
     /* No-Op version is tested in AbstractObjectGLTest */
     if(!Context::current().isExtensionSupported<Extensions::GL::KHR::debug>() &&
@@ -157,6 +164,7 @@ void ShaderGLTest::label() {
 
     MAGNUM_VERIFY_NO_ERROR();
 }
+#endif
 
 void ShaderGLTest::addSource() {
     #ifndef MAGNUM_TARGET_GLES
@@ -263,6 +271,24 @@ void ShaderGLTest::compile() {
     Shader shader2(v, Shader::Type::Fragment);
     shader2.addSource("[fu] bleh error #:! stuff\n");
     CORRADE_VERIFY(!shader2.compile());
+}
+
+void ShaderGLTest::compileUtf8() {
+    #ifndef MAGNUM_TARGET_GLES
+    constexpr Version v =
+        #ifndef CORRADE_TARGET_APPLE
+        Version::GL210
+        #else
+        Version::GL310
+        #endif
+        ;
+    #else
+    constexpr Version v = Version::GLES200;
+    #endif
+
+    Shader shader(v, Shader::Type::Fragment);
+    shader.addSource("/* hýždě */ void main() {} \n");
+    CORRADE_VERIFY(shader.compile());
 }
 
 void ShaderGLTest::compileNoVersion() {

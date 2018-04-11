@@ -23,6 +23,8 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+find_package(Corrade REQUIRED PluginManager)
+
 set(MagnumText_SRCS
     AbstractFont.cpp
     AbstractFontConverter.cpp
@@ -40,6 +42,11 @@ set(MagnumText_HEADERS
 
     visibility.h)
 
+if(NOT CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                   ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+endif()
+
 # Text library
 add_library(MagnumText ${SHARED_OR_STATIC}
     ${MagnumText_SRCS}
@@ -52,7 +59,10 @@ if(NOT BUILD_STATIC)
 elseif(BUILD_STATIC_PIC)
     set_target_properties(MagnumText PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-target_link_libraries(MagnumText Magnum MagnumTextureTools)
+target_link_libraries(MagnumText PUBLIC
+    Magnum
+    MagnumTextureTools
+    Corrade::PluginManager)
 
 install(TARGETS MagnumText
     RUNTIME DESTINATION ${MAGNUM_BINARY_INSTALL_DIR}
@@ -61,29 +71,28 @@ install(TARGETS MagnumText
 install(FILES ${MagnumText_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Text)
 
 if(WITH_FONTCONVERTER)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fontconverterConfigure.h.cmake
-                   ${CMAKE_CURRENT_BINARY_DIR}/fontconverterConfigure.h)
-
     add_executable(magnum-fontconverter fontconverter.cpp)
-    target_include_directories(magnum-fontconverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_link_libraries(magnum-fontconverter Magnum MagnumText)
+    target_link_libraries(magnum-fontconverter PRIVATE
+        Magnum
+        MagnumText
+        MagnumTrade)
     if(MAGNUM_TARGET_HEADLESS)
-        target_link_libraries(magnum-fontconverter MagnumWindowlessEglApplication)
+        target_link_libraries(magnum-fontconverter PRIVATE MagnumWindowlessEglApplication)
     elseif(CORRADE_TARGET_IOS)
-        target_link_libraries(magnum-fontconverter MagnumWindowlessIosApplication)
+        target_link_libraries(magnum-fontconverter PRIVATE MagnumWindowlessIosApplication)
     elseif(CORRADE_TARGET_APPLE)
-        target_link_libraries(magnum-fontconverter MagnumWindowlessCglApplication)
+        target_link_libraries(magnum-fontconverter PRIVATE MagnumWindowlessCglApplication)
     elseif(CORRADE_TARGET_UNIX)
         if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_DESKTOP_GLES)
-            target_link_libraries(magnum-fontconverter MagnumWindowlessEglApplication)
+            target_link_libraries(magnum-fontconverter PRIVATE MagnumWindowlessEglApplication)
         else()
-            target_link_libraries(magnum-fontconverter MagnumWindowlessGlxApplication)
+            target_link_libraries(magnum-fontconverter PRIVATE MagnumWindowlessGlxApplication)
         endif()
     elseif(CORRADE_TARGET_WINDOWS)
         if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_DESKTOP_GLES)
-            target_link_libraries(magnum-fontconverter MagnumWindowlessWindowsEglApplication)
+            target_link_libraries(magnum-fontconverter PRIVATE MagnumWindowlessWindowsEglApplication)
         else()
-            target_link_libraries(magnum-fontconverter MagnumWindowlessWglApplication)
+            target_link_libraries(magnum-fontconverter PRIVATE MagnumWindowlessWglApplication)
         endif()
     else()
         message(FATAL_ERROR "magnum-fontconverter is not available on this platform. Set WITH_FONTCONVERTER to OFF to suppress this warning.")

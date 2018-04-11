@@ -32,7 +32,29 @@
 #include "Magnum/Image.h"
 #include "Magnum/Trade/ImageData.h"
 
+#ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+#include "Magnum/Trade/configure.h"
+#endif
+
 namespace Magnum { namespace Trade {
+
+std::string AbstractImageConverter::pluginInterface() {
+    return "cz.mosra.magnum.Trade.AbstractImageConverter/0.2.1";
+}
+
+#ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+std::vector<std::string> AbstractImageConverter::pluginSearchPaths() {
+    return {
+        #ifdef CORRADE_IS_DEBUG_BUILD
+        "magnum-d/imageconverters",
+        Utility::Directory::join(MAGNUM_PLUGINS_DEBUG_DIR, "imageconverters")
+        #else
+        "magnum/imageconverters",
+        Utility::Directory::join(MAGNUM_PLUGINS_DIR, "imageconverters")
+        #endif
+    };
+}
+#endif
 
 AbstractImageConverter::AbstractImageConverter() = default;
 

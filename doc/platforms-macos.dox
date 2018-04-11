@@ -1,0 +1,88 @@
+/*
+    This file is part of Magnum.
+
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+              Vladimír Vondruš <mosra@centrum.cz>
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*/
+
+namespace Magnum {
+
+/** @page platforms-macos macOS
+@brief Tips and tricks for macOS
+
+@tableofcontents
+@m_footernavigation
+
+@todoc homebrew
+@todoc code coverage
+@todoc bundling, dmg cpack
+
+With Apple decision to focus on Metal, macOS OpenGL support is stuck on version
+4.2 (i.e., a version before compute shaders are available).
+
+@section platforms-macos-opengl-best-practices Best practices
+
+Official Apple documentation:
+
+-   [Best Practices for Working with Vertex Data](https://developer.apple.com/library/mac/#documentation/graphicsimaging/Conceptual/OpenGL-MacProgGuide/opengl_vertexdata/opengl_vertexdata.html)
+-   [Best Practices for Working with Texture Data](https://developer.apple.com/library/mac/#documentation/graphicsimaging/Conceptual/OpenGL-MacProgGuide/opengl_texturedata/opengl_texturedata.html)
+
+@section platforms-macos-travis Setting up macOS build on Travis CI
+
+A lot of Travis features is shared between Linux and macOS, see
+@ref platforms-linux-travis for more information.
+
+In general, a macOS build is done by adding the following to your `.travis.yml`
+matrix build. See [the official documentation](https://docs.travis-ci.com/user/reference/osx/)
+for more information.
+
+@code{.yml}
+matrix:
+  include:
+  - language: cpp
+    os: osx
+    compiler: clang
+@endcode
+
+Most of the build setup can be shared with Linux, as both systems have roughly
+the same set of packages. For installing dependencies there's no builtin way,
+but you can use Homebrew. Be aware that calling for example
+@cb{.sh} brew install ninja @ce by default causes Homebrew to update itself
+first. That currently (March 2018) takes almost two minutes. It's possible to
+skip the update by setting an environment variable as shown below, however this
+might fail in case you need a very recent version of a package.
+
+@code{.sh}
+HOMEBREW_NO_AUTO_UPDATE=1 brew install ninja
+@endcode
+
+@section platforms-macos-troubleshooting Troubleshooting
+
+-   @ref AbstractShaderProgram::validate() expects that the shader has a
+    properly configured framebuffer bound along with proper @ref Renderer
+    setup. That is often hard to achieve, so the function cannot be portably
+    used for shader validity testing.
+-   `GL_TIMESTAMP` used by @ref TimeQuery::timestamp() is not implemented on
+    macOS and gives zero results.
+
+*/
+
+}

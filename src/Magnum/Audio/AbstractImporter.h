@@ -60,16 +60,12 @@ checked by the implementation:
 -   All `do*()` implementations working on opened file are called only if
     there is any file opened.
 
-Plugin interface string is @cpp "cz.mosra.magnum.Audio.AbstractImporter/0.1" @ce.
-
 @attention @ref Corrade::Containers::Array instances returned from the plugin
     should *not* use anything else than the default deleter, otherwise this can
     cause dangling function pointer call on array destruction if the plugin
     gets unloaded before the array is destroyed.
 */
 class MAGNUM_AUDIO_EXPORT AbstractImporter: public PluginManager::AbstractManagingPlugin<AbstractImporter> {
-    CORRADE_PLUGIN_INTERFACE("cz.mosra.magnum.Audio.AbstractImporter/0.1")
-
     public:
         /**
          * @brief Features supported by this importer
@@ -87,6 +83,33 @@ class MAGNUM_AUDIO_EXPORT AbstractImporter: public PluginManager::AbstractManagi
          * @see @ref features()
          */
         typedef Containers::EnumSet<Feature> Features;
+
+        /**
+         * @brief Plugin interface
+         *
+         * @code{.cpp}
+         * "cz.mosra.magnum.Audio.AbstractImporter/0.1"
+         * @endcode
+         */
+        static std::string pluginInterface();
+
+        #ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+        /**
+         * @brief Plugin search paths
+         *
+         * First looks in `magnum/audioimporters/` or `magnum-d/audioimporters/`
+         * next to the executable and as a fallback in `magnum/audioimporters/`
+         * or `magnum-d/audioimporters/` in the runtime install location
+         * (`lib[64]/` on Unix-like systems, `bin/` on Windows). The
+         * system-wide plugin search directory is configurable using the
+         * `MAGNUM_PLUGINS_DIR` CMake variables, see @ref building for more
+         * information.
+         *
+         * Not defined on platforms without
+         *      @ref CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT "dynamic plugin support".
+         */
+        static std::vector<std::string> pluginSearchPaths();
+        #endif
 
         /** @brief Default constructor */
         explicit AbstractImporter();

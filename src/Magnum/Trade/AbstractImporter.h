@@ -35,8 +35,8 @@
 #include <Corrade/PluginManager/AbstractManagingPlugin.h>
 
 #include "Magnum/Magnum.h"
-#include "Magnum/visibility.h"
 #include "Magnum/Trade/Trade.h"
+#include "Magnum/Trade/visibility.h"
 
 #ifdef MAGNUM_BUILD_DEPRECATED
 #include "MagnumExternal/Optional/OptionalWrapper.h"
@@ -54,7 +54,7 @@ data. See @ref plugins for more information and `*Importer` classes in
 @section Trade-AbstractImporter-subclassing Subclassing
 
 The plugin needs to implement the @ref doFeatures(), @ref doIsOpened()
-functions, at least one of @ref doOpenData() / @ref doOpenFile() @ref doOpenState()
+functions, at least one of @ref doOpenData() / @ref doOpenFile() / @ref doOpenState()
 functions, function @ref doClose() and one or more tuples of data access
 functions, based on what features are supported in given format.
 
@@ -79,8 +79,6 @@ checked by the implementation:
 -   All `do*()` implementations taking data ID as parameter are called only if
     the ID is from valid range.
 
-Plugin interface string is @cpp "cz.mosra.magnum.Trade.AbstractImporter/0.3" @ce.
-
 @attention @ref Corrade::Containers::Array instances returned from the plugin
     should *not* use anything else than the default deleter, otherwise this can
     cause dangling function pointer call on array destruction if the plugin
@@ -88,9 +86,7 @@ Plugin interface string is @cpp "cz.mosra.magnum.Trade.AbstractImporter/0.3" @ce
 
 @todo How to handle casting from std::unique_ptr<> in more convenient way?
 */
-class MAGNUM_EXPORT AbstractImporter: public PluginManager::AbstractManagingPlugin<AbstractImporter> {
-    CORRADE_PLUGIN_INTERFACE("cz.mosra.magnum.Trade.AbstractImporter/0.3")
-
+class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagingPlugin<AbstractImporter> {
     public:
         /**
          * @brief Features supported by this importer
@@ -107,6 +103,32 @@ class MAGNUM_EXPORT AbstractImporter: public PluginManager::AbstractManagingPlug
 
         /** @brief Set of features supported by this importer */
         typedef Containers::EnumSet<Feature> Features;
+
+        /**
+         * @brief Plugin interface
+         *
+         * @code{.cpp}
+         * "cz.mosra.magnum.Trade.AbstractImporter/0.3"
+         * @endcode
+         */
+        static std::string pluginInterface();
+
+        #ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+        /**
+         * @brief Plugin search paths
+         *
+         * First looks in `magnum/importers/` or `magnum-d/importers/` next to
+         * the executable and as a fallback in `magnum/importers/` or
+         * `magnum-d/importers/` in the runtime install location (`lib[64]/` on
+         * Unix-like systems, `bin/` on Windows). The system-wide plugin search
+         * directory is configurable using the `MAGNUM_PLUGINS_DIR` CMake
+         * variables, see @ref building for more information.
+         *
+         * Not defined on platforms without
+         *      @ref CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT "dynamic plugin support".
+         */
+        static std::vector<std::string> pluginSearchPaths();
+        #endif
 
         /** @brief Default constructor */
         explicit AbstractImporter();

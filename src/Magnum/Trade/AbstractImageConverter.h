@@ -33,8 +33,8 @@
 #include <Corrade/PluginManager/AbstractManagingPlugin.h>
 
 #include "Magnum/Magnum.h"
-#include "Magnum/visibility.h"
 #include "Magnum/Trade/Trade.h"
+#include "Magnum/Trade/visibility.h"
 
 #ifdef MAGNUM_BUILD_DEPRECATED
 #include "MagnumExternal/Optional/OptionalWrapper.h"
@@ -68,16 +68,12 @@ checked by the implementation:
 -   The function @ref doExportToData(const CompressedImageView2D&) is called
     only if @ref Feature::ConvertCompressedData is supported.
 
-Plugin interface string is @cpp "cz.mosra.magnum.Trade.AbstractImageConverter/0.2.1" @ce.
-
 @attention @ref Corrade::Containers::Array instances returned from the plugin
     should *not* use anything else than the default deleter, otherwise this can
     cause dangling function pointer call on array destruction if the plugin
     gets unloaded before the array is destroyed.
 */
-class MAGNUM_EXPORT AbstractImageConverter: public PluginManager::AbstractManagingPlugin<AbstractImageConverter> {
-    CORRADE_PLUGIN_INTERFACE("cz.mosra.magnum.Trade.AbstractImageConverter/0.2.1")
-
+class MAGNUM_TRADE_EXPORT AbstractImageConverter: public PluginManager::AbstractManagingPlugin<AbstractImageConverter> {
     public:
         /**
          * @brief Features supported by this converter
@@ -117,6 +113,33 @@ class MAGNUM_EXPORT AbstractImageConverter: public PluginManager::AbstractManagi
          * @see @ref features()
          */
         typedef Containers::EnumSet<Feature> Features;
+
+        /**
+         * @brief Plugin interface
+         *
+         * @code{.cpp}
+         * "cz.mosra.magnum.Trade.AbstractImageConverter/0.2.1"
+         * @endcode
+         */
+        static std::string pluginInterface();
+
+        #ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+        /**
+         * @brief Plugin search paths
+         *
+         * First looks in `magnum/imageconverters/` or `magnum-d/imageconverters/`
+         * next to the executable and as a fallback in `magnum/imageconverters/`
+         * or `magnum-d/imageconverters/` in the runtime install location
+         * (`lib[64]/` on Unix-like systems, `bin/` on Windows). The
+         * system-wide plugin search directory is configurable using the
+         * `MAGNUM_PLUGINS_DIR` CMake variables, see @ref building for more
+         * information.
+         *
+         * Not defined on platforms without
+         *      @ref CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT "dynamic plugin support".
+         */
+        static std::vector<std::string> pluginSearchPaths();
+        #endif
 
         /** @brief Default constructor */
         explicit AbstractImageConverter();

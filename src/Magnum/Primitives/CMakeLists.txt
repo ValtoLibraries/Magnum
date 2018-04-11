@@ -28,8 +28,10 @@ set(MagnumPrimitives_SRCS
     Capsule.cpp
     Circle.cpp
     Crosshair.cpp
+    Cone.cpp
     Cube.cpp
     Cylinder.cpp
+    Grid.cpp
     Icosphere.cpp
     Line.cpp
     Plane.cpp
@@ -44,8 +46,10 @@ set(MagnumPrimitives_HEADERS
     Capsule.h
     Circle.h
     Crosshair.h
+    Cone.h
     Cube.h
     Cylinder.h
+    Grid.h
     Icosphere.h
     Line.h
     Plane.h
@@ -72,7 +76,9 @@ if(NOT BUILD_STATIC)
 elseif(BUILD_STATIC_PIC)
     set_target_properties(MagnumPrimitives PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-target_link_libraries(MagnumPrimitives Magnum)
+target_link_libraries(MagnumPrimitives PUBLIC
+    Magnum
+    MagnumTrade)
 
 install(TARGETS MagnumPrimitives
     RUNTIME DESTINATION ${MAGNUM_BINARY_INSTALL_DIR}

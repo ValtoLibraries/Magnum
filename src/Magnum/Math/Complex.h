@@ -369,14 +369,7 @@ template<class T> class Complex {
          * @f]
          * @see @ref isNormalized()
          */
-        T length() const {
-            /** @todo Remove when newlib has this fixed */
-            #ifndef CORRADE_TARGET_ANDROID
-            return std::hypot(_real, _imaginary);
-            #else
-            return std::sqrt(dot());
-            #endif
-        }
+        T length() const { return std::hypot(_real, _imaginary); }
 
         /**
          * @brief Normalized complex number (of unit length)
@@ -463,7 +456,7 @@ template<class T> inline Complex<T> operator/(T scalar, const Complex<T>& comple
     return {scalar/complex.real(), scalar/complex.imaginary()};
 }
 
-/** @debugoperator{Magnum::Math::Complex} */
+/** @debugoperator{Complex} */
 template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Complex<T>& value) {
     return debug << "Complex(" << Corrade::Utility::Debug::nospace
         << value.real() << Corrade::Utility::Debug::nospace << ","

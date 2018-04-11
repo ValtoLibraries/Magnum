@@ -27,6 +27,7 @@
 
 #include <sstream>
 #include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Utility/Configuration.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Unicode.h>
 
@@ -117,7 +118,7 @@ auto MagnumFont::doOpenFile(const std::string& filename, Float) -> Metrics {
     /* Open the configuration file */
     Utility::Configuration conf(filename, Utility::Configuration::Flag::ReadOnly|Utility::Configuration::Flag::SkipComments);
     if(!conf.isValid() || conf.isEmpty()) {
-        Error() << "Text::MagnumFont::openFile(): cannot open file" << filename << conf.isValid();
+        Error() << "Text::MagnumFont::openFile(): cannot open file" << filename;
         return {};
     }
 
@@ -238,3 +239,6 @@ std::tuple<Range2D, Range2D, Vector2> MagnumFontLayouter::doRenderGlyph(const Un
 }
 
 }}
+
+CORRADE_PLUGIN_REGISTER(MagnumFont, Magnum::Text::MagnumFont,
+    "cz.mosra.magnum.Text.AbstractFont/0.2.4")

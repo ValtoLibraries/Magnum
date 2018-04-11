@@ -39,10 +39,6 @@
 #include "Implementation/State.h"
 #include "Implementation/ShaderState.h"
 
-#ifdef CORRADE_TARGET_ANDROID
-#include <sstream>
-#endif
-
 /* libgles-omap3-dev_4.03.00.02-r15.6 on BeagleBoard/Ångström linux 2011.3 doesn't have GLchar */
 #ifdef MAGNUM_TARGET_GLES
 typedef char GLchar;
@@ -708,11 +704,7 @@ std::vector<std::string> Shader::sources() const { return _sources; }
 
 Shader& Shader::addSource(std::string source) {
     if(!source.empty()) {
-        /** @todo Remove when newlib has this fixed (also the include above) */
-        #ifdef CORRADE_TARGET_ANDROID
-        std::ostringstream converter;
-        converter << (_sources.size()+1)/2;
-        #endif
+        auto addSource = Context::current().state().shader->addSourceImplementation;
 
         /* Fix line numbers, so line 41 of third added file is marked as 3(41)
            in case shader version was not Version::None, because then source 0
@@ -725,20 +717,27 @@ Shader& Shader::addSource(std::string source) {
            order to avoid complex logic in compile() where we assert for at
            least some user-provided source, an empty string is added here
            instead. */
-        if(!_sources.empty()) _sources.push_back("#line 1 " +
-            #ifndef CORRADE_TARGET_ANDROID
-            std::to_string((_sources.size()+1)/2) +
-            #else
-            converter.str() +
-            #endif
-            '\n');
-        else _sources.emplace_back();
+        if(!_sources.empty()) (this->*addSource)("#line 1 " + std::to_string((_sources.size()+1)/2) + '\n');
+        else (this->*addSource)({});
 
-        _sources.push_back(std::move(source));
+        (this->*addSource)(std::move(source));
     }
 
     return *this;
 }
+
+void Shader::addSourceImplementationDefault(std::string source) {
+    _sources.push_back(std::move(source));
+}
+
+#if defined(CORRADE_TARGET_EMSCRIPTEN) && defined(__EMSCRIPTEN_PTHREADS__)
+void Shader::addSourceImplementationEmscriptenPthread(std::string source) {
+    /* See the "emscripten-pthreads-broken-unicode-shader-sources"
+       workaround description for details */
+    for(char& c: source) if(c < 0) c = ' ';
+    _sources.push_back(std::move(source));
+}
+#endif
 
 Shader& Shader::addFile(const std::string& filename) {
     CORRADE_ASSERT(Utility::Directory::fileExists(filename),
@@ -789,36 +788,18 @@ bool Shader::compile(std::initializer_list<std::reference_wrapper<Shader>> shade
             glGetShaderInfoLog(shader._id, message.size(), nullptr, &message[0]);
         message.resize(std::max(logLength, 1)-1);
 
-        /** @todo Remove when this is fixed everywhere (also the include above) */
-        #ifdef CORRADE_TARGET_ANDROID
-        std::ostringstream converter;
-        converter << i;
-        #endif
-
         /* Show error log */
         if(!success) {
             Error out{Debug::Flag::NoNewlineAtTheEnd};
             out << "Shader::compile(): compilation of" << shaderName(shader._type) << "shader";
-            if(shaders.size() != 1) {
-                #ifndef CORRADE_TARGET_ANDROID
-                out << std::to_string(i);
-                #else
-                out << converter.str();
-                #endif
-            }
+            if(shaders.size() != 1) out << i;
             out << "failed with the following message:" << Debug::newline << message;
 
         /* Or just warnings, if any */
         } else if(!message.empty() && !Implementation::isShaderCompilationLogEmpty(message)) {
             Warning out{Debug::Flag::NoNewlineAtTheEnd};
             out << "Shader::compile(): compilation of" << shaderName(shader._type) << "shader";
-            if(shaders.size() != 1) {
-                #ifndef CORRADE_TARGET_ANDROID
-                out << std::to_string(i);
-                #else
-                out << converter.str();
-                #endif
-            }
+            if(shaders.size() != 1) out << i;
             out << "succeeded with the following message:" << Debug::newline << message;
         }
 

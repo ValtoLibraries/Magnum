@@ -30,6 +30,8 @@
  */
 
 #include <memory>
+#include <vector>
+#include <Corrade/Containers/EnumSet.h>
 #include <Corrade/PluginManager/AbstractPlugin.h>
 
 #include "Magnum/Magnum.h"
@@ -68,16 +70,12 @@ checked by the implementation:
 -   Function `doImport*FromData()` is called only if there is at least one data
     array passed.
 
-Plugin interface string is @cpp "cz.mosra.magnum.Text.AbstractFontConverter/0.1.2" @ce.
-
 @attention @ref Corrade::Containers::Array instances returned from the plugin
     should *not* use anything else than the default deleter, otherwise this can
     cause dangling function pointer call on array destruction if the plugin
     gets unloaded before the array is destroyed.
 */
 class MAGNUM_TEXT_EXPORT AbstractFontConverter: public PluginManager::AbstractPlugin {
-    CORRADE_PLUGIN_INTERFACE("cz.mosra.magnum.Text.AbstractFontConverter/0.1.2")
-
     public:
         /**
          * @brief Features supported by this converter
@@ -128,6 +126,33 @@ class MAGNUM_TEXT_EXPORT AbstractFontConverter: public PluginManager::AbstractPl
          * @see @ref features()
          */
         typedef Containers::EnumSet<Feature> Features;
+
+        /**
+         * @brief Plugin interface
+         *
+         * @code{.cpp}
+         * "cz.mosra.magnum.Text.AbstractFontConverter/0.1.2"
+         * @endcode
+         */
+        static std::string pluginInterface();
+
+        #ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+        /**
+         * @brief Plugin search paths
+         *
+         * First looks in `magnum/fontconverters/` or `magnum-d/fontconverters/`
+         * next to the executable and as a fallback in `magnum/fontconverters/`
+         * or `magnum-d/fontconverters/` in the runtime install location
+         * (`lib[64]/` on Unix-like systems, `bin/` on Windows). The
+         * system-wide plugin search directory is configurable using the
+         * `MAGNUM_PLUGINS_DIR` CMake variables, see @ref building for more
+         * information.
+         *
+         * Not defined on platforms without
+         *      @ref CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT "dynamic plugin support".
+         */
+        static std::vector<std::string> pluginSearchPaths();
+        #endif
 
         /** @brief Default constructor */
         explicit AbstractFontConverter();

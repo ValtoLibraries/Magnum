@@ -50,6 +50,10 @@ typedef struct ALCcontext_struct ALCcontext;
 
 namespace Magnum { namespace Audio {
 
+namespace Implementation {
+    enum: std::size_t { ExtensionCount = 16 };
+}
+
 /**
 @brief Run-time information about OpenAL extension
 
@@ -61,11 +65,12 @@ See also @ref Audio::Extensions namespace, which contain compile-time informatio
 about OpenAL extensions.
 */
 class MAGNUM_AUDIO_EXPORT Extension {
-    friend Context;
-
     public:
         /** @brief All OpenAL extensions */
         static const std::vector<Extension>& extensions();
+
+        /** @brief Internal unique extension index */
+        constexpr std::size_t index() const { return _index; }
 
         /** @brief Extension string */
         constexpr const char* string() const { return _string; }
@@ -301,7 +306,7 @@ class MAGNUM_AUDIO_EXPORT Context {
          *      @ref MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED()
          */
         bool isExtensionSupported(const Extension& extension) const {
-            return _extensionStatus[extension._index];
+            return _extensionStatus[extension.index()];
         }
 
     private:
@@ -314,7 +319,7 @@ class MAGNUM_AUDIO_EXPORT Context {
         ALCdevice* _device;
         ALCcontext* _context;
 
-        std::bitset<64> _extensionStatus;
+        std::bitset<Implementation::ExtensionCount> _extensionStatus;
         std::vector<Extension> _supportedExtensions;
 };
 
@@ -471,7 +476,7 @@ MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED(Extensions::ALC::SOFTX::HRTF);
     } while(0)
 #endif
 
-/** @debugoperatorclassenum{Magnum::Audio::Context,Magnum::Audio::Context::HrtfStatus} */
+/** @debugoperatorclassenum{Context,Context::HrtfStatus} */
 MAGNUM_AUDIO_EXPORT Debug& operator<<(Debug& debug, Context::HrtfStatus value);
 
 }}

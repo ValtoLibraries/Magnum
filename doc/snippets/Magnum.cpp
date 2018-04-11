@@ -377,9 +377,15 @@ CORRADE_INTERNAL_ASSERT_OUTPUT(buffer.unmap());
 #endif
 
 {
+/* [Buffer-webgl-nope] */
+Buffer vertices, indices;
+/* [Buffer-webgl-nope] */
+}
+
+{
 /* [Buffer-webgl] */
-Buffer vertices{Buffer::TargetHint::Array};
-Buffer indices{Buffer::TargetHint::ElementArray};
+Buffer vertices{Buffer::TargetHint::Array},
+    indices{Buffer::TargetHint::ElementArray};
 /* [Buffer-webgl] */
 }
 
@@ -794,7 +800,7 @@ mesh.setPrimitive(MeshPrimitive::Triangles)
 {
 /* [Mesh-interleaved] */
 /* Non-indexed primitive with positions and normals */
-Trade::MeshData3D plane = Primitives::Plane::solid();
+Trade::MeshData3D plane = Primitives::planeSolid();
 
 /* Fill a vertex buffer with interleaved position and normal data */
 Buffer buffer;
@@ -844,7 +850,7 @@ mesh.setPrimitive(MeshPrimitive::Triangles)
 {
 /* [Mesh-indexed-tools] */
 // Indexed primitive
-Trade::MeshData3D cube = Primitives::Cube::solid();
+Trade::MeshData3D cube = Primitives::cubeSolid();
 
 // Fill vertex buffer with interleaved position and normal data
 Buffer vertexBuffer;

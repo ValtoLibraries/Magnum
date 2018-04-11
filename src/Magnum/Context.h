@@ -46,7 +46,19 @@ namespace Magnum {
 namespace Implementation {
     struct ContextState;
     struct State;
+
+    enum: std::size_t {
+        ExtensionCount =
+            #ifndef MAGNUM_TARGET_GLES
+            192
+            #elif !defined(MAGNUM_TARGET_WEBGL)
+            128
+            #else
+            24
+            #endif
+    };
 }
+
 namespace Platform { class Context; }
 
 /**
@@ -64,6 +76,9 @@ class MAGNUM_EXPORT Extension {
         /** @brief All extensions for given OpenGL version */
         static const std::vector<Extension>& extensions(Version version);
 
+        /** @brief Internal unique extension index */
+        constexpr std::size_t index() const { return _index; }
+
         /** @brief Minimal version required by this extension */
         constexpr Version requiredVersion() const { return _requiredVersion; }
 
@@ -74,10 +89,6 @@ class MAGNUM_EXPORT Extension {
         constexpr const char* string() const { return _string; }
 
     private:
-        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
-        friend Context;
-        #endif
-
         std::size_t _index;
         Version _requiredVersion;
         Version _coreVersion;
@@ -113,8 +124,7 @@ Arguments:
 -   `...` --- main application arguments (see `-h` or `--help` for details)
 -   `--magnum-help` --- display this help message and exit
 -   `--magnum-disable-workarounds LIST` --- driver workarounds to disable (see
-    [src/Magnum/Implementation/driverSpecific.cpp](https://github.com/mosra/magnum/blob/master/src/Magnum/Implementation/driverSpecific.cpp)
-    for detailed info) (environment: `MAGNUM_DISABLE_WORKAROUNDS`)
+    @ref opengl-workarounds for detailed info) (environment: `MAGNUM_DISABLE_WORKAROUNDS`)
 -   `--magnum-disable-extensions LIST` --- OpenGL extensions to disable
     (environment: `MAGNUM_DISABLE_EXTENSIONS`)
 
@@ -541,7 +551,7 @@ class MAGNUM_EXPORT Context {
          *      @ref MAGNUM_ASSERT_EXTENSION_SUPPORTED()
          */
         bool isExtensionSupported(const Extension& extension) const {
-            return isVersionSupported(_extensionRequiredVersion[extension._index]) && _extensionStatus[extension._index];
+            return isVersionSupported(_extensionRequiredVersion[extension.index()]) && _extensionStatus[extension.index()];
         }
 
         /**
@@ -574,7 +584,7 @@ class MAGNUM_EXPORT Context {
          * as it does most operations in compile time.
          */
         bool isExtensionDisabled(const Extension& extension) const {
-            return isVersionSupported(extension._requiredVersion) && !isVersionSupported(_extensionRequiredVersion[extension._index]);
+            return isVersionSupported(extension.requiredVersion()) && !isVersionSupported(_extensionRequiredVersion[extension.index()]);
         }
 
         /**
@@ -643,8 +653,8 @@ class MAGNUM_EXPORT Context {
         Flags _flags;
         #endif
 
-        std::array<Version, 256> _extensionRequiredVersion;
-        std::bitset<256> _extensionStatus;
+        std::array<Version, Implementation::ExtensionCount> _extensionRequiredVersion;
+        std::bitset<Implementation::ExtensionCount> _extensionStatus;
         std::vector<Extension> _supportedExtensions;
 
         Implementation::State* _state;

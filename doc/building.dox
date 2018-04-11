@@ -115,6 +115,13 @@ There is also a Vcpkg package for @ref building-plugins-packages-vcpkg "Magnum P
 
 @subsection building-packages-arch ArchLinux packages
 
+Package for the latest stable release is maintained in the `community` repo.
+Installing is as simple as this:
+
+@code{.sh}
+sudo pacman -S magnum
+@endcode
+
 In `package/archlinux/magnum-git` there is a package for Git development build.
 The package is also in AUR as
 [magnum-git](https://aur.archlinux.org/packages/magnum-git/). It depends on the
@@ -347,6 +354,25 @@ release configurations. The library and plugin distinction is handled
 semi-automatically when using Magnum in depending projects, see @ref cmake for
 more information.
 
+Particular platforms have additional requirements when it comes to location of
+installed files. The following variables are supported:
+
+-   `LIB_SUFFIX` --- Setting this variable to `64` can be used to tell CMake to
+    install to `lib64/` instead of `lib/`. In most cases this variable is
+    autodetected, so you don't need to set it yourself.
+-   `MAGNUM_DEPLOY_PREFIX` --- Used on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten"
+    to override location where web demos and utilities (such as @ref magnum-info)
+    are installed, so you can have libraries installed to a system location and
+    utilities to your webserver, for example. Defaults to ``.``. If a relative
+    path is used, it's relative to `CMAKE_INSTALL_PREFIX`.
+-   `MAGNUM_INCLUDE_INSTALL_PREFIX` --- Used on @ref CORRADE_TARGET_ANDROID "Android"
+    to override location where platform-independent include files, CMake
+    scripts and other files are installed. CMake on Android by default searches
+    for binaries in <tt>&lt;ndk&gt;/platforms/android-&lt;api&gt;/arch-&lt;arch&gt;/usr</tt>
+    based on target API and platform, but looks for headers in a central
+    location at <tt>&lt;ndk&gt;/sysroot/usr</tt>. Defaults to ``.``. If a
+    relative path is used, it's relative to `CMAKE_INSTALL_PREFIX`.
+
 The library is constantly evolving and thus some APIs are deprecated and then
 later removed in favor of better ones. To preserve backwards compatibility,
 Magnum is by default built with all deprecated APIs included. However, to make
@@ -386,8 +412,10 @@ be built and which not:
 -   `WITH_AUDIO` --- Build the @ref Audio library. Depends on
     [OpenAL](https://www.openal.org/), not built by default.
 -   `WITH_DEBUGTOOLS` --- Build the @ref DebugTools library.
--   `WITH_MESHTOOLS` --- Build the @ref MeshTools library.
--   `WITH_PRIMITIVES` --- Build the @ref Primitives library.
+-   `WITH_MESHTOOLS` --- Build the @ref MeshTools library. Enables also
+    building of the Trade library.
+-   `WITH_PRIMITIVES` --- Build the @ref Primitives library. Enables also
+    building of the Trade library.
 -   `WITH_SCENEGRAPH` --- Build the @ref SceneGraph library. Enabled
     automatically if `WITH_SHAPES` is enabled.
 -   `WITH_SHADERS` --- Build the @ref Shaders library.
@@ -398,6 +426,7 @@ be built and which not:
     the TextureTools library.
 -   `WITH_TEXTURETOOLS` --- Build the @ref TextureTools library. Enabled
     automatically if `WITH_TEXT` or `WITH_DISTANCEFIELDCONVERTER` is enabled.
+-   `WITH_TRADE` --- Build the @ref Trade library
 
 There are more involved component dependencies that are not described here (for
 example the @ref DebugTools has some functionality that gets built only when
@@ -462,21 +491,31 @@ file formats. Additional plugins are provided in a separate plugin repository,
 see @ref building-plugins for more information. None of the plugins is built by
 default.
 
+-   `WITH_ANYAUDIOIMPORTER` --- Build the @ref Audio::AnyImporter "AnyAudioImporter"
+    plugin. Enables also building of the @ref Audio library.
+-   `WITH_ANYIMAGECONVERTER` --- Build the
+    @ref Trade::AnyImageConverter "AnyImageConverter" plugin. Enables also
+    building of the @ref Trade library.
+-   `WITH_ANYIMAGEIMPORTER` --- Build the @ref Trade::AnyImageImporter "AnyImageImporter"
+    plugin. Enables also building of the @ref Trade library.
+-   `WITH_ANYSCENEIMPORTER` --- Build the @ref Trade::AnySceneImporter "AnySceneImporter"
+    plugin. Enables also building of the @ref Trade library.
 -   `WITH_MAGNUMFONT` --- Build the @ref Text::MagnumFont "MagnumFont" plugin.
-    Available only if `WITH_TEXT` is enabled. Enables also building of the
+    Enables also building of the @ref Text library and the
     @ref Trade::TgaImporter "TgaImporter" plugin.
 -   `WITH_MAGNUMFONTCONVERTER` --- Build the
-    @ref Text::MagnumFontConverter "MagnumFontConverter" plugin. Available only
-    if `WITH_TEXT` is enabled. Enables also building of their
+    @ref Text::MagnumFontConverter "MagnumFontConverter" plugin. Enables also
+    building of the @ref Text library and the
     @ref Trade::TgaImageConverter "TgaImageConverter" plugin.
 -   `WITH_OBJIMPORTER` --- Build the @ref Trade::ObjImporter "ObjImporter"
-    plugin.
+    plugin. Enables also building of the @ref Trade library.
 -   `WITH_TGAIMPORTER` --- Build the @ref Trade::TgaImporter "TgaImporter"
-    plugin.
+    plugin. Enables also building of the @ref Trade library.
 -   `WITH_TGAIMAGECONVERTER` --- Build the
-    @ref Trade::TgaImageConverter "TgaImageConverter" plugin.
+    @ref Trade::TgaImageConverter "TgaImageConverter" plugin. Enables also
+    building of the @ref Trade library.
 -   `WITH_WAVAUDIOIMPORTER` --- Build the @ref Audio::WavImporter "WavAudioImporter"
-    plugin. Available only if `WITH_AUDIO` is enabled.
+    plugin. Enables also building of the @ref Audio library.
 
 There are also a few command-line utilities, also all disabled by default:
 
@@ -605,6 +644,8 @@ cmake .. ^
 cmake --build .
 @endcode
 
+See @ref platforms-gl-es-angle for more information about using ANGLE.
+
 @section building-cross Cross-compiling
 
 For cross-compiling you need to have *both* target and native version of
@@ -662,8 +703,8 @@ instead. When done, you can install the package using
 @cb{.bat} cmake --build . --target install @ce to make it available to
 depending projects.
 
-See @ref Platform::Sdl2Application documentation for more information about
-building your projects for WinRT.
+See @ref platforms-windows for more information about building your projects
+for WinRT.
 
 @subsection building-cross-win Cross-compiling for Windows using MinGW-w64
 
@@ -701,6 +742,9 @@ cmake --build .
 Then you can install the package using @cb{.sh} cmake --build . --target install @ce
 to make it available to depending projects.
 
+See @ref platforms-windows for more information about building your projects
+for Windows.
+
 @subsection building-cross-emscripten Cross-compiling for Emscripten
 
 You will need [Emscripten](http://kripken.github.io/emscripten-site/) installed
@@ -721,7 +765,10 @@ enabled.
 Then create build directory and run `cmake` and the build command in it.
 
 WebGL 1.0 (GLES 2.0 equivalent) is enabled by default, switch to 2.0 (GLES 3.0
-equivalent) by disabling `TARGET_GLES2`.
+equivalent) by disabling `TARGET_GLES2`. If you enable one of the
+@ref magnum-info or @ref magnum-al-info utilities, you can override their
+install location by setting `MAGNUM_DEPLOY_PREFIX` --- putting them for example
+in your webserver root.
 
 @code{.sh}
 mkdir build-emscripten && cd build-emscripten
@@ -730,6 +777,7 @@ cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH=/usr/lib/emscripten/system \
     -DCMAKE_INSTALL_PREFIX=/usr/lib/emscripten/system \
+    -DMAGNUM_DEPLOY_PREFIX=/srv/http/magnum \
     -DWITH_SDL2APPLICATION=ON
 cmake --build .
 @endcode
@@ -759,8 +807,8 @@ named `PKGBUILD-emscripten`, `PKGBUILD-emscripten-webgl2`,
 WebGL 1 / WebGL 2 optimized asm.js build (*slow* to compile), the second for
 unoptimized build (faster to compile) and the third for WebAssembly build.
 
-See @ref Platform::Sdl2Application documentation for more information about
-building your projects for Emscripten.
+See @ref platforms-html5 for more information about building your projects for
+Emscripten.
 
 @subsection building-cross-ios Cross-compiling for iOS
 
@@ -773,8 +821,8 @@ architectures in `CMAKE_OSX_ARCHITECTURES`. Be sure to set
 
 As every application is in its own sandbox, it doesn't make sense to build
 shared libraries (although it is supported). Enable `BUILD_STATIC` to build
-static libraries. You might also have problems using dynamic plugins, enable
-`BUILD_PLUGINS_STATIC` to build also plugins as static. OpenGL ES 2.0 is
+static libraries. Dynamically loaded plugins are not supported on iOS at the
+moment, thus `BUILD_PLUGINS_STATIC` is implicitly enabled. OpenGL ES 2.0 is
 enabled by default, switch to 3.0 by disabling `TARGET_GLES2`.
 
 Please note that `BUILD_MULTITHREADED` is supported only since Xcode 7.3 and
@@ -799,47 +847,52 @@ cmake --build .
 Then you can install the library using @cb{.sh} cmake --build . --target install @ce
 to make it available to depending projects.
 
-See @ref Platform::Sdl2Application documentation for more information about
-building your projects for iOS.
+See @ref platforms-ios documentation for more information about building your
+projects for iOS.
 
-@subsection building-cross-android Cross-compiling for Android ARM and x86
+@subsection building-cross-android Crosscompiling for Android
 
-You will need [Android NDK](https://developer.android.com/tools/sdk/ndk/index.html)
-installed and configured and @ref building-corrade-cross-android "Corrade built for Android".
+You will need [Android NDK](https://developer.android.com/ndk/) installed and
+configured and @ref building-corrade-cross-android "Corrade built for Android".
+CMake 3.7 is required, as it has Android support builtin. The supported
+toolchain is now Clang with libc++, GCC is not supported anymore.
 
-Don't forget to adapt `ANDROID_NDK_ROOT` in `generic/Android-*.cmake` to a path
-where NDK is installed. Default is `/opt/android-ndk`. Adapt also
-`ANDROID_SYSROOT` to your preferred API level. You might also need to update
-`ANDROID_TOOLCHAIN_PREFIX` and `ANDROID_TOOLCHAIN_ROOT` to fit your system.
+@attention
+    You might want to grab at least CMake 3.9.2 instead of just 3.7, as it
+    [fixes an issue with the Clang toolchain](https://gitlab.kitware.com/cmake/cmake/issues/17253).
 
-Then create a build directory and run `cmake` and the build command in it. Be
-sure to set `CMAKE_INSTALL_PREFIX` to `/usr` subdirectory of `ANDROID_SYSROOT`
-and specify path where Corrade is installed in `CMAKE_PREFIX_PATH`.
+Create a build directory and run `cmake` and the build command in it. Set
+`CMAKE_SYSTEM_NAME` to `Android` to enable the crosscompilation,
+`CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION` and `CMAKE_ANDROID_STL_TYPE` to use Clang
+with libc++, `CMAKE_SYSTEM_VERSION` to minimal API version level you wish to
+use and `CMAKE_ANDROID_ARCH_ABI` to target platform ABI. Check the
+[CMake Android cross-compiling documentation](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html#cross-compiling-for-android)
+for further information.
+
+If you set `CMAKE_INSTALL_PREFIX` to `/usr` subdirectory of the particular
+Android platform sysroot, the package will get found automatically when
+compiling subprojects. Gradle and other Android buildsystems expect
+platform-independent includes and other files to be stored in a central
+location, you can set `MAGNUM_INCLUDE_INSTALL_PREFIX` to `/usr` subdirectory of
+the global NDK sysroot. Another option is to explicitly set `CMAKE_PREFIX_PATH`
+to the install location in depending projects.
 
 Note that `BUILD_STATIC` is implicitly enabled, because manually loading all
 depending shared libraries using JNI would be too inconvenient. The engine is
 built for OpenGL ES 2.0 by default, switch  to 3.0 by disabling `TARGET_GLES2`.
 
 @code{.sh}
-mkdir build-android-arm && cd build-android-arm
+mkdir build-android-arm64 && cd build-android-arm64
 cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE="../toolchains/generic/Android-ARM.cmake" \
+    -DCMAKE_SYSTEM_NAME=Android \
+    -DCMAKE_SYSTEM_VERSION=22 \
+    -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a \
+    -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang \
+    -DCMAKE_ANDROID_STL_TYPE=c++_static \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH=/opt/android-ndk/platforms/android-19/arch-arm/usr \
-    -DCMAKE_INSTALL_PREFIX=/opt/android-ndk/platforms/android-19/arch-arm/usr \
-    -DTARGET_GLES=ON -DTARGET_GLES2=OFF \
-    -DWITH_ANDROIDAPPLICATION=ON
-cmake --build .
-@endcode
-
-@code{.sh}
-mkdir build-android-x86 && cd build-android-x86
-cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE="../toolchains/generic/Android-x86.cmake" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH=/opt/android-ndk/platforms/android-19/arch-x86/usr \
-    -DCMAKE_INSTALL_PREFIX=/opt/android-ndk/platforms/android-19/arch-x86/usr \
-    -DTARGET_GLES=ON -DTARGET_GLES2=OFF \
+    -DCMAKE_INSTALL_PREFIX=/opt/android-ndk/platforms/android-22/arch-arm/usr \
+    -DMAGNUM_INCLUDE_INSTALL_PREFIX=/opt/android-ndk/sysroot/usr \
+    -DTARGET_GLES2=OFF \
     -DWITH_ANDROIDAPPLICATION=ON
 cmake --build .
 @endcode
@@ -847,9 +900,9 @@ cmake --build .
 Then you can install the library using @cb{.sh} cmake --build . --target install @ce
 to make it available to depending projects.
 
-For ArchLinux there are also prepared package files in `package/archlinux`,
-named `PKGBUILD-android-arm` and `PKGBUILD-android-x86`, see
-@ref building-packages-arch "above" for more information.
+For ArchLinux there is also a prepared package file in `package/archlinux/`,
+named `PKGBUILD-android-arm64`; see @ref building-packages-arch "above" for
+more information.
 
 @attention
     On Windows it's possible that you get the following CMake error when
@@ -864,8 +917,8 @@ named `PKGBUILD-android-arm` and `PKGBUILD-android-x86`, see
     build arbitrary Android projects. To fix it, use a different generator (for
     example Ninja, by passing `-G Ninja` to CMake).
 
-See @ref Platform::AndroidApplication documentation for more information about
-building your projects for Android.
+See @ref platforms-android for more information about building your projects
+for Android.
 
 @section building-ci Continuous Integration
 

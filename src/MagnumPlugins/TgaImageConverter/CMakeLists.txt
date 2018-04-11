@@ -23,6 +23,8 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+find_package(Corrade REQUIRED PluginManager)
+
 if(BUILD_PLUGINS_STATIC)
     set(MAGNUM_TGAIMAGECONVERTER_BUILD_STATIC 1)
 endif()
@@ -30,47 +32,30 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
-set(TgaImageConverter_SRCS
-    TgaImageConverter.cpp)
-
-set(TgaImageConverter_HEADERS
-    TgaImageConverter.h)
-
-# Objects shared between plugin and test library
-add_library(TgaImageConverterObjects OBJECT
-    ${TgaImageConverter_SRCS}
-    ${TgaImageConverter_HEADERS})
-target_include_directories(TgaImageConverterObjects PUBLIC $<TARGET_PROPERTY:Magnum,INTERFACE_INCLUDE_DIRECTORIES>)
-if(NOT BUILD_PLUGINS_STATIC)
-    target_compile_definitions(TgaImageConverterObjects PRIVATE "TgaImageConverterObjects_EXPORTS")
-endif()
-if(NOT BUILD_PLUGINS_STATIC OR BUILD_STATIC_PIC)
-    set_target_properties(TgaImageConverterObjects PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
-set_target_properties(TgaImageConverterObjects PROPERTIES FOLDER "MagnumPlugins/TgaImageConverter")
-
 # TgaImageConverter plugin
 add_plugin(TgaImageConverter
     "${MAGNUM_PLUGINS_IMAGECONVERTER_DEBUG_BINARY_INSTALL_DIR};${MAGNUM_PLUGINS_IMAGECONVERTER_DEBUG_LIBRARY_INSTALL_DIR}"
     "${MAGNUM_PLUGINS_IMAGECONVERTER_RELEASE_BINARY_INSTALL_DIR};${MAGNUM_PLUGINS_IMAGECONVERTER_RELEASE_LIBRARY_INSTALL_DIR}"
     TgaImageConverter.conf
-    $<TARGET_OBJECTS:TgaImageConverterObjects>
-    pluginRegistration.cpp)
-if(BUILD_STATIC_PIC)
+    TgaImageConverter.cpp
+    TgaImageConverter.h)
+if(BUILD_PLUGINS_STATIC AND BUILD_STATIC_PIC)
     set_target_properties(TgaImageConverter PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-target_link_libraries(TgaImageConverter Magnum)
+target_link_libraries(TgaImageConverter PUBLIC MagnumTrade)
 
-install(FILES ${TgaImageConverter_HEADERS} DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/TgaImageConverter)
+install(FILES TgaImageConverter.h DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/TgaImageConverter)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/configure.h DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/TgaImageConverter)
 
-if(BUILD_TESTS)
-    add_library(MagnumTgaImageConverterTestLib STATIC
-        $<TARGET_OBJECTS:TgaImageConverterObjects>
-        ${PROJECT_SOURCE_DIR}/src/dummy.cpp) # XCode workaround, see file comment for details
-    set_target_properties(MagnumTgaImageConverterTestLib PROPERTIES FOLDER "MagnumPlugins/TgaImageConverter")
-    target_link_libraries(MagnumTgaImageConverterTestLib Magnum)
+# Automatic static plugin import
+if(BUILD_PLUGINS_STATIC)
+    install(FILES importStaticPlugin.cpp DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/TgaImageConverter)
+    if(NOT CMAKE_VERSION VERSION_LESS 3.1)
+        target_sources(TgaImageConverter INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/importStaticPlugin.cpp)
+    endif()
+endif()
 
+if(BUILD_TESTS)
     add_subdirectory(Test)
 endif()
 

@@ -71,21 +71,18 @@ if(WITH_ANDROIDAPPLICATION)
         Implementation/Egl.h)
 
     add_library(MagnumAndroidApplicationGlue OBJECT
-        ${ANDROID_NATIVE_APP_GLUE_SRC})
+        "${CMAKE_ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c")
     set_target_properties(MagnumAndroidApplicationGlue PROPERTIES
         CORRADE_USE_PEDANTIC_FLAGS OFF
         FOLDER "Magnum/Platform")
-    # They just don't care, so of course the ANativeActivity_onCreate()
-    # function is not exported and thus the app startup fails if I don't
-    # disable hidden visibility for the file.
-    target_compile_options(MagnumAndroidApplicationGlue PRIVATE "-fvisibility=default")
 
     add_library(MagnumAndroidApplication STATIC
         ${MagnumAndroidApplication_SRCS}
         ${MagnumAndroidApplication_HEADERS}
         ${MagnumAndroidApplication_PRIVATE_HEADERS}
         $<TARGET_OBJECTS:MagnumAndroidApplicationGlue>)
-    target_include_directories(MagnumAndroidApplication PUBLIC ${ANDROID_NATIVE_APP_GLUE_INCLUDE_DIR})
+    target_include_directories(MagnumAndroidApplication PUBLIC
+        "${CMAKE_ANDROID_NDK}/sources/android/native_app_glue/")
     set_target_properties(MagnumAndroidApplication PROPERTIES
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
@@ -724,9 +721,9 @@ endif()
 
 # Magnum Info
 if(WITH_MAGNUMINFO)
-    add_executable(magnum-info magnum-info.cpp)
+    add_executable(magnum-info info.cpp)
     target_link_libraries(magnum-info Magnum)
-    if(MAGNUM_TARGET_HEADLESS OR CORRADE_TARGET_EMSCRIPTEN)
+    if(MAGNUM_TARGET_HEADLESS OR CORRADE_TARGET_EMSCRIPTEN OR CORRADE_TARGET_ANDROID)
         target_link_libraries(magnum-info MagnumWindowlessEglApplication)
     elseif(CORRADE_TARGET_IOS)
         target_link_libraries(magnum-info MagnumWindowlessIosApplication)
@@ -759,7 +756,7 @@ if(WITH_MAGNUMINFO)
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
             XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "YES")
     elseif(CORRADE_TARGET_EMSCRIPTEN)
-        install(FILES magnum-info.html DESTINATION ${MAGNUM_DEPLOY_PREFIX}/magnum-info RENAME index.html)
+        install(FILES info.html DESTINATION ${MAGNUM_DEPLOY_PREFIX}/magnum-info RENAME index.html)
         install(TARGETS magnum-info DESTINATION ${MAGNUM_DEPLOY_PREFIX}/magnum-info)
         install(FILES
             WebApplication.css

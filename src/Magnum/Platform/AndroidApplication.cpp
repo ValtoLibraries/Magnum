@@ -25,13 +25,18 @@
 
 #include "AndroidApplication.h"
 
-#include <Corrade/Utility/AndroidStreamBuffer.h>
+#include <Corrade/Utility/AndroidLogStreamBuffer.h>
 #include <Corrade/Utility/Debug.h>
+#include <android_native_app_glue.h>
 
 #include "Magnum/Version.h"
 #include "Magnum/Platform/Context.h"
 
 #include "Implementation/Egl.h"
+
+/* This function would be stripped by the linker otherwise. Search for the name
+   below for the complete rant. */
+extern "C" void ANativeActivity_onCreate(struct ANativeActivity*, void*, size_t);
 
 namespace Magnum { namespace Platform {
 
@@ -71,6 +76,10 @@ AndroidApplication::~AndroidApplication() {
     eglDestroyContext(_display, _glContext);
     eglDestroySurface(_display, _surface);
     eglTerminate(_display);
+}
+
+ANativeActivity* AndroidApplication::nativeActivity() {
+    return _state->activity;
 }
 
 void AndroidApplication::createContext() { createContext({}); }
@@ -143,6 +152,11 @@ bool AndroidApplication::tryCreateContext(const Configuration& configuration) {
     return _context->tryCreate();
 }
 
+Vector2i AndroidApplication::windowSize() {
+    return {ANativeWindow_getWidth(_state->window),
+            ANativeWindow_getHeight(_state->window)};
+}
+
 void AndroidApplication::swapBuffers() {
     eglSwapBuffers(_display, _surface);
 }
@@ -154,10 +168,12 @@ void AndroidApplication::mouseMoveEvent(MouseMoveEvent&) {}
 
 namespace {
     struct Data {
-        Data(std::unique_ptr<AndroidApplication>(*instancer)(const AndroidApplication::Arguments&)): instancer(instancer) {}
+        Data(std::unique_ptr<AndroidApplication>(*instancer)(const AndroidApplication::Arguments&), void(*nativeActivity)(ANativeActivity*,void*,size_t)): instancer(instancer), nativeActivity{nativeActivity} {}
 
         std::unique_ptr<AndroidApplication>(*instancer)(const AndroidApplication::Arguments&);
         std::unique_ptr<AndroidApplication> instance;
+
+        void(*nativeActivity)(ANativeActivity*,void*,size_t);
     };
 }
 
@@ -219,12 +235,17 @@ void AndroidApplication::exec(android_app* state, std::unique_ptr<AndroidApplica
     state->onAppCmd = commandEvent;
     state->onInputEvent = inputEvent;
 
-    /* Make sure the glue isn't stripped. WHY WHYYY CAN'T THIS BE DONE SOME
-       SANE WAY WHYY */
-    app_dummy();
-
+    /* Long time ago there was a call to app_dummy() that prevented stripping
+       the ANativeActivity_onCreate() symbol. It was awful enough on its own,
+       but they decided that it's no longer needed and the PROPER AND BETTER
+       SOLUTION is to pollute all downstream build scripts with
+       `-u ANativeActivity_onCreate` passed to linker. That's just fucking
+       awful. I can't use app_dummy() as it's deprecated, so I'm simply
+       retrieving the function pointer to the ANativeActivity_onCreate function
+       and saving it somewhere to convince the linker it's really needed. I
+       WANT TO SCREAM. https://github.com/android-ndk/ndk/issues/381 */
     /** @todo Make use of saved state */
-    Data data{instancer};
+    Data data{instancer, ANativeActivity_onCreate};
     state->userData = &data;
 
     for(;;) {

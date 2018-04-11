@@ -28,7 +28,10 @@
 
 The following table maps OpenGL function names to Magnum API, useful for
 developers with existing OpenGL background. Note that, as reverse mapping, each
-function documentation also contains list of OpenGL functions used.
+function documentation also contains list of OpenGL functions used. You can
+also use the search functionality to find out which OpenGL API corresponds to
+which Magnum function, class or enum value. Just enter name of an OpenGL
+function, define or GLSL name into the search box.
 
 -   @subpage opengl-mapping
 
@@ -42,6 +45,12 @@ functionality. You may still need to use them to support older hardware, but in
 general they should be avoided.
 
 -   @subpage opengl-deprecated
+
+The OpenGL driver world is far from ideal and in order to work on majority of
+platforms, the engine has to work around some driver bugs. An exhaustive list
+is here:
+
+-   @subpage opengl-workarounds
 
 @section opengl-required-extensions Version and extension requirements
 
