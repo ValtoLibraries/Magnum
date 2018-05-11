@@ -39,9 +39,13 @@
 #include "Magnum/Math/Vector2.h"
 #include "Magnum/Platform/Platform.h"
 
-/* We must include our own GL headers first to avoid conflicts */
-#include "Magnum/OpenGL.h"
+#ifdef MAGNUM_TARGET_GL
+#include "Magnum/GL/GL.h"
+#endif
 
+#ifndef DOXYGEN_GENERATING_OUTPUT
+#define GLFW_INCLUDE_NONE
+#endif
 #include <GLFW/glfw3.h>
 
 namespace Magnum { namespace Platform {
@@ -122,6 +126,9 @@ class GlfwApplication {
         };
 
         class Configuration;
+        #ifdef MAGNUM_TARGET_GL
+        class GLConfiguration;
+        #endif
         class InputEvent;
         class KeyEvent;
         class MouseEvent;
@@ -129,16 +136,56 @@ class GlfwApplication {
         class MouseScrollEvent;
         class TextInputEvent;
 
-        /** @copydoc Sdl2Application::Sdl2Application(const Arguments&, const Configuration&) */
-        #ifdef DOXYGEN_GENERATING_OUTPUT
-        explicit GlfwApplication(const Arguments& arguments, const Configuration& configuration = Configuration());
-        #else
-        /* To avoid "invalid use of incomplete type" */
-        explicit GlfwApplication(const Arguments& arguments, const Configuration& configuration);
-        explicit GlfwApplication(const Arguments& arguments);
+        #ifdef MAGNUM_TARGET_GL
+        /**
+         * @brief Construct with given configuration for OpenGL context
+         * @param arguments         Application arguments
+         * @param configuration     Application configuration
+         * @param glConfiguration   OpenGL context configuration
+         *
+         * Creates application with default or user-specified configuration.
+         * See @ref Configuration for more information. The program exits if
+         * the context cannot be created, see @ref tryCreate() for an
+         * alternative.
+         *
+         * @note This function is available only if Magnum is compiled with
+         *      @ref MAGNUM_TARGET_GL enabled (done by default). See
+         *      @ref building-features for more information.
+         */
+        explicit GlfwApplication(const Arguments& arguments, const Configuration& configuration, const GLConfiguration& glConfiguration);
         #endif
 
-        /** @copydoc Sdl2Application::Sdl2Application(const Arguments&, NoCreateT) */
+        /**
+         * @brief Construct with given configuration
+         *
+         * If @ref Configuration::WindowFlag::Contextless is present or Magnum
+         * was not built with @ref MAGNUM_TARGET_GL, this creates a window
+         * without any GPU context attached, leaving that part on the user.
+         *
+         * If none of the flags is present and Magnum was built with
+         * @ref MAGNUM_TARGET_GL, this is equivalent to calling
+         * @ref GlfwApplication(const Arguments&, const Configuration&, const GLConfiguration&)
+         * with default-constructed @ref GLConfiguration.
+         *
+         * See also @ref building-features for more information.
+         */
+        explicit GlfwApplication(const Arguments& arguments, const Configuration& configuration);
+
+        /**
+         * @brief Construct with default configuration
+         *
+         * Equivalent to calling @ref GlfwApplication(const Arguments&, const Configuration&)
+         * with default-constructed @ref Configuration.
+         */
+        explicit GlfwApplication(const Arguments& arguments);
+
+        /**
+         * @brief Construct without creating a window
+         * @param arguments     Application arguments
+         *
+         * Unlike above, the window is not created and must be created later
+         * with @ref create() or @ref tryCreate().
+         */
         explicit GlfwApplication(const Arguments& arguments, NoCreateT);
 
         #ifdef MAGNUM_BUILD_DEPRECATED
@@ -186,17 +233,99 @@ class GlfwApplication {
            faster than public pure virtual destructor */
         ~GlfwApplication();
 
-        /** @copydoc Sdl2Application::createContext() */
-        #ifdef DOXYGEN_GENERATING_OUTPUT
-        void createContext(const Configuration& configuration = Configuration());
-        #else
-        /* To avoid "invalid use of incomplete type" */
-        void createContext(const Configuration& configuration);
-        void createContext();
+        #ifdef MAGNUM_TARGET_GL
+        /**
+         * @brief Create a window with given configuration for OpenGL context
+         * @param configuration     Application configuration
+         * @param glConfiguration   OpenGL context configuration
+         *
+         * Must be called only if the context wasn't created by the constructor
+         * itself, i.e. when passing @ref NoCreate to it. Error message is
+         * printed and the program exits if the context cannot be created, see
+         * @ref tryCreate() for an alternative.
+         *
+         * On desktop GL, if version is not specified in @p glConfiguration,
+         * the application first tries to create core context (OpenGL 3.2+) and
+         * if that fails, falls back to compatibility OpenGL 2.1 context.
+         *
+         * @note This function is available only if Magnum is compiled with
+         *      @ref MAGNUM_TARGET_GL enabled (done by default). See
+         *      @ref building-features for more information.
+         */
+        void create(const Configuration& configuration, const GLConfiguration& glConfiguration);
         #endif
 
-        /** @copydoc Sdl2Application::tryCreateContext() */
-        bool tryCreateContext(const Configuration& configuration);
+        /**
+         * @brief Create a window with given configuration
+         *
+         * If @ref Configuration::WindowFlag::Contextless is present or Magnum
+         * was not built with @ref MAGNUM_TARGET_GL, this creates a window
+         * without any GPU context attached, leaving that part on the user.
+         *
+         * If none of the flags is present and Magnum was built with
+         * @ref MAGNUM_TARGET_GL, this is equivalent to calling
+         * @ref create(const Configuration&, const GLConfiguration&) with
+         * default-constructed @ref GLConfiguration.
+         *
+         * See also @ref building-features for more information.
+         */
+        void create(const Configuration& configuration);
+
+        /**
+         * @brief Create a window with default configuration and OpenGL context
+         *
+         * Equivalent to calling @ref create(const Configuration&) with
+         * default-constructed @ref Configuration.
+         */
+        void create();
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief create(const Configuration&, const GLConfiguration&)
+         * @deprecated Use @ref create(const Configuration&, const GLConfiguration&) instead.
+         */
+        CORRADE_DEPRECATED("use create(const Configuration&, const GLConfiguration&) instead") void createContext(const Configuration& configuration) {
+            create(configuration);
+        }
+
+        /** @brief @copybrief create()
+         * @deprecated Use @ref create() instead.
+         */
+        CORRADE_DEPRECATED("use create() instead") void createContext() {
+            create();
+        }
+        #endif
+
+        #ifdef MAGNUM_TARGET_GL
+        /**
+         * @brief Try to create context with given configuration for OpenGL context
+         *
+         * Unlike @ref create(const Configuration&, const GLConfiguration&)
+         * returns @cpp false @ce if the context cannot be created,
+         * @cpp true @ce otherwise.
+         *
+         * @note This function is available only if Magnum is compiled with
+         *      @ref MAGNUM_TARGET_GL enabled (done by default). See
+         *      @ref building-features for more information.
+         */
+        bool tryCreate(const Configuration& configuration, const GLConfiguration& glConfiguration);
+        #endif
+
+        /**
+         * @brief Try to create context with given configuration
+         *
+         * Unlike @ref create(const Configuration&) returns @cpp false @ce if
+         * the context cannot be created, @cpp true @ce otherwise.
+         */
+        bool tryCreate(const Configuration& configuration);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief tryCreate(const Configuration&, const GLConfiguration&)
+         * @deprecated Use @ref tryCreate(const Configuration&, const GLConfiguration&) instead.
+         */
+        CORRADE_DEPRECATED("use tryCreate(const Configuration&) instead") bool tryCreateContext(const Configuration& configuration) {
+            return tryCreate(configuration);
+        }
+        #endif
 
         /** @{ @name Screen handling */
 
@@ -337,38 +466,32 @@ class GlfwApplication {
         typedef Containers::EnumSet<Flag> Flags;
         CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
-        static void staticViewportEvent(GLFWwindow*, int w, int h) {
-            _instance->viewportEvent({w, h});
-        }
-
-        static void staticKeyEvent(GLFWwindow* window, int key, int scancode, int action, int mod);
-
-        static void staticMouseEvent(GLFWwindow* window, int button, int action, int mods);
-
-        static void staticMouseMoveEvent(GLFWwindow* window, double x, double y);
-
-        static void staticMouseScrollEvent(GLFWwindow* window, double xoffset, double yoffset);
-
         static void staticErrorCallback(int error, const char* description);
 
+        static void staticViewportEvent(GLFWwindow* window, int w, int h);
+        static void staticKeyEvent(GLFWwindow* window, int key, int scancode, int action, int mod);
+        static void staticMouseEvent(GLFWwindow* window, int button, int action, int mods);
+        static void staticMouseMoveEvent(GLFWwindow* window, double x, double y);
+        static void staticMouseScrollEvent(GLFWwindow* window, double xoffset, double yoffset);
         static void staticTextInputEvent(GLFWwindow* window, unsigned int codepoint);
 
-        static GlfwApplication* _instance;
-
-        GLFWwindow* _window;
-        std::unique_ptr<Platform::Context> _context;
+        GLFWwindow* _window{nullptr};
         Flags _flags;
+        #ifdef MAGNUM_TARGET_GL
+        std::unique_ptr<Platform::GLContext> _context;
+        #endif
 };
 
 CORRADE_ENUMSET_OPERATORS(GlfwApplication::Flags)
 
+#ifdef MAGNUM_TARGET_GL
 /**
-@brief Configuration
+@brief OpenGL context configuration
 
 Double-buffered RGBA window with depth and stencil buffers.
-@see @ref GlfwApplication(), @ref createContext(), @ref tryCreateContext()
+@see @ref GlfwApplication(), @ref create(), @ref tryCreate()
 */
-class GlfwApplication::Configuration {
+class GlfwApplication::GLConfiguration {
     public:
         /**
          * @brief Context flag
@@ -397,6 +520,99 @@ class GlfwApplication::Configuration {
          * @see @ref setFlags()
          */
         typedef Containers::EnumSet<Flag> Flags;
+
+        explicit GLConfiguration();
+        ~GLConfiguration();
+
+        /** @brief Context flags */
+        Flags flags() const { return _flags; }
+
+        /**
+         * @brief Set context flags
+         * @return Reference to self (for method chaining)
+         *
+         * Default is no flag.
+         */
+        GLConfiguration& setFlags(Flags flags) {
+            _flags = flags;
+            return *this;
+        }
+
+        /** @brief Context version */
+        GL::Version version() const { return _version; }
+
+        /**
+         * @brief Set context version
+         *
+         * If requesting version greater or equal to OpenGL 3.2, core profile
+         * is used. The created context will then have any version which is
+         * backwards-compatible with requested one. Default is
+         * @ref GL::Version::None, i.e. any provided version is used.
+         */
+        GLConfiguration& setVersion(GL::Version version) {
+            _version = version;
+            return *this;
+        }
+
+        /** @brief Sample count */
+        Int sampleCount() const { return _sampleCount; }
+
+        /**
+         * @brief Set sample count
+         * @return Reference to self (for method chaining)
+         *
+         * Default is @cpp 0 @ce, thus no multisampling. The actual sample
+         * count is ignored, GLFW either enables it or disables. See also
+         * @ref GL::Renderer::Feature::Multisampling.
+         */
+        GLConfiguration& setSampleCount(Int count) {
+            _sampleCount = count;
+            return *this;
+        }
+
+        /** @brief sRGB-capable default framebuffer */
+        bool isSRGBCapable() const {
+            return _srgbCapable;
+        }
+
+        /**
+         * @brief Set sRGB-capable default framebuffer
+         * @return Reference to self (for method chaining)
+         */
+        GLConfiguration& setSRGBCapable(bool enabled) {
+            _srgbCapable = enabled;
+            return *this;
+        }
+
+    private:
+        Int _sampleCount;
+        GL::Version _version;
+        Flags _flags;
+        bool _srgbCapable;
+};
+
+CORRADE_ENUMSET_OPERATORS(GlfwApplication::GLConfiguration::Flags)
+#endif
+
+/**
+@brief Configuration
+
+Double-buffered RGBA window with depth and stencil buffers.
+@see @ref GlfwApplication(), @ref create(), @ref tryCreate()
+*/
+class GlfwApplication::Configuration {
+    public:
+        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+        /** @brief @copybrief GLConfiguration::Flag
+         * @deprecated Use @ref GLConfiguration::Flag instead.
+         */
+        typedef GLConfiguration::Flag Flag;
+
+        /** @brief @copybrief GLConfiguration::Flags
+         * @deprecated Use @ref GLConfiguration::Flags instead.
+         */
+        typedef GLConfiguration::Flags Flags;
+        #endif
 
         /**
          * @brief Window flag
@@ -434,7 +650,21 @@ class GlfwApplication::Configuration {
              */
             AutoIconify = 1 << 6,
 
-            Focused = 1 << 7       /**< Window has input focus */
+            Focused = 1 << 7,      /**< Window has input focus */
+
+            #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(GLFW_NO_API)
+            /**
+             * Do not create any GPU context. Use together with
+             * @ref GlfwApplication(const Arguments&),
+             * @ref GlfwApplication(const Arguments&, const Configuration&),
+             * @ref create(const Configuration&) or
+             * @ref tryCreate(const Configuration&) to prevent implicit
+             * creation of an OpenGL context.
+             *
+             * @note Supported since GLFW 3.2.
+             */
+            Contextless = 1 << 8
+            #endif
         };
 
         /**
@@ -487,20 +717,6 @@ class GlfwApplication::Configuration {
             return *this;
         }
 
-        /** @brief Context flags */
-        Flags flags() const { return _flags; }
-
-        /**
-         * @brief Set context flags
-         * @return Reference to self (for method chaining)
-         *
-         * Default is no flag.
-         */
-        Configuration& setFlags(Flags flags) {
-            _flags = flags;
-            return *this;
-        }
-
         /** @brief Window flags */
         WindowFlags windowFlags() const {
             return _windowFlags;
@@ -533,64 +749,75 @@ class GlfwApplication::Configuration {
             return *this;
         }
 
-        /** @brief Context version */
-        Version version() const { return _version; }
-
-        /**
-         * @brief Set context version
-         *
-         * If requesting version greater or equal to OpenGL 3.1, core profile
-         * is used. The created context will then have any version which is
-         * backwards-compatible with requested one. Default is
-         * @ref Version::None, i.e. any provided version is used.
+        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+        /** @brief @copybrief GLConfiguration::flags()
+         * @deprecated Use @ref GLConfiguration::flags() instead.
          */
-        Configuration& setVersion(Version version) {
+        CORRADE_DEPRECATED("use GLConfiguration::flags() instead") GLConfiguration::Flags flags() const { return _flags; }
+
+        /** @brief @copybrief GLConfiguration::setFlags()
+         * @deprecated Use @ref GLConfiguration::setFlags() instead.
+         */
+        CORRADE_DEPRECATED("use GLConfiguration::setFlags() instead") Configuration& setFlags(GLConfiguration::Flags flags) {
+            _flags = flags;
+            return *this;
+        }
+
+        /** @brief @copybrief GLConfiguration::version()
+         * @deprecated Use @ref GLConfiguration::version() instead.
+         */
+        CORRADE_DEPRECATED("use GLConfiguration::version() instead") GL::Version version() const { return _version; }
+
+        /** @brief @copybrief GLConfiguration::setVersion()
+         * @deprecated Use @ref GLConfiguration::setVersion() instead.
+         */
+        CORRADE_DEPRECATED("use GLConfiguration::setVersion() instead") Configuration& setVersion(GL::Version version) {
             _version = version;
             return *this;
         }
 
-        /** @brief Sample count */
-        Int sampleCount() const { return _sampleCount; }
-
-        /**
-         * @brief Set sample count
-         * @return Reference to self (for method chaining)
-         *
-         * Default is @cpp 0 @ce, thus no multisampling. The actual sample
-         * count is ignored, GLFW either enables it or disables. See also
-         * @ref Renderer::Feature::Multisampling.
+        /** @brief @copybrief GLConfiguration::sampleCount()
+         * @deprecated Use @ref GLConfiguration::sampleCount() instead.
          */
-        Configuration& setSampleCount(Int count) {
+        CORRADE_DEPRECATED("use GLConfiguration::sampleCount() instead") Int sampleCount() const { return _sampleCount; }
+
+        /** @brief @copybrief GLConfiguration::setSampleCount()
+         * @deprecated Use @ref GLConfiguration::setSampleCount() instead.
+         */
+        CORRADE_DEPRECATED("use GLConfiguration::setSampleCount() instead") Configuration& setSampleCount(Int count) {
             _sampleCount = count;
             return *this;
         }
 
-        /** @brief sRGB-capable default framebuffer */
-        bool isSRGBCapable() const {
+        /** @brief @copybrief GLConfiguration::isSRGBCapable()
+         * @deprecated Use @ref GLConfiguration::isSRGBCapable() instead.
+         */
+        CORRADE_DEPRECATED("use GLConfiguration::isSRGBCapable() instead") bool isSRGBCapable() const {
             return _srgbCapable;
         }
 
-        /**
-         * @brief Set sRGB-capable default framebuffer
-         * @return Reference to self (for method chaining)
+        /** @brief @copybrief GLConfiguration::setSRGBCapable()
+         * @deprecated Use @ref GLConfiguration::setSRGBCapable() instead.
          */
-        Configuration& setSRGBCapable(bool enabled) {
+        CORRADE_DEPRECATED("use GLConfiguration::setSRGBCapable() instead") Configuration& setSRGBCapable(bool enabled) {
             _srgbCapable = enabled;
             return *this;
         }
+        #endif
 
     private:
         std::string _title;
         Vector2i _size;
-        Int _sampleCount;
-        Version _version;
-        Flags _flags;
         WindowFlags _windowFlags;
         CursorMode _cursorMode;
+        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+        Int _sampleCount;
+        GL::Version _version;
+        Flags _flags;
         bool _srgbCapable;
+        #endif
 };
 
-CORRADE_ENUMSET_OPERATORS(GlfwApplication::Configuration::Flags)
 CORRADE_ENUMSET_OPERATORS(GlfwApplication::Configuration::WindowFlags)
 
 /**

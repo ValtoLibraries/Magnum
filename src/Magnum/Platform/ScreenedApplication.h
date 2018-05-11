@@ -98,25 +98,35 @@ The following specialization are explicitly compiled into each particular
 */
 template<class Application> class BasicScreenedApplication: public Application, private Containers::LinkedList<BasicScreen<Application>> {
     public:
+        #ifdef MAGNUM_TARGET_GL
         /**
-         * @brief Default constructor
-         * @param arguments     Application arguments
-         * @param configuration Configuration
+         * @brief Construct with given configuration for OpenGL context
          *
-         * Creates application with default or user-specified configuration.
-         * See @ref Sdl2Application::Configuration "Configuration" for more
-         * information. The program exits if the context cannot be created, see
-         * below for an alternative.
+         * Passes the arguments through to a particular application
+         * constructor.
+         *
+         * @note This function is available only if Magnum is compiled with
+         *      @ref MAGNUM_TARGET_GL enabled (done by default). See
+         *      @ref building-features for more information.
          */
-        explicit BasicScreenedApplication(const typename Application::Arguments& arguments, const typename Application::Configuration& configuration = Application::Configuration());
+        explicit BasicScreenedApplication(const typename Application::Arguments& arguments, const typename Application::Configuration& configuration, const typename Application::GLConfiguration& glConfiguration);
+        #endif
+
+        /**
+         * @brief Construct with given configuration
+         *
+         * Passes the arguments through to a particular application
+         * constructor.
+         */
+        explicit BasicScreenedApplication(const typename Application::Arguments& arguments, const typename Application::Configuration& configuration = typename Application::Configuration{});
 
         /**
          * @brief Constructor
-         * @param arguments     Application arguments
+         * @param arguments         Application arguments
          *
          * Unlike above, the context is not created and must be created later
-         * with @ref Sdl2Application::createContext() "createContext()" or
-         * @ref Sdl2Application::tryCreateContext() "tryCreateContext()".
+         * with @ref Sdl2Application::create() "create()" or
+         * @ref Sdl2Application::tryCreate() "tryCreate()".
          */
         explicit BasicScreenedApplication(const typename Application::Arguments& arguments, NoCreateT);
 

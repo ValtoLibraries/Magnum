@@ -26,1222 +26,1120 @@
 */
 
 /** @file
- * @brief Enum @ref Magnum::PixelFormat, @ref Magnum::PixelType, @ref Magnum::CompressedPixelFormat
+ * @brief Enum @ref Magnum::PixelFormat, @ref Magnum::CompressedPixelFormat, function @ref Magnum::pixelSize(), @ref Magnum::isPixelFormatImplementationSpecific(), @ref Magnum::pixelFormatWrap(), @ref Magnum::pixelFormatUnwrap(), @ref Magnum::isCompressedPixelFormatImplementationSpecific(), @ref Magnum::compressedPixelFormatWrap(), @ref Magnum::compressedPixelFormatUnwrap()
  */
 
+#include <Corrade/Utility/Assert.h>
+
 #include "Magnum/Magnum.h"
-#include "Magnum/OpenGL.h"
 #include "Magnum/visibility.h"
+
+#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+#include "Magnum/GL/PixelFormat.h"
+#endif
 
 namespace Magnum {
 
 /**
 @brief Format of pixel data
 
-Note that some formats can be used only for framebuffer reading (using
-@ref AbstractFramebuffer::read()) and some only for texture data (using
-@ref Texture::setSubImage() and others), the limitations are mentioned in
-documentation of each particular value.
+Can act also as a wrapper for implementation-specific pixel format values using
+@ref pixelFormatWrap() and @ref pixelFormatUnwrap(). Distinction between
+generic and implementation-specific formats can be done using
+@ref isPixelFormatImplementationSpecific().
 
-In most cases you may want to use @ref PixelFormat::Red (for grayscale images),
-@ref PixelFormat::RGB or @ref PixelFormat::RGBA along with
-@ref PixelType::UnsignedByte, the matching texture format is then
-@ref TextureFormat::R8, @ref TextureFormat::RGB8 or @ref TextureFormat::RGBA8.
-See documentation of these values for possible limitations when using OpenGL ES
-2.0 or WebGL.
+In case of OpenGL, corresponds to @ref GL::PixelFormat and @ref GL::PixelType
+and is convertible to them using @ref GL::pixelFormat() and
+@ref GL::pixelType(). See documentation of each value for more information
+about the mapping. Note that not every format is available on all targets, use
+@ref GL::hasPixelFormat() to check for its presence.
 
-@see @ref Image, @ref ImageView, @ref BufferImage, @ref Trade::ImageData
-@m_enum_values_as_keywords
+@see @ref pixelSize(), @ref CompressedPixelFormat, @ref Image, @ref ImageView
 */
-enum class PixelFormat: GLenum {
+enum class PixelFormat: UnsignedInt {
+    /**
+     * Red component, normalized unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::Red and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::R8.
+     */
+    R8Unorm,
+
+    /**
+     * Red and green component, normalized unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RG and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::RG8.
+     */
+    RG8Unorm,
+
+    /**
+     * RGB, normalized unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGB and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::RGB8.
+     */
+    RGB8Unorm,
+
+    /**
+     * RGBA, normalized unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBA and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::RGBA8.
+     */
+    RGBA8Unorm,
+
+    /**
+     * Red component, normalized signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::Red and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::R8Snorm.
+     */
+    R8Snorm,
+
+    /**
+     * Red and green component, normalized signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RG and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::RG8Snorm.
+     */
+    RG8Snorm,
+
+    /**
+     * RGB, normalized signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGB and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::RGB8Snorm.
+     */
+    RGB8Snorm,
+
+    /**
+     * RGBA, normalized signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBA and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::RGBA8Snorm.
+     */
+    RGBA8Snorm,
+
+    /**
+     * Red component, integral unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RedInteger and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::R8UI.
+     */
+    R8UI,
+
+    /**
+     * Red and green component, integral unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGInteger and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::RG8UI.
+     */
+    RG8UI,
+
+    /**
+     * RGB, integral unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBInteger and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::RGB8UI.
+     */
+    RGB8UI,
+
+    /**
+     * RGBA, integral unsigned byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBAInteger and
+     * @ref GL::PixelType::UnsignedByte, @ref GL::TextureFormat::RGBA8UI.
+     */
+    RGBA8UI,
+
+    /**
+     * Red component, integral signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RedInteger and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::R8I.
+     */
+    R8I,
+
+    /**
+     * Red and green component, integral signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGInteger and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::RG8I.
+     */
+    RG8I,
+
+    /**
+     * RGB, integral signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBInteger and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::RGB8I.
+     */
+    RGB8I,
+
+    /**
+     * RGBA, integral signed byte.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBAInteger and
+     * @ref GL::PixelType::Byte, @ref GL::TextureFormat::RGBA8I.
+     */
+    RGBA8I,
+
+    /**
+     * Red component, normalized unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::Red and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::R16.
+     */
+    R16Unorm,
+
+    /**
+     * Red and green component, normalized unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RG and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::RG16.
+     */
+    RG16Unorm,
+
+    /**
+     * RGB, normalized unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGB and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::RGB16.
+     */
+    RGB16Unorm,
+
+    /**
+     * RGBA, normalized unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBA and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::RGBA16.
+     */
+    RGBA16Unorm,
+
+    /**
+     * Red component, normalized signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::Red and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::R16Snorm.
+     */
+    R16Snorm,
+
+    /**
+     * Red and green component, normalized signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RG and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::RG16Snorm.
+     */
+    RG16Snorm,
+
+    /**
+     * RGB, normalized signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGB and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::RGB16Snorm.
+     */
+    RGB16Snorm,
+
+    /**
+     * RGBA, normalized signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBA and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::RGBA16Snorm.
+     */
+    RGBA16Snorm,
+
+    /**
+     * Red component, integral unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RedInteger and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::R16UI.
+     */
+    R16UI,
+
+    /**
+     * Red and green component, integral unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGInteger and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::RG16UI.
+     */
+    RG16UI,
+
+    /**
+     * RGB, integral unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBInteger and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::RGB16UI.
+     */
+    RGB16UI,
+
+    /**
+     * RGBA, integral unsigned short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBAInteger and
+     * @ref GL::PixelType::UnsignedShort, @ref GL::TextureFormat::RGBA16UI.
+     */
+    RGBA16UI,
+
+    /**
+     * Red component, integral signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RedInteger and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::R16I.
+     */
+    R16I,
+
+    /**
+     * Red and green component, integral signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGInteger and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::RG16I.
+     */
+    RG16I,
+
+    /**
+     * RGB, integral signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBInteger and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::RGB16I.
+     */
+    RGB16I,
+
+    /**
+     * RGBA, integral signed short.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBAInteger and
+     * @ref GL::PixelType::Short, @ref GL::TextureFormat::RGBA16I.
+     */
+    RGBA16I,
+
+    /**
+     * Red component, integral unsigned int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RedInteger and
+     * @ref GL::PixelType::UnsignedInt, @ref GL::TextureFormat::R32UI.
+     */
+    R32UI,
+
+    /**
+     * Red and green component, integral unsigned int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGInteger and
+     * @ref GL::PixelType::UnsignedInt, @ref GL::TextureFormat::RG32UI.
+     */
+    RG32UI,
+
+    /**
+     * RGB, integral unsigned int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBInteger and
+     * @ref GL::PixelType::UnsignedInt, @ref GL::TextureFormat::RGB32UI.
+     */
+    RGB32UI,
+
+    /**
+     * RGBA, integral unsigned int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBAInteger and
+     * @ref GL::PixelType::UnsignedInt, @ref GL::TextureFormat::RGBA32UI.
+     */
+    RGBA32UI,
+
+    /**
+     * Red component, integral signed int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RedInteger and
+     * @ref GL::PixelType::Int, @ref GL::TextureFormat::R32I.
+     */
+    R32I,
+
+    /**
+     * Red and green component, integral signed int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGInteger and
+     * @ref GL::PixelType::Int, @ref GL::TextureFormat::RG32I.
+     */
+    RG32I,
+
+    /**
+     * RGB, integral signed int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBInteger and
+     * @ref GL::PixelType::Int, @ref GL::TextureFormat::RGB32I.
+     */
+    RGB32I,
+
+    /**
+     * RGBA, integral signed int.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBAInteger and
+     * @ref GL::PixelType::Int, @ref GL::TextureFormat::RGBA32I.
+     */
+    RGBA32I,
+
+    /**
+     * Red component, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::Red and
+     * @ref GL::PixelType::HalfFloat, @ref GL::TextureFormat::R16F.
+     * @see @ref Half, @ref Math::packHalf(), @ref Math::unpackHalf()
+     */
+    R16F,
+
+    /**
+     * Red and green component, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::RG and
+     * @ref GL::PixelType::HalfFloat, @ref GL::TextureFormat::RG16F.
+     * @see @ref Half, @ref Math::packHalf(), @ref Math::unpackHalf()
+     */
+    RG16F,
+
+    /**
+     * RGB, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGB and
+     * @ref GL::PixelType::HalfFloat, @ref GL::TextureFormat::RGB16F.
+     * @see @ref Half, @ref Math::packHalf(), @ref Math::unpackHalf()
+     */
+    RGB16F,
+
+    /**
+     * RGBA, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBA and
+     * @ref GL::PixelType::HalfFloat, @ref GL::TextureFormat::RGBA16F.
+     * @see @ref Half, @ref Math::packHalf(), @ref Math::unpackHalf()
+     */
+    RGBA16F,
+
+    /**
+     * Red component, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::Red and
+     * @ref GL::PixelType::Float, @ref GL::TextureFormat::R32F.
+     */
+    R32F,
+
+    /**
+     * Red and green component, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::RG and
+     * @ref GL::PixelType::Float, @ref GL::TextureFormat::RG32F.
+     */
+    RG32F,
+
+    /**
+     * RGB, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGB and
+     * @ref GL::PixelType::Float, @ref GL::TextureFormat::RGB32F.
+     */
+    RGB32F,
+
+    /**
+     * RGBA, half float.
+     *
+     * Corresponds to @ref GL::PixelFormat::RGBA and
+     * @ref GL::PixelType::Float, @ref GL::TextureFormat::RGBA32F.
+     */
+    RGBA32F,
+
+    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
     #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
     /**
      * Floating-point red channel.
-     * @requires_gles30 For texture data only, extension
-     *      @extension{EXT,texture_rg} in OpenGL ES 2.0.
-     * @requires_es_extension For framebuffer reading, extension
-     *      @extension{EXT,texture_rg}
-     * @requires_webgl20 For texture data only. Not available in WebGL 1.0, see
-     *      @ref PixelFormat::Luminance for an alternative.
+     * @deprecated Use @ref GL::PixelFormat::Red or any of the complete
+     *      single-channel formats instead.
      */
-    #ifndef MAGNUM_TARGET_GLES2
-    Red = GL_RED,
-    #else
-    Red = GL_RED_EXT,
-    #endif
+    Red CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::Red or any of the complete single-channel formats instead") = UnsignedInt(GL::PixelFormat::Red),
     #endif
 
     #ifndef MAGNUM_TARGET_GLES
     /**
      * Floating-point green channel.
-     * @requires_gl Only @ref PixelFormat::Red is available in OpenGL ES or
-     *      WebGL.
+     * @deprecated Use @ref GL::PixelFormat::Green or any of the complete
+     *      single-channel formats instead.
      */
-    Green = GL_GREEN,
+    Green CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::Green or any of the complete single-channel formats instead") = UnsignedInt(GL::PixelFormat::Green),
 
     /**
      * Floating-point blue channel.
-     * @requires_gl Only @ref PixelFormat::Red is available in OpenGL ES or
-     *      WebGL.
+     * @deprecated Use @ref GL::PixelFormat::Blue or any of the complete
+     *      single-channel formats instead.
      */
-    Blue = GL_BLUE,
+    Blue CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::Blue or any of the complete single-channel formats instead") = UnsignedInt(GL::PixelFormat::Blue),
     #endif
 
     #if defined(MAGNUM_TARGET_GLES2) || defined(DOXYGEN_GENERATING_OUTPUT)
     /**
      * Floating-point luminance channel. The value is used for all RGB
      * channels.
-     * @requires_gles20 Not available in ES 3.0, WebGL 2.0 or desktop OpenGL.
-     *      Use @ref PixelFormat::Red instead.
-     * @deprecated_gl Included for compatibility reasons only, use
-     *      @ref PixelFormat::Red instead.
+     * @deprecated Use @ref GL::PixelFormat::Luminance or any of the complete
+     *      single-channel formats instead.
      */
-    Luminance = GL_LUMINANCE,
+    Luminance CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::Luminance or any of the complete single-channel formats instead") = UnsignedInt(GL::PixelFormat::Luminance),
     #endif
 
     #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
     /**
      * Floating-point red and green channel.
-     * @requires_gl30 Extension @extension{ARB,texture_rg} and @extension{EXT,texture_integer}
-     * @requires_gles30 For texture data only, extension
-     *      @extension{EXT,texture_rg} in OpenGL ES 2.0.
-     * @requires_es_extension For framebuffer reading, extension
-     *      @extension{EXT,texture_rg}
-     * @requires_webgl20 For texture data only. Not available in WebGL 1.0, see
-     *      @ref PixelFormat::LuminanceAlpha for and alternative.
+     * @deprecated Use @ref GL::PixelFormat::RG or any of the complete
+     *      two-channel formats instead.
      */
-    #ifndef MAGNUM_TARGET_GLES2
-    RG = GL_RG,
-    #else
-    RG = GL_RG_EXT,
-    #endif
+    RG CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::RG or any of the complete two-channel formats instead") = UnsignedInt(GL::PixelFormat::RG),
     #endif
 
     #if defined(MAGNUM_TARGET_GLES2) || defined(DOXYGEN_GENERATING_OUTPUT)
     /**
      * Floating-point luminance and alpha channel. First value is used for all
      * RGB channels, second value is used for alpha channel.
-     * @requires_gles20 Not available in ES 3.0, WebGL 2.0 or desktop OpenGL.
-     *      Use @ref PixelFormat::RG instead.
-     * @deprecated_gl Included for compatibility reasons only, use
-     *      @ref PixelFormat::RG instead.
+     * @deprecated Use @ref GL::PixelFormat::LuminanceAlpha or any of the
+     *      complete two-channel formats instead.
      */
-    LuminanceAlpha = GL_LUMINANCE_ALPHA,
+    LuminanceAlpha CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::LuminanceAlpha or any of the complete two-channel formats instead") = UnsignedInt(GL::PixelFormat::LuminanceAlpha),
     #endif
 
     /**
      * Floating-point RGB.
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or WebGL.
+     * @deprecated Use @ref GL::PixelFormat::RGB or any of the complete
+     *      three-channel formats instead.
      */
-    RGB = GL_RGB,
+    RGB CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::RGB or any of the complete three-channel formats instead") = UnsignedInt(GL::PixelFormat::RGB),
 
-    /** Floating-point RGBA. */
-    RGBA = GL_RGBA,
+    /**
+     * Floating-point RGBA.
+     * @deprecated Use @ref GL::PixelFormat::RGBA or any of the complete
+     *      four-channel formats instead.
+     */
+    RGBA CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::RGBA or any of the complete four-channel formats instead") = UnsignedInt(GL::PixelFormat::RGBA),
 
     #ifndef MAGNUM_TARGET_GLES
     /**
      * Floating-point BGR.
-     * @requires_gl Only RGB component ordering is available in OpenGL ES and
-     *      WebGL.
+     * @deprecated Use @ref GL::PixelFormat::BGR or any of the complete
+     *      three-channel formats instead.
      */
-    BGR = GL_BGR,
+    BGR CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::BGR or any of the complete three-channel formats instead") = UnsignedInt(GL::PixelFormat::BGR),
     #endif
 
     #ifndef MAGNUM_TARGET_WEBGL
     /**
      * Floating-point BGRA.
-     * @requires_es_extension Extension @extension{EXT,read_format_bgra}
-     *      for framebuffer reading, extension @extension{APPLE,texture_format_BGRA8888}
-     *      or @extension{EXT,texture_format_BGRA8888} for texture data.
-     * @requires_gles Only RGBA component ordering is available in WebGL.
+     * @deprecated Use @ref GL::PixelFormat::BGRA or any of the complete
+     *      four-channel formats instead.
      */
-    #ifndef MAGNUM_TARGET_GLES
-    BGRA = GL_BGRA,
-    #else
-    BGRA = GL_BGRA_EXT,
-    #endif
+    BGRA CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::BGRA or any of the complete four-channel formats instead") = UnsignedInt(GL::PixelFormat::BGRA),
     #endif
 
     #if defined(MAGNUM_TARGET_GLES2) || defined(DOXYGEN_GENERATING_OUTPUT)
     /**
      * Floating-point sRGB.
-     * @requires_gles20 Not available in ES 3.0, WebGL 2.0 or desktop OpenGL.
-     *      Use @ref PixelFormat::RGB instead.
-     * @deprecated_gl Included only in order to make it possible to upload
-     *      sRGB image data with the @extension{EXT,sRGB} ES2 extension, use
-     *      @ref PixelFormat::RGB elsewhere instead.
+     * @deprecated Use @ref GL::PixelFormat::SRGB or any of the complete
+     *      three-channel formats instead.
      */
-    SRGB = GL_SRGB_EXT,
+    SRGB CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::SRGB or any of the complete three-channel formats instead") = UnsignedInt(GL::PixelFormat::SRGB),
 
     /**
      * Floating-point sRGB + alpha.
-     * @requires_gles20 Not available in ES 3.0, WebGL 2.0 or desktop OpenGL.
-     *      Use @ref PixelFormat::RGBA instead.
-     * @deprecated_gl Included only in order to make it possible to upload
-     *      sRGB image data with the @extension{EXT,sRGB} ES2 extension, use
-     *      @ref PixelFormat::RGBA elsewhere instead.
+     * @deprecated Use @ref GL::PixelFormat::SRGBAlpha or any of the complete
+     *      four-channel formats instead.
      */
-    SRGBAlpha = GL_SRGB_ALPHA_EXT,
+    SRGBAlpha CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::SRGBAlpha or any of the complete four-channel formats instead") = UnsignedInt(GL::PixelFormat::SRGBAlpha),
     #endif
 
     #ifndef MAGNUM_TARGET_GLES2
     /**
      * Integer red channel.
-     * @requires_gl30 Extension @extension{EXT,texture_integer}
-     * @requires_gles30 Only floating-point image data are available in OpenGL
-     *      ES 2.0.
-     * @requires_webgl20 Only floating-point image data are available in WebGL
-     *      1.0.
+     * @deprecated Use @ref GL::PixelFormat::RedInteger or any of the complete
+     *      single-channel formats instead.
      */
-    RedInteger = GL_RED_INTEGER,
+    RedInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::RedInteger or any of the complete single-channel formats instead") = UnsignedInt(GL::PixelFormat::RedInteger),
 
     #ifndef MAGNUM_TARGET_GLES
     /**
      * Integer green channel.
-     * @requires_gl30 Extension @extension{EXT,texture_integer}
-     * @requires_gl Only @ref PixelFormat::RedInteger is available in OpenGL ES
-     *      3.0 and WebGL 2.0, only floating-point image data are available in
-     *      OpenGL ES 2.0 and WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::GreenInteger or any of the
+     *      complete single-channel formats instead.
      */
-    GreenInteger = GL_GREEN_INTEGER,
+    GreenInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::GreenInteger or any of the complete single-channel formats instead") = UnsignedInt(GL::PixelFormat::GreenInteger),
 
     /**
      * Integer blue channel.
-     * @requires_gl30 Extension @extension{EXT,texture_integer}
-     * @requires_gl Only @ref PixelFormat::RedInteger is available in OpenGL ES
-     *      3.0 and WebGL 2.0, only floating-point image data are available in
-     *      OpenGL ES 2.0 and WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::BlueInteger or any of the complete
+     *      single-channel formats instead.
      */
-    BlueInteger = GL_BLUE_INTEGER,
+    BlueInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::BlueInteger or any of the complete single-channel formats instead") = UnsignedInt(GL::PixelFormat::BlueInteger),
     #endif
 
     /**
      * Integer red and green channel.
-     * @requires_gl30 Extension @extension{ARB,texture_rg} and @extension{EXT,texture_integer}
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or
-     *      WebGL.
-     * @requires_gles30 For texture data only, only floating-point image data
-     *      are available in OpenGL ES 2.0.
-     * @requires_webgl20 For texture data only, only floating-point image data
-     *      are available in WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::RGInteger or any of the complete
+     *      two-channel formats instead.
      */
-    RGInteger = GL_RG_INTEGER,
+    RGInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::RGInteger or any of the complete two-channel formats instead") = UnsignedInt(GL::PixelFormat::RGInteger),
 
     /**
      * Integer RGB.
-     * @requires_gl30 Extension @extension{EXT,texture_integer}
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or
-     *      WebGL.
-     * @requires_gles30 For texture data only, only floating-point image data
-     *      are available in OpenGL ES 2.0.
-     * @requires_webgl20 For texture data only, only floating-point image data
-     *      are available in WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::RGBInteger or any of the complete
+     *      three-channel formats instead.
      */
-    RGBInteger = GL_RGB_INTEGER,
+    RGBInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::RGBInteger or any of the complete three-channel formats instead") = UnsignedInt(GL::PixelFormat::RGBInteger),
 
     /**
      * Integer RGBA.
-     * @requires_gl30 Extension @extension{EXT,texture_integer}
-     * @requires_gles30 Only floating-point image data are available in OpenGL
-     *      ES 2.0.
-     * @requires_webgl20 Only floating-point image data are available in WebGL
-     *      1.0.
+     * @deprecated Use @ref GL::PixelFormat::RGBAInteger or any of the complete
+     *      four-channel formats instead.
      */
-    RGBAInteger = GL_RGBA_INTEGER,
+    RGBAInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::RGBAInteger or any of the complete four-channel formats instead") = UnsignedInt(GL::PixelFormat::RGBAInteger),
 
     #ifndef MAGNUM_TARGET_GLES
     /**
      * Integer BGR.
-     * @requires_gl30 Extension @extension{EXT,texture_integer}
-     * @requires_gl Only @ref PixelFormat::RGBInteger is available in OpenGL ES
-     *      3.0 and WebGL 2.0, only floating-point image data are available in
-     *      OpenGL ES 2.0 and WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::BGRInteger or any of the complete
+     *      three-channel formats instead.
      */
-    BGRInteger = GL_BGR_INTEGER,
+    BGRInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::BGRInteger or any of the complete three-channel formats instead") = UnsignedInt(GL::PixelFormat::BGRInteger),
 
     /**
      * Integer BGRA.
-     * @requires_gl30 Extension @extension{EXT,texture_integer}
-     * @requires_gl Only @ref PixelFormat::RGBAInteger is available in OpenGL
-     *      ES 3.0 and WebGL 2.0, only floating-point image data are available
-     *      in OpenGL ES 2.0 and WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::BGRAInteger or any of the complete
+     *      four-channel formats instead.
      */
-    BGRAInteger = GL_BGRA_INTEGER,
+    BGRAInteger CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::BGRAInteger or any of the complete four-channel formats instead") = UnsignedInt(GL::PixelFormat::BGRAInteger),
     #endif
     #endif
 
     /**
      * Depth component.
-     * @requires_gles30 For texture data only, extension @extension{OES,depth_texture}
-     *      or @extension{ANGLE,depth_texture} in OpenGL ES 2.0.
-     * @requires_es_extension For framebuffer reading only, extension
-     *      @extension2{NV,read_depth,GL_NV_read_depth_stencil}.
-     * @requires_webgl20 For texture data only, extension
-     *      @webgl_extension{WEBGL,depth_texture} in WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::DepthComponent or any of the
+     *      complete depth formats instead.
      */
-    DepthComponent = GL_DEPTH_COMPONENT,
+    DepthComponent CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::DepthComponent or any of the complete depth formats instead") = UnsignedInt(GL::PixelFormat::DepthComponent),
 
     #ifndef MAGNUM_TARGET_WEBGL
     /**
      * Stencil index.
-     * @requires_gl44 Extension @extension{ARB,texture_stencil8} for texture
-     *      data, otherwise for framebuffer reading only.
-     * @requires_es_extension Extension @extension2{NV,read_stencil,GL_NV_read_depth_stencil},
-     *      for framebuffer reading only.
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension{OES,texture_stencil8}, for texture data only.
-     * @requires_gles Stencil index is not available in WebGL.
+     * @deprecated Use @ref GL::PixelFormat::StencilIndex or any of the
+     *      complete stencil formats instead.
      */
-    #ifndef MAGNUM_TARGET_GLES
-    StencilIndex = GL_STENCIL_INDEX,
-    #else
-    StencilIndex = GL_STENCIL_INDEX_OES,
-    #endif
+    StencilIndex CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::StencilIndex or any of the complete stencil formats instead") = UnsignedInt(GL::PixelFormat::StencilIndex),
     #endif
 
     /**
      * Depth and stencil.
-     * @requires_gl30 Extension @extension{ARB,framebuffer_object}
-     * @requires_gles30 For texture data only, extension @extension{OES,packed_depth_stencil}
-     *      in OpenGL ES 2.0.
-     * @requires_es_extension For framebuffer reading only, extension
-     *      @extension2{NV,read_depth_stencil,GL_NV_read_depth_stencil}
-     * @requires_webgl20 For texture data only, extension
-     *      @webgl_extension{WEBGL,depth_texture} in WebGL 1.0.
+     * @deprecated Use @ref GL::PixelFormat::DepthStencil or any of the
+     *      complete depth+stencil formats instead.
      */
-    #ifndef MAGNUM_TARGET_GLES2
-    DepthStencil = GL_DEPTH_STENCIL
-    #else
-    /* Using OES version even though WebGL 1.0 *has* DEPTH_STENCIL constant,
-       because there are no such headers for it */
-    DepthStencil = GL_DEPTH_STENCIL_OES
+    DepthStencil CORRADE_DEPRECATED_ENUM("use GL::PixelFormat::DepthStencil or any of the complete depth+stencil formats instead") = UnsignedInt(GL::PixelFormat::DepthStencil)
     #endif
 };
+
+#ifdef MAGNUM_BUILD_DEPRECATED
+/** @brief @copybrief GL::PixelType
+ * @deprecated Use @ref GL::PixelType instead.
+ */
+typedef CORRADE_DEPRECATED("use GL::PixelType instead") GL::PixelType PixelType;
+#endif
 
 /**
-@brief Type of pixel data
+@brief Pixel size
 
-Note that some formats can be used only for framebuffer reading (using
-@ref AbstractFramebuffer::read()) and some only for texture data (using
-@ref Texture::setSubImage() and others), the limitations are mentioned in
-documentation of each particular value.
-
-In most cases you may want to use @ref PixelType::UnsignedByte along with
-@ref PixelFormat::Red (for grayscale images), @ref PixelFormat::RGB or
-@ref PixelFormat::RGBA, the matching texture format is then
-@ref TextureFormat::R8, @ref TextureFormat::RGB8 or @ref TextureFormat::RGBA8.
-See documentation of these values for possible limitations when using OpenGL ES
-2.0 or WebGL.
-
-@see @ref Image, @ref ImageView, @ref BufferImage, @ref Trade::ImageData
-@m_enum_values_as_keywords
+Expects that the pixel format is *not* implementation-specific.
+@see @ref isPixelFormatImplementationSpecific(), @ref GL::pixelSize()
 */
-enum class PixelType: GLenum {
-    /** Each component unsigned byte. */
-    UnsignedByte = GL_UNSIGNED_BYTE,
+MAGNUM_EXPORT UnsignedInt pixelSize(PixelFormat format);
 
-    #ifndef MAGNUM_TARGET_GLES2
-    /**
-     * Each component signed byte.
-     * @requires_gles30 For texture data only, only @ref PixelType::UnsignedByte
-     *      is available in OpenGL ES 2.0.
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or
-     *      WebGL.
-     * @requires_webgl20 For texture data only, only @ref PixelType::UnsignedByte
-     *      is available in WebGL 1.0.
-     */
-    Byte = GL_BYTE,
-    #endif
+/** @debugoperatorenum{PixelFormat} */
+MAGNUM_EXPORT Debug& operator<<(Debug& debug, PixelFormat value);
 
-    /**
-     * Each component unsigned short.
-     * @requires_gles30 For texture data only, extension @extension{OES,depth_texture}
-     *      or @extension{ANGLE,depth_texture} in OpenGL ES 2.0.
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or
-     *      WebGL.
-     * @requires_webgl20 For texture data only, extension
-     *      @webgl_extension{WEBGL,depth_texture} in WebGL 1.0.
-     */
-    UnsignedShort = GL_UNSIGNED_SHORT,
+/**
+@brief Whether a @ref PixelFormat value wraps an implementation-specific identifier
 
-    #ifndef MAGNUM_TARGET_GLES2
-    /**
-     * Each component signed short.
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or
-     *      WebGL.
-     * @requires_gles30 For texture data only, only @ref PixelType::UnsignedShort
-     *      is available in OpenGL ES 2.0.
-     * @requires_webgl20 For texture data only, only @ref PixelType::UnsignedShort
-     *      is available in WebGL 1.0.
-     */
-    Short = GL_SHORT,
-    #endif
+Returns @cpp true @ce if value of @p format has its highest bit set, @cpp false @ce
+otherwise. Use @ref pixelFormatWrap() and @ref pixelFormatUnwrap() to
+wrap/unwrap an implementation-specific indentifier to/from @ref PixelFormat.
+@see @ref isCompressedPixelFormatImplementationSpecific()
+*/
+constexpr bool isPixelFormatImplementationSpecific(PixelFormat format) {
+    return UnsignedInt(format) & (1u << 31);
+}
 
-    /**
-     * Each component unsigned int.
-     * @requires_gles30 In OpenGL ES 2.0 for texture data only, using extension
-     *      @extension{OES,depth_texture} or @extension{ANGLE,depth_texture}
-     * @requires_webgl20 In WebGL 1.0 for texture data only, using extension
-     *      @webgl_extension{WEBGL,depth_texture}
-     */
-    UnsignedInt = GL_UNSIGNED_INT,
+/**
+@brief Wrap an implementation-specific pixel format identifier in @ref PixelFormat
 
-    #ifndef MAGNUM_TARGET_GLES2
-    /**
-     * Each component signed int.
-     * @requires_gles30 Only @ref PixelType::UnsignedInt is available in OpenGL
-     *      ES 2.0.
-     * @requires_webgl20 Only @ref PixelType::UnsignedInt is available in WebGL
-     *      1.0.
-     */
-    Int = GL_INT,
-    #endif
+Sets the highest bit on @p format to mark it as implementation-specific.
+Expects that @p format fits into the remaining bits. Use @ref pixelFormatUnwrap()
+for the inverse operation.
+@see @ref isPixelFormatImplementationSpecific(), @ref compressedPixelFormatWrap()
+*/
+template<class T> constexpr PixelFormat pixelFormatWrap(T implementationSpecific) {
+    static_assert(sizeof(T) <= 4,
+        "format types larger than 32bits are not supported");
+    return CORRADE_CONSTEXPR_ASSERT(!(UnsignedInt(implementationSpecific) & (1u << 31)),
+        "pixelFormatWrap(): implementation-specific value already wrapped or too large"),
+        PixelFormat((1u << 31)|UnsignedInt(implementationSpecific));
+}
 
-    /**
-     * Each component half float.
-     * @see @ref Half, @ref Math::packHalf(), @ref Math::unpackHalf()
-     * @requires_gl30 Extension @extension{ARB,half_float_pixel}
-     * @requires_gles30 Extension @extension2{OES,texture_half_float,OES_texture_float}
-     *      to use for texture reading in OpenGL ES 2.0.
-     * @requires_gles30 Extension @extension2{OES,texture_half_float_linear,OES_texture_float_linear}
-     *      for filtering the texture using @ref Sampler::Filter::Linear.
-     * @requires_gles32 Extension @extension{EXT,color_buffer_half_float}
-     *      to use the texture as a render target.
-     * @requires_webgl20 Extension @webgl_extension{OES,texture_half_float} to
-     *      use for texture reading in WebGL 1.0.
-     * @requires_webgl20 Extension @webgl_extension{OES,texture_half_float_linear}
-     *      for filtering the texture using @ref Sampler::Filter::Linear.
-     * @requires_webgl_extension Extension @webgl_extension{EXT,color_buffer_half_float}
-     *      to use the texture as a render target.
-     */
-    #ifndef MAGNUM_TARGET_GLES2
-    HalfFloat = GL_HALF_FLOAT,
-    #else
-    HalfFloat = GL_HALF_FLOAT_OES,
-    #endif
+/**
+@brief Unwrap an implementation-specific pixel format identifier from @ref PixelFormat
 
-    /**
-     * Each component float.
-     * @requires_gles30 Extension @extension{OES,texture_float} to use for
-     *      texture reading in OpenGL ES 2.0.
-     * @requires_gles32 Extension @extension{EXT,color_half_float} to use the
-     *      texture as a render target.
-     * @requires_es_extension Extension @extension{OES,texture_float_linear}
-     *      for filtering the texture using @ref Sampler::Filter::Linear.
-     * @requires_webgl20 Extension @webgl_extension{OES,texture_float} to use
-     *      for texture reading in WebGL 1.0.
-     * @requires_webgl_extension Extension @webgl_extension{OES,texture_float_linear}
-     *      for filtering the texture using @ref Sampler::Filter::Linear.
-     * @requires_webgl_extension Extension @webgl_extension{WEBGL,color_buffer_float}
-     *      in WebGL 1.0 or @webgl_extension{EXT,color_buffer_float} in WebGL
-     *      2.0 to use the texture as a render target.
-     */
-    Float = GL_FLOAT,
-
-    #ifndef MAGNUM_TARGET_GLES
-    /**
-     * RGB, unsigned byte, red and green component 3bit, blue component 2bit.
-     * @requires_gl Packed 12bit types are not available in OpenGL ES or WebGL.
-     */
-    UnsignedByte332 = GL_UNSIGNED_BYTE_3_3_2,
-
-    /**
-     * BGR, unsigned byte, red and green component 3bit, blue component 2bit.
-     * @requires_gl Packed 12bit types are not available in OpenGL ES or WebGL.
-     */
-    UnsignedByte233Rev = GL_UNSIGNED_BYTE_2_3_3_REV,
-    #endif
-
-    /**
-     * RGB, unsigned byte, red and blue component 5bit, green 6bit.
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or WebGL.
-     */
-    UnsignedShort565 = GL_UNSIGNED_SHORT_5_6_5,
-
-    #ifndef MAGNUM_TARGET_GLES
-    /**
-     * BGR, unsigned short, red and blue 5bit, green 6bit.
-     * @requires_gl Only @ref PixelType::UnsignedShort565 is available in
-     *      OpenGL ES or WebGL.
-     */
-    UnsignedShort565Rev = GL_UNSIGNED_SHORT_5_6_5_REV,
-    #endif
-
-    /**
-     * RGBA, unsigned short, each component 4bit.
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or WebGL.
-     */
-    UnsignedShort4444 = GL_UNSIGNED_SHORT_4_4_4_4,
-
-    #ifndef MAGNUM_TARGET_WEBGL
-    /**
-     * ABGR, unsigned short, each component 4bit.
-     * @requires_es_extension For framebuffer reading only, extension
-     *      @extension{EXT,read_format_bgra}
-     * @requires_gles Only RGBA component ordering is available in WebGL.
-     */
-    #ifndef MAGNUM_TARGET_GLES
-    UnsignedShort4444Rev = GL_UNSIGNED_SHORT_4_4_4_4_REV,
-    #else
-    UnsignedShort4444Rev = GL_UNSIGNED_SHORT_4_4_4_4_REV_EXT,
-    #endif
-    #endif
-
-    /**
-     * RGBA, unsigned short, each RGB component 5bit, alpha component 1bit.
-     * @requires_gl Can't be used for framebuffer reading in OpenGL ES or WebGL.
-     */
-    UnsignedShort5551 = GL_UNSIGNED_SHORT_5_5_5_1,
-
-    #ifndef MAGNUM_TARGET_WEBGL
-    /**
-     * ABGR, unsigned short, each RGB component 5bit, alpha component 1bit.
-     * @requires_es_extension For framebuffer reading only, extension
-     *      @extension{EXT,read_format_bgra}
-     * @requires_gles Not available in WebGL.
-     */
-    #ifndef MAGNUM_TARGET_GLES
-    UnsignedShort1555Rev = GL_UNSIGNED_SHORT_1_5_5_5_REV,
-    #else
-    UnsignedShort1555Rev = GL_UNSIGNED_SHORT_1_5_5_5_REV_EXT,
-    #endif
-    #endif
-
-    #ifndef MAGNUM_TARGET_GLES
-    /**
-     * RGBA, unsigned int, each component 8bit.
-     * @requires_gl Use @ref PixelType::UnsignedByte in OpenGL ES and WebGL
-     *      instead.
-     */
-    UnsignedInt8888 = GL_UNSIGNED_INT_8_8_8_8,
-
-    /**
-     * ABGR, unsigned int, each component 8bit.
-     * @requires_gl Only RGBA component ordering is available in OpenGL ES and
-     *      WebGL, see @ref PixelType::UnsignedInt8888 for more information.
-     */
-    UnsignedInt8888Rev = GL_UNSIGNED_INT_8_8_8_8_REV,
-
-    /**
-     * RGBA, unsigned int, each RGB component 10bit, alpha component 2bit.
-     * @requires_gl Only @ref PixelType::UnsignedInt2101010Rev is available in
-     *      OpenGL ES and WebGL.
-     */
-    UnsignedInt1010102 = GL_UNSIGNED_INT_10_10_10_2,
-    #endif
-
-    #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-    /**
-     * ABGR, unsigned int, each RGB component 10bit, alpha component 2bit.
-     * @requires_gles30 Can't be used for framebuffer reading in OpenGL ES 2.0.
-     * @requires_gles30 For texture data only, extension
-     *      @extension{EXT,texture_type_2_10_10_10_REV} in OpenGL ES 2.0.
-     *      Not available in WebGL 1.0.
-     * @requires_webgl20 Only RGBA component ordering is available in WebGL
-     *      1.0.
-     */
-    #ifndef MAGNUM_TARGET_GLES2
-    UnsignedInt2101010Rev = GL_UNSIGNED_INT_2_10_10_10_REV,
-    #else
-    UnsignedInt2101010Rev = GL_UNSIGNED_INT_2_10_10_10_REV_EXT,
-    #endif
-    #endif
-
-    #ifndef MAGNUM_TARGET_GLES2
-    /**
-     * BGR, unsigned int, red and green 11bit float, blue 10bit float.
-     * @requires_gl30 Extension @extension{EXT,packed_float}
-     * @requires_gles30 Floating-point types are not available in OpenGL ES
-     *      2.0.
-     * @requires_webgl20 Floating-point types are not available in WebGL 1.0.
-     */
-    UnsignedInt10F11F11FRev = GL_UNSIGNED_INT_10F_11F_11F_REV,
-
-    /**
-     * BGR, unsigned int, each component 9bit + 5bit exponent.
-     * @requires_gl30 Extension @extension{EXT,texture_shared_exponent}
-     * @requires_gles30 Only 8bit and 16bit types are available in OpenGL ES
-     *      2.0.
-     * @requires_webgl20 Only 8bit and 16bit types are available in WebGL 1.0.
-     */
-    UnsignedInt5999Rev = GL_UNSIGNED_INT_5_9_9_9_REV,
-    #endif
-
-    /**
-     * Unsigned int, depth component 24bit, stencil index 8bit.
-     * @requires_gl30 Extension @extension{ARB,framebuffer_object}
-     * @requires_gles30 For texture data only, extension
-     *      @extension{OES,packed_depth_stencil} in OpenGL ES 2.0.
-     * @requires_webgl20 For texture data only, extension
-     *      @webgl_extension{WEBGL,depth_texture} in WebGL 1.0.
-     */
-    #ifndef MAGNUM_TARGET_GLES2
-    UnsignedInt248 = GL_UNSIGNED_INT_24_8,
-    #else
-    UnsignedInt248 = GL_UNSIGNED_INT_24_8_OES,
-    #endif
-
-    #ifndef MAGNUM_TARGET_GLES2
-    /**
-     * Float + unsigned int, depth component 32bit float, 24bit gap, stencil
-     * index 8bit.
-     * @requires_gl30 Extension @extension{ARB,depth_buffer_float}
-     * @requires_gles30 For texture data only, only @ref PixelType::UnsignedInt248
-     *      is available in OpenGL ES 2.0.
-     * @requires_webgl20 For texture data only, only @ref PixelType::UnsignedInt248
-     *      is available in WebGL 1.0.
-     */
-    Float32UnsignedInt248Rev = GL_FLOAT_32_UNSIGNED_INT_24_8_REV
-    #endif
-};
+Unsets the highest bit from @p format to extract the implementation-specific
+value. Expects that @p format has it set. Use @ref pixelFormatWrap() for the
+inverse operation.
+@see @ref isPixelFormatImplementationSpecific(), @ref compressedPixelFormatUnwrap()
+*/
+template<class T = UnsignedInt> constexpr T pixelFormatUnwrap(PixelFormat format) {
+    return CORRADE_CONSTEXPR_ASSERT(UnsignedInt(format) & (1u << 31),
+        "pixelFormatUnwrap(): format doesn't contain a wrapped implementation-specific value"),
+        T(UnsignedInt(format) & ~(1u << 31));
+}
 
 /**
 @brief Format of compressed pixel data
 
-Equivalent to `Compressed*` values of @ref TextureFormat enum.
+Can act also as a wrapper for implementation-specific pixel format values using
+@ref compressedPixelFormatWrap() and @ref compressedPixelFormatUnwrap().
+Distinction between generic and implementation-specific formats can be done
+using @ref isCompressedPixelFormatImplementationSpecific().
 
-@see @ref CompressedImage, @ref CompressedImageView, @ref CompressedBufferImage,
-    @ref Trade::ImageData
-@m_enum_values_as_keywords
+In case of OpenGL, corresponds to @ref GL::CompressedPixelFormat and is
+convertible to it using @ref GL::compressedPixelFormat(). See documentation of
+each value for more information about the mapping. Note that not every format
+is available on all targets, use @ref GL::hasCompressedPixelFormat() to check
+for its presence.
+
+@see @ref PixelFormat, @ref CompressedImage, @ref CompressedImageView
 */
-enum class CompressedPixelFormat: GLenum {
+enum class CompressedPixelFormat: UnsignedInt {
+    /**
+     * S3TC BC1 compressed RGB (DXT1).
+     *
+     * Corresponds to @ref GL::CompressedPixelFormat::RGBS3tcDxt1,
+     * @ref GL::TextureFormat::RGBS3tcDxt1.
+     */
+    Bc1RGBUnorm,
+
+    /**
+     * S3TC BC1 compressed RGBA (DXT1).
+     *
+     * Corresponds to @ref GL::CompressedPixelFormat::RGBAS3tcDxt1,
+     * @ref GL::TextureFormat::RGBAS3tcDxt1.
+     */
+    Bc1RGBAUnorm,
+
+    /**
+     * S3TC BC2 compressed RGBA (DXT3).
+     *
+     * Corresponds to @ref GL::CompressedPixelFormat::RGBAS3tcDxt3,
+     * @ref GL::TextureFormat::RGBAS3tcDxt3.
+     */
+    Bc2RGBAUnorm,
+
+    /**
+     * S3TC BC3 compressed RGBA (DXT5).
+     *
+     * Corresponds to @ref GL::CompressedPixelFormat::RGBAS3tcDxt5,
+     * @ref GL::TextureFormat::RGBAS3tcDxt5.
+     */
+    Bc3RGBAUnorm,
+
+    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
     #ifndef MAGNUM_TARGET_GLES
     /**
      * Compressed red channel, normalized unsigned.
-     * @requires_gl30 Extension @extension{ARB,texture_rg}
-     * @requires_gl Generic texture compression is not available in OpenGL ES
-     *      or WebGL.
+     * @deprecated Use @ref GL::CompressedPixelFormat::Red instead.
      */
-    Red = GL_COMPRESSED_RED,
+    Red CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::Red instead") = UnsignedInt(GL::CompressedPixelFormat::Red),
 
     /**
      * Compressed red and green channel, normalized unsigned.
-     * @requires_gl30 Extension @extension{ARB,texture_rg}
-     * @requires_gl Generic texture compression is not available in OpenGL ES
-     *      or WebGL.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RG instead.
      */
-    RG = GL_COMPRESSED_RG,
+    RG CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RG instead") = UnsignedInt(GL::CompressedPixelFormat::RG),
 
     /**
      * Compressed RGB, normalized unsigned.
-     * @requires_gl Generic texture compression is not available in OpenGL ES
-     *      or WebGL.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGB instead.
      */
-    RGB = GL_COMPRESSED_RGB,
+    RGB CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGB instead") = UnsignedInt(GL::CompressedPixelFormat::RGB),
 
     /**
      * Compressed RGBA, normalized unsigned.
-     * @requires_gl Generic texture compression is not available in OpenGL ES
-     *      or WebGL.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBA instead.
      */
-    RGBA = GL_COMPRESSED_RGBA,
+    RGBA CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBA instead") = UnsignedInt(GL::CompressedPixelFormat::RGBA),
 
     /**
-     * RGTC compressed red channel, normalized unsigned. **Available only for
-     * 2D, 2D array, cube map and cube map array textures.**
-     * @requires_gl30 Extension @extension{EXT,texture_compression_rgtc}
-     * @requires_gl RGTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * RGTC compressed red channel, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RedRgtc1 instead.
      */
-    RedRgtc1 = GL_COMPRESSED_RED_RGTC1,
+    RedRgtc1 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RedRgtc1 instead") = UnsignedInt(GL::CompressedPixelFormat::RedRgtc1),
 
     /**
-     * RGTC compressed red and green channel, normalized unsigned. **Available
-     * only for 2D, 2D array, cube map and cube map array textures.**
-     * @requires_gl30 Extension @extension{EXT,texture_compression_rgtc}
-     * @requires_gl RGTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * RGTC compressed red and green channel, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGRgtc2 instead.
      */
-    RGRgtc2 = GL_COMPRESSED_RG_RGTC2,
+    RGRgtc2 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGRgtc2 instead") = UnsignedInt(GL::CompressedPixelFormat::RGRgtc2),
 
     /**
-     * RGTC compressed red channel, normalized signed. **Available only for 2D,
-     * 2D array, cube map and cube map array textures.**
-     * @requires_gl30 Extension @extension{EXT,texture_compression_rgtc}
-     * @requires_gl RGTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * RGTC compressed red channel, normalized signed.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SignedRedRgtc1 instead.
      */
-    SignedRedRgtc1 = GL_COMPRESSED_SIGNED_RED_RGTC1,
+    SignedRedRgtc1 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SignedRedRgtc1 instead") = UnsignedInt(GL::CompressedPixelFormat::SignedRedRgtc1),
 
     /**
-     * RGTC compressed red and green channel, normalized signed. **Available
-     * only for 2D, 2D array, cube map and cube map array textures.**
-     * @requires_gl30 Extension @extension{EXT,texture_compression_rgtc}
-     * @requires_gl RGTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * RGTC compressed red and green channel, normalized signed.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SignedRGRgtc2 instead.
      */
-    SignedRGRgtc2 = GL_COMPRESSED_SIGNED_RG_RGTC2,
+    SignedRGRgtc2 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SignedRGRgtc2 instead") = UnsignedInt(GL::CompressedPixelFormat::SignedRGRgtc2),
 
     /**
-     * BPTC compressed RGB, unsigned float. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_gl42 Extension @extension{ARB,texture_compression_bptc}
-     * @requires_gl BPTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * BPTC compressed RGB, unsigned float.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBBptcUnsignedFloat instead.
      */
-    RGBBptcUnsignedFloat = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,
+    RGBBptcUnsignedFloat CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBBptcUnsignedFloat instead") = UnsignedInt(GL::CompressedPixelFormat::RGBBptcUnsignedFloat),
 
     /**
-     * BPTC compressed RGB, signed float. **Available only on 2D, 3D, 2D array,
-     * cube map and cube map array textures.**
-     * @requires_gl42 Extension @extension{ARB,texture_compression_bptc}
-     * @requires_gl BPTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * BPTC compressed RGB, signed float.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBBptcSignedFloat instead.
      */
-    RGBBptcSignedFloat = GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT,
+    RGBBptcSignedFloat CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBBptcSignedFloat instead") = UnsignedInt(GL::CompressedPixelFormat::RGBBptcSignedFloat),
 
     /**
-     * BPTC compressed RGBA, normalized unsigned. **Available only on 2D, 3D,
-     * 2D array, cube map and cube map array textures.**
-     * @requires_gl42 Extension @extension{ARB,texture_compression_bptc}
-     * @requires_gl BPTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * BPTC compressed RGBA, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBABptcUnorm instead.
      */
-    RGBABptcUnorm = GL_COMPRESSED_RGBA_BPTC_UNORM,
+    RGBABptcUnorm CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBABptcUnorm instead") = UnsignedInt(GL::CompressedPixelFormat::RGBABptcUnorm),
 
     /**
-     * BPTC compressed sRGBA, normalized unsigned. **Available only on 2D, 3D,
-     * 2D array, cube map and cube map array textures.**
-     * @requires_gl42 Extension @extension{ARB,texture_compression_bptc}
-     * @requires_gl BPTC texture compression is not available in OpenGL ES or
-     *      WebGL.
+     * BPTC compressed sRGBA, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGBAlphaBptcUnorm instead.
      */
-    SRGBAlphaBptcUnorm = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM,
+    SRGBAlphaBptcUnorm CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGBAlphaBptcUnorm instead") = UnsignedInt(GL::CompressedPixelFormat::SRGBAlphaBptcUnorm),
     #endif
 
     #ifndef MAGNUM_TARGET_GLES2
     /**
-     * ETC2 compressed RGB, normalized unsigned. **Available only on 2D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * ETC2 compressed RGB, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGB8Etc2 instead.
      */
-    RGB8Etc2 = GL_COMPRESSED_RGB8_ETC2,
+    RGB8Etc2 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGB8Etc2 instead") = UnsignedInt(GL::CompressedPixelFormat::RGB8Etc2),
 
     /**
-     * ETC2 compressed sRGB, normalized unsigned. **Available only on 2D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * ETC2 compressed sRGB, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Etc2 instead.
      */
-    SRGB8Etc2 = GL_COMPRESSED_SRGB8_ETC2,
+    SRGB8Etc2 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Etc2 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Etc2),
 
     /**
      * ETC2 compressed RGB with punchthrough (single-bit) alpha, normalized
-     * unsigned. **Available only on 2D, 2D array, cube map and cube map array
-     * textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGB8PunchthroughAlpha1Etc2 instead.
      */
-    RGB8PunchthroughAlpha1Etc2 = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+    RGB8PunchthroughAlpha1Etc2 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGB8PunchthroughAlpha1Etc2 instead") = UnsignedInt(GL::CompressedPixelFormat::RGB8PunchthroughAlpha1Etc2),
 
     /**
      * ETC2 compressed sRGB with punchthrough (single-bit) alpha, normalized
-     * unsigned. **Available only on 2D, 2D array, cube map and cube map array
-     * textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8PunchthroughAlpha1Etc2 instead.
      */
-    SRGB8PunchthroughAlpha1Etc2 = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+    SRGB8PunchthroughAlpha1Etc2 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8PunchthroughAlpha1Etc2 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8PunchthroughAlpha1Etc2),
 
     /**
-     * ETC2/EAC compressed RGBA, normalized unsigned. **Available only on 2D,
-     * 2D array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * ETC2/EAC compressed RGBA, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBA8Etc2Eac instead.
      */
-    RGBA8Etc2Eac = GL_COMPRESSED_RGBA8_ETC2_EAC,
+    RGBA8Etc2Eac CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBA8Etc2Eac instead") = UnsignedInt(GL::CompressedPixelFormat::RGBA8Etc2Eac),
 
     /**
-     * ETC2/EAC compressed sRGB with alpha, normalized unsigned. **Available
-     * only on 2D, 2D array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * ETC2/EAC compressed sRGB with alpha, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Etc2Eac instead.
      */
-    SRGB8Alpha8Etc2Eac = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC,
+    SRGB8Alpha8Etc2Eac CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Etc2Eac instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Etc2Eac),
 
     /**
-     * EAC compressed red channel, normalized unsigned. **Available only on 2D,
-     * 2D array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * EAC compressed red channel, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::R11Eac instead.
      */
-    R11Eac = GL_COMPRESSED_R11_EAC,
+    R11Eac CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::R11Eac instead") = UnsignedInt(GL::CompressedPixelFormat::R11Eac),
 
     /**
-     * EAC compressed red channel, normalized signed. **Available only on 2D,
-     * 2D array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * EAC compressed red channel, normalized signed.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SignedR11Eac instead.
      */
-    SignedR11Eac = GL_COMPRESSED_SIGNED_R11_EAC,
+    SignedR11Eac CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SignedR11Eac instead") = UnsignedInt(GL::CompressedPixelFormat::SignedR11Eac),
 
     /**
-     * EAC compressed red and green channel, normalized unsigned. **Available
-     * only on 2D, 2D array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * EAC compressed red and green channel, normalized unsigned.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RG11Eac instead.
      */
-    RG11Eac = GL_COMPRESSED_RG11_EAC,
+    RG11Eac CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RG11Eac instead") = UnsignedInt(GL::CompressedPixelFormat::RG11Eac),
 
     /**
-     * EAC compressed red and green channel, normalized signed. **Available
-     * only on 2D, 2D array, cube map and cube map array textures.**
-     * @requires_gl43 Extension @extension{ARB,ES3_compatibility}
-     * @requires_gles30 ETC2 texture compression is not available in OpenGL ES
-     *      2.0.
+     * EAC compressed red and green channel, normalized signed.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SignedRG11Eac instead.
      */
-    SignedRG11Eac = GL_COMPRESSED_SIGNED_RG11_EAC,
+    SignedRG11Eac CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SignedRG11Eac instead") = UnsignedInt(GL::CompressedPixelFormat::SignedRG11Eac),
     #endif
 
     /**
-     * S3TC DXT1 compressed RGB. **Available only for 2D, 2D array, cube map
-     * and cube map array textures.**
-     * @requires_extension Extension @extension{EXT,texture_compression_s3tc}
-     * @requires_es_extension Extension @extension2{EXT,texture_compression_s3tc,texture_compression_s3tc}
-     * @requires_webgl_extension Extension @webgl_extension{WEBGL,compressed_texture_s3tc}
+     * S3TC DXT1 compressed RGB.
+     * @deprecated Use @ref CompressedPixelFormat::Bc1RGBUnorm or
+     *      @ref GL::CompressedPixelFormat::RGBS3tcDxt1 instead.
      */
-    RGBS3tcDxt1 = GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
+    RGBS3tcDxt1 CORRADE_DEPRECATED_ENUM("use CompressedPixelFormat::Bc1RGBUnorm or GL::CompressedPixelFormat::RGBS3tcDxt1 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBS3tcDxt1),
 
     /**
-     * S3TC DXT1 compressed RGBA. **Available only for 2D, 2D array, cube map
-     * and cube map array textures.**
-     * @requires_extension Extension @extension{EXT,texture_compression_s3tc}
-     * @requires_es_extension Extension @extension2{EXT,texture_compression_s3tc,texture_compression_s3tc}
-     * @requires_webgl_extension Extension @webgl_extension{WEBGL,compressed_texture_s3tc}
+     * S3TC DXT1 compressed RGBA.
+     * @deprecated Use @ref CompressedPixelFormat::Bc1RGBAUnorm or
+     *      @ref GL::CompressedPixelFormat::RGBAS3tcDxt1 instead.
      */
-    RGBAS3tcDxt1 = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+    RGBAS3tcDxt1 CORRADE_DEPRECATED_ENUM("use CompressedPixelFormat::Bc1RGBAUnorm or GL::CompressedPixelFormat::RGBAS3tcDxt1 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAS3tcDxt1),
 
     /**
-     * S3TC DXT3 compressed RGBA. **Available only for 2D, 2D array, cube map
-     * and cube map array textures.**
-     * @requires_extension Extension @extension{EXT,texture_compression_s3tc}
-     * @requires_es_extension Extension @extension2{EXT,texture_compression_s3tc,texture_compression_s3tc}
-     * @requires_webgl_extension Extension @webgl_extension{WEBGL,compressed_texture_s3tc}
+     * S3TC DXT3 compressed RGBA.
+     * @deprecated Use @ref CompressedPixelFormat::Bc2RGBAUnorm or
+     *      @ref GL::CompressedPixelFormat::RGBAS3tcDxt3 instead.
      */
-    RGBAS3tcDxt3 = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+    RGBAS3tcDxt3 CORRADE_DEPRECATED_ENUM("use CompressedPixelFormat::Bc2RGBAUnorm or GL::CompressedPixelFormat::RGBAS3tcDxt3 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAS3tcDxt3),
 
     /**
-     * S3TC DXT5 compressed RGBA. **Available only for 2D, 2D array, cube map
-     * and cube map array textures.**
-     * @requires_extension Extension @extension{EXT,texture_compression_s3tc}
-     * @requires_es_extension Extension @extension2{EXT,texture_compression_s3tc,texture_compression_s3tc}
-     * @requires_webgl_extension Extension @webgl_extension{WEBGL,compressed_texture_s3tc}
+     * S3TC DXT5 compressed RGBA.
+     * @deprecated Use @ref CompressedPixelFormat::Bc3RGBAUnorm or
+     *      @ref GL::CompressedPixelFormat::RGBAS3tcDxt5 instead.
      */
-    RGBAS3tcDxt5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+    RGBAS3tcDxt5 CORRADE_DEPRECATED_ENUM("use CompressedPixelFormat::Bc3RGBAUnorm or GL::CompressedPixelFormat::RGBAS3tcDxt5 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAS3tcDxt5),
 
     #ifndef MAGNUM_TARGET_WEBGL
     /**
-     * ASTC compressed RGBA with 4x4 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 4x4 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc4x4 instead.
      */
-    RGBAAstc4x4 = GL_COMPRESSED_RGBA_ASTC_4x4_KHR,
+    RGBAAstc4x4 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc4x4 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc4x4),
 
     /**
-     * ASTC compressed sRGB with alpha with 4x4 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 4x4 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc4x4 instead.
      */
-    SRGB8Alpha8Astc4x4 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR,
+    SRGB8Alpha8Astc4x4 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc4x4 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc4x4),
 
     /**
-     * ASTC compressed RGBA with 5x4 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 5x4 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc5x4 instead.
      */
-    RGBAAstc5x4 = GL_COMPRESSED_RGBA_ASTC_5x4_KHR,
+    RGBAAstc5x4 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc5x4 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc5x4),
 
     /**
-     * ASTC compressed sRGB with alpha with 5x4 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 5x4 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc5x4 instead.
      */
-    SRGB8Alpha8Astc5x4 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR,
+    SRGB8Alpha8Astc5x4 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc5x4 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc5x4),
 
     /**
-     * ASTC compressed RGBA with 5x5 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 5x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc5x5 instead.
      */
-    RGBAAstc5x5 = GL_COMPRESSED_RGBA_ASTC_5x5_KHR,
+    RGBAAstc5x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc5x5 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc5x5),
 
     /**
-     * ASTC compressed sRGB with alpha with 5x5 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 5x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc5x5 instead.
      */
-    SRGB8Alpha8Astc5x5 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR,
+    SRGB8Alpha8Astc5x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc5x5 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc5x5),
 
     /**
-     * ASTC compressed RGBA with 6x5 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 6x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc6x5 instead.
      */
-    RGBAAstc6x5 = GL_COMPRESSED_RGBA_ASTC_6x5_KHR,
+    RGBAAstc6x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc6x5 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc6x5),
 
     /**
-     * ASTC compressed sRGB with alpha with 6x5 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 6x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc6x5 instead.
      */
-    SRGB8Alpha8Astc6x5 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR,
+    SRGB8Alpha8Astc6x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc6x5 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc6x5),
 
     /**
-     * ASTC compressed RGBA with 6x6 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 6x6 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc6x6 instead.
      */
-    RGBAAstc6x6 = GL_COMPRESSED_RGBA_ASTC_6x6_KHR,
+    RGBAAstc6x6 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc6x6 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc6x6),
 
     /**
-     * ASTC compressed sRGB with alpha with 6x6 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 6x6 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc6x6 instead.
      */
-    SRGB8Alpha8Astc6x6 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR,
+    SRGB8Alpha8Astc6x6 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc6x6 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc6x6),
 
     /**
-     * ASTC compressed RGBA with 8x5 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 8x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc8x5 instead.
      */
-    RGBAAstc8x5 = GL_COMPRESSED_RGBA_ASTC_8x5_KHR,
+    RGBAAstc8x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc8x5 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc8x5),
 
     /**
-     * ASTC compressed sRGB with alpha with 8x5 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 8x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc8x5 instead.
      */
-    SRGB8Alpha8Astc8x5 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR,
+    SRGB8Alpha8Astc8x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc8x5 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc8x5),
 
     /**
-     * ASTC compressed RGBA with 8x6 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 8x6 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc8x6 instead.
      */
-    RGBAAstc8x6 = GL_COMPRESSED_RGBA_ASTC_8x6_KHR,
+    RGBAAstc8x6 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc8x6 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc8x6),
 
     /**
-     * ASTC compressed sRGB with alpha with 8x6 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 8x6 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc8x6 instead.
      */
-    SRGB8Alpha8Astc8x6 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR,
+    SRGB8Alpha8Astc8x6 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc8x6 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc8x6),
 
     /**
-     * ASTC compressed RGBA with 8x8 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 8x8 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc8x8 instead.
      */
-    RGBAAstc8x8 = GL_COMPRESSED_RGBA_ASTC_8x8_KHR,
+    RGBAAstc8x8 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc8x8 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc8x8),
 
     /**
-     * ASTC compressed sRGB with alpha with 8x8 blocks. **Available only on 2D,
-     * 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 8x8 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc8x8 instead.
      */
-    SRGB8Alpha8Astc8x8 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR,
+    SRGB8Alpha8Astc8x8 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc8x8 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc8x8),
 
     /**
-     * ASTC compressed RGBA with 10x5 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 10x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc10x5 instead.
      */
-    RGBAAstc10x5 = GL_COMPRESSED_RGBA_ASTC_10x5_KHR,
+    RGBAAstc10x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc10x5 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc10x5),
 
     /**
-     * ASTC compressed sRGB with alpha with 10x5 blocks. **Available only on
-     * 2D, 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 10x5 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc10x5 instead.
      */
-    SRGB8Alpha8Astc10x5 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR,
+    SRGB8Alpha8Astc10x5 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc10x5 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc10x5),
 
     /**
-     * ASTC compressed RGBA with 10x6 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 10x6 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc10x6 instead.
      */
-    RGBAAstc10x6 = GL_COMPRESSED_RGBA_ASTC_10x6_KHR,
+    RGBAAstc10x6 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc10x6 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc10x6),
 
     /**
-     * ASTC compressed sRGB with alpha with 10x6 blocks. **Available only on
-     * 2D, 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 10x6 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc10x6 instead.
      */
-    SRGB8Alpha8Astc10x6 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR,
+    SRGB8Alpha8Astc10x6 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc10x6 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc10x6),
 
     /**
-     * ASTC compressed RGBA with 10x8 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 10x8 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc10x8 instead.
      */
-    RGBAAstc10x8 = GL_COMPRESSED_RGBA_ASTC_10x8_KHR,
+    RGBAAstc10x8 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc10x8 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc10x8),
 
     /**
-     * ASTC compressed sRGB with alpha with 10x8 blocks. **Available only on
-     * 2D, 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 10x8 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc10x8 instead.
      */
-    SRGB8Alpha8Astc10x8 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR,
+    SRGB8Alpha8Astc10x8 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc10x8 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc10x8),
 
     /**
-     * ASTC compressed RGBA with 10x10 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 10x10 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc10x10 instead.
      */
-    RGBAAstc10x10 = GL_COMPRESSED_RGBA_ASTC_10x10_KHR,
+    RGBAAstc10x10 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc10x10 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc10x10),
 
     /**
-     * ASTC compressed sRGB with alpha with 10x10 blocks. **Available only on
-     * 2D, 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 10x10 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc10x10 instead.
      */
-    SRGB8Alpha8Astc10x10 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR,
+    SRGB8Alpha8Astc10x10 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc10x10 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc10x10),
 
     /**
-     * ASTC compressed RGBA with 12x10 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 12x10 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc12x10 instead.
      */
-    RGBAAstc12x10 = GL_COMPRESSED_RGBA_ASTC_12x10_KHR,
+    RGBAAstc12x10 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc12x10 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc12x10),
 
     /**
-     * ASTC compressed sRGB with alpha with 12x10 blocks. **Available only on
-     * 2D, 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 12x10 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc12x10 instead.
      */
-    SRGB8Alpha8Astc12x10 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR,
+    SRGB8Alpha8Astc12x10 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc12x10 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc12x10),
 
     /**
-     * ASTC compressed RGBA with 12x12 blocks. **Available only on 2D, 3D, 2D
-     * array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed RGBA with 12x12 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::RGBAAstc12x12 instead.
      */
-    RGBAAstc12x12 = GL_COMPRESSED_RGBA_ASTC_12x12_KHR,
+    RGBAAstc12x12 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::RGBAAstc12x12 instead") = UnsignedInt(GL::CompressedPixelFormat::RGBAAstc12x12),
 
     /**
-     * ASTC compressed sRGB with alpha with 12x12 blocks. **Available only on
-     * 2D, 3D, 2D array, cube map and cube map array textures.**
-     * @requires_extension Extension @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_extension Extension @extension{KHR,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles32 Extension @extension{ANDROID,extension_pack_es31a} /
-     *      @extension2{KHR,texture_compression_astc_ldr,texture_compression_astc_hdr}
-     * @requires_es_extension Extension @extension2{KHR,texture_compression_astc_hdr,texture_compression_astc_hdr}
-     *      for 3D textures and HDR profile
-     * @requires_gles ASTC texture compression is not available in WebGL.
+     * ASTC compressed sRGB with alpha with 12x12 blocks.
+     * @deprecated Use @ref GL::CompressedPixelFormat::SRGB8Alpha8Astc12x12 instead.
      */
-    SRGB8Alpha8Astc12x12 = GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR
+    SRGB8Alpha8Astc12x12 CORRADE_DEPRECATED_ENUM("use GL::CompressedPixelFormat::SRGB8Alpha8Astc12x12 instead") = UnsignedInt(GL::CompressedPixelFormat::SRGB8Alpha8Astc12x12)
+    #endif
     #endif
 };
 
-/** @debugoperatorenum{Magnum::PixelFormat} */
-MAGNUM_EXPORT Debug& operator<<(Debug& debug, PixelFormat value);
-
-/** @debugoperatorenum{Magnum::PixelType} */
-MAGNUM_EXPORT Debug& operator<<(Debug& debug, PixelType value);
-
-/** @debugoperatorenum{Magnum::CompressedPixelFormat} */
+/** @debugoperatorenum{CompressedPixelFormat} */
 MAGNUM_EXPORT Debug& operator<<(Debug& debug, CompressedPixelFormat value);
+
+/**
+@brief Whether a @ref CompressedPixelFormat value wraps an implementation-specific identifier
+
+Returns @cpp true @ce if value of @p format has its highest bit set, @cpp false @ce
+otherwise. Use @ref compressedPixelFormatWrap() and @ref compressedPixelFormatUnwrap()
+to wrap/unwrap an implementation-specific indentifier to/from @ref CompressedPixelFormat.
+@see @ref isPixelFormatImplementationSpecific()
+*/
+constexpr bool isCompressedPixelFormatImplementationSpecific(CompressedPixelFormat format) {
+    return UnsignedInt(format) & (1u << 31);
+}
+
+/**
+@brief Wrap an implementation-specific pixel format identifier in a @ref CompressedPixelFormat
+
+Sets the highest bit on @p format to mark it as implementation-specific.
+Expects that @p format fits into the remaining bits. Use @ref compressedPixelFormatUnwrap()
+for the inverse operation.
+@see @ref isCompressedPixelFormatImplementationSpecific(), @ref pixelFormatWrap()
+*/
+template<class T> constexpr CompressedPixelFormat compressedPixelFormatWrap(T implementationSpecific) {
+    static_assert(sizeof(T) <= 4,
+        "format types larger than 32bits are not supported");
+    return CORRADE_CONSTEXPR_ASSERT(!(UnsignedInt(implementationSpecific) & (1u << 31)),
+        "compressedPixelFormatWrap(): implementation-specific value already wrapped or too large"),
+        CompressedPixelFormat((1u << 31)|UnsignedInt(implementationSpecific));
+}
+
+/**
+@brief Unwrap an implementation-specific pixel format identifier from a @ref CompressedPixelFormat
+
+Unsets the highest bit from @p format to extract the implementation-specific
+value. Expects that @p format has it set. Use @ref compressedPixelFormatWrap() for the
+inverse operation.
+@see @ref isCompressedPixelFormatImplementationSpecific(), @ref pixelFormatUnwrap()
+*/
+template<class T = UnsignedInt> constexpr T compressedPixelFormatUnwrap(CompressedPixelFormat format) {
+    return CORRADE_CONSTEXPR_ASSERT(UnsignedInt(format) & (1u << 31),
+        "compressedPixelFormatUnwrap(): format doesn't contain a wrapped implementation-specific value"),
+        T(UnsignedInt(format) & ~(1u << 31));
+}
+
+namespace Implementation {
+
+#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+template<class T> inline typename std::enable_if<!std::is_same<T, PixelFormat>::value, UnsignedInt>::type wrapPixelFormatIfNotGLSpecific(T format) {
+    return UnsignedInt(format);
+}
+inline PixelFormat wrapPixelFormatIfNotGLSpecific(PixelFormat format) {
+    return format;
+}
+#endif
+
+}
 
 }
 

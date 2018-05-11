@@ -34,6 +34,10 @@
 #include "Magnum/Types.h"
 #include "Magnum/Math/Math.h"
 
+#ifdef MAGNUM_BUILD_DEPRECATED
+#include "Magnum/GL/GL.h"
+#endif
+
 #ifndef DOXYGEN_GENERATING_OUTPUT
 typedef unsigned int GLenum; /* Needed for *Format and *Type enums */
 #endif
@@ -90,10 +94,23 @@ Defined if built as static libraries. Default are shared libraries.
 
 Defined if the library is built in a way that allows multiple thread-local
 Magnum contexts. Enabled by default.
-@see @ref building, @ref cmake, @ref Magnum::Context::current() "Context::current()"
+@see @ref building, @ref cmake,
+    @ref Magnum::GL::Context::current() "GL::Context::current()"
 */
 #define MAGNUM_BUILD_MULTITHREADED
 #undef MAGNUM_BUILD_MULTITHREADED
+
+/**
+@brief OpenGL interoperability
+
+Defined if the engine is built with OpenGL interoperability enabled --- extra
+APIs in various libraries interacting with the @ref Magnum::GL "GL" library.
+Enabled by default in case the @ref Magnum::GL "GL" library is built.
+@see @ref MAGNUM_TARGET_GLES2, @ref MAGNUM_TARGET_GLES3,
+    @ref MAGNUM_TARGET_DESKTOP_GLES, @ref building, @ref cmake
+*/
+#define MAGNUM_TARGET_GL
+/* (enabled by default) */
 
 /**
 @brief OpenGL ES target
@@ -655,65 +672,11 @@ using Math::Literals::operator "" _degf;
 using Math::Literals::operator "" _radf;
 #endif
 
-/* Forward declarations for all types in root namespace */
-
 #ifndef DOXYGEN_GENERATING_OUTPUT
-/* FramebufferClear[Mask], FramebufferBlit[Mask], FramebufferBlitFilter,
-   FramebufferTarget enums used only directly with framebuffer instance */
-class AbstractFramebuffer;
-
-#if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-class AbstractQuery;
-#endif
-class AbstractShaderProgram;
-class AbstractTexture;
-
 template<UnsignedInt, class T> class Array;
 template<class T> class Array1D;
 template<class T> class Array2D;
 template<class T> class Array3D;
-
-template<UnsignedInt, class> class Attribute;
-
-enum class BufferUsage: GLenum;
-class Buffer;
-
-#ifndef MAGNUM_TARGET_GLES2
-template<UnsignedInt> class BufferImage;
-typedef BufferImage<1> BufferImage1D;
-typedef BufferImage<2> BufferImage2D;
-typedef BufferImage<3> BufferImage3D;
-
-template<UnsignedInt> class CompressedBufferImage;
-typedef CompressedBufferImage<1> CompressedBufferImage1D;
-typedef CompressedBufferImage<2> CompressedBufferImage2D;
-typedef CompressedBufferImage<3> CompressedBufferImage3D;
-#endif
-
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-class BufferTexture;
-enum class BufferTextureFormat: GLenum;
-#endif
-
-class Context;
-
-class CubeMapTexture;
-enum class CubeMapCoordinate: GLenum;
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-class CubeMapTextureArray;
-#endif
-
-/* DebugOutput, DebugMessage, DebugGroup used only statically */
-/* DefaultFramebuffer is available only through global instance */
-/* DimensionTraits forward declaration is not needed */
-
-class Extension;
-class Framebuffer;
-
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-enum class ImageFormat: GLenum;
-enum class ImageAccess: GLenum;
-#endif
 
 template<UnsignedInt> class Image;
 typedef Image<1> Image1D;
@@ -735,39 +698,14 @@ typedef CompressedImageView<1> CompressedImageView1D;
 typedef CompressedImageView<2> CompressedImageView2D;
 typedef CompressedImageView<3> CompressedImageView3D;
 
-enum class MeshPrimitive: GLenum;
+enum class MeshPrimitive: UnsignedInt;
+enum class MeshIndexType: UnsignedInt;
 
-class Mesh;
-class MeshView;
-
-#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-/* MultisampleTextureSampleLocations enum used only in the function */
-template<UnsignedInt> class MultisampleTexture;
-typedef MultisampleTexture<2> MultisampleTexture2D;
-typedef MultisampleTexture<3> MultisampleTexture2DArray;
-#endif
-
-enum class PixelFormat: GLenum;
-enum class PixelType: GLenum;
-enum class CompressedPixelFormat: GLenum;
+enum class PixelFormat: UnsignedInt;
+enum class CompressedPixelFormat: UnsignedInt;
 
 class PixelStorage;
-#ifndef MAGNUM_TARGET_GLES
 class CompressedPixelStorage;
-#endif
-
-/* ObjectFlag, ObjectFlags are used only in conjunction with *::wrap() function */
-
-class PrimitiveQuery;
-class SampleQuery;
-class TimeQuery;
-
-#ifndef MAGNUM_TARGET_GLES
-class RectangleTexture;
-#endif
-
-class Renderbuffer;
-enum class RenderbufferFormat: GLenum;
 
 enum class ResourceState: UnsignedByte;
 enum class ResourceDataState: UnsignedByte;
@@ -776,34 +714,110 @@ template<class T, class U = T> class Resource;
 class ResourceKey;
 template<class...> class ResourceManager;
 
-class Sampler;
-class Shader;
+enum class SamplerFilter: UnsignedInt;
+enum class SamplerMipmap: UnsignedInt;
+enum class SamplerWrapping: UnsignedInt;
 
-template<UnsignedInt> class Texture;
-#ifndef MAGNUM_TARGET_GLES
-typedef Texture<1> Texture1D;
-#endif
-typedef Texture<2> Texture2D;
-#if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-typedef Texture<3> Texture3D;
-#endif
-
-#ifndef MAGNUM_TARGET_GLES2
-template<UnsignedInt> class TextureArray;
-#ifndef MAGNUM_TARGET_GLES
-typedef TextureArray<1> Texture1DArray;
-#endif
-typedef TextureArray<2> Texture2DArray;
-#endif
-
-enum class TextureFormat: GLenum;
-
-#ifndef MAGNUM_TARGET_GLES2
-class TransformFeedback;
-#endif
 class Timeline;
 
-enum class Version: Int;
+#ifdef MAGNUM_BUILD_DEPRECATED
+typedef CORRADE_DEPRECATED("use GL::AbstractFramebuffer instead") GL::AbstractFramebuffer AbstractFramebuffer;
+
+#if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
+typedef CORRADE_DEPRECATED("use GL::AbstractQuery instead") GL::AbstractQuery AbstractQuery;
+#endif
+typedef CORRADE_DEPRECATED("use GL::AbstractShaderProgram instead") GL::AbstractShaderProgram AbstractShaderProgram;
+typedef CORRADE_DEPRECATED("use GL::AbstractTexture instead") GL::AbstractTexture AbstractTexture;
+
+template<UnsignedInt location, class T> using Attribute CORRADE_DEPRECATED_ALIAS("use GL::Attribute instead") = GL::Attribute<location, T>;
+
+typedef CORRADE_DEPRECATED("use GL::BufferUsage instead") GL::BufferUsage BufferUsage;
+typedef CORRADE_DEPRECATED("use GL::Buffer instead") GL::Buffer Buffer;
+
+#ifndef MAGNUM_TARGET_GLES2
+template<UnsignedInt dimensions> using BufferImage CORRADE_DEPRECATED_ALIAS("use GL::BufferImage instead") = GL::BufferImage<dimensions>;
+typedef CORRADE_DEPRECATED("use GL::BufferImage1D instead") GL::BufferImage1D BufferImage1D;
+typedef CORRADE_DEPRECATED("use GL::BufferImage2D instead") GL::BufferImage2D BufferImage2D;
+typedef CORRADE_DEPRECATED("use GL::BufferImage3D instead") GL::BufferImage3D BufferImage3D;
+
+template<UnsignedInt dimensions> using CompressedBufferImage CORRADE_DEPRECATED_ALIAS("use GL::CompressedBufferImage instead") = GL::BufferImage<dimensions>;
+typedef CORRADE_DEPRECATED("use GL::CompressedBufferImage1D instead") GL::CompressedBufferImage1D CompressedBufferImage1D;
+typedef CORRADE_DEPRECATED("use GL::CompressedBufferImage2D instead") GL::CompressedBufferImage2D CompressedBufferImage2D;
+typedef CORRADE_DEPRECATED("use GL::CompressedBufferImage3D instead") GL::CompressedBufferImage3D CompressedBufferImage3D;
+#endif
+
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+typedef CORRADE_DEPRECATED("use GL::BufferTexture instead") GL::BufferTexture BufferTexture;
+typedef CORRADE_DEPRECATED("use GL::BufferTextureFormat instead") GL::BufferTextureFormat BufferTextureFormat;
+#endif
+
+typedef CORRADE_DEPRECATED("use GL::Context instead") GL::Context Context;
+
+typedef CORRADE_DEPRECATED("use GL::CubeMapTexture instead") GL::CubeMapTexture CubeMapTexture;
+typedef CORRADE_DEPRECATED("use GL::CubeMapCoordinate instead") GL::CubeMapCoordinate CubeMapCoordinate;
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+typedef CORRADE_DEPRECATED("use GL::CubeMapTextureArray instead") GL::CubeMapTextureArray CubeMapTextureArray;
+#endif
+
+typedef CORRADE_DEPRECATED("use GL::Extension instead") GL::Extension Extension;
+typedef CORRADE_DEPRECATED("use GL::Framebuffer instead") GL::Framebuffer Framebuffer;
+
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+typedef CORRADE_DEPRECATED("use GL::ImageAccess instead") GL::ImageAccess ImageAccess;
+typedef CORRADE_DEPRECATED("use GL::ImageFormat instead") GL::ImageFormat ImageFormat;
+#endif
+
+typedef CORRADE_DEPRECATED("use GL::Mesh instead") GL::Mesh Mesh;
+typedef CORRADE_DEPRECATED("use GL::MeshView instead") GL::MeshView MeshView;
+
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+/* MultisampleTextureSampleLocations enum used only in the function */
+template<UnsignedInt dimensions> using MultisampleTexture CORRADE_DEPRECATED_ALIAS("use GL::MultisampleTexture instead") = GL::MultisampleTexture<dimensions>;
+typedef CORRADE_DEPRECATED("use GL::MultisampleTexture2D instead") GL::MultisampleTexture2D MultisampleTexture2D;
+typedef CORRADE_DEPRECATED("use GL::MultisampleTexture2DArray instead") GL::MultisampleTexture2DArray MultisampleTexture2DArray;
+#endif
+
+typedef CORRADE_DEPRECATED("use GL::PixelType instead") GL::PixelType PixelType;
+
+typedef CORRADE_DEPRECATED("use GL::PrimitiveQuery instead") GL::PrimitiveQuery PrimitiveQuery;
+typedef CORRADE_DEPRECATED("use GL::SampleQuery instead") GL::SampleQuery SampleQuery;
+typedef CORRADE_DEPRECATED("use GL::TimeQuery instead") GL::TimeQuery TimeQuery;
+
+#ifndef MAGNUM_TARGET_GLES
+typedef CORRADE_DEPRECATED("use GL::RectangleTexture instead") GL::RectangleTexture RectangleTexture;
+#endif
+
+typedef CORRADE_DEPRECATED("use GL::Renderbuffer instead") GL::Renderbuffer Renderbuffer;
+typedef CORRADE_DEPRECATED("use GL::RenderbufferFormat instead") GL::RenderbufferFormat RenderbufferFormat;
+
+struct CORRADE_DEPRECATED("use GL::Sampler, SamplerFilter, GL::SamplerFilter,  SamplerMipmap, GL::SamplerMipmap, SamplerWrapping, GL::SamplerWrapping, GL::SamplerCompareMode, GL::SamplerCompareFunction or GL::SamplerDepthStencilMode instead") Sampler;
+typedef CORRADE_DEPRECATED("use GL::Shader instead") GL::Shader Shader;
+
+template<UnsignedInt dimensions> using Texture CORRADE_DEPRECATED_ALIAS("use GL::Texture instead") = GL::Texture<dimensions>;
+#ifndef MAGNUM_TARGET_GLES
+typedef CORRADE_DEPRECATED("use GL::Texture1D instead") GL::Texture1D Texture1D;
+#endif
+typedef CORRADE_DEPRECATED("use GL::Texture2D instead") GL::Texture2D Texture2D;
+#if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
+typedef CORRADE_DEPRECATED("use GL::Texture3D instead") GL::Texture3D Texture3D;
+#endif
+
+#ifndef MAGNUM_TARGET_GLES2
+template<UnsignedInt dimensions> using TextureArray CORRADE_DEPRECATED_ALIAS("use GL::TextureArray instead") = GL::TextureArray<dimensions>;
+#ifndef MAGNUM_TARGET_GLES
+typedef CORRADE_DEPRECATED("use GL::Texture1DArray instead") GL::Texture1DArray Texture1DArray;
+#endif
+typedef CORRADE_DEPRECATED("use GL::Texture2DArray instead") GL::Texture2DArray Texture2DArray;
+#endif
+
+typedef CORRADE_DEPRECATED("use GL::TextureFormat instead") GL::TextureFormat TextureFormat;
+
+#ifndef MAGNUM_TARGET_GLES2
+typedef CORRADE_DEPRECATED("use GL::TransformFeedback instead") GL::TransformFeedback TransformFeedback;
+#endif
+
+typedef CORRADE_DEPRECATED("use GL::Version instead") GL::Version Version;
+#endif
 #endif
 
 }

@@ -24,11 +24,11 @@
 */
 
 /* [windowed] */
-#include <Magnum/DefaultFramebuffer.h>
-#include <Magnum/Renderer.h>
+#include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Platform/Sdl2Application.h>
-#include <Magnum/Platform/Context.h>
+#include <Magnum/Platform/GLContext.h>
 
 using namespace Magnum;
 
@@ -43,12 +43,12 @@ class MyApplication: public Platform::Application {
 MyApplication::MyApplication(const Arguments& arguments): Platform::Application{arguments} {
     using namespace Math::Literals;
     /* Set clear color to dark blue */
-    Renderer::setClearColor(0x000066_rgbf);
+    GL::Renderer::setClearColor(0x000066_rgbf);
 }
 
 void MyApplication::drawEvent() {
     /* Clear the window */
-    defaultFramebuffer.clear(FramebufferClear::Color);
+    GL::defaultFramebuffer.clear(GL::FramebufferClear::Color);
 
     /* The context is double-buffered, swap buffers */
     swapBuffers();
@@ -71,7 +71,7 @@ class MyApplication: public Platform::Application {
 // ...
 
 void MyApplication::viewportEvent(const Vector2i& size) {
-    defaultFramebuffer.setViewport({{}, size});
+    GL::defaultFramebuffer.setViewport({{}, size});
 }
 /* [size] */
 
@@ -109,7 +109,7 @@ MyApplication::MyApplication(const Arguments& arguments):
 {
     // ...
 
-    createContext(Configuration{}
+    create(Configuration{}
         .setTitle("My Application")
         .setSize(size));
 
@@ -132,11 +132,12 @@ MyApplication::MyApplication(const Arguments& arguments):
     // ...
 
     Configuration conf;
-    conf.setTitle("My Application")
-        .setSampleCount(16);
+    conf.setTitle("My Application");
+    GLConfiguration glConf;
+    glConf.setSampleCount(16);
 
-    if(!tryCreateContext(conf))
-        createContext(conf.setSampleCount(0));
+    if(!tryCreate(conf, glConf))
+        create(conf, glConf.setSampleCount(0));
 
     // ...
 }

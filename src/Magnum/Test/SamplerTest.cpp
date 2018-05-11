@@ -36,74 +36,34 @@ struct SamplerTest: TestSuite::Tester {
     void debugFilter();
     void debugMipmap();
     void debugWrapping();
-    #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-    void debugCompareMode();
-    void debugCompareFunction();
-    #endif
-    #ifndef MAGNUM_TARGET_GLES
-    void debugDepthStencilMode();
-    #endif
 };
 
 SamplerTest::SamplerTest() {
     addTests({&SamplerTest::debugFilter,
               &SamplerTest::debugMipmap,
-              &SamplerTest::debugWrapping,
-              #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-              &SamplerTest::debugCompareMode,
-              &SamplerTest::debugCompareFunction,
-              #endif
-              #ifndef MAGNUM_TARGET_GLES
-              &SamplerTest::debugDepthStencilMode
-              #endif
-             });
+              &SamplerTest::debugWrapping});
 }
 
 void SamplerTest::debugFilter() {
     std::ostringstream out;
 
-    Debug(&out) << Sampler::Filter::Linear << Sampler::Filter(0xdead);
-    CORRADE_COMPARE(out.str(), "Sampler::Filter::Linear Sampler::Filter(0xdead)\n");
+    Debug(&out) << SamplerFilter::Linear << SamplerFilter(0xdead);
+    CORRADE_COMPARE(out.str(), "SamplerFilter::Linear SamplerFilter(0xdead)\n");
 }
 
 void SamplerTest::debugMipmap() {
     std::ostringstream out;
 
-    Debug(&out) << Sampler::Mipmap::Base << Sampler::Mipmap(0xdead);
-    CORRADE_COMPARE(out.str(), "Sampler::Mipmap::Base Sampler::Mipmap(0xdead)\n");
+    Debug(&out) << SamplerMipmap::Base << SamplerMipmap(0xdead);
+    CORRADE_COMPARE(out.str(), "SamplerMipmap::Base SamplerMipmap(0xdead)\n");
 }
 
 void SamplerTest::debugWrapping() {
     std::ostringstream out;
 
-    Debug(&out) << Sampler::Wrapping::ClampToEdge << Sampler::Wrapping(0xdead);
-    CORRADE_COMPARE(out.str(), "Sampler::Wrapping::ClampToEdge Sampler::Wrapping(0xdead)\n");
+    Debug(&out) << SamplerWrapping::ClampToEdge << SamplerWrapping(0xdead);
+    CORRADE_COMPARE(out.str(), "SamplerWrapping::ClampToEdge SamplerWrapping(0xdead)\n");
 }
-
-#if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-void SamplerTest::debugCompareMode() {
-    std::ostringstream out;
-
-    Debug(&out) << Sampler::CompareMode::CompareRefToTexture << Sampler::CompareMode(0xdead);
-    CORRADE_COMPARE(out.str(), "Sampler::CompareMode::CompareRefToTexture Sampler::CompareMode(0xdead)\n");
-}
-
-void SamplerTest::debugCompareFunction() {
-    std::ostringstream out;
-
-    Debug(&out) << Sampler::CompareFunction::GreaterOrEqual << Sampler::CompareFunction(0xdead);
-    CORRADE_COMPARE(out.str(), "Sampler::CompareFunction::GreaterOrEqual Sampler::CompareFunction(0xdead)\n");
-}
-#endif
-
-#ifndef MAGNUM_TARGET_GLES
-void SamplerTest::debugDepthStencilMode() {
-    std::ostringstream out;
-
-    Debug(&out) << Sampler::DepthStencilMode::StencilIndex << Sampler::DepthStencilMode(0xdead);
-    CORRADE_COMPARE(out.str(), "Sampler::DepthStencilMode::StencilIndex Sampler::DepthStencilMode(0xdead)\n");
-}
-#endif
 
 }}
 

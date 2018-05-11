@@ -25,107 +25,17 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#include <Corrade/Utility/Debug.h>
+/** @file
+ * @deprecated Use @ref Magnum/Platform/GLContext.h instead.
+ */
 
-#include "Magnum/Context.h"
-#include "Magnum/OpenGL.h"
+#include "Magnum/configure.h"
 
-namespace Magnum { namespace Platform {
-
-/**
-@brief Platform-specific context
-
-In most cases not needed to be used directly as the initialization is done
-automatically in `*Application` classes. See @ref platform for more
-information.
-*/
-class Context: public Magnum::Context {
-    public:
-        /**
-         * @brief Constructor
-         *
-         * Parses command-line arguments, loads OpenGL function pointers using
-         * platform-specific API, does initial setup, detects available
-         * features and enables them throughout the engine. If detected version
-         * is unsupported or any other error occurs, a message is printed to
-         * output and the application exits. See @ref Context(NoCreateT, Int, char**)
-         * and @ref tryCreate() for an alternative.
-         * @see @ref Context-command-line, @fn_gl{Get} with @def_gl{MAJOR_VERSION},
-         *      @def_gl{MINOR_VERSION}, @def_gl{CONTEXT_FLAGS},
-         *      @def_gl{NUM_EXTENSIONS}, @fn_gl{GetString} with @def_gl{EXTENSIONS}
-         */
-        explicit Context(Int argc, const char** argv): Context{NoCreate, argc, argv} { create(); }
-
-        /** @overload */
-        explicit Context(Int argc, char** argv): Context{argc, const_cast<const char**>(argv)} {}
-
-        /** @overload */
-        explicit Context(Int argc, std::nullptr_t argv): Context{argc, static_cast<const char**>(argv)} {}
-
-        /**
-         * @brief Default constructor
-         *
-         * Equivalent to passing @cpp {0, nullptr} @ce to
-         * @ref Context(Int, const char**). Even if the command-line options
-         * are not propagated, it's still possible to affect the renderer
-         * behavior from the environment. See @ref Context-command-line for
-         * more information.
-         */
-        explicit Context(): Context{0, nullptr} {}
-
-        /**
-         * @brief Construct the class without doing complete setup
-         *
-         * Unlike @ref Context(Int, char**) just parses command-line arguments
-         * and sets @ref version() to @ref Version::None, everything else is
-         * left in empty state. Use @ref create() or @ref tryCreate() to
-         * complete the setup.
-         */
-        explicit Context(NoCreateT, Int argc, const char** argv):
-            #ifndef CORRADE_TARGET_EMSCRIPTEN
-            Magnum::Context{NoCreate, argc, argv, flextGLInit} {}
-            #else
-            Magnum::Context{NoCreate, argc, argv, nullptr} {}
-            #endif
-
-        /** @overload */
-        explicit Context(NoCreateT, Int argc, char** argv): Context{NoCreate, argc, const_cast<const char**>(argv)} {}
-
-        /** @overload */
-        explicit Context(NoCreateT, Int argc, std::nullptr_t argv): Context{NoCreate, argc, static_cast<const char**>(argv)} {}
-
-        /**
-         * @brief Construct the class without doing complete setup
-         *
-         * Equivalent to passing @cpp {NoCreate, 0, nullptr} @ce to
-         * @ref Context(NoCreateT, Int, const char**). Even if the command-line
-         * options are not propagated, it's still possible to affect the
-         * renderer behavior from the environment. See @ref Context-command-line
-         * for more information.
-         */
-        explicit Context(NoCreateT): Context{NoCreate, 0, nullptr} {}
-
-        /**
-         * @brief Complete the context setup and exit on failure
-         *
-         * Finalizes the setup after the class was created using
-         * @ref Context(NoCreateT, Int, char**). If detected version is
-         * unsupported or any other error occurs, a message is printed to error
-         * output and the application exits. See @ref Context(Int, char**) for
-         * more information and @ref tryCreate() for an alternative.
-         */
-        void create() { return Magnum::Context::create(); }
-
-        /**
-         * @brief Complete the context setup
-         *
-         * Unlike @ref create() just prints a message to error output and
-         * returns `false` on error.
-         */
-        bool tryCreate() { return Magnum::Context::tryCreate(); }
-
-};
-
-}}
+#ifdef MAGNUM_BUILD_DEPRECATED
+#include "Magnum/Platform/GLContext.h"
+CORRADE_DEPRECATED_FILE("use Magnum/Platform/GLContext.h instead")
+#else
+#error use Magnum/Platform/GLContext.h instead
+#endif
 
 #endif

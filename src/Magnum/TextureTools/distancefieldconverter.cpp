@@ -27,12 +27,12 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/PluginManager/Manager.h>
 
-#include "Magnum/Math/Range.h"
 #include "Magnum/Image.h"
 #include "Magnum/PixelFormat.h"
-#include "Magnum/Renderer.h"
-#include "Magnum/Texture.h"
-#include "Magnum/TextureFormat.h"
+#include "Magnum/Math/Range.h"
+#include "Magnum/GL/Renderer.h"
+#include "Magnum/GL/Texture.h"
+#include "Magnum/GL/TextureFormat.h"
 #include "Magnum/TextureTools/DistanceField.h"
 #include "Magnum/Trade/AbstractImporter.h"
 #include "Magnum/Trade/AbstractImageConverter.h"
@@ -87,10 +87,11 @@ Arguments:
 -   `--plugin-dir DIR` --- override base plugin dir
 -   `--output-size "X Y"` --- size of output image
 -   `--radius N` --- distance field computation radius
--   `--magnum-...` --- engine-specific options (see @ref Context for details)
+-   `--magnum-...` --- engine-specific options (see
+    @ref GL-Context-command-line for details)
 
-Images with @ref PixelFormat::Red, @ref PixelFormat::RGB or @ref PixelFormat::RGBA
-are accepted on input.
+Images with @ref PixelFormat::R8Unorm, @ref PixelFormat::RGB8Unorm or
+@ref PixelFormat::RGBA8Unorm are accepted on input.
 
 The resulting image can be then used with @ref Shaders::DistanceFieldVector
 shader. See also @ref TextureTools::distanceField() for more information about
@@ -158,35 +159,38 @@ int DistanceFieldConverter::exec() {
     }
 
     /* Decide about internal format */
-    TextureFormat internalFormat;
-    if(image->format() == PixelFormat::Red) internalFormat = TextureFormat::R8;
-    else if(image->format() == PixelFormat::RGB) internalFormat = TextureFormat::RGB8;
-    else if(image->format() == PixelFormat::RGBA) internalFormat = TextureFormat::RGBA8;
+    GL::TextureFormat internalFormat;
+    if(image->format() == PixelFormat::R8Unorm)
+        internalFormat = GL::TextureFormat::R8;
+    else if(image->format() == PixelFormat::RGB8Unorm)
+        internalFormat = GL::TextureFormat::RGB8;
+    else if(image->format() == PixelFormat::RGBA8Unorm)
+        internalFormat = GL::TextureFormat::RGBA8;
     else {
         Error() << "Unsupported image format" << image->format();
         return 4;
     }
 
     /* Input texture */
-    Texture2D input;
-    input.setMinificationFilter(Sampler::Filter::Linear)
-        .setMagnificationFilter(Sampler::Filter::Linear)
-        .setWrapping(Sampler::Wrapping::ClampToEdge)
+    GL::Texture2D input;
+    input.setMinificationFilter(SamplerFilter::Linear)
+        .setMagnificationFilter(SamplerFilter::Linear)
+        .setWrapping(SamplerWrapping::ClampToEdge)
         .setStorage(1, internalFormat, image->size())
         .setSubImage(0, {}, *image);
 
     /* Output texture */
-    Texture2D output;
-    output.setStorage(1, TextureFormat::R8, args.value<Vector2i>("output-size"));
+    GL::Texture2D output;
+    output.setStorage(1, GL::TextureFormat::R8, args.value<Vector2i>("output-size"));
 
-    CORRADE_INTERNAL_ASSERT(Renderer::error() == Renderer::Error::NoError);
+    CORRADE_INTERNAL_ASSERT(GL::Renderer::error() == GL::Renderer::Error::NoError);
 
     /* Do it */
     Debug() << "Converting image of size" << image->size() << "to distance field...";
     TextureTools::distanceField(input, output, {{}, args.value<Vector2i>("output-size")}, args.value<Int>("radius"), image->size());
 
     /* Save image */
-    Image2D result(PixelFormat::Red, PixelType::UnsignedByte);
+    Image2D result{PixelFormat::R8Unorm};
     output.image(0, result);
     if(!converter->exportToFile(result, args.value("output"))) {
         Error() << "Cannot save file" << args.value("output");

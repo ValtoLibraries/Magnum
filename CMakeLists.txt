@@ -71,12 +71,12 @@ endif()
 
 cmake_dependent_option(TARGET_GLES2 "Build for OpenGL ES 2 / WebGL 1.0" ON "TARGET_GLES" OFF)
 cmake_dependent_option(TARGET_DESKTOP_GLES "Build for OpenGL ES on desktop" OFF "TARGET_GLES" OFF)
-option(TARGET_HEADLESS "Build command-line utilities for use on a headless machines" OFF)
+cmake_dependent_option(TARGET_HEADLESS "Build command-line utilities for use on a headless machines" OFF "WITH_GL" OFF)
 
-# Magnum Info (currently only using GLX/CGL/EGL on *nix, WGL/EGL on Windows and
-# EGL on Emscripten)
+# Magnum GL Info (currently only using GLX/CGL/EGL on *nix, WGL/EGL on Windows
+# and EGL on Emscripten)
 if(CORRADE_TARGET_UNIX OR CORRADE_TARGET_WINDOWS OR CORRADE_TARGET_EMSCRIPTEN)
-    option(WITH_MAGNUMINFO "Build magnum-info utility" OFF)
+    option(WITH_GL_INFO "Build magnum-gl-info utility" OFF)
 endif()
 
 # Desktop-only utilities
@@ -106,17 +106,23 @@ cmake_dependent_option(WITH_TGAIMPORTER "Build TgaImporter plugin" OFF "NOT WITH
 # Parts of the library
 cmake_dependent_option(WITH_AUDIO "Build Audio library" OFF "NOT WITH_AL_INFO;NOT WITH_ANYAUDIOIMPORTER;NOT WITH_WAVAUDIOIMPORTER" ON)
 option(WITH_DEBUGTOOLS "Build DebugTools library" ON)
-cmake_dependent_option(WITH_MESHTOOLS "Build MeshTools library" ON "( NOT WITH_DEBUGTOOLS OR ( NOT WITH_SHAPES AND NOT WITH_SCENEGRAPH ) ) AND NOT WITH_OBJIMPORTER" ON)
-cmake_dependent_option(WITH_PRIMITIVES "Builf Primitives library" ON "NOT WITH_DEBUGTOOLS OR NOT WITH_SHAPES" ON)
+cmake_dependent_option(WITH_MESHTOOLS "Build MeshTools library" ON "NOT WITH_OBJIMPORTER" ON)
 option(WITH_SHAPES "Build Shapes library" ON)
 cmake_dependent_option(WITH_SCENEGRAPH "Build SceneGraph library" ON "NOT WITH_SHAPES" ON)
-cmake_dependent_option(WITH_SHADERS "Build Shaders library" ON "NOT WITH_DEBUGTOOLS OR ( NOT WITH_SHAPES AND NOT WITH_SCENEGRAPH )" ON)
+option(WITH_SHADERS "Build Shaders library" ON)
 cmake_dependent_option(WITH_TEXT "Build Text library" ON "NOT WITH_FONTCONVERTER;NOT WITH_MAGNUMFONT;NOT WITH_MAGNUMFONTCONVERTER" ON)
 cmake_dependent_option(WITH_TEXTURETOOLS "Build TextureTools library" ON "NOT WITH_TEXT;NOT WITH_DISTANCEFIELDCONVERTER" ON)
 cmake_dependent_option(WITH_TRADE "Build Trade library" ON "NOT WITH_MESHTOOLS;NOT WITH_PRIMITIVES;NOT WITH_IMAGECONVERTER;NOT WITH_ANYIMAGEIMPORTER;NOT WITH_ANYIMAGECONVERTER;NOT WITH_ANYSCENEIMPORTER;NOT WITH_OBJIMPORTER;NOT WITH_TGAIMAGECONVERTER;NOT WITH_TGAIMPORTER" ON)
+cmake_dependent_option(WITH_GL "Build GL library" ON "NOT WITH_SHADERS;NOT WITH_TEXT;NOT WITH_GL_INFO;NOT WITH_ANDROIDAPPLICATION;NOT WITH_WINDOWLESSIOSAPPLICATION;NOT WITH_CGLCONTEXT;NOT WITH_GLXAPPLICATION;NOT WITH_GLXCONTEXT;NOT WITH_XEGLAPPLICATION;NOT WITH_WINDOWLESSWGLAPPLICATION;NOT WITH_GLXCONTEXT;NOT WITH_XEGLAPPLICATION;NOT WITH_WINDOWLESSWGLAPPLICATION;NOT WITH_WGLCONTEXT;NOT WITH_WINDOWLESSWINDOWSEGLAPPLICATION;NOT WITH_GLUTAPPLICATION;NOT WITH_DISTANCEFIELDCONVERTER;NOT WITH_FONTCONVERTER;NOT WITH_IMAGECONVERTER" ON)
+option(WITH_PRIMITIVES "Builf Primitives library" ON)
+
+cmake_dependent_option(TARGET_GL "Build libraries with OpenGL interoperability" ON "WITH_GL" OFF)
+
+# Magnum AL Info
+cmake_dependent_option(WITH_AL_INFO "Build magnum-al-info utility" OFF "WITH_AUDIO" OFF)
 
 # EGL context and windowless EGL application, available everywhere
-cmake_dependent_option(WITH_WINDOWLESSEGLAPPLICATION "Build WindowlessEglApplication library" OFF "NOT TARGET_GLES OR TARGET_DESKTOP_GLES OR NOT WITH_MAGNUMINFO" ON)
+cmake_dependent_option(WITH_WINDOWLESSEGLAPPLICATION "Build WindowlessEglApplication library" OFF "NOT TARGET_GLES OR TARGET_DESKTOP_GLES OR NOT WITH_GL_INFO" ON)
 option(WITH_EGLCONTEXT "Build EglContext library" OFF)
 
 # Android-specific application libraries
@@ -129,14 +135,14 @@ elseif(CORRADE_TARGET_IOS)
 
 # macOS-specific application libraries
 elseif(CORRADE_TARGET_APPLE)
-    cmake_dependent_option(WITH_WINDOWLESSCGLAPPLICATION "Build WindowlessCglApplication library" OFF "NOT WITH_MAGNUMINFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
+    cmake_dependent_option(WITH_WINDOWLESSCGLAPPLICATION "Build WindowlessCglApplication library" OFF "NOT WITH_GL_INFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
     option(WITH_CGLCONTEXT "Build CglContext library" OFF)
 
 # X11 + GLX/EGL-specific application libraries
 elseif(CORRADE_TARGET_UNIX)
     option(WITH_GLXAPPLICATION "Build GlxApplication library" OFF)
     if(NOT TARGET_GLES OR TARGET_DESKTOP_GLES)
-        cmake_dependent_option(WITH_WINDOWLESSGLXAPPLICATION "Build WindowlessGlxApplication library" OFF "NOT WITH_MAGNUMINFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
+        cmake_dependent_option(WITH_WINDOWLESSGLXAPPLICATION "Build WindowlessGlxApplication library" OFF "NOT WITH_GL_INFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
         option(WITH_GLXCONTEXT "Build GlxContext library" OFF)
     endif()
     option(WITH_XEGLAPPLICATION "Build XEglApplication library" OFF)
@@ -144,10 +150,10 @@ elseif(CORRADE_TARGET_UNIX)
 # Windows-specific application libraries
 elseif(CORRADE_TARGET_WINDOWS)
     if(NOT TARGET_GLES OR TARGET_DESKTOP_GLES)
-        cmake_dependent_option(WITH_WINDOWLESSWGLAPPLICATION "Build WindowlessWglApplication library" OFF "NOT WITH_MAGNUMINFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
+        cmake_dependent_option(WITH_WINDOWLESSWGLAPPLICATION "Build WindowlessWglApplication library" OFF "NOT WITH_GL_INFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
         option(WITH_WGLCONTEXT "Build WglContext library" OFF)
     else()
-        cmake_dependent_option(WITH_WINDOWLESSWINDOWSEGLAPPLICATION "Build WindowlessWindowsEglApplication library" OFF "NOT WITH_MAGNUMINFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
+        cmake_dependent_option(WITH_WINDOWLESSWINDOWSEGLAPPLICATION "Build WindowlessWindowsEglApplication library" OFF "NOT WITH_GL_INFO;NOT WITH_FONTCONVERTER;NOT WITH_DISTANCEFIELDCONVERTER" ON)
     endif()
 endif()
 
@@ -213,6 +219,9 @@ else()
 endif()
 
 # Configuration variables (saved later to configure.h)
+if(TARGET_GL)
+    set(MAGNUM_TARGET_GL 1)
+endif()
 if(TARGET_GLES)
     set(MAGNUM_TARGET_GLES 1)
     if(TARGET_GLES2)
@@ -355,8 +364,8 @@ set(MAGNUM_PLUGINS_AUDIOIMPORTER_DEBUG_DIR ${MAGNUM_PLUGINS_DEBUG_DIR}/audioimpo
 set(MAGNUM_PLUGINS_AUDIOIMPORTER_RELEASE_DIR ${MAGNUM_PLUGINS_RELEASE_DIR}/audioimporters)
 
 # Library version
-set(MAGNUM_LIBRARY_VERSION 1.0)
-set(MAGNUM_LIBRARY_SOVERSION 1)
+set(MAGNUM_LIBRARY_VERSION 2.0)
+set(MAGNUM_LIBRARY_SOVERSION 2)
 
 add_subdirectory(modules)
 add_subdirectory(src)

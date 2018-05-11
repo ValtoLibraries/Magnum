@@ -24,7 +24,7 @@
 */
 
 /* [windowless] */
-#include <Magnum/Context.h>
+#include <Magnum/GL/Context.h>
 #include <Magnum/Platform/WindowlessEglApplication.h>
 
 using namespace Magnum;
@@ -40,8 +40,8 @@ MyApplication::MyApplication(const Arguments& arguments):
     Platform::WindowlessApplication{arguments} {}
 
 int MyApplication::exec() {
-    Debug{} << "OpenGL version:" << Context::current().versionString();
-    Debug{} << "OpenGL renderer:" << Context::current().rendererString();
+    Debug{} << "OpenGL version:" << GL::Context::current().versionString();
+    Debug{} << "OpenGL renderer:" << GL::Context::current().rendererString();
 
     /* Exit with success */
     return 0;

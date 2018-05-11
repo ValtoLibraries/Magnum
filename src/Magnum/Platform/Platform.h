@@ -29,12 +29,25 @@
  * @brief Forward declarations for the @ref Magnum::Platform namespace
  */
 
+#include "Magnum/configure.h"
+
+#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+#include <Corrade/Utility/Macros.h>
+#endif
+
 namespace Magnum { namespace Platform {
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 template<class> class BasicScreen;
 template<class> class BasicScreenedApplication;
-class Context;
+
+#ifdef MAGNUM_TARGET_GL
+class GLContext;
+
+#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+typedef CORRADE_DEPRECATED("use Platform::GLContext instead") GLContext Context;
+#endif
+#endif
 #endif
 
 }}

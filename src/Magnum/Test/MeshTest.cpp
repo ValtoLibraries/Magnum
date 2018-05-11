@@ -34,9 +34,7 @@ namespace Magnum { namespace Test {
 struct MeshTest: TestSuite::Tester {
     explicit MeshTest();
 
-    void constructNoCreate();
-
-    void indexSize();
+    void indexTypeSize();
 
     void debugPrimitive();
     void debugIndexType();
@@ -45,9 +43,7 @@ struct MeshTest: TestSuite::Tester {
 };
 
 MeshTest::MeshTest() {
-    addTests({&MeshTest::constructNoCreate,
-
-              &MeshTest::indexSize,
+    addTests({&MeshTest::indexTypeSize,
 
               &MeshTest::debugPrimitive,
               &MeshTest::debugIndexType,
@@ -55,19 +51,10 @@ MeshTest::MeshTest() {
               &MeshTest::configurationIndexType});
 }
 
-void MeshTest::constructNoCreate() {
-    {
-        Mesh mesh{NoCreate};
-        CORRADE_COMPARE(mesh.id(), 0);
-    }
-
-    CORRADE_VERIFY(true);
-}
-
-void MeshTest::indexSize() {
-    CORRADE_COMPARE(Mesh::indexSize(Mesh::IndexType::UnsignedByte), 1);
-    CORRADE_COMPARE(Mesh::indexSize(Mesh::IndexType::UnsignedShort), 2);
-    CORRADE_COMPARE(Mesh::indexSize(Mesh::IndexType::UnsignedInt), 4);
+void MeshTest::indexTypeSize() {
+    CORRADE_COMPARE(meshIndexTypeSize(MeshIndexType::UnsignedByte), 1);
+    CORRADE_COMPARE(meshIndexTypeSize(MeshIndexType::UnsignedShort), 2);
+    CORRADE_COMPARE(meshIndexTypeSize(MeshIndexType::UnsignedInt), 4);
 }
 
 void MeshTest::debugPrimitive() {
@@ -78,8 +65,8 @@ void MeshTest::debugPrimitive() {
 
 void MeshTest::debugIndexType() {
     std::ostringstream o;
-    Debug(&o) << Mesh::IndexType::UnsignedShort << Mesh::IndexType(0xdead);
-    CORRADE_COMPARE(o.str(), "Mesh::IndexType::UnsignedShort Mesh::IndexType(0xdead)\n");
+    Debug(&o) << MeshIndexType::UnsignedShort << MeshIndexType(0xdead);
+    CORRADE_COMPARE(o.str(), "MeshIndexType::UnsignedShort MeshIndexType(0xdead)\n");
 }
 
 void MeshTest::configurationPrimitive() {
@@ -88,14 +75,22 @@ void MeshTest::configurationPrimitive() {
     c.setValue("primitive", MeshPrimitive::LineStrip);
     CORRADE_COMPARE(c.value("primitive"), "LineStrip");
     CORRADE_COMPARE(c.value<MeshPrimitive>("primitive"), MeshPrimitive::LineStrip);
+
+    c.setValue("invalid", MeshPrimitive(0xdead));
+    CORRADE_COMPARE(c.value("invalid"), "");
+    CORRADE_COMPARE(c.value<MeshPrimitive>("invalid"), MeshPrimitive::Points);
 }
 
 void MeshTest::configurationIndexType() {
     Utility::Configuration c;
 
-    c.setValue("type", Mesh::IndexType::UnsignedByte);
-    CORRADE_COMPARE(c.value("type"), "UnsignedByte");
-    CORRADE_COMPARE(c.value<Mesh::IndexType>("type"), Mesh::IndexType::UnsignedByte);
+    c.setValue("type", MeshIndexType::UnsignedShort);
+    CORRADE_COMPARE(c.value("type"), "UnsignedShort");
+    CORRADE_COMPARE(c.value<MeshIndexType>("type"), MeshIndexType::UnsignedShort);
+
+    c.setValue("invalid", MeshIndexType(0xdead));
+    CORRADE_COMPARE(c.value("invalid"), "");
+    CORRADE_COMPARE(c.value<MeshIndexType>("invalid"), MeshIndexType::UnsignedInt);
 }
 
 }}

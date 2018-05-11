@@ -23,6 +23,11 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+# On MSVC remove /W3, as we are replacing it with /W4
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+    string(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
 set_directory_properties(PROPERTIES
     CORRADE_CXX_STANDARD 11
     CORRADE_USE_PEDANTIC_FLAGS ON)
@@ -33,16 +38,38 @@ if(CORRADE_TARGET_EMSCRIPTEN AND NOT TARGET_GLES2)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_WEBGL2=1")
 endif()
 
-add_library(snippets STATIC
+add_library(snippets-Magnum STATIC
     plugins.cpp
     Magnum.cpp
-    MagnumMeshTools.cpp
-    MagnumShaders.cpp
-    MagnumText.cpp)
-target_link_libraries(snippets PRIVATE Magnum)
-set_target_properties(snippets PROPERTIES FOLDER "Magnum/doc/snippets")
+    MagnumMath.cpp)
+target_link_libraries(snippets-Magnum PRIVATE Magnum)
+set_target_properties(snippets-Magnum PROPERTIES FOLDER "Magnum/doc/snippets")
+
+if(WITH_GL)
+    add_library(snippets-MagnumGL STATIC
+        MagnumGL.cpp
+        MagnumMeshTools.cpp
+        MagnumShaders.cpp
+        MagnumText.cpp)
+    target_link_libraries(snippets-MagnumGL PRIVATE MagnumGL)
+    set_target_properties(snippets-MagnumGL PROPERTIES FOLDER "Magnum/doc/snippets")
+endif()
+
+if(WITH_TRADE)
+    add_library(snippets-MagnumTrade STATIC
+        MagnumTrade.cpp)
+    target_link_libraries(snippets-MagnumTrade PRIVATE MagnumTrade)
+    set_target_properties(snippets-MagnumTrade PROPERTIES FOLDER "Magnum/doc/snippets")
+endif()
 
 find_package(Corrade COMPONENTS TestSuite)
+
+if(WITH_DEBUGTOOLS)
+    add_library(snippets-MagnumDebugTools STATIC
+        MagnumDebugTools.cpp)
+    target_link_libraries(snippets-MagnumDebugTools PRIVATE MagnumDebugTools)
+    set_target_properties(snippets-MagnumDebugTools PROPERTIES FOLDER "Magnum/doc/snippets")
+endif()
 
 # TODO: causes spurious linker errors on Travis iOS build, so I'm disabling it
 if(WITH_DEBUGTOOLS AND Corrade_TestSuite_FOUND AND NOT CORRADE_TARGET_IOS)
@@ -68,7 +95,7 @@ if(WITH_SDL2APPLICATION)
 
     add_library(snippets-MagnumPlatform STATIC
         MagnumPlatform.cpp
-        Magnum-framebuffer.cpp)
+        MagnumGL-framebuffer.cpp)
     target_link_libraries(snippets-MagnumPlatform PRIVATE MagnumSdl2Application)
 
     set_target_properties(
@@ -82,6 +109,24 @@ if(WITH_SDL2APPLICATION)
         target_link_libraries(getting-started PRIVATE SDL2::SDL2)
         target_link_libraries(getting-started-blue PRIVATE SDL2::SDL2)
         target_link_libraries(snippets-MagnumPlatform PRIVATE SDL2::SDL2)
+    endif()
+endif()
+
+if((NOT TARGET_GLES AND WITH_SDL2APPLICATION) OR (TARGET_GLES AND WITH_XEGLAPPLICATION))
+    add_library(snippets-MagnumPlatform-portability STATIC MagnumPlatform-portability.cpp)
+    if(TARGET_GLES)
+        target_link_libraries(snippets-MagnumPlatform-portability PRIVATE MagnumXEglApplication)
+    else()
+        target_link_libraries(snippets-MagnumPlatform-portability PRIVATE MagnumSdl2Application)
+    endif()
+
+    set_target_properties(
+        snippets-MagnumPlatform-portability
+        PROPERTIES FOLDER "Magnum/doc/snippets")
+    # Otherwise it's not linked correctly. I have no idea why, but whatever.
+    if(CMAKE_VERSION VERSION_LESS 3.0)
+        find_package(SDL2 REQUIRED)
+        target_link_libraries(snippets-MagnumPlatform-portability PRIVATE SDL2::SDL2)
     endif()
 endif()
 

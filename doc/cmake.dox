@@ -95,6 +95,7 @@ the components. The optional components are:
 
 -   `Audio` --- @ref Audio library
 -   `DebugTools` --- @ref DebugTools library
+-   `GL` -- @ref GL library
 -   `MeshTools` --- @ref MeshTools library
 -   `Primitives` --- @ref Primitives library
 -   `SceneGraph` --- @ref SceneGraph library
@@ -130,7 +131,7 @@ information):
 There are also extensions to @ref Corrade::TestSuite::Tester for testing GPU
 code:
 
--   `OpenGLTester` --- @ref OpenGLTester class
+-   `OpenGLTester` --- @ref GL::OpenGLTester class
 
 The library also contains a set of plugins for importing essential file
 formats. Additional plugins are provided in separate plugin repository, see
@@ -163,7 +164,7 @@ Lastly, a few utility executables are available:
 -   `distancefieldconverter` --- @ref magnum-distancefieldconverter executable
 -   `fontconverter` --- @ref magnum-fontconverter executable
 -   `imageconverter` --- @ref magnum-imageconverter executable
--   `info` --- @ref magnum-info executable
+-   `gl-info` --- @ref magnum-gl-info executable
 -   `al-info` --- @ref magnum-al-info executable
 
 Note that [each namespace](namespaces.html), all @ref Platform libraries and
@@ -186,7 +187,7 @@ If exactly one `*Application` or exactly one `Windowless*Application` component
 is requested and found, its target is available in convenience alias
 `Magnum::Application` / `Magnum::WindowlessApplication` to simplify porting.
 Similarly, if exactly one `*Context` component is requested and found, its
-target is available in convenience alias `Magnum::Context`.
+target is available in convenience alias `Magnum::GLContext`.
 
 The package is found if either debug or release version of each requested
 library (or plugin) is found. If both debug and release libraries (or plugins)
@@ -208,6 +209,8 @@ are also available as preprocessor variables if including
     are shared libraries.
 -   `MAGNUM_BUILD_MULTITHREADED` --- Defined if compiled in a way that allows
     having multiple thread-local Magnum contexts. The default.
+-   `MAGNUM_TARGET_GL` --- Defined if compiled with OpenGL interoperability
+    enabled
 -   `MAGNUM_TARGET_GLES` --- Defined if compiled for OpenGL ES
 -   `MAGNUM_TARGET_GLES2` --- Defined if compiled for OpenGL ES 2.0
 -   `MAGNUM_TARGET_GLES3` --- Defined if compiled for OpenGL ES 3.0

@@ -30,6 +30,7 @@
  */
 
 #include <tuple>
+#include <vector>
 
 #include "Magnum/Mesh.h"
 #include "Magnum/MeshTools/visibility.h"
@@ -53,7 +54,7 @@ Example usage:
 @see @ref compressIndicesAs()
 @todo Extract IndexType out of Mesh class
 */
-std::tuple<Containers::Array<char>, Mesh::IndexType, UnsignedInt, UnsignedInt> MAGNUM_MESHTOOLS_EXPORT compressIndices(const std::vector<UnsignedInt>& indices);
+std::tuple<Containers::Array<char>, MeshIndexType, UnsignedInt, UnsignedInt> MAGNUM_MESHTOOLS_EXPORT compressIndices(const std::vector<UnsignedInt>& indices);
 
 /**
 @brief Compress vertex indices as given type

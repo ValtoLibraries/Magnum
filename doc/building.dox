@@ -210,17 +210,24 @@ There are also Gentoo packages for @ref building-plugins-packages-gentoo "Magnum
 
 macOS [Homebrew](https://brew.sh) formulas building the latest Git revision are
 in the `package/homebrew` directory. Either use the `*.rb` files directly or
-use the tap at https://github.com/mosra/homebrew-magnum. When installing from
-the `*.rb` files you need to install the
-@ref building-corrade-packages-brew "Corrade Homebrew package" first, otherwise
-you can do just this:
+use the tap at https://github.com/mosra/homebrew-magnum. This will install the
+latest stable version of Magnum with all its dependencies:
+
+@code{.sh}
+brew install mosra/magnum/magnum
+@endcode
+
+But often you may want to install the latest Git revision of all Magnum
+projects instead:
 
 @code{.sh}
 brew install --HEAD mosra/magnum/corrade
 brew install --HEAD mosra/magnum/magnum
 @endcode
 
-If you want to pass additional flags to CMake or
+When installing from the `*.rb` files you need to install the
+@ref building-corrade-packages-brew "Corrade Homebrew package" first. If you
+want to pass additional flags to CMake or
 @ref building-features "enable / disable additional features", edit the `*.rb`
 file.
 
@@ -361,7 +368,7 @@ installed files. The following variables are supported:
     install to `lib64/` instead of `lib/`. In most cases this variable is
     autodetected, so you don't need to set it yourself.
 -   `MAGNUM_DEPLOY_PREFIX` --- Used on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten"
-    to override location where web demos and utilities (such as @ref magnum-info)
+    to override location where web demos and utilities (such as @ref magnum-gl-info)
     are installed, so you can have libraries installed to a system location and
     utilities to your webserver, for example. Defaults to ``.``. If a relative
     path is used, it's relative to `CMAKE_INSTALL_PREFIX`.
@@ -383,16 +390,24 @@ By default the engine is built for desktop OpenGL. Using the `TARGET_*` CMake
 options you can target other platforms. Note that some features are
 available for desktop OpenGL only, see @ref requires-gl.
 
--   `TARGET_GLES` --- Target OpenGL ES.
--   `TARGET_GLES2` --- Target OpenGL ES 2.0 instead of 3.0 and later. Currently
-    enabled by default when `TARGET_GLES` is set.
+-   `TARGET_GL` --- Build libraries with OpenGL interoperability enabled.
+    Enabled by default when `WITH_GL` is enabled. Disabling this will cause
+    other libraries to not depend on the @ref GL library, but doesn't affect
+    the @ref GL library itself.
+-   `TARGET_GLES` --- Target OpenGL ES. Available only when `WITH_GL` is
+    enabled.
+-   `TARGET_GLES2` --- Target OpenGL ES 2.0 instead of 3.0 and later. Available
+    only when `WITH_GL` is set. Currently enabled by default when `TARGET_GLES`
+    is set.
 -   `TARGET_DESKTOP_GLES` --- Target OpenGL ES on desktop, i.e. use OpenGL ES
     emulation in desktop OpenGL drivers. Available on Linux and Windows, though
-    might not be supported by all drivers.
+    might not be supported by all drivers. Available only when `WITH_GL` is
+    enabled.
 -   `TARGET_HEADLESS` --- Build command-line utilities for use on a headless
     machine. Basically it means that EGL with no display attachment is being
     used everywhere instead of platform-specific toolkits like CGL, GLX or WGL.
-    Supported mainly on OpenGL ES drivers.
+    Supported mainly on OpenGL ES drivers. Available only when `WITH_GL` is
+    enabled.
 
 By default the engine is built in a way that allows having multiple independent
 thread-local Magnum contents. This might cause some performance penalties ---
@@ -412,21 +427,23 @@ be built and which not:
 -   `WITH_AUDIO` --- Build the @ref Audio library. Depends on
     [OpenAL](https://www.openal.org/), not built by default.
 -   `WITH_DEBUGTOOLS` --- Build the @ref DebugTools library.
+-   `WITH_GL` --- Build the @ref GL library. Enabled automatically if
+    `WITH_SHADERS` or `WITH_TEXT` is enabled.
 -   `WITH_MESHTOOLS` --- Build the @ref MeshTools library. Enables also
     building of the Trade library.
 -   `WITH_PRIMITIVES` --- Build the @ref Primitives library. Enables also
     building of the Trade library.
 -   `WITH_SCENEGRAPH` --- Build the @ref SceneGraph library. Enabled
     automatically if `WITH_SHAPES` is enabled.
--   `WITH_SHADERS` --- Build the @ref Shaders library.
+-   `WITH_SHADERS` --- Build the @ref Shaders library. Enables also building of
+    the GL library.
 -   `WITH_SHAPES` --- Build the @ref Shapes library. Enables also building of
-    the SceneGraph library. Enabled automatically if `WITH_DEBUGTOOLS` is
-    enabled.
+    the SceneGraph library.
 -   `WITH_TEXT` --- Build the @ref Text library. Enables also building of
-    the TextureTools library.
+    the TextureTools and GL libraries.
 -   `WITH_TEXTURETOOLS` --- Build the @ref TextureTools library. Enabled
     automatically if `WITH_TEXT` or `WITH_DISTANCEFIELDCONVERTER` is enabled.
--   `WITH_TRADE` --- Build the @ref Trade library
+-   `WITH_TRADE` --- Build the @ref Trade library.
 
 There are more involved component dependencies that are not described here (for
 example the @ref DebugTools has some functionality that gets built only when
@@ -442,49 +459,63 @@ your platform best:
 
 -   `WITH_ANDROIDAPPLICATION` --- Build the
     @ref Platform::AndroidApplication "AndroidApplication" library. Available
-    only on @ref CORRADE_TARGET_ANDROID "Android".
+    only on @ref CORRADE_TARGET_ANDROID "Android". Enables also building of the
+    GL library.
 -   `WITH_GLFWAPPLICATION` --- Build the
     @ref Platform::GlfwApplication "GlfwApplication" library. Depends on
     [GLFW](http://glfw.org).
 -   `WITH_GLUTAPPLICATION` --- Build the
     @ref Platform::GlutApplication "GlutApplication" library. Depends on
-    [GLUT](http://freeglut.sourceforge.net/).
+    [GLUT](http://freeglut.sourceforge.net/). Enables also building of the GL
+    library.
 -   `WITH_GLXAPPLICATION` --- Build the
     @ref Platform::GlxApplication "GlxApplication" library. Depends on **X11**.
+    Enables also building of the GL library.
 -   `WITH_SDL2APPLICATION` --- Build the
     @ref Platform::Sdl2Application "Sdl2Application" library. Depends on
     [SDL2](http://www.libsdl.org).
 -   `WITH_XEGLAPPLICATION` --- Build the
-    @ref Platform::XEglApplication "XEglApplication" library.
+    @ref Platform::XEglApplication "XEglApplication" library. Enables also
+    building of the GL library.
 -   `WITH_WINDOWLESSCGLAPPLICATION` --- Build the
     @ref Platform::WindowlessCglApplication "WindowlessCglApplication" library.
+    Enables also building of the GL library.
 -   `WITH_WINDOWLESSEGLAPPLICATION` --- Build the
     @ref Platform::WindowlessEglApplication "WindowlessEglApplication" library.
+    Enables also building of the GL library.
 -   `WITH_WINDOWLESSGLXAPPLICATION` --- Build the
     @ref Platform::WindowlessGlxApplication "WindowlessGlxApplication" library.
+    Enables also building of the GL library.
 -   `WITH_WINDOWLESSIOSAPPLICATION` --- Build the
     @ref Platform::WindowlessIosApplication "WindowlessIosApplication" library.
+    Enables also building of the GL library.
 -   `WITH_WINDOWLESSWGLAPPLICATION` --- Build the
     @ref Platform::WindowlessWglApplication "WindowlessWglApplication" library.
+    Enables also building of the GL library.
 -   `WITH_WINDOWLESSWINDOWSEGLAPPLICATION` --- Build the
     @ref Platform::WindowlessWindowsEglApplication "WindowlessWindowsEglApplication"
-    library.
+    library. Enables also building of the GL library.
 
 None of the context libraries is built by default. Similarly to the application
 libraries, they are always built as static. You need them only if you chose to
 not use any of the application libraries above (see @ref platform-custom for
 more information):
 
--   `WITH_CGLCONTEXT` --- Build the CGL context handling library.
--   `WITH_EGLCONTEXT` --- Build the EGL context handling library.
--   `WITH_GLXCONTEXT` --- Build the GLX context handling library.
--   `WITH_WGLCONTEXT` --- Build the WGL context handling library.
+-   `WITH_CGLCONTEXT` --- Build the CGL context handling library. Enables also
+    building of the GL library.
+-   `WITH_EGLCONTEXT` --- Build the EGL context handling library. Enables also
+    building of the GL library.
+-   `WITH_GLXCONTEXT` --- Build the GLX context handling library. Enables also
+    building of the GL library.
+-   `WITH_WGLCONTEXT` --- Build the WGL context handling library. Enables also
+    building of the GL library.
 
 There are also extensions to @ref Corrade::TestSuite::Tester for testing GPU
 code:
 
--   `WITH_OPENGLTESTER` --- The @ref OpenGLTester class. Enables building of
-    one of the windowless application libraries based on the target platform.
+-   `WITH_OPENGLTESTER` --- The @ref GL::OpenGLTester class. Enables also
+    building of the GL library and one of the windowless application libraries
+    based on the target platform.
 
 Magnum also contains a set of dependency-less plugins for importing essential
 file formats. Additional plugins are provided in a separate plugin repository,
@@ -519,12 +550,13 @@ default.
 
 There are also a few command-line utilities, also all disabled by default:
 
--   `WITH_MAGNUMINFO` --- Build the @ref magnum-info "magnum-info" executable,
-    which provides information about the engine and OpenGL capabilities.
-    Enables building of one of the windowless application libraries based on
-    the target platform.
+-   `WITH_GL_INFO` --- Build the @ref magnum-gl-info "magnum-gl-info"
+    executable, which provides information about the engine OpenGL
+    capabilities. Enables building of one of the windowless application
+    libraries based on the target platform.
 -   `WITH_AL_INFO` --- Build the @ref magnum-al-info "magnum-al-info"
-    executable, which provides information about OpenAL capabilities.
+    executable, which provides information about the engine OpenAL
+    capabilities.
 -   `WITH_DISTANCEFIELDCONVERTER` --- Build the
     @ref magnum-distancefieldconverter "magnum-distancefieldconverter"
     executable for converting black&white images to distance field textures.
@@ -547,7 +579,7 @@ will be taken relative to executable location, which is useful for making
 relocatable installations.
 
 Note that each [namespace](namespaces.html) documentation, all @ref Platform
-library documentation and the @ref OpenGLTester class documentation contain
+library documentation and the @ref GL::OpenGLTester class documentation contain
 more detailed information about dependencies, availability on particular
 platform and also guide how to enable given library for building and how to use
 it with CMake.
@@ -766,7 +798,7 @@ Then create build directory and run `cmake` and the build command in it.
 
 WebGL 1.0 (GLES 2.0 equivalent) is enabled by default, switch to 2.0 (GLES 3.0
 equivalent) by disabling `TARGET_GLES2`. If you enable one of the
-@ref magnum-info or @ref magnum-al-info utilities, you can override their
+@ref magnum-gl-info or @ref magnum-al-info utilities, you can override their
 install location by setting `MAGNUM_DEPLOY_PREFIX` --- putting them for example
 in your webserver root.
 

@@ -26,38 +26,16 @@
 */
 
 /** @file
- * @brief OpenGL headers
+ * @deprecated Use @ref Magnum/GL/OpenGL.h instead.
  */
-
-#include <Corrade/configure.h>
 
 #include "Magnum/configure.h"
 
-/* Desktop OpenGL */
-#ifndef MAGNUM_TARGET_GLES
-    #include "MagnumExternal/OpenGL/GL/flextGL.h"
-
-/* Special case for Emscripten (no extension loading) */
-#elif defined(CORRADE_TARGET_EMSCRIPTEN)
-    #ifdef MAGNUM_TARGET_GLES2
-        #include "MagnumExternal/OpenGL/GLES2/flextGLEmscripten.h"
-    #else
-        #include "MagnumExternal/OpenGL/GLES3/flextGLEmscripten.h"
-    #endif
-
-/* Special case for desktop GLES on Windows (still links to the old opengl32.dll) */
-#elif defined(CORRADE_TARGET_WINDOWS) && defined(MAGNUM_TARGET_DESKTOP_GLES)
-    #ifdef MAGNUM_TARGET_GLES2
-        #include "MagnumExternal/OpenGL/GLES2/flextGLWindowsDesktop.h"
-    #else
-        #include "MagnumExternal/OpenGL/GLES3/flextGLWindowsDesktop.h"
-    #endif
-
-/* Generic, sane OpenGL ES */
-#elif defined(MAGNUM_TARGET_GLES2)
-    #include "MagnumExternal/OpenGL/GLES2/flextGL.h"
+#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+#include "Magnum/GL/OpenGL.h"
+CORRADE_DEPRECATED_FILE("use Magnum/GL/OpenGL.h instead")
 #else
-    #include "MagnumExternal/OpenGL/GLES3/flextGL.h"
+#error use Magnum/GL/OpenGL.h instead
 #endif
 
 #endif

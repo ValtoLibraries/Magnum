@@ -33,10 +33,10 @@
 #include <tuple>
 #include <vector>
 
-#include "Magnum/Math/Range.h"
-#include "Magnum/Buffer.h"
 #include "Magnum/DimensionTraits.h"
-#include "Magnum/Mesh.h"
+#include "Magnum/Math/Range.h"
+#include "Magnum/GL/Buffer.h"
+#include "Magnum/GL/Mesh.h"
 #include "Magnum/Text/Text.h"
 #include "Magnum/Text/Alignment.h"
 #include "Magnum/Text/visibility.h"
@@ -79,13 +79,13 @@ class MAGNUM_TEXT_EXPORT AbstractRenderer {
         Range2D rectangle() const { return _rectangle; }
 
         /** @brief Vertex buffer */
-        Buffer& vertexBuffer() { return _vertexBuffer; }
+        GL::Buffer& vertexBuffer() { return _vertexBuffer; }
 
         /** @brief Index buffer */
-        Buffer& indexBuffer() { return _indexBuffer; }
+        GL::Buffer& indexBuffer() { return _indexBuffer; }
 
         /** @brief Mesh */
-        Mesh& mesh() { return _mesh; }
+        GL::Mesh& mesh() { return _mesh; }
 
         /**
          * @brief Reserve capacity for rendered glyphs
@@ -99,7 +99,7 @@ class MAGNUM_TEXT_EXPORT AbstractRenderer {
          * Initially zero capacity is reserved.
          * @see @ref capacity()
          */
-        void reserve(UnsignedInt glyphCount, BufferUsage vertexBufferUsage, BufferUsage indexBufferUsage);
+        void reserve(UnsignedInt glyphCount, GL::BufferUsage vertexBufferUsage, GL::BufferUsage indexBufferUsage);
 
         /**
          * @brief Render text
@@ -123,8 +123,8 @@ class MAGNUM_TEXT_EXPORT AbstractRenderer {
 
         ~AbstractRenderer();
 
-        Mesh _mesh;
-        Buffer _vertexBuffer, _indexBuffer;
+        GL::Mesh _mesh;
+        GL::Buffer _vertexBuffer, _indexBuffer;
         #ifdef CORRADE_TARGET_EMSCRIPTEN
         Containers::Array<UnsignedByte> _vertexBufferData, _indexBufferData;
         #endif
@@ -138,9 +138,9 @@ class MAGNUM_TEXT_EXPORT AbstractRenderer {
         Range2D _rectangle;
 
         #if defined(MAGNUM_TARGET_GLES2) && !defined(CORRADE_TARGET_EMSCRIPTEN)
-        typedef void*(*BufferMapImplementation)(Buffer&, GLsizeiptr);
-        static MAGNUM_TEXT_LOCAL void* bufferMapImplementationFull(Buffer& buffer, GLsizeiptr length);
-        static MAGNUM_TEXT_LOCAL void* bufferMapImplementationRange(Buffer& buffer, GLsizeiptr length);
+        typedef void*(*BufferMapImplementation)(GL::Buffer&, GLsizeiptr);
+        static MAGNUM_TEXT_LOCAL void* bufferMapImplementationFull(GL::Buffer& buffer, GLsizeiptr length);
+        static MAGNUM_TEXT_LOCAL void* bufferMapImplementationRange(GL::Buffer& buffer, GLsizeiptr length);
         static BufferMapImplementation bufferMapImplementation;
         #else
         #ifndef CORRADE_TARGET_EMSCRIPTEN
@@ -148,12 +148,12 @@ class MAGNUM_TEXT_EXPORT AbstractRenderer {
         #else
         MAGNUM_TEXT_LOCAL
         #endif
-        void* bufferMapImplementation(Buffer& buffer, GLsizeiptr length);
+        void* bufferMapImplementation(GL::Buffer& buffer, GLsizeiptr length);
         #endif
 
         #if defined(MAGNUM_TARGET_GLES2) && !defined(CORRADE_TARGET_EMSCRIPTEN)
-        typedef void(*BufferUnmapImplementation)(Buffer&);
-        static MAGNUM_TEXT_LOCAL void bufferUnmapImplementationDefault(Buffer& buffer);
+        typedef void(*BufferUnmapImplementation)(GL::Buffer&);
+        static MAGNUM_TEXT_LOCAL void bufferUnmapImplementationDefault(GL::Buffer& buffer);
         static MAGNUM_TEXT_LOCAL BufferUnmapImplementation bufferUnmapImplementation;
         #else
         #ifndef CORRADE_TARGET_EMSCRIPTEN
@@ -161,7 +161,7 @@ class MAGNUM_TEXT_EXPORT AbstractRenderer {
         #else
         MAGNUM_TEXT_LOCAL
         #endif
-        void bufferUnmapImplementation(Buffer& buffer);
+        void bufferUnmapImplementation(GL::Buffer& buffer);
         #endif
 };
 
@@ -181,7 +181,7 @@ mesh:
 @snippet MagnumText.cpp Renderer-usage1
 
 See @ref render(AbstractFont&, const GlyphCache&, Float, const std::string&, Alignment)
-and @ref render(AbstractFont&, const GlyphCache&, Float, const std::string&, Buffer&, Buffer&, BufferUsage, Alignment)
+and @ref render(AbstractFont&, const GlyphCache&, Float, const std::string&, GL::Buffer&, GL::Buffer&, GL::BufferUsage, Alignment)
 for more information.
 
 While this method is sufficient for one-shot rendering of static texts, for
@@ -192,9 +192,9 @@ that doesn't recreate everything on each text change:
 
 @section Text-Renderer-required-opengl-functionality Required OpenGL functionality
 
-Mutable text rendering requires @extension{ARB,map_buffer_range} on desktop
-OpenGL (also part of OpenGL ES 3.0). If @extension{EXT,map_buffer_range} is not
-available in ES 2.0, at least @extension{OES,mapbuffer} must be supported for
+Mutable text rendering requires @gl_extension{ARB,map_buffer_range} on desktop
+OpenGL (also part of OpenGL ES 3.0). If @gl_extension{EXT,map_buffer_range} is not
+available in ES 2.0, at least @gl_extension{OES,mapbuffer} must be supported for
 asynchronous buffer updates. There is no similar extension in WebGL, thus plain
 (and slow) buffer updates are used there.
 
@@ -217,7 +217,7 @@ template<UnsignedInt dimensions> class MAGNUM_TEXT_EXPORT Renderer: public Abstr
          * Returns mesh prepared for use with @ref Shaders::AbstractVector
          * subclasses and rectangle spanning the rendered text.
          */
-        static std::tuple<Mesh, Range2D> render(AbstractFont& font, const GlyphCache& cache, Float size, const std::string& text, Buffer& vertexBuffer, Buffer& indexBuffer, BufferUsage usage, Alignment alignment = Alignment::LineLeft);
+        static std::tuple<GL::Mesh, Range2D> render(AbstractFont& font, const GlyphCache& cache, Float size, const std::string& text, GL::Buffer& vertexBuffer, GL::Buffer& indexBuffer, GL::BufferUsage usage, Alignment alignment = Alignment::LineLeft);
 
         /**
          * @brief Constructor

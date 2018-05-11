@@ -24,93 +24,117 @@
 #
 
 set(MagnumDebugTools_SRCS
-    Profiler.cpp
-    ResourceManager.cpp
-    TextureImage.cpp)
+    Profiler.cpp)
+
+set(MagnumDebugTools_GracefulAssert_SRCS )
 
 set(MagnumDebugTools_HEADERS
     DebugTools.h
-    Profiler.h
-    ResourceManager.h
-    TextureImage.h
-    visibility.h)
+    Profiler.h)
 
 # Header files to display in project view of IDEs only
 set(MagnumDebugTools_PRIVATE_HEADERS )
 
-if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_GLES2)
-    corrade_add_resource(MagnumDebugTools_RESOURCES resources.conf)
-    list(APPEND MagnumDebugTools_SRCS ${MagnumDebugTools_RESOURCES})
+if(TARGET_GL)
+    list(APPEND MagnumDebugTools_SRCS
+        ResourceManager.cpp
+        TextureImage.cpp)
+
+    list(APPEND MagnumDebugTools_HEADERS
+        ResourceManager.h
+        TextureImage.h
+        visibility.h)
+
+    if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_GLES2)
+        corrade_add_resource(MagnumDebugTools_RESOURCES resources.conf)
+        list(APPEND MagnumDebugTools_SRCS ${MagnumDebugTools_RESOURCES})
+    endif()
+
+    if(NOT MAGNUM_TARGET_WEBGL)
+        list(APPEND MagnumDebugTools_SRCS
+            BufferData.cpp)
+
+        list(APPEND MagnumDebugTools_HEADERS
+            BufferData.h)
+    endif()
+
+    if(WITH_SCENEGRAPH)
+        list(APPEND MagnumDebugTools_SRCS
+            ForceRenderer.cpp
+            ObjectRenderer.cpp)
+
+        list(APPEND MagnumDebugTools_HEADERS
+            ForceRenderer.h
+            ObjectRenderer.h)
+
+        list(APPEND MagnumDebugTools_PRIVATE_HEADERS
+            Implementation/ForceRendererTransformation.h)
+    endif()
+
+    if(WITH_SHAPES)
+        list(APPEND MagnumDebugTools_SRCS
+            ShapeRenderer.cpp
+
+            Implementation/AbstractBoxRenderer.cpp
+            Implementation/AbstractShapeRenderer.cpp
+            Implementation/AxisAlignedBoxRenderer.cpp
+            Implementation/BoxRenderer.cpp
+            Implementation/CapsuleRenderer.cpp
+            Implementation/CylinderRenderer.cpp
+            Implementation/LineSegmentRenderer.cpp
+            Implementation/PointRenderer.cpp
+            Implementation/SphereRenderer.cpp)
+
+        list(APPEND MagnumDebugTools_HEADERS
+            ShapeRenderer.h)
+
+        list(APPEND MagnumDebugTools_PRIVATE_HEADERS
+            Implementation/AbstractBoxRenderer.h
+            Implementation/AbstractShapeRenderer.h
+            Implementation/AxisAlignedBoxRenderer.h
+            Implementation/BoxRenderer.h
+            Implementation/CapsuleRenderer.h
+            Implementation/CapsuleRendererTransformation.h
+            Implementation/CylinderRenderer.h
+            Implementation/CylinderRendererTransformation.h
+            Implementation/LineSegmentRenderer.h
+            Implementation/LineSegmentRendererTransformation.h
+            Implementation/PointRenderer.h
+            Implementation/SphereRenderer.h)
+    endif()
 endif()
 
 # Build the TestSuite-related functionality only if it is present
 find_package(Corrade COMPONENTS TestSuite)
 if(Corrade_TestSuite_FOUND)
-    list(APPEND MagnumDebugTools_SRCS
+    list(APPEND MagnumDebugTools_GracefulAssert_SRCS
         CompareImage.cpp)
 
     list(APPEND MagnumDebugTools_HEADERS
         CompareImage.h)
 endif()
 
-if(NOT MAGNUM_TARGET_WEBGL)
-    list(APPEND MagnumDebugTools_SRCS
-        BufferData.cpp)
-
-    list(APPEND MagnumDebugTools_HEADERS
-        BufferData.h)
+# Objects shared between main and test library
+add_library(MagnumDebugToolsObjects OBJECT
+    ${MagnumDebugTools_SRCS}
+    ${MagnumDebugTools_HEADERS}
+    ${MagnumDebugTools_PRIVATE_HEADERS})
+target_include_directories(MagnumDebugToolsObjects PUBLIC $<TARGET_PROPERTY:Magnum,INTERFACE_INCLUDE_DIRECTORIES>)
+if(NOT BUILD_STATIC)
+    target_compile_definitions(MagnumDebugToolsObjects PRIVATE "MagnumDebugToolsObjects_EXPORTS")
 endif()
-
-if(WITH_SCENEGRAPH)
-    list(APPEND MagnumDebugTools_SRCS
-        ForceRenderer.cpp
-        ObjectRenderer.cpp)
-
-    list(APPEND MagnumDebugTools_HEADERS
-        ForceRenderer.h
-        ObjectRenderer.h)
-
-    list(APPEND MagnumDebugTools_PRIVATE_HEADERS
-        Implementation/ForceRendererTransformation.h)
+if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
+    set_target_properties(MagnumDebugToolsObjects PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-
-if(WITH_SHAPES)
-    list(APPEND MagnumDebugTools_SRCS
-        ShapeRenderer.cpp
-
-        Implementation/AbstractBoxRenderer.cpp
-        Implementation/AbstractShapeRenderer.cpp
-        Implementation/AxisAlignedBoxRenderer.cpp
-        Implementation/BoxRenderer.cpp
-        Implementation/CapsuleRenderer.cpp
-        Implementation/CylinderRenderer.cpp
-        Implementation/LineSegmentRenderer.cpp
-        Implementation/PointRenderer.cpp
-        Implementation/SphereRenderer.cpp)
-
-    list(APPEND MagnumDebugTools_HEADERS
-        ShapeRenderer.h)
-
-    list(APPEND MagnumDebugTools_PRIVATE_HEADERS
-        Implementation/AbstractBoxRenderer.h
-        Implementation/AbstractShapeRenderer.h
-        Implementation/AxisAlignedBoxRenderer.h
-        Implementation/BoxRenderer.h
-        Implementation/CapsuleRenderer.h
-        Implementation/CapsuleRendererTransformation.h
-        Implementation/CylinderRenderer.h
-        Implementation/CylinderRendererTransformation.h
-        Implementation/LineSegmentRenderer.h
-        Implementation/LineSegmentRendererTransformation.h
-        Implementation/PointRenderer.h
-        Implementation/SphereRenderer.h)
+set_target_properties(MagnumDebugToolsObjects PROPERTIES FOLDER "Magnum/DebugTools")
+if(TARGET_GL)
+    target_include_directories(MagnumDebugToolsObjects PUBLIC $<TARGET_PROPERTY:MagnumGL,INTERFACE_INCLUDE_DIRECTORIES>)
 endif()
 
 # DebugTools library
 add_library(MagnumDebugTools ${SHARED_OR_STATIC}
-    ${MagnumDebugTools_SRCS}
-    ${MagnumDebugTools_HEADERS}
-    ${MagnumDebugTools_PRIVATE_HEADERS})
+    $<TARGET_OBJECTS:MagnumDebugToolsObjects>
+    ${MagnumDebugTools_GracefulAssert_SRCS})
 set_target_properties(MagnumDebugTools PROPERTIES
     DEBUG_POSTFIX "-d"
     FOLDER "Magnum/DebugTools")
@@ -119,20 +143,23 @@ if(NOT BUILD_STATIC)
 elseif(BUILD_STATIC_PIC)
     set_target_properties(MagnumDebugTools PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-target_link_libraries(MagnumDebugTools Magnum)
+target_link_libraries(MagnumDebugTools PUBLIC Magnum)
 if(Corrade_TestSuite_FOUND)
-    target_link_libraries(MagnumDebugTools Corrade::TestSuite)
+    target_link_libraries(MagnumDebugTools PUBLIC Corrade::TestSuite)
 endif()
-if(WITH_SCENEGRAPH)
-    target_link_libraries(MagnumDebugTools MagnumSceneGraph)
-endif()
-if(WITH_SHAPES)
-    target_link_libraries(MagnumDebugTools MagnumShapes MagnumPrimitives)
-endif()
-if(WITH_SCENEGRAPH OR WITH_SHAPES)
-    target_link_libraries(MagnumDebugTools
-        MagnumMeshTools
-        MagnumShaders)
+if(TARGET_GL)
+    target_link_libraries(MagnumDebugTools PUBLIC MagnumGL)
+    if(WITH_SCENEGRAPH)
+        target_link_libraries(MagnumDebugTools PUBLIC MagnumSceneGraph)
+    endif()
+    if(WITH_SHAPES)
+        target_link_libraries(MagnumDebugTools PUBLIC MagnumShapes MagnumPrimitives)
+    endif()
+    if(WITH_SCENEGRAPH OR WITH_SHAPES)
+        target_link_libraries(MagnumDebugTools PUBLIC
+            MagnumMeshTools
+            MagnumShaders)
+    endif()
 endif()
 
 install(TARGETS MagnumDebugTools
@@ -142,6 +169,46 @@ install(TARGETS MagnumDebugTools
 install(FILES ${MagnumDebugTools_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/DebugTools)
 
 if(BUILD_TESTS)
+    # Library with graceful assert for testing
+    add_library(MagnumDebugToolsTestLib ${SHARED_OR_STATIC}
+        $<TARGET_OBJECTS:MagnumDebugToolsObjects>
+        ${MagnumDebugTools_GracefulAssert_SRCS})
+    set_target_properties(MagnumDebugToolsTestLib PROPERTIES
+        DEBUG_POSTFIX "-d"
+        FOLDER "Magnum/DebugTools")
+    target_compile_definitions(MagnumDebugToolsTestLib PRIVATE
+        "CORRADE_GRACEFUL_ASSERT" "MagnumDebugTools_EXPORTS")
+    if(BUILD_STATIC_PIC)
+        set_target_properties(MagnumDebugToolsTestLib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+    target_link_libraries(MagnumDebugToolsTestLib PUBLIC Magnum)
+    if(Corrade_TestSuite_FOUND)
+        target_link_libraries(MagnumDebugToolsTestLib PUBLIC Corrade::TestSuite)
+    endif()
+    if(TARGET_GL)
+        target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumGL)
+        if(WITH_SCENEGRAPH)
+            target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumSceneGraph)
+        endif()
+        if(WITH_SHAPES)
+            target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumShapes MagnumPrimitives)
+        endif()
+        if(WITH_SCENEGRAPH OR WITH_SHAPES)
+            target_link_libraries(MagnumDebugToolsTestLib PUBLIC
+                MagnumMeshTools
+                MagnumShaders)
+        endif()
+    endif()
+
+    # On Windows we need to install first and then run the tests to avoid "DLL
+    # not found" hell, thus we need to install this too
+    if(CORRADE_TARGET_WINDOWS AND NOT CMAKE_CROSSCOMPILING AND NOT BUILD_STATIC)
+        install(TARGETS MagnumDebugToolsTestLib
+            RUNTIME DESTINATION ${MAGNUM_BINARY_INSTALL_DIR}
+            LIBRARY DESTINATION ${MAGNUM_LIBRARY_INSTALL_DIR}
+            ARCHIVE DESTINATION ${MAGNUM_LIBRARY_INSTALL_DIR})
+    endif()
+
     add_subdirectory(Test)
 endif()
 

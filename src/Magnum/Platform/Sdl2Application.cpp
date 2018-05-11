@@ -32,10 +32,13 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include "Magnum/Version.h"
 #include "Magnum/Math/Range.h"
-#include "Magnum/Platform/Context.h"
 #include "Magnum/Platform/ScreenedApplication.hpp"
+
+#ifdef MAGNUM_TARGET_GL
+#include "Magnum/GL/Version.h"
+#include "Magnum/Platform/GLContext.h"
+#endif
 
 namespace Magnum { namespace Platform {
 
@@ -58,65 +61,141 @@ Sdl2Application::InputEvent::Modifiers fixedModifiers(Uint16 mod) {
 
 }
 
-#ifndef DOXYGEN_GENERATING_OUTPUT
 Sdl2Application::Sdl2Application(const Arguments& arguments): Sdl2Application{arguments, Configuration{}} {}
-#endif
 
 Sdl2Application::Sdl2Application(const Arguments& arguments, const Configuration& configuration): Sdl2Application{arguments, NoCreate} {
-    createContext(configuration);
+    create(configuration);
 }
 
-Sdl2Application::Sdl2Application(const Arguments& arguments, NoCreateT): _glContext{nullptr},
+#ifdef MAGNUM_TARGET_GL
+Sdl2Application::Sdl2Application(const Arguments& arguments, const Configuration& configuration, const GLConfiguration& glConfiguration): Sdl2Application{arguments, NoCreate} {
+    create(configuration, glConfiguration);
+}
+#endif
+
+Sdl2Application::Sdl2Application(const Arguments& arguments, NoCreateT):
     #ifndef CORRADE_TARGET_EMSCRIPTEN
     _minimalLoopPeriod{0},
     #endif
-    _context{new Context{NoCreate, arguments.argc, arguments.argv}}, _flags{Flag::Redraw}
+    #ifdef MAGNUM_TARGET_GL
+    _glContext{nullptr}, _context{new GLContext{NoCreate, arguments.argc, arguments.argv}},
+    #endif
+    _flags{Flag::Redraw}
 {
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         Error() << "Cannot initialize SDL.";
         std::exit(1);
     }
+
+    #ifndef MAGNUM_TARGET_GL
+    static_cast<void>(arguments);
+    #endif
 }
 
-void Sdl2Application::createContext() { createContext({}); }
-
-void Sdl2Application::createContext(const Configuration& configuration) {
-    if(!tryCreateContext(configuration)) std::exit(1);
+void Sdl2Application::create() {
+    create(Configuration{});
 }
 
-bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
-    CORRADE_ASSERT(_context->version() == Version::None, "Platform::Sdl2Application::tryCreateContext(): context already created", false);
+void Sdl2Application::create(const Configuration& configuration) {
+    if(!tryCreate(configuration)) std::exit(1);
+}
+
+#ifdef MAGNUM_TARGET_GL
+void Sdl2Application::create(const Configuration& configuration, const GLConfiguration& glConfiguration) {
+    if(!tryCreate(configuration, glConfiguration)) std::exit(1);
+}
+#endif
+
+bool Sdl2Application::tryCreate(const Configuration& configuration) {
+    #ifdef MAGNUM_TARGET_GL
+    if(!(configuration.windowFlags() & Configuration::WindowFlag::Contextless))
+        return tryCreate(configuration, GLConfiguration{});
+    #endif
+
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    /* Create window */
+    if(!(_window = SDL_CreateWindow(
+        #ifndef CORRADE_TARGET_IOS
+        configuration.title().data(),
+        #else
+        nullptr,
+        #endif
+        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+        configuration.size().x(), configuration.size().y(),
+        Uint32(configuration.windowFlags()&~Configuration::WindowFlag::Contextless))))
+    {
+        Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
+        return false;
+    }
+    #else
+    /* Emscripten-specific initialization */
+    if(!(_glContext = SDL_SetVideoMode(configuration.size().x(), configuration.size().y(), 24, SDL_OPENGL|SDL_HWSURFACE|SDL_DOUBLEBUF))) {
+        Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
+        return false;
+    }
+    #endif
+
+    return true;
+}
+
+#ifdef MAGNUM_TARGET_GL
+bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConfiguration&
+    #ifndef MAGNUM_BUILD_DEPRECATED
+    glConfiguration
+    #else
+    _glConfiguration
+    #endif
+) {
+    #ifdef MAGNUM_BUILD_DEPRECATED
+    GLConfiguration glConfiguration{_glConfiguration};
+    CORRADE_IGNORE_DEPRECATED_PUSH
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    if(configuration.flags() && !glConfiguration.flags())
+        glConfiguration.setFlags(configuration.flags());
+    if(configuration.version() != GL::Version::None && glConfiguration.version() == GL::Version::None)
+        glConfiguration.setVersion(configuration.version());
+    #endif
+    if(configuration.sampleCount() && !glConfiguration.sampleCount())
+        glConfiguration.setSampleCount(configuration.sampleCount());
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    if(configuration.isSRGBCapable() && !glConfiguration.isSRGBCapable())
+        glConfiguration.setSRGBCapable(configuration.isSRGBCapable());
+    #endif
+    CORRADE_IGNORE_DEPRECATED_POP
+    #endif
+
+    CORRADE_ASSERT(_context->version() == GL::Version::None, "Platform::Sdl2Application::tryCreate(): context already created", false);
 
     /* Enable double buffering and 24bt depth buffer */
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     /* Multisampling */
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, configuration.sampleCount() > 1 ? 1 : 0);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, configuration.sampleCount());
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, glConfiguration.sampleCount() > 1 ? 1 : 0);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, glConfiguration.sampleCount());
 
     #ifndef CORRADE_TARGET_EMSCRIPTEN
     /* sRGB */
-    SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, configuration.isSRGBCapable());
+    SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, glConfiguration.isSRGBCapable());
     #endif
 
     /** @todo Remove when Emscripten has proper SDL2 support */
     #ifndef CORRADE_TARGET_EMSCRIPTEN
     /* Set context version, if user-specified */
-    if(configuration.version() != Version::None) {
+    if(glConfiguration.version() != GL::Version::None) {
         Int major, minor;
-        std::tie(major, minor) = version(configuration.version());
+        std::tie(major, minor) = version(glConfiguration.version());
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
 
         #ifndef MAGNUM_TARGET_GLES
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, configuration.version() >= Version::GL310 ?
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glConfiguration.version() >= GL::Version::GL310 ?
             SDL_GL_CONTEXT_PROFILE_CORE : SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
         #else
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
         #endif
 
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(configuration.flags()));
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(glConfiguration.flags()));
 
     /* Request usable version otherwise */
     } else {
@@ -133,7 +212,7 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
         #endif
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(configuration.flags())|SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(glConfiguration.flags())|SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
         #else
         /* For ES the major context version is compile-time constant */
         #ifdef MAGNUM_TARGET_GLES3
@@ -160,7 +239,7 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
         configuration.size().x(), configuration.size().y(),
         SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|Uint32(configuration.windowFlags()))))
     {
-        Error() << "Platform::Sdl2Application::tryCreateContext(): cannot create window:" << SDL_GetError();
+        Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
         return false;
     }
 
@@ -170,9 +249,10 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
     #ifndef MAGNUM_TARGET_GLES
     /* Fall back to (forward compatible) GL 2.1, if version is not
        user-specified and either core context creation fails or we are on
-       binary NVidia/AMD drivers on Linux/Windows. Instead of creating forward-
-       compatible context with highest available version, they force the
-       version to the one specified, which is completely useless behavior. */
+       binary NVidia/AMD drivers on Linux/Windows or Intel Windows drivers.
+       Instead of creating forward-compatible context with highest available
+       version, they force the version to the one specified, which is
+       completely useless behavior. */
     #ifndef CORRADE_TARGET_APPLE
     constexpr static const char nvidiaVendorString[] = "NVIDIA Corporation";
     #ifdef CORRADE_TARGET_WINDOWS
@@ -181,7 +261,7 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
     constexpr static const char amdVendorString[] = "ATI Technologies Inc.";
     const char* vendorString;
     #endif
-    if(configuration.version() == Version::None && (!_glContext
+    if(glConfiguration.version() == GL::Version::None && (!_glContext
         #ifndef CORRADE_TARGET_APPLE
         /* Sorry about the UGLY code, HOPEFULLY THERE WON'T BE MORE WORKAROUNDS */
         || (vendorString = reinterpret_cast<const char*>(glGetString(GL_VENDOR)),
@@ -193,10 +273,10 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
          && !_context->isDriverWorkaroundDisabled("no-forward-compatible-core-context"))
         #endif
     )) {
-        /* Don't print any warning when doing the NV workaround, because the
-           bug will be there probably forever */
+        /* Don't print any warning when doing the workaround, because the bug
+           will be there probably forever */
         if(!_glContext) Warning()
-            << "Platform::Sdl2Application::tryCreateContext(): cannot create core context:"
+            << "Platform::Sdl2Application::tryCreate(): cannot create core context:"
             << SDL_GetError() << "(falling back to compatibility context)";
         else SDL_GL_DeleteContext(_glContext);
 
@@ -205,14 +285,14 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(configuration.flags()));
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(glConfiguration.flags()));
 
         if(!(_window = SDL_CreateWindow(configuration.title().data(),
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             configuration.size().x(), configuration.size().y(),
-            SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|Uint32(configuration.windowFlags()))))
+            SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|Uint32(configuration.windowFlags()&~Configuration::WindowFlag::Contextless))))
         {
-            Error() << "Platform::Sdl2Application::tryCreateContext(): cannot create window:" << SDL_GetError();
+            Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
             return false;
         }
 
@@ -223,7 +303,7 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
 
     /* Cannot create context (or fallback compatibility context on desktop) */
     if(!_glContext) {
-        Error() << "Platform::Sdl2Application::tryCreateContext(): cannot create context:" << SDL_GetError();
+        Error() << "Platform::Sdl2Application::tryCreate(): cannot create context:" << SDL_GetError();
         SDL_DestroyWindow(_window);
         _window = nullptr;
         return false;
@@ -241,7 +321,7 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
     #else
     /* Emscripten-specific initialization */
     if(!(_glContext = SDL_SetVideoMode(configuration.size().x(), configuration.size().y(), 24, SDL_OPENGL|SDL_HWSURFACE|SDL_DOUBLEBUF))) {
-        Error() << "Platform::Sdl2Application::tryCreateContext(): cannot create context:" << SDL_GetError();
+        Error() << "Platform::Sdl2Application::tryCreate(): cannot create context:" << SDL_GetError();
         return false;
     }
     #endif
@@ -267,6 +347,7 @@ bool Sdl2Application::tryCreateContext(const Configuration& configuration) {
     /* Return true if the initialization succeeds */
     return true;
 }
+#endif
 
 Vector2i Sdl2Application::windowSize() {
     #ifndef CORRADE_TARGET_EMSCRIPTEN
@@ -308,13 +389,18 @@ bool Sdl2Application::setSwapInterval(const Int interval) {
 }
 
 Sdl2Application::~Sdl2Application() {
+    #ifdef MAGNUM_TARGET_GL
     _context.reset();
 
     #ifndef CORRADE_TARGET_EMSCRIPTEN
     SDL_GL_DeleteContext(_glContext);
-    SDL_DestroyWindow(_window);
     #else
     SDL_FreeSurface(_glContext);
+    #endif
+    #endif
+
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    SDL_DestroyWindow(_window);
     #endif
     SDL_Quit();
 }
@@ -525,20 +611,33 @@ void Sdl2Application::multiGestureEvent(MultiGestureEvent&) {}
 void Sdl2Application::textInputEvent(TextInputEvent&) {}
 void Sdl2Application::textEditingEvent(TextEditingEvent&) {}
 
+#ifdef MAGNUM_TARGET_GL
+Sdl2Application::GLConfiguration::GLConfiguration():
+    _sampleCount(0)
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    , _version(GL::Version::None), _sRGBCapable{false}
+    #endif
+    {}
+
+Sdl2Application::GLConfiguration::~GLConfiguration() = default;
+#endif
+
 Sdl2Application::Configuration::Configuration():
     #if !defined(CORRADE_TARGET_EMSCRIPTEN) && !defined(CORRADE_TARGET_IOS)
     _title("Magnum SDL2 Application"),
     #endif
     #ifdef CORRADE_TARGET_EMSCRIPTEN
-    _size{640, 480},
+    _size{640, 480}
     #elif !defined(CORRADE_TARGET_IOS)
-    _size{800, 600},
+    _size{800, 600}
     #else
-    _size{}, /* SDL2 detects someting for us */
+    _size{} /* SDL2 detects someting for us */
     #endif
-    _windowFlags{}, _sampleCount(0)
+    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+    , _sampleCount(0)
     #ifndef CORRADE_TARGET_EMSCRIPTEN
-    , _version(Version::None), _sRGBCapable{false}
+    , _version(GL::Version::None), _sRGBCapable{false}
+    #endif
     #endif
     {}
 

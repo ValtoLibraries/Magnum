@@ -26,12 +26,11 @@
 #include "GlxApplication.h"
 
 #include "Magnum/Platform/ScreenedApplication.hpp"
-
-#include "Implementation/GlxContextHandler.h"
+#include "Magnum/Platform/Implementation/GlxContextHandler.h"
 
 namespace Magnum { namespace Platform {
 
-GlxApplication::GlxApplication(const Arguments& arguments, const Configuration& configuration): AbstractXApplication(new Implementation::GlxContextHandler, arguments, configuration) {}
+GlxApplication::GlxApplication(const Arguments& arguments, const Configuration& configuration, const GLConfiguration& glConfiguration): AbstractXApplication{new Implementation::GlxContextHandler, arguments, configuration, glConfiguration} {}
 
 GlxApplication::GlxApplication(const Arguments& arguments, NoCreateT): AbstractXApplication{new Implementation::GlxContextHandler, arguments, NoCreate} {}
 

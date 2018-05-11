@@ -29,10 +29,9 @@
  * @brief Class @ref Magnum::Shaders::MeshVisualizer
  */
 
-#include "Magnum/AbstractShaderProgram.h"
+#include "Magnum/GL/AbstractShaderProgram.h"
 #include "Magnum/Math/Color.h"
 #include "Magnum/Math/Matrix4.h"
-
 #include "Magnum/Shaders/visibility.h"
 
 namespace Magnum { namespace Shaders {
@@ -53,9 +52,9 @@ either using geometry shaders or with help of additional vertex information.
 
 If you have geometry shaders available, you don't need to do anything else.
 
-@requires_gl32 Extension @extension{ARB,geometry_shader4} for wireframe
+@requires_gl32 Extension @gl_extension{ARB,geometry_shader4} for wireframe
     rendering using geometry shaders.
-@requires_es_extension Extension @extension{EXT,geometry_shader} for
+@requires_es_extension Extension @gl_extension{EXT,geometry_shader} for
     wireframe rendering using geometry shaders.
 
 If you don't have geometry shaders, you need to set @ref Flag::NoGeometryShader
@@ -64,10 +63,10 @@ meshes (see @ref MeshTools::duplicate() for possible solution). Additionaly, if
 you have OpenGL < 3.1 or OpenGL ES 2.0, you need to provide also
 @ref VertexIndex attribute.
 
-@requires_gles30 Extension @extension{OES,standard_derivatives} for
+@requires_gles30 Extension @gl_extension{OES,standard_derivatives} for
     wireframe rendering without geometry shaders.
 
-If using geometry shaders on OpenGL ES, @extension{NV,shader_noperspective_interpolation}
+If using geometry shaders on OpenGL ES, @gl_extension{NV,shader_noperspective_interpolation}
 is optionally used for improving line appearance.
 
 @section Shaders-MeshVisualizer-usage Example usage
@@ -104,14 +103,14 @@ Rendering setup the same as above.
 @see @ref shaders
 @todo Understand and add support wireframe width/smoothness without GS
 */
-class MAGNUM_SHADERS_EXPORT MeshVisualizer: public AbstractShaderProgram {
+class MAGNUM_SHADERS_EXPORT MeshVisualizer: public GL::AbstractShaderProgram {
     public:
         /**
          * @brief Vertex position
          *
          * @ref shaders-generic "Generic attribute", @ref Vector3.
          */
-        typedef Attribute<0, Vector3> Position;
+        typedef GL::Attribute<0, Vector3> Position;
 
         /**
          * @brief Vertex index
@@ -123,7 +122,7 @@ class MAGNUM_SHADERS_EXPORT MeshVisualizer: public AbstractShaderProgram {
          * 3.1, OpenGL ES 3.0 and newer this value is provided by the shader
          * itself, so the attribute is not needed.
          */
-        typedef Attribute<3, Float> VertexIndex;
+        typedef GL::Attribute<3, Float> VertexIndex;
 
         /**
          * @brief Flag
@@ -169,7 +168,7 @@ class MAGNUM_SHADERS_EXPORT MeshVisualizer: public AbstractShaderProgram {
          * This function can be safely used for constructing (and later
          * destructing) objects even without any OpenGL context being active.
          */
-        explicit MeshVisualizer(NoCreateT) noexcept: AbstractShaderProgram{NoCreate} {}
+        explicit MeshVisualizer(NoCreateT) noexcept: GL::AbstractShaderProgram{NoCreate} {}
 
         /**
          * @brief Set transformation and projection matrix

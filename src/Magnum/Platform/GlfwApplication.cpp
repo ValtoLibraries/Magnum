@@ -26,38 +26,43 @@
 
 #include "GlfwApplication.h"
 
+#include <cstring>
 #include <tuple>
 #include <Corrade/Utility/String.h>
 #include <Corrade/Utility/Unicode.h>
 
-#include "Magnum/Version.h"
-#include "Magnum/Platform/Context.h"
 #include "Magnum/Platform/ScreenedApplication.hpp"
 
-namespace Magnum { namespace Platform {
+#ifdef MAGNUM_TARGET_GL
+#include "Magnum/GL/Version.h"
+#include "Magnum/Platform/GLContext.h"
+#endif
 
-GlfwApplication* GlfwApplication::_instance = nullptr;
+namespace Magnum { namespace Platform {
 
 #ifdef GLFW_TRUE
 /* The docs say that it's the same, verify that just in case */
 static_assert(GLFW_TRUE == true && GLFW_FALSE == false, "GLFW does not have sane bool values");
 #endif
 
-#ifndef DOXYGEN_GENERATING_OUTPUT
 GlfwApplication::GlfwApplication(const Arguments& arguments): GlfwApplication{arguments, Configuration{}} {}
-#endif
 
 GlfwApplication::GlfwApplication(const Arguments& arguments, const Configuration& configuration): GlfwApplication{arguments, NoCreate} {
-    createContext(configuration);
+    create(configuration);
 }
 
-GlfwApplication::GlfwApplication(const Arguments& arguments, NoCreateT):
-    _context{new Context{NoCreate, arguments.argc, arguments.argv}},
-    _flags{Flag::Redraw}
-{
-    /* Save global instance */
-    _instance = this;
+#ifdef MAGNUM_TARGET_GL
+GlfwApplication::GlfwApplication(const Arguments& arguments, const Configuration& configuration, const GLConfiguration& glConfiguration): GlfwApplication{arguments, NoCreate} {
+    create(configuration, glConfiguration);
+}
+#endif
 
+GlfwApplication::GlfwApplication(const Arguments& arguments, NoCreateT):
+    _flags{Flag::Redraw}
+    #ifdef MAGNUM_TARGET_GL
+    , _context{new GLContext{NoCreate, arguments.argc, arguments.argv}}
+    #endif
+{
     /* Init GLFW */
     glfwSetErrorCallback(staticErrorCallback);
 
@@ -65,16 +70,37 @@ GlfwApplication::GlfwApplication(const Arguments& arguments, NoCreateT):
         Error() << "Could not initialize GLFW";
         std::exit(8);
     }
+
+    #ifndef MAGNUM_TARGET_GL
+    static_cast<void>(arguments);
+    #endif
 }
 
-void GlfwApplication::createContext() { createContext({}); }
-
-void GlfwApplication::createContext(const Configuration& configuration) {
-    if(!tryCreateContext(configuration)) std::exit(1);
+void GlfwApplication::create() {
+    create(Configuration{});
 }
 
-bool GlfwApplication::tryCreateContext(const Configuration& configuration) {
-    CORRADE_ASSERT(_context->version() == Version::None, "Platform::GlfwApplication::tryCreateContext(): context already created", false);
+void GlfwApplication::create(const Configuration& configuration) {
+    if(!tryCreate(configuration)) std::exit(1);
+}
+
+#ifdef MAGNUM_TARGET_GL
+void GlfwApplication::create(const Configuration& configuration, const GLConfiguration& glConfiguration) {
+    if(!tryCreate(configuration, glConfiguration)) std::exit(1);
+}
+#endif
+
+bool GlfwApplication::tryCreate(const Configuration& configuration) {
+    #ifdef MAGNUM_TARGET_GL
+    #ifdef GLFW_NO_API
+    if(!(configuration.windowFlags() & Configuration::WindowFlag::Contextless))
+    #endif
+    {
+        return tryCreate(configuration, GLConfiguration{});
+    }
+    #endif
+
+    CORRADE_ASSERT(!_window, "Platform::GlfwApplication::tryCreate(): window already created", false);
 
     /* Window flags */
     GLFWmonitor* monitor = nullptr; /* Needed for setting fullscreen */
@@ -92,37 +118,15 @@ bool GlfwApplication::tryCreateContext(const Configuration& configuration) {
     }
     glfwWindowHint(GLFW_FOCUSED, configuration.windowFlags() >= Configuration::WindowFlag::Focused);
 
-    /* Context window hints */
-    glfwWindowHint(GLFW_SAMPLES, configuration.sampleCount());
-    glfwWindowHint(GLFW_SRGB_CAPABLE, configuration.isSRGBCapable());
-
-    const Configuration::Flags& flags = configuration.flags();
-    #ifdef GLFW_CONTEXT_NO_ERROR
-    glfwWindowHint(GLFW_CONTEXT_NO_ERROR, flags >= Configuration::Flag::NoError);
+    #ifdef GLFW_NO_API
+    /* Disable implicit GL context creation */
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NO_API);
     #endif
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, flags >= Configuration::Flag::Debug);
-    glfwWindowHint(GLFW_STEREO, flags >= Configuration::Flag::Stereo);
 
-    /* Set context version, if requested */
-    if(configuration.version() != Version::None) {
-        Int major, minor;
-        std::tie(major, minor) = version(configuration.version());
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
-        #ifndef MAGNUM_TARGET_GLES
-        if(configuration.version() >= Version::GL310) {
-            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        }
-        #else
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-        #endif
-    }
-
-    /* Set context flags */
+    /* Create the window */
     _window = glfwCreateWindow(configuration.size().x(), configuration.size().y(), configuration.title().c_str(), monitor, nullptr);
     if(!_window) {
-        Error() << "Platform::GlfwApplication::tryCreateContext(): cannot create context";
+        Error() << "Platform::GlfwApplication::tryCreate(): cannot create window";
         glfwTerminate();
         return false;
     }
@@ -141,11 +145,186 @@ bool GlfwApplication::tryCreateContext(const Configuration& configuration) {
     glfwSetScrollCallback(_window, staticMouseScrollEvent);
     glfwSetCharCallback(_window, staticTextInputEvent);
 
+    return true;
+}
+
+#ifdef MAGNUM_TARGET_GL
+bool GlfwApplication::tryCreate(const Configuration& configuration, const GLConfiguration&
+    #ifndef MAGNUM_BUILD_DEPRECATED
+    glConfiguration
+    #else
+    _glConfiguration
+    #endif
+) {
+    #ifdef MAGNUM_BUILD_DEPRECATED
+    GLConfiguration glConfiguration{_glConfiguration};
+    CORRADE_IGNORE_DEPRECATED_PUSH
+    if(configuration.flags() && !glConfiguration.flags())
+        glConfiguration.setFlags(configuration.flags());
+    if(configuration.version() != GL::Version::None && glConfiguration.version() == GL::Version::None)
+        glConfiguration.setVersion(configuration.version());
+    if(configuration.sampleCount() && !glConfiguration.sampleCount())
+        glConfiguration.setSampleCount(configuration.sampleCount());
+    if(configuration.isSRGBCapable() && !glConfiguration.isSRGBCapable())
+        glConfiguration.setSRGBCapable(configuration.isSRGBCapable());
+    CORRADE_IGNORE_DEPRECATED_POP
+    #endif
+
+    CORRADE_ASSERT(!_window && _context->version() == GL::Version::None, "Platform::GlfwApplication::tryCreate(): window with OpenGL context already created", false);
+
+    /* Window flags */
+    GLFWmonitor* monitor = nullptr; /* Needed for setting fullscreen */
+    if (configuration.windowFlags() >= Configuration::WindowFlag::Fullscreen) {
+        monitor = glfwGetPrimaryMonitor();
+        glfwWindowHint(GLFW_AUTO_ICONIFY, configuration.windowFlags() >= Configuration::WindowFlag::AutoIconify);
+    } else {
+        const Configuration::WindowFlags& flags = configuration.windowFlags();
+        glfwWindowHint(GLFW_RESIZABLE, flags >= Configuration::WindowFlag::Resizable);
+        glfwWindowHint(GLFW_VISIBLE, !(flags >= Configuration::WindowFlag::Hidden));
+        #ifdef GLFW_MAXIMIZED
+        glfwWindowHint(GLFW_MAXIMIZED, flags >= Configuration::WindowFlag::Maximized);
+        #endif
+        glfwWindowHint(GLFW_FLOATING, flags >= Configuration::WindowFlag::Floating);
+    }
+    glfwWindowHint(GLFW_FOCUSED, configuration.windowFlags() >= Configuration::WindowFlag::Focused);
+
+    /* Context window hints */
+    glfwWindowHint(GLFW_SAMPLES, glConfiguration.sampleCount());
+    glfwWindowHint(GLFW_SRGB_CAPABLE, glConfiguration.isSRGBCapable());
+
+    const GLConfiguration::Flags& flags = glConfiguration.flags();
+    #ifdef GLFW_CONTEXT_NO_ERROR
+    glfwWindowHint(GLFW_CONTEXT_NO_ERROR, flags >= GLConfiguration::Flag::NoError);
+    #endif
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, flags >= GLConfiguration::Flag::Debug);
+    glfwWindowHint(GLFW_STEREO, flags >= GLConfiguration::Flag::Stereo);
+
+    /* Set context version, if requested */
+    if(glConfiguration.version() != GL::Version::None) {
+        Int major, minor;
+        std::tie(major, minor) = version(glConfiguration.version());
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+        #ifndef MAGNUM_TARGET_GLES
+        if(glConfiguration.version() >= GL::Version::GL320) {
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+        }
+        #else
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        #endif
+
+    /* Request usable version otherwise */
+    } else {
+        #ifndef MAGNUM_TARGET_GLES
+        /* First try to create core context. This is needed mainly on macOS and
+           Mesa, as support for recent OpenGL versions isn't implemented in
+           compatibility contexts (which are the default). Unlike SDL2, GLFW
+           requires at least version 3.2 to be able to request a core profile. */
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+        #else
+        /* For ES the major context version is compile-time constant */
+        #ifdef MAGNUM_TARGET_GLES3
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        #elif defined(MAGNUM_TARGET_GLES2)
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        #else
+        #error unsupported OpenGL ES version
+        #endif
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        #endif
+    }
+
+    /* Create window. Hide it by default so we don't have distracting window
+       blinking in case we have to destroy it again right away. If the creation
+       succeeds, make the context current so we can query GL_VENDOR below. */
+    glfwWindowHint(GLFW_VISIBLE, false);
+    if((_window = glfwCreateWindow(configuration.size().x(), configuration.size().y(), configuration.title().c_str(), monitor, nullptr)))
+        glfwMakeContextCurrent(_window);
+
+    #ifndef MAGNUM_TARGET_GLES
+   /* Fall back to (forward compatible) GL 2.1, if version is not
+       user-specified and either core context creation fails or we are on
+       binary NVidia/AMD drivers on Linux/Windows or Intel Windows drivers.
+       Instead of creating forward-compatible context with highest available
+       version, they force the version to the one specified, which is
+       completely useless behavior. */
+    #ifndef CORRADE_TARGET_APPLE
+    constexpr static const char nvidiaVendorString[] = "NVIDIA Corporation";
+    #ifdef CORRADE_TARGET_WINDOWS
+    constexpr static const char intelVendorString[] = "Intel";
+    #endif
+    constexpr static const char amdVendorString[] = "ATI Technologies Inc.";
+    const char* vendorString;
+    #endif
+    if(glConfiguration.version() == GL::Version::None && (!_window
+        #ifndef CORRADE_TARGET_APPLE
+        /* Sorry about the UGLY code, HOPEFULLY THERE WON'T BE MORE WORKAROUNDS */
+        || (vendorString = reinterpret_cast<const char*>(glGetString(GL_VENDOR)),
+        (std::strncmp(vendorString, nvidiaVendorString, sizeof(nvidiaVendorString)) == 0 ||
+         #ifdef CORRADE_TARGET_WINDOWS
+         std::strncmp(vendorString, intelVendorString, sizeof(intelVendorString)) == 0 ||
+         #endif
+         std::strncmp(vendorString, amdVendorString, sizeof(amdVendorString)) == 0)
+         && !_context->isDriverWorkaroundDisabled("no-forward-compatible-core-context"))
+         #endif
+    )) {
+        /* Don't print any warning when doing the workaround, because the bug
+           will be there probably forever */
+        if(!_window) Warning{}
+            << "Platform::GlfwApplication::tryCreate(): cannot create a window with core OpenGL context, falling back to compatibility context";
+        else glfwDestroyWindow(_window);
+
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, false);
+
+        _window = glfwCreateWindow(configuration.size().x(), configuration.size().y(), configuration.title().c_str(), monitor, nullptr);
+    }
+    #endif
+
+    if(!_window) {
+        Error() << "Platform::GlfwApplication::tryCreate(): cannot create a window with OpenGL context";
+        return false;
+    }
+
+    /* Proceed with configuring other stuff that couldn't be done with window
+       hints */
+    if(configuration.windowFlags() >= Configuration::WindowFlag::Minimized)
+        glfwIconifyWindow(_window);
+    glfwSetInputMode(_window, GLFW_CURSOR, Int(configuration.cursorMode()));
+
+    /* Set callbacks */
+    glfwSetWindowUserPointer(_window, this);
+    glfwSetFramebufferSizeCallback(_window, staticViewportEvent);
+    glfwSetKeyCallback(_window, staticKeyEvent);
+    glfwSetCursorPosCallback(_window, staticMouseMoveEvent);
+    glfwSetMouseButtonCallback(_window, staticMouseEvent);
+    glfwSetScrollCallback(_window, staticMouseScrollEvent);
+    glfwSetCharCallback(_window, staticTextInputEvent);
+
+    /* Make the final context current */
     glfwMakeContextCurrent(_window);
 
+    /* Destroy everything when the Magnum context creation fails */
+    if(!_context->tryCreate()) {
+        glfwDestroyWindow(_window);
+        _window = nullptr;
+    }
+
+    /* Show the window once we are sure that everything is okay */
+    if(!(configuration.windowFlags() & Configuration::WindowFlag::Hidden))
+        glfwShowWindow(_window);
+
     /* Return true if the initialization succeeds */
-    return _context->tryCreate();
+    return true;
 }
+#endif
 
 GlfwApplication::~GlfwApplication() {
     glfwDestroyWindow(_window);
@@ -173,38 +352,48 @@ int GlfwApplication::exec() {
     return 0;
 }
 
-void GlfwApplication::staticKeyEvent(GLFWwindow*, int key, int, int action, int mods) {
+void GlfwApplication::staticViewportEvent(GLFWwindow* const window, const int w, const int h) {
+    static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window))->viewportEvent({w, h});
+}
+
+void GlfwApplication::staticKeyEvent(GLFWwindow* const window, const int key, int, const int action, const int mods) {
+    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
     KeyEvent e(static_cast<KeyEvent::Key>(key), {static_cast<InputEvent::Modifier>(mods)}, action == GLFW_REPEAT);
 
     if(action == GLFW_PRESS) {
-        _instance->keyPressEvent(e);
+        instance->keyPressEvent(e);
     } else if(action == GLFW_RELEASE) {
-        _instance->keyReleaseEvent(e);
+        instance->keyReleaseEvent(e);
     } else if(action == GLFW_REPEAT) {
-        _instance->keyPressEvent(e);
+        instance->keyPressEvent(e);
     }
 }
 
 void GlfwApplication::staticMouseMoveEvent(GLFWwindow* window, double x, double y) {
     MouseMoveEvent e{Vector2i{Int(x), Int(y)}, KeyEvent::getCurrentGlfwModifiers(window)};
-    _instance->mouseMoveEvent(e);
+    static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window))->mouseMoveEvent(e);
 }
 
-void GlfwApplication::staticMouseEvent(GLFWwindow*, int button, int action, int mods) {
+void GlfwApplication::staticMouseEvent(GLFWwindow* window, int button, int action, int mods) {
+    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
     double x, y;
-    glfwGetCursorPos(_instance->_window, &x, &y);
+    glfwGetCursorPos(window, &x, &y);
     MouseEvent e(static_cast<MouseEvent::Button>(button), {Int(x), Int(y)}, {static_cast<InputEvent::Modifier>(mods)});
 
     if(action == GLFW_PRESS) {
-        _instance->mousePressEvent(e);
+        instance->mousePressEvent(e);
     } else if(action == GLFW_RELEASE) {
-        _instance->mouseReleaseEvent(e);
+        instance->mouseReleaseEvent(e);
     } /* we don't handle GLFW_REPEAT */
 }
 
 void GlfwApplication::staticMouseScrollEvent(GLFWwindow* window, double xoffset, double yoffset) {
+    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
     MouseScrollEvent e(Vector2{Float(xoffset), Float(yoffset)}, KeyEvent::getCurrentGlfwModifiers(window));
-    _instance->mouseScrollEvent(e);
+    instance->mouseScrollEvent(e);
 
     #ifdef MAGNUM_BUILD_DEPRECATED
     if(yoffset != 0.0) {
@@ -216,18 +405,20 @@ void GlfwApplication::staticMouseScrollEvent(GLFWwindow* window, double xoffset,
         #ifdef __GNUC__
         #pragma GCC diagnostic pop
         #endif
-        _instance->mousePressEvent(e1);
+        instance->mousePressEvent(e1);
     }
     #endif
 }
 
-void GlfwApplication::staticTextInputEvent(GLFWwindow*, unsigned int codepoint) {
-    if(!(_instance->_flags & Flag::TextInputActive)) return;
+void GlfwApplication::staticTextInputEvent(GLFWwindow* window, unsigned int codepoint) {
+    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
+    if(!(instance->_flags & Flag::TextInputActive)) return;
 
     char utf8[4];
     const std::size_t size = Utility::Unicode::utf8(codepoint, utf8);
     TextInputEvent e{{utf8, size}};
-    _instance->textInputEvent(e);
+    instance->textInputEvent(e);
 }
 
 void GlfwApplication::staticErrorCallback(int, const char* description) {
@@ -260,12 +451,21 @@ void GlfwApplication::mouseMoveEvent(MouseMoveEvent&) {}
 void GlfwApplication::mouseScrollEvent(MouseScrollEvent&) {}
 void GlfwApplication::textInputEvent(TextInputEvent&) {}
 
+#ifdef MAGNUM_TARGET_GL
+GlfwApplication::GLConfiguration::GLConfiguration(): _sampleCount{0}, _version{GL::Version::None} {}
+
+GlfwApplication::GLConfiguration::~GLConfiguration() = default;
+#endif
+
 GlfwApplication::Configuration::Configuration():
     _title{"Magnum GLFW Application"},
-    _size{800, 600}, _sampleCount{0},
-    _version{Version::None},
+    _size{800, 600},
     _windowFlags{WindowFlag::Focused},
-    _cursorMode{CursorMode::Normal} {}
+    _cursorMode{CursorMode::Normal}
+    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
+    , _sampleCount{0}, _version{GL::Version::None}
+    #endif
+    {}
 
 GlfwApplication::Configuration::~Configuration() = default;
 

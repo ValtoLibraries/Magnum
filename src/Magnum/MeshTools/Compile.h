@@ -29,10 +29,13 @@
  * @brief Function @ref Magnum::MeshTools::compile()
  */
 
+#include "Magnum/configure.h"
+
+#ifdef MAGNUM_TARGET_GL
 #include <tuple>
 #include <memory>
 
-#include "Magnum/Magnum.h"
+#include "Magnum/GL/GL.h"
 #include "Magnum/Trade/Trade.h"
 #include "Magnum/MeshTools/visibility.h"
 
@@ -55,9 +58,13 @@ This is just a convenience function for creating generic meshes, you might want
 to use @ref interleave() and @ref compressIndices() functions instead for
 greater flexibility.
 
+@note This function is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
+
 @see @ref shaders-generic
 */
-MAGNUM_MESHTOOLS_EXPORT std::tuple<Mesh, std::unique_ptr<Buffer>, std::unique_ptr<Buffer>> compile(const Trade::MeshData2D& meshData, BufferUsage usage);
+MAGNUM_MESHTOOLS_EXPORT std::tuple<GL::Mesh, std::unique_ptr<GL::Buffer>, std::unique_ptr<GL::Buffer>> compile(const Trade::MeshData2D& meshData, GL::BufferUsage usage);
 
 /**
 @brief Compile 3D mesh data
@@ -76,10 +83,17 @@ This is just a convenience function for creating generic meshes, you might want
 to use @ref interleave() and @ref compressIndices() functions instead for
 greater flexibility.
 
+@note This function is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
+
 @see @ref shaders-generic
 */
-MAGNUM_MESHTOOLS_EXPORT std::tuple<Mesh, std::unique_ptr<Buffer>, std::unique_ptr<Buffer>> compile(const Trade::MeshData3D& meshData, BufferUsage usage);
+MAGNUM_MESHTOOLS_EXPORT std::tuple<GL::Mesh, std::unique_ptr<GL::Buffer>, std::unique_ptr<GL::Buffer>> compile(const Trade::MeshData3D& meshData, GL::BufferUsage usage);
 
 }}
+#else
+#error this header is available only in the OpenGL build
+#endif
 
 #endif
