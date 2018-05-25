@@ -219,10 +219,7 @@ Note that constructor conversion between different types (like in @ref Vector
 classes) doesn't do any (de)normalization, you should use @ref pack) and
 @ref unpack() instead, for example:
 
-@code{.cpp}
-Color3 a{1.0f, 0.5f, 0.75f};
-auto b = pack<Color3ub>(a); // b == {255, 127, 191}
-@endcode
+@snippet MagnumMath.cpp Color3-pack
 
 Conversion from and to HSV is done always using floating-point types, so hue
 is always in range in range @f$ [0.0, 360.0] @f$, saturation and value in
@@ -383,10 +380,7 @@ template<class T> class Color3: public Vector3<T> {
          * representation and want to create a floating-point linear RGB color
          * out of it:
          *
-         * @code{.cpp}
-         * Math::Vector3<UnsignedByte> srgb;
-         * auto rgb = Color3::fromSrgb(srgb);
-         * @endcode
+         * @snippet MagnumMath.cpp Color3-fromSrgb
          */
         /* Input is a Vector3 to hint that it doesn't have any (additive,
            multiplicative) semantics of a linear RGB color */
@@ -475,11 +469,7 @@ template<class T> class Color3: public Vector3<T> {
          *
          * Example usage:
          *
-         * @code{.cpp}
-         * Deg hue;
-         * Float saturation, value;
-         * std::tie(hue, saturation, value) = color.toHsv();
-         * @endcode
+         * @snippet MagnumMath.cpp Color3-toHsv
          *
          * @see @ref hue(), @ref saturation(), @ref value(), @ref fromHsv()
          */
@@ -547,10 +537,7 @@ template<class T> class Color3: public Vector3<T> {
          * Useful in cases where you have a floating-point linear RGB color and
          * want to create for example an 8-bit sRGB representation out of it:
          *
-         * @code{.cpp}
-         * Color3 color;
-         * Math::Vector3<UnsignedByte> srgb = color.toSrgb<UnsignedByte>();
-         * @endcode
+         * @snippet MagnumMath.cpp Color3-toSrgb
          */
         template<class Integral> Vector3<Integral> toSrgb() const {
             return Implementation::toSrgbIntegral<T, Integral>(*this);
@@ -752,10 +739,7 @@ class Color4: public Vector4<T> {
          * representation and want to create a floating-point linear RGBA color
          * out of it:
          *
-         * @code{.cpp}
-         * Math::Vector4<UnsignedByte> srgbAlpha;
-         * auto rgba = Color4::fromSrgbAlpha(srgbAlpha);
-         * @endcode
+         * @snippet MagnumMath.cpp Color4-fromSrgbAlpha
          */
         /* Input is a Vector4 to hint that it doesn't have any (additive,
            multiplicative) semantics of a linear RGB color */
@@ -774,10 +758,7 @@ class Color4: public Vector4<T> {
          * representation and want to create a floating-point linear RGBA color
          * out of it:
          *
-         * @code{.cpp}
-         * Math::Vector3<UnsignedByte> srgb;
-         * auto rgba = Color4::fromSrgb(srgb);
-         * @endcode
+         * @snippet MagnumMath.cpp Color4-fromSrgb
          */
         /* Input is a Vector3 to hint that it doesn't have any (additive,
            multiplicative) semantics of a linear RGB color */
@@ -878,11 +859,7 @@ class Color4: public Vector4<T> {
          * The alpha channel is not subject to any conversion, so it is
          * ignored. Example usage:
          *
-         * @code{.cpp}
-         * Deg hue;
-         * Float saturation, value;
-         * std::tie(hue, saturation, value) = color.toHsv();
-         * @endcode
+         * @snippet MagnumMath.cpp Color4-toHsv
          *
          * @see @ref hue(), @ref saturation(), @ref value(), @ref fromHsv()
          */
@@ -933,10 +910,7 @@ class Color4: public Vector4<T> {
          * and want to create for example an 8-bit sRGB + alpha representation
          * out of it:
          *
-         * @code{.cpp}
-         * Color4 color;
-         * Math::Vector4<UnsignedByte> srgbAlpha = color.toSrgbAlpha<UnsignedByte>();
-         * @endcode
+         * @snippet MagnumMath.cpp Color4-toSrgbAlpha
          */
         template<class Integral> Vector4<Integral> toSrgbAlpha() const {
             return Implementation::toSrgbAlphaIntegral<T, Integral>(*this);
@@ -1012,9 +986,7 @@ namespace Literals {
 
 Unpacks the literal into three 8-bit values. Example usage:
 
-@code{.cpp}
-Color3ub a = 0x33b27f_rgb;  // {0x33, 0xb2, 0x7f}
-@endcode
+@snippet MagnumMath.cpp _rgb
 
 @attention 8bit-per-channel colors are commonly treated as being in sRGB color
     space, which is not directly usable in calculations and has to be converted
@@ -1022,6 +994,7 @@ Color3ub a = 0x33b27f_rgb;  // {0x33, 0xb2, 0x7f}
     literal instead.
 
 @see @link operator""_rgba() @endlink, @link operator""_rgbf() @endlink
+@m_keywords{_rgb rgb}
 */
 constexpr Color3<UnsignedByte> operator "" _rgb(unsigned long long value) {
     return {UnsignedByte(value >> 16), UnsignedByte(value >> 8), UnsignedByte(value)};
@@ -1035,9 +1008,7 @@ Behaves identically to @link operator""_rgb() @endlink though it doesn't
 return a @ref Color3 type to indicate that the resulting value is not linear
 RGB. Use this literal to document that given value is in sRGB. Example usage:
 
-@code{.cpp}
-Math::Vector3<UnsignedByte> a = 0x33b27f_srgb;  // {0x33, 0xb2, 0x7f}
-@endcode
+@snippet MagnumMath.cpp _srgb
 
 @attention Note that colors in sRGB representation should not be used directly
     in calculations --- they should be converted to linear RGB, calculation
@@ -1046,6 +1017,7 @@ Math::Vector3<UnsignedByte> a = 0x33b27f_srgb;  // {0x33, 0xb2, 0x7f}
     representation directly or convert the value using @ref Color3::fromSrgb().
 
 @see @link operator""_srgba() @endlink, @link operator""_rgb() @endlink
+@m_keywords{_srgb srgb}
 */
 /* Output is a Vector3 to hint that it doesn't have any (additive,
    multiplicative) semantics of a linear RGB color */
@@ -1058,9 +1030,7 @@ constexpr Vector3<UnsignedByte> operator "" _srgb(unsigned long long value) {
 
 Unpacks the literal into four 8-bit values. Example usage:
 
-@code{.cpp}
-Color4ub a = 0x33b27fcc_rgba;   // {0x33, 0xb2, 0x7f, 0xcc}
-@endcode
+@snippet MagnumMath.cpp _rgba
 
 @attention 8bit-per-channel colors are commonly treated as being in sRGB color
     space, which is not directly usable in calculations and has to be converted
@@ -1068,6 +1038,7 @@ Color4ub a = 0x33b27fcc_rgba;   // {0x33, 0xb2, 0x7f, 0xcc}
     literal instead.
 
 @see @link operator""_rgb() @endlink, @link operator""_rgbaf() @endlink
+@m_keywords{_rgba rgba}
 */
 constexpr Color4<UnsignedByte> operator "" _rgba(unsigned long long value) {
     return {UnsignedByte(value >> 24), UnsignedByte(value >> 16), UnsignedByte(value >> 8), UnsignedByte(value)};
@@ -1082,9 +1053,7 @@ return a @ref Color4 type to indicate that the resulting value is not linear
 RGBA. Use this literal to document that given value is in sRGB + alpha. Example
 usage:
 
-@code{.cpp}
-Math::Vector4<UnsignedByte> a = 0x33b27fcc_srgba;   // {0x33, 0xb2, 0x7f, 0xcc}
-@endcode
+@snippet MagnumMath.cpp _srgba
 
 @attention Note that colors in sRGB representation should not be used directly
     in calculations --- they should be converted to linear RGB, calculation
@@ -1093,6 +1062,7 @@ Math::Vector4<UnsignedByte> a = 0x33b27fcc_srgba;   // {0x33, 0xb2, 0x7f, 0xcc}
     representation directly or convert the value using @ref Color4::fromSrgbAlpha().
 
 @see @link operator""_srgb() @endlink, @link operator""_rgba() @endlink
+@m_keywords{_srgba srgba}
 */
 /* Output is a Vector3 to hint that it doesn't have any (additive,
    multiplicative) semantics of a linear RGB color */
@@ -1105,9 +1075,7 @@ constexpr Vector4<UnsignedByte> operator "" _srgba(unsigned long long value) {
 
 Unpacks the 8-bit values into three floats. Example usage:
 
-@code{.cpp}
-Color3 a = 0x33b27f_rgbf;   // {0.2f, 0.698039f, 0.498039f}
-@endcode
+@snippet MagnumMath.cpp _rgbf
 
 @attention 8bit-per-channel colors are commonly treated as being in sRGB color
     space, which is not directly usable in calculations and has to be converted
@@ -1115,6 +1083,7 @@ Color3 a = 0x33b27f_rgbf;   // {0.2f, 0.698039f, 0.498039f}
     literal instead.
 
 @see @link operator""_rgbaf() @endlink, @link operator""_rgb() @endlink
+@m_keywords{_rgbf rgbf}
 */
 inline Color3<Float> operator "" _rgbf(unsigned long long value) {
     return Math::unpack<Color3<Float>>(Color3<UnsignedByte>{UnsignedByte(value >> 16), UnsignedByte(value >> 8), UnsignedByte(value)});
@@ -1127,12 +1096,11 @@ Unpacks the 8-bit values into three floats and converts the color space from
 sRGB to linear RGB. See @ref Color3::fromSrgb() for more information. Example
 usage:
 
-@code{.cpp}
-Color3 a = 0x33b27f_srgbf;  // {0.0331048f, 0.445201f, 0.212231f}
-@endcode
+@snippet MagnumMath.cpp _srgbf
 
 @see @link operator""_srgbaf() @endlink, @link operator""_srgb() @endlink,
     @link operator""_rgbf() @endlink
+@m_keywords{_srgbf srgbf}
 */
 inline Color3<Float> operator "" _srgbf(unsigned long long value) {
     return Color3<Float>::fromSrgb<UnsignedByte>({UnsignedByte(value >> 16), UnsignedByte(value >> 8), UnsignedByte(value)});
@@ -1143,9 +1111,7 @@ inline Color3<Float> operator "" _srgbf(unsigned long long value) {
 
 Unpacks the 8-bit values into four floats. Example usage:
 
-@code{.cpp}
-Color4 a = 0x33b27fcc_rgbaf;    // {0.2f, 0.698039f, 0.498039f, 0.8f}
-@endcode
+@snippet MagnumMath.cpp _rgbaf
 
 @attention 8bit-per-channel colors are commonly treated as being in sRGB color
     space, which is not directly usable in calculations and has to be converted
@@ -1153,6 +1119,7 @@ Color4 a = 0x33b27fcc_rgbaf;    // {0.2f, 0.698039f, 0.498039f, 0.8f}
     literal instead.
 
 @see @link operator""_rgbf() @endlink, @link operator""_rgba() @endlink
+@m_keywords{_rgbaf rgbaf}
 */
 inline Color4<Float> operator "" _rgbaf(unsigned long long value) {
     return Math::unpack<Color4<Float>>(Color4<UnsignedByte>{UnsignedByte(value >> 24), UnsignedByte(value >> 16), UnsignedByte(value >> 8), UnsignedByte(value)});
@@ -1165,12 +1132,11 @@ Unpacks the 8-bit values into four floats and converts the color space from
 sRGB + alpha to linear RGBA. See @ref Color4::fromSrgbAlpha() for more
 information. Example usage:
 
-@code{.cpp}
-Color4 a = 0x33b27fcc_srgbaf;  // {0.0331048f, 0.445201f, 0.212231f, 0.8f}
-@endcode
+@snippet MagnumMath.cpp _srgbaf
 
 @see @link operator""_srgbf() @endlink, @link operator""_srgba() @endlink,
     @link operator""_rgbaf() @endlink
+@m_keywords{_srgbaf srgbaf}
 */
 inline Color4<Float> operator "" _srgbaf(unsigned long long value) {
     return Color4<Float>::fromSrgbAlpha<UnsignedByte>({UnsignedByte(value >> 24), UnsignedByte(value >> 16), UnsignedByte(value >> 8), UnsignedByte(value)});

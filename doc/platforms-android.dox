@@ -49,15 +49,16 @@ packages for a cleaner setup.
 @note
     -   [android-sdk](https://aur.archlinux.org/packages/android-sdk/)
     -   [android-ndk](https://aur.archlinux.org/packages/android-ndk/)
-    -   [android-sdk-build-tools-26.0.2](https://aur.archlinux.org/packages/android-sdk-build-tools-26.0.2/)
-    -   [android-platform-25](https://aur.archlinux.org/packages/android-platform-25/)
+    -   [android-sdk-build-tools](https://aur.archlinux.org/packages/android-sdk-build-tools/)
+    -   [android-sdk-platform-tools](https://aur.archlinux.org/packages/android-sdk-platform-tools/)
+    -   [android-platform-22](https://aur.archlinux.org/packages/android-platform-22/)
     -   [android-sdk-cmake](https://aur.archlinux.org/packages/android-sdk-cmake/)
 
 Gradle requires Android SDK version of CMake, which is currently at version
 3.6. See below for an experimental way to @ref platforms-android-system-cmake "use the system CMake"
 instead.
 
-@section platforms-android-command-line Building and running console applications
+@section platforms-android-console Building and running console applications
 
 Android allows to run arbitrary console utilities and tests via ADB. Assuming
 you have Magnum installed in the NDK path as described in @ref building-cross-android,
