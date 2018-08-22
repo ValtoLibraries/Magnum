@@ -24,8 +24,10 @@
 #
 
 if(CORRADE_TARGET_EMSCRIPTEN OR CORRADE_TARGET_ANDROID)
+    set(TEST_FILE_DIR .)
     set(TGA_FILE file.tga)
 else()
+    set(TEST_FILE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
     set(TGA_FILE ${PROJECT_SOURCE_DIR}/src/MagnumPlugins/TgaImporter/Test/file.tga)
 endif()
 
@@ -36,7 +38,7 @@ endif()
 if(NOT BUILD_PLUGINS_STATIC)
     set(ANYIMAGEIMPORTER_PLUGIN_FILENAME $<TARGET_FILE:AnyImageImporter>)
     if(WITH_TGAIMPORTER)
-        set(TGAIMAGEIMPORTER_PLUGIN_FILENAME $<TARGET_FILE:TgaImporter>)
+        set(TGAIMPORTER_PLUGIN_FILENAME $<TARGET_FILE:TgaImporter>)
     endif()
 
     # First replace ${} variables, then $<> generator expressions
@@ -49,9 +51,14 @@ else()
                    ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 endif()
 
-corrade_add_test(AnyImageImporterTest Test.cpp
+corrade_add_test(AnyImageImporterTest AnyImageImporterTest.cpp
     LIBRARIES MagnumTrade
     FILES
+        gray.jpg
+        image.exr
+        rgb.hdr
+        rgb.png
+        rgba_dxt1.dds
         ../../TgaImporter/Test/file.tga)
 if(NOT BUILD_PLUGINS_STATIC)
     target_include_directories(AnyImageImporterTest PRIVATE $<TARGET_FILE_DIR:AnyImageImporterTest>)

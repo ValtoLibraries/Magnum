@@ -45,18 +45,159 @@
 namespace Magnum { namespace Trade {
 
 /**
+@brief Importer file loading callback policy
+
+@see @ref AbstractImporter::setFileCallback(),
+    @ref Trade-AbstractImporter-usage-callbacks
+*/
+enum class ImporterFileCallbackPolicy: UnsignedByte {
+    /**
+     * The requested file is used only during a call of given function and the
+     * memory view is not referenced anymore once the function exits.
+     *
+     * This can be the case for example when importing image data using
+     * @ref AbstractImporter::image2D() --- imported data are copied into the
+     * returned @ref ImageData2D object and the original file is not needed
+     * anymore. Note, however, that this might not be the case for all
+     * importers --- see documentation of a particular plugin for concrete
+     * info.
+     */
+    LoadTemporary,
+
+    /**
+     * The requested file may be used for loading most or all data in the next
+     * steps, so the importer expects the memory view to be valid for as long
+     * as data import functions are called on it, but at most until the
+     * importer is destroyed, @ref AbstractImporter::close() is called or
+     * another file is opened.
+     *
+     * This can be the case for example when importing mesh data using
+     * @ref AbstractImporter::mesh3D() --- all vertex data might be combined in
+     * a single binary file and each mesh occupies only a portion of it. Note,
+     * however, that this might not be the case for all importers --- see
+     * documentation of a particular plugin for concrete info.
+     */
+    LoadPernament,
+
+    /**
+     * A file that has been previously loaded by this callback can be closed
+     * now (and its memory freed). This is just a hint, it's not *required* for
+     * the callback to close it. This policy is also only ever called with a
+     * file that was previously opened with the same callback, so it's possible
+     * to completely ignore it and just return the cached value.
+     *
+     * This can be the case for example when an importer is done parsing a text
+     * file into an internal representation and the original data are no longer
+     * needed (and, for example, other files need to be loaded and they could
+     * repurpose the unused memory).
+     */
+    Close
+};
+
+/**
 @brief Base for importer plugins
 
 Provides interface for importing 2D/3D scene, mesh, material, texture and image
-data. See @ref plugins for more information and `*Importer` classes in
-@ref Trade namespace for available importer plugins.
+data.
+
+@section Trade-AbstractImporter-usage Usage
+
+Importers are most commonly implemented as plugins. For example, loading an
+image from the filesystem using the @ref AnyImageImporter plugin can be done
+like this, completely with all error handling:
+
+@snippet MagnumTrade.cpp AbstractImporter-usage
+
+See @ref plugins for more information about general plugin usage and
+`*Importer` classes in the @ref Trade namespace for available importer plugins.
+
+@subsection Trade-AbstractImporter-usage-callbacks Loading data from memory
+
+Besides loading data directly from the filesystem using @ref openFile() like
+shown above, it's possible to use @ref openData() to import data from memory.
+Note that the particular importer implementation must support
+@ref Feature::OpenData for this method to work.
+
+Complex scene files often reference other files such as images and in that case
+you may want to intercept those references and load them in a custom way as
+well. For importers that advertise support for this with @ref Feature::FileCallback
+this is done by specifying a file loading callback using @ref setFileCallback().
+The callback gets a filename, @ref ImporterFileCallbackPolicy and an user
+pointer as parameters; returns a non-owning view on the loaded data or a
+@ref Corrade::Containers::NullOpt "Containers::NullOpt" to indicate the file
+loading failed. For example, loading a scene from memory-mapped files could
+look like below. Note that the file loading callback affects @ref openFile() as
+well --- you don't have to load the top-level file manually and pass it to
+@ref openData(), any importer supporting the callback feature handles that
+correctly.
+
+@snippet MagnumTrade.cpp AbstractImporter-usage-callbacks
+
+For importers that don't support @ref Feature::FileCallback directly, the base
+@ref openFile() implementation will use the file callback to pass the loaded
+data through to @ref openData(), in case the importer supports at least
+@ref Feature::OpenData. If the importer supports neither @ref Feature::FileCallback
+nor @ref Feature::OpenData, @ref setFileCallback() doesn't allow the callbacks
+to be set.
+
+@subsection Trade-AbstractImporter-usage-state Internal importer state
+
+Some importers, especially ones that make use of well-known external libraries,
+expose internal state through various accessors:
+
+-   @ref importerState() can expose a pointer to the global importer
+    state for currently opened file
+-   @ref AbstractMaterialData::importerState() can expose importer state for
+    given material imported by @ref material()
+-   @ref AnimationData::importerState() can expose importer state for given
+    animation imported by @ref animation()
+-   @ref CameraData::importerState() can expose importer state for a camera
+    importer by @ref camera()
+-   @ref ImageData::importerState() can expose importer state for an image
+    imported by @ref image1D(), @ref image2D() or @ref image3D()
+-   @ref LightData::importerState() can expose importer state for a light
+    imported by @ref light()
+-   @ref MeshData3D::importerState() can expose importer state for a mesh
+    imported by @ref mesh2D() or @ref mesh3D()
+-   @ref ObjectData3D::importerState() can expose importer state for an object
+    imported by @ref object2D() or @ref object3D()
+-   @ref SceneData::importerState() can expose importer state for a scene
+    imported by @ref scene()
+-   @ref TextureData::importerState() can expose importer state for a texture
+    imported by @ref texture()
+
+Besides exposing internal state, importers that support the
+@ref Feature::OpenState feature can also attach to existing importer state
+using @ref openState(). See documentation of a particular importer for details
+about concrete types returned and accepted by these functions.
+
+@subsection Trade-AbstractImporter-usage-casting Polymorphic imported data types
+
+Some data access functions return @ref std::unique_ptr instead of
+@ref Corrade::Containers::Optional because the result might be a particular
+subclass of given type. Those functions are @ref material(), @ref object2D()
+and @ref object3D(). You can cast the abstract base to a concrete type
+depending on its reported type, for example:
+
+@snippet MagnumTrade.cpp AbstractImporter-usage-cast
+
+Another option is making use of the @ref std::static_pointer_cast() family of utilities, but note that in that case your @ref std::unique_ptr will be *moved
+into* a @ref std::shared_ptr instance and that might not be desirable.
 
 @section Trade-AbstractImporter-subclassing Subclassing
 
 The plugin needs to implement the @ref doFeatures(), @ref doIsOpened()
-functions, at least one of @ref doOpenData() / @ref doOpenFile() / @ref doOpenState()
-functions, function @ref doClose() and one or more tuples of data access
-functions, based on what features are supported in given format.
+functions, at least one of @ref doOpenData() / @ref doOpenFile() /
+@ref doOpenState() functions, function @ref doClose() and one or more tuples of
+data access functions, based on what features are supported in given format.
+
+In order to support @ref Feature::FileCallback, the importer needs to properly
+use the callbacks to both load the top-level file in @ref doOpenFile() and also
+load any external files when needed. The @ref doOpenFile() can delegate back
+into the base implementation, but it should remember at least the base file
+path to pass correct paths to subsequent file callbacks. The
+@ref doSetFileCallback() can be overriden in case it's desired to respond to
+file loading callback setup, but doesn't have to be.
 
 For multi-data formats the file opening shouldn't take long and all parsing
 should be done in the data parsing functions instead, because the user might
@@ -74,17 +215,26 @@ checked by the implementation:
     supported.
 -   The @ref doOpenState() function is called only if @ref Feature::OpenState
     is supported.
+-   The @ref doSetFileCallback() function is called only if
+    @ref Feature::FileCallback is supported and there is no file opened.
 -   All `do*()` implementations working on an opened file are called only if
     there is any file opened.
 -   All `do*()` implementations taking data ID as parameter are called only if
     the ID is from valid range.
 
-@attention @ref Corrade::Containers::Array instances returned from the plugin
+@attention
+    @ref Corrade::Containers::Array instances returned from the plugin
     should *not* use anything else than the default deleter, otherwise this can
     cause dangling function pointer call on array destruction if the plugin
     gets unloaded before the array is destroyed.
-
-@todo How to handle casting from std::unique_ptr<> in more convenient way?
+@attention
+    Similarly for interpolator functions passed through
+    @ref Animation::TrackView instances to @ref AnimationData --- to avoid
+    dangling pointers, be sure to always include an interpolator returned from
+    @ref animationInterpolatorFor(), which guarantees the function is *not*
+    instantiated in the plugin binary. Avoid using
+    @ref Animation::interpolatorFor() (or indirectly it by specifying
+    just @ref Animation::Interpolation), as it doesn't have such guarantee.
 */
 class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagingPlugin<AbstractImporter> {
     public:
@@ -98,10 +248,25 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
             OpenData = 1 << 0,
 
             /** Opening already loaded state using @ref openState() */
-            OpenState = 1 << 1
+            OpenState = 1 << 1,
+
+            /**
+             * Specifying callbacks for loading additional files referenced
+             * from the main file using @ref setFileCallback(). If the importer
+             * doesn't expose this feature, the format is either single-file or
+             * loading via callbacks is not supported.
+             *
+             * See @ref Trade-AbstractImporter-usage-callbacks and particular
+             * importer documentation for more information.
+             */
+            FileCallback = 1 << 2
         };
 
-        /** @brief Set of features supported by this importer */
+        /**
+         * @brief Set of features supported by this importer
+         *
+         * @see @ref features()
+         */
         typedef Containers::EnumSet<Feature> Features;
 
         /**
@@ -125,7 +290,7 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
          * variables, see @ref building for more information.
          *
          * Not defined on platforms without
-         *      @ref CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT "dynamic plugin support".
+         * @ref CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT "dynamic plugin support".
          */
         static std::vector<std::string> pluginSearchPaths();
         #endif
@@ -142,14 +307,99 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
         /** @brief Features supported by this importer */
         Features features() const { return doFeatures(); }
 
+        /**
+         * @brief File opening callback function
+         *
+         * @see @ref Trade-AbstractImporter-usage-callbacks
+         */
+        auto fileCallback() const -> Containers::Optional<Containers::ArrayView<const char>>(*)(const std::string&, ImporterFileCallbackPolicy, void*) { return _fileCallback; }
+
+        /**
+         * @brief File opening callback user data
+         *
+         * @see @ref Trade-AbstractImporter-usage-callbacks
+         */
+        void* fileCallbackUserData() const { return _fileCallbackUserData; }
+
+        /**
+         * @brief Set file opening callback
+         *
+         * In case the importer supports @ref Feature::FileCallback, files
+         * opened through @ref openFile() will be loaded through the provided
+         * callback. Besides that, all external files referenced by the
+         * top-level file will be loaded through the callback function as well,
+         * usually on demand. The callback function gets a filename,
+         * @ref ImporterFileCallbackPolicy and the @p userData pointer as input
+         * and returns a non-owning view on the loaded data as output or a
+         * @ref Corrade::Containers::NullOpt if loading failed --- because
+         * empty files might also be valid in some circumstances, @cpp nullptr @ce
+         * can't be used to indicate a failure.
+         *
+         * In case the importer doesn't support @ref Feature::FileCallback but
+         * supports at least @ref Feature::OpenData, a file opened through
+         * @ref openFile() will be internally loaded through the provided
+         * callback and then passed to @ref openData(). First the file is
+         * loaded with @ref ImporterFileCallbackPolicy::LoadTemporary passed to
+         * the callback, then the returned memory view is passed to
+         * @ref openData() (sidestepping the potential @ref openFile()
+         * implementation of that particular importer) and after that the
+         * callback is called again with @ref ImporterFileCallbackPolicy::Close
+         * because the semantics of @ref openData() don't require the data to
+         * be alive after. In case you need a different behavior, use
+         * @ref openData() directly.
+         *
+         * In case @p callback is @cpp nullptr @ce, the current callback (if
+         * any) is reset. This function expects that the importer supports
+         * either @ref Feature::FileCallback or @ref Feature::OpenData. If an
+         * importer supports neither, callbacks can't be used.
+         *
+         * It's expected that this function is called *before* a file is
+         * opened. It's also expected that the loaded data are kept in scope
+         * for as long as the importer needs them, based on the value of
+         * @ref ImporterFileCallbackPolicy. Documentation of particular
+         * importers provides more information about the expected callback
+         * behavior.
+         *
+         * Following is an example of setting up a file loading callback for
+         * fetching compiled-in resources from @ref Corrade::Utility::Resource.
+         * See the overload below for a more convenient type-safe way to pass
+         * the user data pointer.
+         *
+         * @snippet MagnumTrade.cpp AbstractImporter-setFileCallback
+         *
+         * @see @ref Trade-AbstractImporter-usage-callbacks
+         */
+        void setFileCallback(Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, ImporterFileCallbackPolicy, void*), void* userData = nullptr);
+
+        /**
+         * @brief Set file opening callback
+         *
+         * Equivalent to calling the above with a lambda wrapper that casts
+         * @cpp void* @ce back to @cpp T* @ce and dereferences it in order to
+         * pass it to @p callback. Example usage:
+         *
+         * @snippet MagnumTrade.cpp AbstractImporter-setFileCallback-template
+         *
+         * @see @ref Trade-AbstractImporter-usage-callbacks
+         */
+        #ifdef DOXYGEN_GENERATING_OUTPUT
+        template<class T> void setFileCallback(Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, ImporterFileCallbackPolicy, T&), T& userData);
+        #else
+        /* Otherwise the user would be forced to use the + operator to convert
+           a lambda to a function pointer and (besides being weird and
+           annoying) it's also not portable because it doesn't work on MSVC
+           2015 and older versions of MSVC 2017. */
+        template<class Callback, class T> void setFileCallback(Callback callback, T& userData);
+        #endif
+
         /** @brief Whether any file is opened */
         bool isOpened() const { return doIsOpened(); }
 
         /**
          * @brief Open raw data
          *
-         * Closes previous file, if it was opened, and tries to open given
-         * file. Available only if @ref Feature::OpenData is supported. Returns
+         * Closes previous file, if it was opened, and tries to open given raw
+         * data. Available only if @ref Feature::OpenData is supported. Returns
          * @cpp true @ce on success, @cpp false @ce otherwise.
          * @see @ref features(), @ref openFile()
          */
@@ -176,6 +426,10 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
          *
          * Closes previous file, if it was opened, and tries to open given
          * file. Returns @cpp true @ce on success, @cpp false @ce otherwise.
+         * If file loading callbacks are set via @ref setFileCallback() and
+         * @ref Feature::OpenData is supported, this function uses the callback
+         * to load the file and passes the memory view to @ref openData()
+         * instead. See @ref setFileCallback() for more information.
          * @see @ref features(), @ref openData()
          */
         bool openFile(const std::string& filename);
@@ -224,6 +478,34 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
          * Returns given scene or @ref Containers::NullOpt if import failed.
          */
         Containers::Optional<SceneData> scene(UnsignedInt id);
+
+        /** @brief Animation count */
+        UnsignedInt animationCount() const;
+
+        /**
+         * @brief Animation ID for given name
+         *
+         * If no animation for given name exists, returns @cpp -1 @ce.
+         * @see @ref animationName()
+         */
+        Int animationForName(const std::string& name);
+
+        /**
+         * @brief Animation name
+         * @param id    Animation ID, from range [0, @ref animationCount()).
+         *
+         * @see @ref animationForName()
+         */
+        std::string animationName(UnsignedInt id);
+
+        /**
+         * @brief Animation
+         * @param id    Animation ID, from range [0, @ref animationCount()).
+         *
+         * Returns given animation or @ref Containers::NullOpt if importing
+         * failed.
+         */
+        Containers::Optional<AnimationData> animation(UnsignedInt id);
 
         /** @brief Light count */
         UnsignedInt lightCount() const;
@@ -532,7 +814,8 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
          * documentation of a particular plugin for more information about
          * returned type and contents. Returns `nullptr` by default.
          * @see @ref AbstractMaterialData::importerState(),
-         *      @ref CameraData::importerState(), @ref ImageData::importerState(),
+         *      @ref AnimationData::importerState(), @ref CameraData::importerState(),
+         *      @ref ImageData::importerState(), @ref LightData::importerState(),
          *      @ref MeshData2D::importerState(), @ref MeshData3D::importerState(),
          *      @ref ObjectData2D::importerState(), @ref ObjectData3D::importerState(),
          *      @ref SceneData::importerState(), @ref TextureData::importerState()
@@ -547,7 +830,13 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
          * the file and calls @ref Magnum::Trade::AbstractImporter::doOpenData() "doOpenData()"
          * with its contents. It is allowed to call this function from your
          * @ref Magnum::Trade::AbstractImporter::doOpenFile() "doOpenFile()"
-         * implementation.
+         * implementation --- in particular, this implementation will also
+         * correctly handle callbacks set through @ref setFileCallback().
+         *
+         * This function is not called when file callbacks are set through
+         * @ref setFileCallback() and @ref Feature::FileCallback is not
+         * supported --- instead, file is loaded though the callback and data
+         * passed through to @ref Magnum::Trade::AbstractImporter::doOpenData() "doOpenData()".
          */
         virtual void doOpenFile(const std::string& filename);
 
@@ -558,6 +847,17 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
     #endif
         /** @brief Implementation for @ref features() */
         virtual Features doFeatures() const = 0;
+
+        /**
+         * @brief Implementation for @ref setFileCallback()
+         *
+         * Useful when the importer needs to modify some internal state on
+         * callback setup. Default implementation does nothing and this
+         * function doesn't need to be implemented --- the callback function
+         * and user data pointer are available through @ref fileCallback() and
+         * @ref fileCallbackUserData().
+         */
+        virtual void doSetFileCallback(Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, ImporterFileCallbackPolicy, void*), void* userData);
 
         /** @brief Implementation for @ref isOpened() */
         virtual bool doIsOpened() const = 0;
@@ -601,6 +901,30 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
 
         /** @brief Implementation for @ref scene() */
         virtual Containers::Optional<SceneData> doScene(UnsignedInt id);
+
+        /**
+         * @brief Implementation for @ref animationCount()
+         *
+         * Default implementation returns @cpp 0 @ce.
+         */
+        virtual UnsignedInt doAnimationCount() const;
+
+        /**
+         * @brief Implementation for @ref animationForName()
+         *
+         * Default implementation returns @cpp -1 @ce.
+         */
+        virtual Int doAnimationForName(const std::string& name);
+
+        /**
+         * @brief Implementation for @ref animationName()
+         *
+         * Default implementation returns empty string.
+         */
+        virtual std::string doAnimationName(UnsignedInt id);
+
+        /** @brief Implementation for @ref animation() */
+        virtual Containers::Optional<AnimationData> doAnimation(UnsignedInt id);
 
         /**
          * @brief Implementation for @ref lightCount()
@@ -868,9 +1192,43 @@ class MAGNUM_TRADE_EXPORT AbstractImporter: public PluginManager::AbstractManagi
 
         /** @brief Implementation for @ref importerState() */
         virtual const void* doImporterState() const;
+
+    private:
+        Containers::Optional<Containers::ArrayView<const char>>(*_fileCallback)(const std::string&, ImporterFileCallbackPolicy, void*){};
+        void* _fileCallbackUserData{};
+
+        /* Used by the templated version only */
+        struct FileCallbackTemplate {
+            void(*callback)();
+            void* userData;
+        } _fileCallbackTemplate{};
 };
 
+#ifndef DOXYGEN_GENERATING_OUTPUT
+template<class Callback, class T> void AbstractImporter::setFileCallback(Callback callback, T& userData) {
+    /* Don't try to wrap a null function pointer. Need to cast first because
+       MSVC (even 2017) can't apply ! to a lambda. Ugh. */
+    const auto callbackPtr = static_cast<Containers::Optional<Containers::ArrayView<const char>>(*)(const std::string&, ImporterFileCallbackPolicy, T&)>(callback);
+    if(!callbackPtr) return setFileCallback(nullptr);
+
+    _fileCallbackTemplate = { reinterpret_cast<void(*)()>(callbackPtr), &userData };
+    setFileCallback([](const std::string& filename, const ImporterFileCallbackPolicy flags, void* const userData) {
+        auto& s = *reinterpret_cast<FileCallbackTemplate*>(userData);
+        return reinterpret_cast<Containers::Optional<Containers::ArrayView<const char>>(*)(const std::string&, ImporterFileCallbackPolicy, T&)>(s.callback)(filename, flags, *static_cast<T*>(s.userData));
+    }, &_fileCallbackTemplate);
+}
+#endif
+
 CORRADE_ENUMSET_OPERATORS(AbstractImporter::Features)
+
+/** @debugoperatorclassenum{AbstractImporter,AbstractImporter::Feature} */
+MAGNUM_TRADE_EXPORT Debug& operator<<(Debug& debug, AbstractImporter::Feature value);
+
+/** @debugoperatorclassenum{AbstractImporter,AbstractImporter::Features} */
+MAGNUM_TRADE_EXPORT Debug& operator<<(Debug& debug, AbstractImporter::Features value);
+
+/** @debugoperatorenum{ImporterFileCallbackPolicy} */
+MAGNUM_TRADE_EXPORT Debug& operator<<(Debug& debug, ImporterFileCallbackPolicy value);
 
 }}
 

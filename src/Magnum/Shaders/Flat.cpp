@@ -65,6 +65,7 @@ template<UnsignedInt dimensions> Flat<dimensions>::Flat(const Flags flags): _fla
         .addSource(rs.get("generic.glsl"))
         .addSource(rs.get(vertexShaderName<dimensions>()));
     frag.addSource(flags & Flag::Textured ? "#define TEXTURED\n" : "")
+        .addSource(flags & Flag::AlphaMask ? "#define ALPHA_MASK\n" : "")
         .addSource(rs.get("Flat.frag"));
 
     CORRADE_INTERNAL_ASSERT_OUTPUT(GL::Shader::compile({vert, frag}));
@@ -89,6 +90,7 @@ template<UnsignedInt dimensions> Flat<dimensions>::Flat(const Flags flags): _fla
     {
         _transformationProjectionMatrixUniform = uniformLocation("transformationProjectionMatrix");
         _colorUniform = uniformLocation("color");
+        if(flags & Flag::AlphaMask) _alphaMaskUniform = uniformLocation("alphaMask");
     }
 
     #ifndef MAGNUM_TARGET_GLES
@@ -100,13 +102,23 @@ template<UnsignedInt dimensions> Flat<dimensions>::Flat(const Flags flags): _fla
 
     /* Set defaults in OpenGL ES (for desktop they are set in shader code itself) */
     #ifdef MAGNUM_TARGET_GLES
-    /* Default to fully opaque white so we can see the texture */
-    if(flags & Flag::Textured) setColor(Color4(1.0f));
+    setTransformationProjectionMatrix({});
+    setColor(Color4{1.0f});
+    if(flags & Flag::AlphaMask) setAlphaMask(0.5f);
     #endif
 }
 
 template<UnsignedInt dimensions> Flat<dimensions>& Flat<dimensions>::bindTexture(GL::Texture2D& texture) {
-    if(_flags & Flag::Textured)  texture.bind(TextureLayer);
+    CORRADE_ASSERT(_flags & Flag::Textured,
+        "Shaders::Flat::bindTexture(): the shader was not created with texturing enabled", *this);
+    texture.bind(TextureLayer);
+    return *this;
+}
+
+template<UnsignedInt dimensions> Flat<dimensions>& Flat<dimensions>::setAlphaMask(Float mask) {
+    CORRADE_ASSERT(_flags & Flag::AlphaMask,
+        "Shaders::Flat::setAlphaMask(): the shader was not created with alpha mask enabled", *this);
+    setUniform(_alphaMaskUniform, mask);
     return *this;
 }
 

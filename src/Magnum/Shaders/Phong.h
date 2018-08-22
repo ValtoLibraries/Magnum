@@ -41,9 +41,11 @@ namespace Magnum { namespace Shaders {
 @brief Phong shader
 
 Uses ambient, diffuse and specular color or texture. For colored mesh you need
-to provide @ref Position and @ref Normal attributes in your triangle mesh and
-call at least @ref setTransformationMatrix(), @ref setNormalMatrix(),
-@ref setProjectionMatrix(), @ref setDiffuseColor() and @ref setLightPosition().
+to provide the @ref Position and @ref Normal attributes in your triangle mesh.
+By default, the shader renders the mesh with a white color in an identity
+transformation. Use @ref setTransformationMatrix(), @ref setNormalMatrix(),
+@ref setProjectionMatrix(), @ref setLightPosition() and others to configure
+the shader.
 
 If you want to use textures, you need to provide also @ref TextureCoordinates
 attribute. Pass appropriate @ref Flags to constructor and then at render time
@@ -76,7 +78,14 @@ Common rendering setup:
 
 @snippet MagnumShaders.cpp Phong-usage-texture2
 
-@subsection Shaders-Phong-usage-alpha Alpha-masked drawing
+@subsection Shaders-Phong-usage-alpha Alpha blending and masking
+
+Enable @ref Flag::AlphaMask and tune @ref setAlphaMask() for simple
+binary alpha-masked drawing that doesn't require depth sorting or blending
+enabled. Note that this feature is implemented using the GLSL @glsl discard @ce
+operation which is known to have considerable performance impact on some
+platforms. With proper depth sorting and blending you'll usually get much
+better performance and output quality.
 
 For general alpha-masked drawing you need to provide ambient texture with alpha
 channel and set alpha channel of diffuse/specular color to `0.0f` so only
@@ -93,23 +102,26 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         /**
          * @brief Vertex position
          *
-         * @ref shaders-generic "Generic attribute", @ref Vector3.
+         * @ref shaders-generic "Generic attribute",
+         * @ref Magnum::Vector3 "Vector3".
          */
         typedef Generic3D::Position Position;
 
         /**
          * @brief Normal direction
          *
-         * @ref shaders-generic "Generic attribute", @ref Vector3.
+         * @ref shaders-generic "Generic attribute",
+         * @ref Magnum::Vector3 "Vector3".
          */
         typedef Generic3D::Normal Normal;
 
         /**
          * @brief 2D texture coordinates
          *
-         * @ref shaders-generic "Generic attribute", @ref Vector2, used only if
-         * at least one of @ref Flag::AmbientTexture, @ref Flag::DiffuseTexture
-         * and @ref Flag::SpecularTexture is set.
+         * @ref shaders-generic "Generic attribute",
+         * @ref Magnum::Vector2 "Vector2", used only if at least one of
+         * @ref Flag::AmbientTexture, @ref Flag::DiffuseTexture and
+         * @ref Flag::SpecularTexture is set.
          */
         typedef Generic3D::TextureCoordinates TextureCoordinates;
 
@@ -119,9 +131,36 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          * @see @ref Flags, @ref flags()
          */
         enum class Flag: UnsignedByte {
-            AmbientTexture = 1 << 0,    /**< The shader uses ambient texture instead of color */
-            DiffuseTexture = 1 << 1,    /**< The shader uses diffuse texture instead of color */
-            SpecularTexture = 1 << 2    /**< The shader uses specular texture instead of color */
+            /**
+             * Multiply ambient color with a texture.
+             * @see @ref setAmbientColor(), @ref setAmbientTexture()
+             */
+            AmbientTexture = 1 << 0,
+
+            /**
+             * Multiply diffuse color with a texture.
+             * @see @ref setDiffuseColor(), @ref setDiffuseTexture()
+             */
+            DiffuseTexture = 1 << 1,
+
+            /**
+             * Multiply specular color with a texture.
+             * @see @ref setSpecularColor(), @ref setSpecularTexture()
+             */
+            SpecularTexture = 1 << 2,
+
+            /**
+             * Enable alpha masking. If the combined fragment color has an
+             * alpha less than the value specified with @ref setAlphaMask(),
+             * given fragment is discarded.
+             *
+             * This uses the @glsl discard @ce operation which is known to have
+             * considerable performance impact on some platforms. While useful
+             * for cheap alpha masking that doesn't require depth sorting,
+             * with proper depth sorting and blending you'll usually get much
+             * better performance and output quality.
+             */
+            AlphaMask = 1 << 3
         };
 
         /**
@@ -149,6 +188,18 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          */
         explicit Phong(NoCreateT) noexcept: GL::AbstractShaderProgram{NoCreate} {}
 
+        /** @brief Copying is not allowed */
+        Phong(const Phong&) = delete;
+
+        /** @brief Move constructor */
+        Phong(Phong&&) noexcept = default;
+
+        /** @brief Copying is not allowed */
+        Phong& operator=(const Phong&) = delete;
+
+        /** @brief Move assignment */
+        Phong& operator=(Phong&&) noexcept = default;
+
         /** @brief Flags */
         Flags flags() const { return _flags; }
 
@@ -158,7 +209,7 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          *
          * If @ref Flag::AmbientTexture is set, default value is
          * @cpp 0xffffffff_rgbaf @ce and the color will be multiplied with
-         * ambient texture, otherwise default value is @cpp 0x000000ff_rgbaf @ce.
+         * ambient texture, otherwise default value is @cpp 0x00000000_rgbaf @ce.
          * @see @ref bindAmbientTexture()
          */
         Phong& setAmbientColor(const Color4& color) {
@@ -167,10 +218,11 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         }
 
         /**
-         * @brief Bind ambient texture
+         * @brief Bind an ambient texture
          * @return Reference to self (for method chaining)
          *
-         * Has effect only if @ref Flag::AmbientTexture is set.
+         * Expects that the shader was created with @ref Flag::AmbientTexture
+         * enabled.
          * @see @ref bindTextures(), @ref setAmbientColor()
          */
         Phong& bindAmbientTexture(GL::Texture2D& texture);
@@ -188,9 +240,7 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          * @brief Set diffuse color
          * @return Reference to self (for method chaining)
          *
-         * If @ref Flag::DiffuseTexture is set, default value is
-         * @cpp 0xffffffff_rgbaf @ce and the color will be multiplied with
-         * diffuse texture.
+         * Initial value is @cpp 0xffffffff_rgbaf @ce.
          * @see @ref bindDiffuseTexture()
          */
         Phong& setDiffuseColor(const Color4& color) {
@@ -199,10 +249,11 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         }
 
         /**
-         * @brief Bind diffuse texture
+         * @brief Bind a diffuse texture
          * @return Reference to self (for method chaining)
          *
-         * Has effect only if @ref Flag::DiffuseTexture is set.
+         * Expects that the shader was created with @ref Flag::DiffuseTexture
+         * enabled.
          * @see @ref bindTextures(), @ref setDiffuseColor()
          */
         Phong& bindDiffuseTexture(GL::Texture2D& texture);
@@ -220,10 +271,10 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          * @brief Set specular color
          * @return Reference to self (for method chaining)
          *
-         * Default value is @cpp 0xffffffff_rgbaf @ce. Color will be multiplied
+         * Initial value is @cpp 0xffffffff_rgbaf @ce. Color will be multiplied
          * with specular texture if @ref Flag::SpecularTexture is set. If you
          * want to have a fully diffuse material, set specular color to
-         * @cpp 0x000000_rgbf @ce.
+         * @cpp 0x000000ff_rgbaf @ce.
          * @see @ref bindSpecularTexture()
          */
         Phong& setSpecularColor(const Color4& color) {
@@ -232,10 +283,11 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         }
 
         /**
-         * @brief Bind specular texture
+         * @brief Bind a specular texture
          * @return Reference to self (for method chaining)
          *
-         * Has effect only if @ref Flag::SpecularTexture is set.
+         * Expects that the shader was created with @ref Flag::SpecularTexture
+         * enabled.
          * @see @ref bindTextures(), @ref setSpecularColor()
          */
         Phong& bindSpecularTexture(GL::Texture2D& texture);
@@ -254,8 +306,11 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          * @return Reference to self (for method chaining)
          *
          * A particular texture has effect only if particular texture flag from
-         * @ref Phong::Flag "Flag" is set, you can use `nullptr` for the rest.
-         * More efficient than setting each texture separately.
+         * @ref Phong::Flag "Flag" is set, you can use @cpp nullptr @ce for the
+         * rest. Expects that the shader was created with at least one of
+         * @ref Flag::AmbientTexture, @ref Flag::DiffuseTexture or
+         * @ref Flag::SpecularTexture enabled. More efficient than setting each
+         * texture separately.
          * @see @ref bindAmbientTexture(), @ref bindDiffuseTexture(),
          *      @ref bindSpecularTexture()
          */
@@ -275,7 +330,7 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          * @return Reference to self (for method chaining)
          *
          * The larger value, the harder surface (smaller specular highlight).
-         * If not set, default value is @cpp 80.0f @ce.
+         * Initial value is @cpp 80.0f @ce.
          */
         Phong& setShininess(Float shininess) {
             setUniform(_shininessUniform, shininess);
@@ -283,8 +338,22 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         }
 
         /**
+         * @brief Set alpha mask value
+         * @return Reference to self (for method chaining)
+         *
+         * Expects that the shader was created with @ref Flag::AlphaMask
+         * enabled. Fragments with alpha values smaller than the mask value
+         * will be discarded. Initial value is @cpp 0.5f @ce. See the flag
+         * documentation for further information.
+         */
+        Phong& setAlphaMask(Float mask);
+
+        /**
          * @brief Set transformation matrix
          * @return Reference to self (for method chaining)
+         *
+         * You need to set also @ref setNormalMatrix() with a corresponding
+         * value. Initial value is an identity matrix.
          */
         Phong& setTransformationMatrix(const Matrix4& matrix) {
             setUniform(_transformationMatrixUniform, matrix);
@@ -296,7 +365,9 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          * @return Reference to self (for method chaining)
          *
          * The matrix doesn't need to be normalized, as the renormalization
-         * must be done in the shader anyway.
+         * must be done in the shader anyway. You need to set also
+         * @ref setTransformationMatrix() with a corresponding value. Initial
+         * value is an identity matrix.
          */
         Phong& setNormalMatrix(const Matrix3x3& matrix) {
             setUniform(_normalMatrixUniform, matrix);
@@ -306,6 +377,10 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         /**
          * @brief Set projection matrix
          * @return Reference to self (for method chaining)
+         *
+         * Initial value is an identity matrix (i.e., an orthographic
+         * projection of the default @f$ [ -\boldsymbol{1} ; \boldsymbol{1} ] @f$
+         * cube).
          */
         Phong& setProjectionMatrix(const Matrix4& matrix) {
             setUniform(_projectionMatrixUniform, matrix);
@@ -315,9 +390,13 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         /**
          * @brief Set light position
          * @return Reference to self (for method chaining)
+         *
+         * Initial value is a zero vector --- that will in most cases cause the
+         * object to be rendered black (or in the ambient color), as the light
+         * is inside of it.
          */
         Phong& setLightPosition(const Vector3& light) {
-            setUniform(_lightUniform, light);
+            setUniform(_lightPositionUniform, light);
             return *this;
         }
 
@@ -325,7 +404,7 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
          * @brief Set light color
          * @return Reference to self (for method chaining)
          *
-         * If not set, default value is @cpp 0xffffffff_rgbaf @ce.
+         * Initial value is @cpp 0xffffffff_rgbaf @ce.
          */
         Phong& setLightColor(const Color4& color) {
             setUniform(_lightColorUniform, color);
@@ -337,12 +416,13 @@ class MAGNUM_SHADERS_EXPORT Phong: public GL::AbstractShaderProgram {
         Int _transformationMatrixUniform{0},
             _projectionMatrixUniform{1},
             _normalMatrixUniform{2},
-            _lightUniform{3},
+            _lightPositionUniform{3},
             _ambientColorUniform{4},
             _diffuseColorUniform{5},
             _specularColorUniform{6},
             _lightColorUniform{7},
-            _shininessUniform{8};
+            _shininessUniform{8},
+            _alphaMaskUniform{9};
 };
 
 CORRADE_ENUMSET_OPERATORS(Phong::Flags)

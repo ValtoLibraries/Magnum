@@ -23,6 +23,8 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <sstream>
+
 #include "Magnum/Image.h"
 #include "Magnum/Mesh.h"
 #include "Magnum/GL/AbstractShaderProgram.h"
@@ -50,7 +52,6 @@ struct MeshGLTest: OpenGLTester {
     explicit MeshGLTest();
 
     void construct();
-    void constructCopy();
     void constructMove();
     void wrap();
 
@@ -115,9 +116,19 @@ struct MeshGLTest: OpenGLTester {
     void addVertexBufferMultiple();
     void addVertexBufferMultipleGaps();
 
+    void addVertexBufferMovedOutInstance();
+    void addVertexBufferTransferOwnwership();
+    void addVertexBufferInstancedTransferOwnwership();
+    void addVertexBufferDynamicTransferOwnwership();
+    void addVertexBufferInstancedDynamicTransferOwnwership();
+
     template<class T> void setIndexBuffer();
     template<class T> void setIndexBufferRange();
     void setIndexBufferUnsignedInt();
+
+    void setIndexBufferMovedOutInstance();
+    template<class T> void setIndexBufferTransferOwnership();
+    template<class T> void setIndexBufferRangeTransferOwnership();
 
     void unbindVAOWhenSettingIndexBufferData();
     void unbindVAOBeforeEnteringExternalSection();
@@ -141,6 +152,7 @@ struct MeshGLTest: OpenGLTester {
     #ifndef MAGNUM_TARGET_GLES
     void addVertexBufferInstancedDouble();
     #endif
+    void resetDivisorAfterInstancedDraw();
 
     void multiDraw();
     void multiDrawIndexed();
@@ -151,7 +163,6 @@ struct MeshGLTest: OpenGLTester {
 
 MeshGLTest::MeshGLTest() {
     addTests({&MeshGLTest::construct,
-              &MeshGLTest::constructCopy,
               &MeshGLTest::constructMove,
               &MeshGLTest::wrap,
 
@@ -220,11 +231,23 @@ MeshGLTest::MeshGLTest() {
     addTests({&MeshGLTest::addVertexBufferMultiple,
               &MeshGLTest::addVertexBufferMultipleGaps,
 
+              &MeshGLTest::addVertexBufferMovedOutInstance,
+              &MeshGLTest::addVertexBufferTransferOwnwership,
+              &MeshGLTest::addVertexBufferInstancedTransferOwnwership,
+              &MeshGLTest::addVertexBufferDynamicTransferOwnwership,
+              &MeshGLTest::addVertexBufferInstancedDynamicTransferOwnwership,
+
               &MeshGLTest::setIndexBuffer<GL::MeshIndexType>,
               &MeshGLTest::setIndexBuffer<Magnum::MeshIndexType>,
               &MeshGLTest::setIndexBufferRange<GL::MeshIndexType>,
               &MeshGLTest::setIndexBufferRange<Magnum::MeshIndexType>,
               &MeshGLTest::setIndexBufferUnsignedInt,
+
+              &MeshGLTest::setIndexBufferMovedOutInstance,
+              &MeshGLTest::setIndexBufferTransferOwnership<GL::MeshIndexType>,
+              &MeshGLTest::setIndexBufferTransferOwnership<Magnum::MeshIndexType>,
+              &MeshGLTest::setIndexBufferRangeTransferOwnership<GL::MeshIndexType>,
+              &MeshGLTest::setIndexBufferRangeTransferOwnership<Magnum::MeshIndexType>,
 
               &MeshGLTest::unbindVAOWhenSettingIndexBufferData,
               &MeshGLTest::unbindVAOBeforeEnteringExternalSection,
@@ -243,15 +266,14 @@ MeshGLTest::MeshGLTest() {
               &MeshGLTest::setInstanceCountBaseVertexBaseInstance,
               #endif
 
-              #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
               &MeshGLTest::addVertexBufferInstancedFloat,
-              #endif
               #ifndef MAGNUM_TARGET_GLES2
               &MeshGLTest::addVertexBufferInstancedInteger,
               #endif
               #ifndef MAGNUM_TARGET_GLES
               &MeshGLTest::addVertexBufferInstancedDouble,
               #endif
+              &MeshGLTest::resetDivisorAfterInstancedDraw,
 
               &MeshGLTest::multiDraw,
               &MeshGLTest::multiDrawIndexed,
@@ -280,13 +302,19 @@ void MeshGLTest::construct() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void MeshGLTest::constructCopy() {
-    CORRADE_VERIFY(!(std::is_constructible<Mesh, const Mesh&>{}));
-    CORRADE_VERIFY(!(std::is_assignable<Mesh, const Mesh&>{}));
+namespace {
+    struct FloatShader: AbstractShaderProgram {
+        explicit FloatShader(const std::string& type, const std::string& conversion);
+    };
 }
 
 void MeshGLTest::constructMove() {
+    const Float data = Math::unpack<Float, UnsignedByte>(96);
+    Buffer buffer1, buffer2;
+    buffer1.setData({&data, 1}, BufferUsage::StaticDraw);
+
     Mesh a;
+    a.addVertexBuffer(buffer1, 0, Attribute<0, Float>{});
     const Int id = a.id();
 
     MAGNUM_VERIFY_NO_GL_ERROR();
@@ -300,12 +328,15 @@ void MeshGLTest::constructMove() {
         CORRADE_VERIFY(id > 0);
     }
 
+    /* Move construct */
     Mesh b(std::move(a));
 
     CORRADE_COMPARE(a.id(), 0);
     CORRADE_COMPARE(b.id(), id);
 
+    /* Move assign */
     Mesh c;
+    c.addVertexBuffer(buffer2, 1, Attribute<1, Float>{});
     const Int cId = c.id();
     c = std::move(b);
 
@@ -322,6 +353,42 @@ void MeshGLTest::constructMove() {
 
     CORRADE_COMPARE(b.id(), cId);
     CORRADE_COMPARE(c.id(), id);
+
+    /* Move assign to a NoCreate instance */
+    Mesh d{NoCreate};
+    d = std::move(c);
+
+    CORRADE_COMPARE(c.id(), 0);
+    CORRADE_COMPARE(d.id(), id);
+
+    /* Destroy */
+    b = Mesh{NoCreate};
+
+    /* Test that drawing still works properly */
+    {
+        MAGNUM_VERIFY_NO_GL_ERROR();
+
+        Renderbuffer renderbuffer;
+        renderbuffer.setStorage(
+            #ifndef MAGNUM_TARGET_GLES2
+            RenderbufferFormat::RGBA8,
+            #else
+            RenderbufferFormat::RGBA4,
+            #endif
+            Vector2i(1));
+        Framebuffer framebuffer{{{}, Vector2i(1)}};
+        framebuffer.attachRenderbuffer(Framebuffer::ColorAttachment(0), renderbuffer)
+                   .bind();
+
+        FloatShader shader{"float", "vec4(valueInterpolated, 0.0, 0.0, 0.0)"};
+        d.setPrimitive(MeshPrimitive::Points)
+         .setCount(1)
+         .draw(shader);
+
+        MAGNUM_VERIFY_NO_GL_ERROR();
+
+        CORRADE_COMPARE(framebuffer.read({{}, Vector2i{1}}, {PixelFormat::RGBA, PixelType::UnsignedByte}).data<UnsignedByte>()[0], 96);
+    }
 }
 
 void MeshGLTest::wrap() {
@@ -372,6 +439,14 @@ template<class T> void MeshGLTest::primitive() {
 
 #ifndef MAGNUM_TARGET_WEBGL
 void MeshGLTest::label() {
+    #ifndef MAGNUM_TARGET_GLES
+    if(!Context::current().isExtensionSupported<Extensions::ARB::vertex_array_object>())
+        CORRADE_SKIP(Extensions::ARB::vertex_array_object::string() + std::string(" is not available."));
+    #elif defined(MAGNUM_TARGET_GLES2)
+    if(!Context::current().isExtensionSupported<Extensions::OES::vertex_array_object>())
+        CORRADE_SKIP(Extensions::OES::vertex_array_object::string() + std::string(" is not available."));
+    #endif
+
     /* No-Op version is tested in AbstractObjectGLTest */
     if(!Context::current().isExtensionSupported<Extensions::KHR::debug>() &&
        !Context::current().isExtensionSupported<Extensions::EXT::debug_label>())
@@ -390,10 +465,6 @@ void MeshGLTest::label() {
 #endif
 
 namespace {
-    struct FloatShader: AbstractShaderProgram {
-        explicit FloatShader(const std::string& type, const std::string& conversion);
-    };
-
     #ifndef MAGNUM_TARGET_GLES2
     struct IntegerShader: AbstractShaderProgram {
         explicit IntegerShader(const std::string& type);
@@ -1414,10 +1485,8 @@ void MeshGLTest::addVertexBufferNormalized() {
 
 #ifndef MAGNUM_TARGET_GLES
 void MeshGLTest::addVertexBufferBGRA() {
-    #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::vertex_array_bgra>())
         CORRADE_SKIP(Extensions::ARB::vertex_array_bgra::string() + std::string(" is not available."));
-    #endif
 
     constexpr Color4ub data[] = { {}, {0, 128, 64, 161}, {96, 24, 156, 225} };
     Buffer buffer;
@@ -1607,6 +1676,138 @@ void MeshGLTest::addVertexBufferMultipleGaps() {
     CORRADE_COMPARE(value, Color4ub(64 + 15 + 97, 17 + 164 + 28, 56 + 17, 255));
 }
 
+void MeshGLTest::addVertexBufferMovedOutInstance() {
+    Buffer buffer{NoCreate};
+    Mesh mesh;
+
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    mesh.addVertexBuffer(buffer, 0, Attribute<0, Float>{});
+
+    CORRADE_COMPARE(out.str(), "GL::Mesh::addVertexBuffer(): empty or moved-out Buffer instance was passed\n");
+}
+
+void MeshGLTest::addVertexBufferTransferOwnwership() {
+    const Float data = 1.0f;
+    Buffer buffer;
+    buffer.setData({&data, 1}, BufferUsage::StaticDraw);
+
+    const GLuint id = buffer.id();
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBuffer(buffer, 0, Attribute<0, Float>{});
+        CORRADE_VERIFY(buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBuffer(std::move(buffer), 0, Attribute<0, Float>{});
+        CORRADE_VERIFY(!buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(!glIsBuffer(id));
+}
+
+void MeshGLTest::addVertexBufferInstancedTransferOwnwership() {
+    const Float data = 1.0f;
+    Buffer buffer;
+    buffer.setData({&data, 1}, BufferUsage::StaticDraw);
+
+    const GLuint id = buffer.id();
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBufferInstanced(buffer, 1, 0, Attribute<0, Float>{});
+        CORRADE_VERIFY(buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBufferInstanced(std::move(buffer), 1, 0, Attribute<0, Float>{});
+        CORRADE_VERIFY(!buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(!glIsBuffer(id));
+}
+
+void MeshGLTest::addVertexBufferDynamicTransferOwnwership() {
+    const Float data = 1.0f;
+    Buffer buffer;
+    buffer.setData({&data, 1}, BufferUsage::StaticDraw);
+
+    const GLuint id = buffer.id();
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBuffer(buffer, 0, 4, DynamicAttribute{
+            DynamicAttribute::Kind::GenericNormalized, 0,
+            DynamicAttribute::Components::One,
+            DynamicAttribute::DataType::Float});
+        CORRADE_VERIFY(buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBuffer(std::move(buffer), 0, 4, DynamicAttribute{
+            DynamicAttribute::Kind::GenericNormalized, 0,
+            DynamicAttribute::Components::One,
+            DynamicAttribute::DataType::Float});
+        CORRADE_VERIFY(!buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(!glIsBuffer(id));
+}
+
+void MeshGLTest::addVertexBufferInstancedDynamicTransferOwnwership() {
+    const Float data = 1.0f;
+    Buffer buffer;
+    buffer.setData({&data, 1}, BufferUsage::StaticDraw);
+
+    const GLuint id = buffer.id();
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBufferInstanced(buffer, 1, 0, 4, DynamicAttribute{
+            DynamicAttribute::Kind::GenericNormalized, 0,
+            DynamicAttribute::Components::One,
+            DynamicAttribute::DataType::Float});
+        CORRADE_VERIFY(buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.addVertexBufferInstanced(std::move(buffer), 1, 0, 4, DynamicAttribute{
+            DynamicAttribute::Kind::GenericNormalized, 0,
+            DynamicAttribute::Components::One,
+            DynamicAttribute::DataType::Float});
+        CORRADE_VERIFY(!buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(!glIsBuffer(id));
+}
+
 namespace {
     const Float indexedVertexData[] = {
         0.0f, /* Offset */
@@ -1759,6 +1960,82 @@ void MeshGLTest::setIndexBufferUnsignedInt() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
     CORRADE_COMPARE(value, indexedResult);
+}
+
+void MeshGLTest::setIndexBufferMovedOutInstance() {
+    Buffer buffer{NoCreate};
+    Mesh mesh;
+
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    mesh.setIndexBuffer(buffer, 0, MeshIndexType::UnsignedByte);
+
+    CORRADE_COMPARE(out.str(), "GL::Mesh::setIndexBuffer(): empty or moved-out Buffer instance was passed\n");
+}
+
+template<class T> void MeshGLTest::setIndexBufferTransferOwnership() {
+    setTestCaseName(std::is_same<T, MeshIndexType>::value ?
+        "setIndexBufferTransferOwnership<GL::MeshIndexType>" :
+        "setIndexBufferTransferOwnership<Magnum::MeshIndexType>");
+
+    const UnsignedShort data = 0;
+    Buffer buffer;
+    buffer.setData({&data, 1}, BufferUsage::StaticDraw);
+
+    const GLuint id = buffer.id();
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+
+        Mesh mesh;
+        mesh.setIndexBuffer(buffer, 0, T::UnsignedShort);
+        CORRADE_VERIFY(buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+
+        Mesh mesh;
+        mesh.setIndexBuffer(std::move(buffer), 0, T::UnsignedShort);
+        CORRADE_VERIFY(!buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(!glIsBuffer(id));
+}
+
+template<class T> void MeshGLTest::setIndexBufferRangeTransferOwnership() {
+    setTestCaseName(std::is_same<T, MeshIndexType>::value ?
+        "setIndexBufferRangeTransferOwnership<GL::MeshIndexType>" :
+        "setIndexBufferRangeTransferOwnership<Magnum::MeshIndexType>");
+
+    const UnsignedShort data = 0;
+    Buffer buffer;
+    buffer.setData({&data, 1}, BufferUsage::StaticDraw);
+
+    const GLuint id = buffer.id();
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.setIndexBuffer(buffer, 0, T::UnsignedShort, 0, 1);
+        CORRADE_VERIFY(buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(glIsBuffer(id));
+
+    {
+        Mesh mesh;
+        mesh.setIndexBuffer(std::move(buffer), 0, T::UnsignedShort, 0, 1);
+        CORRADE_VERIFY(!buffer.id());
+        CORRADE_VERIFY(glIsBuffer(id));
+    }
+
+    CORRADE_VERIFY(!glIsBuffer(id));
 }
 
 void MeshGLTest::unbindVAOWhenSettingIndexBufferData() {
@@ -2113,7 +2390,6 @@ void MeshGLTest::setInstanceCountBaseVertexBaseInstance() {
 }
 #endif
 
-#if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
 void MeshGLTest::addVertexBufferInstancedFloat() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::draw_instanced>())
@@ -2165,7 +2441,6 @@ void MeshGLTest::addVertexBufferInstancedFloat() {
     MAGNUM_VERIFY_NO_GL_ERROR();
     CORRADE_COMPARE(value, 96);
 }
-#endif
 
 #ifndef MAGNUM_TARGET_GLES2
 void MeshGLTest::addVertexBufferInstancedInteger() {
@@ -2238,6 +2513,95 @@ void MeshGLTest::addVertexBufferInstancedDouble() {
     CORRADE_COMPARE(value, 45828);
 }
 #endif
+
+void MeshGLTest::resetDivisorAfterInstancedDraw() {
+    #ifndef MAGNUM_TARGET_GLES
+    if(!Context::current().isExtensionSupported<Extensions::ARB::draw_instanced>())
+        CORRADE_SKIP(Extensions::ARB::draw_instanced::string() + std::string(" is not available."));
+    if(!Context::current().isExtensionSupported<Extensions::ARB::instanced_arrays>())
+        CORRADE_SKIP(Extensions::ARB::instanced_arrays::string() + std::string(" is not available."));
+    #elif defined(MAGNUM_TARGET_GLES2)
+    #ifndef MAGNUM_TARGET_WEBGL
+    if(!Context::current().isExtensionSupported<Extensions::ANGLE::instanced_arrays>() &&
+       !Context::current().isExtensionSupported<Extensions::EXT::instanced_arrays>() &&
+       !Context::current().isExtensionSupported<Extensions::NV::instanced_arrays>())
+        CORRADE_SKIP("Required instancing extension is not available.");
+    if(!Context::current().isExtensionSupported<Extensions::ANGLE::instanced_arrays>() &&
+       !Context::current().isExtensionSupported<Extensions::EXT::draw_instanced>() &&
+       !Context::current().isExtensionSupported<Extensions::NV::draw_instanced>())
+        CORRADE_SKIP("Required drawing extension is not available.");
+    #else
+    if(!Context::current().isExtensionSupported<Extensions::ANGLE::instanced_arrays>())
+        CORRADE_SKIP(Extensions::ANGLE::instanced_arrays::string() + std::string(" is not available."));
+    #endif
+    #endif
+
+    /* This doesn't affect VAOs, because they encapsulate the state */
+    #ifndef MAGNUM_TARGET_GLES
+    if(Context::current().isExtensionSupported<Extensions::ARB::vertex_array_object>())
+        CORRADE_SKIP(Extensions::ARB::vertex_array_object::string() + std::string(" is enabled, can't test."));
+    #elif defined(MAGNUM_TARGET_GLES2)
+    if(Context::current().isExtensionSupported<Extensions::OES::vertex_array_object>())
+        CORRADE_SKIP(Extensions::OES::vertex_array_object::string() + std::string(" is enabled, can't test."));
+    #endif
+
+    typedef Attribute<0, Float> Attribute;
+
+    const Float data[]{
+        0,
+        Math::unpack<Float, UnsignedByte>(96),
+        Math::unpack<Float, UnsignedByte>(48),
+    };
+    Buffer buffer;
+    buffer.setData(data, BufferUsage::StaticDraw);
+
+    Renderbuffer renderbuffer;
+    renderbuffer.setStorage(
+        #ifndef MAGNUM_TARGET_GLES2
+        RenderbufferFormat::RGBA8,
+        #else
+        RenderbufferFormat::RGBA4,
+        #endif
+        Vector2i(1));
+    Framebuffer framebuffer{{{}, Vector2i(1)}};
+    framebuffer.attachRenderbuffer(Framebuffer::ColorAttachment(0), renderbuffer)
+                .bind();
+
+    FloatShader shader{"float", "vec4(valueInterpolated, 0.0, 0.0, 0.0)"};
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+
+    /* Draw instanced first. Two single-vertex instances of an attribute with
+       divisor 1, first draws 0, second draws 96 */
+    {
+        Mesh mesh;
+        mesh.setInstanceCount(2)
+            .addVertexBufferInstanced(buffer, 1, 0, Attribute{})
+            .setPrimitive(MeshPrimitive::Points)
+            .setCount(1)
+            .draw(shader);
+
+        MAGNUM_VERIFY_NO_GL_ERROR();
+
+        CORRADE_COMPARE(framebuffer.read({{}, Vector2i{1}}, {PixelFormat::RGBA, PixelType::UnsignedByte}).data<UnsignedByte>()[0], 96);
+    }
+
+    /* Draw normal after. One two-vertex instance of an attribute with divisor
+       0, first draws 96, second 48. In case divisor is not properly reset,
+       I'll get 96 on both. */
+    {
+        Mesh mesh;
+        mesh.setInstanceCount(1)
+            .addVertexBuffer(buffer, 4, Attribute{})
+            .setPrimitive(MeshPrimitive::Points)
+            .setCount(2)
+            .draw(shader);
+
+        MAGNUM_VERIFY_NO_GL_ERROR();
+
+        CORRADE_COMPARE(framebuffer.read({{}, Vector2i{1}}, {PixelFormat::RGBA, PixelType::UnsignedByte}).data<UnsignedByte>()[0], 48);
+    }
+}
 
 namespace {
     struct MultiChecker {

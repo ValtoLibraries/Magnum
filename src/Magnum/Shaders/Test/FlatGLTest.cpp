@@ -23,6 +23,13 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <sstream>
+#include <Corrade/Utility/Format.h>
+
+#include "Magnum/ImageView.h"
+#include "Magnum/PixelFormat.h"
+#include "Magnum/GL/Texture.h"
+#include "Magnum/GL/TextureFormat.h"
 #include "Magnum/GL/OpenGLTester.h"
 #include "Magnum/Shaders/Flat.h"
 
@@ -31,57 +38,136 @@ namespace Magnum { namespace Shaders { namespace Test {
 struct FlatGLTest: GL::OpenGLTester {
     explicit FlatGLTest();
 
-    void compile2D();
-    void compile3D();
-    void compile2DTextured();
-    void compile3DTextured();
+    template<UnsignedInt dimensions> void construct();
+
+    template<UnsignedInt dimensions> void constructMove();
+
+    template<UnsignedInt dimensions> void bindTexture();
+    template<UnsignedInt dimensions> void bindTextureNotEnabled();
+
+    template<UnsignedInt dimensions> void setAlphaMask();
+    template<UnsignedInt dimensions> void setAlphaMaskNotEnabled();
 };
 
+namespace {
+
+constexpr struct {
+    const char* name;
+    Flat2D::Flags flags;
+} ConstructData[]{
+    {"", {}},
+    {"textured", Flat2D::Flag::Textured}
+};
+
+}
+
 FlatGLTest::FlatGLTest() {
-    addTests({&FlatGLTest::compile2D,
-              &FlatGLTest::compile3D,
-              &FlatGLTest::compile2DTextured,
-              &FlatGLTest::compile3DTextured});
+    addInstancedTests<FlatGLTest>({
+        &FlatGLTest::construct<2>,
+        &FlatGLTest::construct<3>},
+        Containers::arraySize(ConstructData));
+
+    addTests<FlatGLTest>({
+        &FlatGLTest::constructMove<2>,
+        &FlatGLTest::constructMove<3>,
+
+        &FlatGLTest::bindTexture<2>,
+        &FlatGLTest::bindTexture<3>,
+        &FlatGLTest::bindTextureNotEnabled<2>,
+        &FlatGLTest::bindTextureNotEnabled<3>,
+
+        &FlatGLTest::setAlphaMask<2>,
+        &FlatGLTest::setAlphaMask<3>,
+        &FlatGLTest::setAlphaMaskNotEnabled<2>,
+        &FlatGLTest::setAlphaMaskNotEnabled<3>});
 }
 
-void FlatGLTest::compile2D() {
-    Shaders::Flat2D shader;
+template<UnsignedInt dimensions> void FlatGLTest::construct() {
+    setTestCaseName(Utility::formatString("construct<{}>", dimensions));
+
+    auto&& data = ConstructData[testCaseInstanceId()];
+    setTestCaseDescription(data.name);
+
+    Flat<dimensions> shader{data.flags};
     {
         #ifdef CORRADE_TARGET_APPLE
         CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
         #endif
+        CORRADE_VERIFY(shader.id());
         CORRADE_VERIFY(shader.validate().first);
     }
 }
 
-void FlatGLTest::compile3D() {
-    Shaders::Flat3D shader;
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+template<UnsignedInt dimensions> void FlatGLTest::constructMove() {
+    setTestCaseName(Utility::formatString("constructMove<{}>", dimensions));
+
+    Flat<dimensions> a;
+    const GLuint id = a.id();
+    CORRADE_VERIFY(id);
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+
+    Flat<dimensions> b{std::move(a)};
+    CORRADE_COMPARE(b.id(), id);
+    CORRADE_VERIFY(!a.id());
+
+    Flat<dimensions> c{NoCreate};
+    c = std::move(b);
+    CORRADE_COMPARE(c.id(), id);
+    CORRADE_VERIFY(!b.id());
 }
 
-void FlatGLTest::compile2DTextured() {
-    Shaders::Flat2D shader(Shaders::Flat2D::Flag::Textured);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+template<UnsignedInt dimensions> void FlatGLTest::bindTexture() {
+    setTestCaseName(Utility::formatString("bindTexture<{}>", dimensions));
+
+    char data[4];
+
+    GL::Texture2D texture;
+    texture
+        .setMinificationFilter(SamplerFilter::Linear, SamplerMipmap::Linear)
+        .setMagnificationFilter(SamplerFilter::Linear)
+        .setWrapping(SamplerWrapping::ClampToEdge)
+        .setImage(0, GL::TextureFormat::RGBA, ImageView2D{PixelFormat::RGBA8Unorm, {1, 1}, data});
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+
+    /* Test just that no assertion is fired */
+    Flat<dimensions> shader{Flat<dimensions>::Flag::Textured};
+    shader.bindTexture(texture);
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void FlatGLTest::compile3DTextured() {
-    Shaders::Flat3D shader(Shaders::Flat3D::Flag::Textured);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+template<UnsignedInt dimensions> void FlatGLTest::bindTextureNotEnabled() {
+    setTestCaseName(Utility::formatString("bindTextureNotEnabled<{}>", dimensions));
+
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    GL::Texture2D texture;
+    Flat<dimensions> shader;
+    shader.bindTexture(texture);
+
+    CORRADE_COMPARE(out.str(), "Shaders::Flat::bindTexture(): the shader was not created with texturing enabled\n");
+}
+
+template<UnsignedInt dimensions> void FlatGLTest::setAlphaMask() {
+    /* Test just that no assertion is fired */
+    Flat<dimensions> shader{Flat<dimensions>::Flag::AlphaMask};
+    shader.setAlphaMask(0.25f);
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+}
+
+template<UnsignedInt dimensions> void FlatGLTest::setAlphaMaskNotEnabled() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Flat<dimensions> shader;
+    shader.setAlphaMask(0.75f);
+
+    CORRADE_COMPARE(out.str(),
+        "Shaders::Flat::setAlphaMask(): the shader was not created with alpha mask enabled\n");
 }
 
 }}}

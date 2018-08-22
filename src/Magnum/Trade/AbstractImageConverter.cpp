@@ -26,6 +26,7 @@
 #include "AbstractImageConverter.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/EnumSet.hpp>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Directory.h>
 
@@ -71,7 +72,6 @@ Containers::Optional<Image2D> AbstractImageConverter::exportToImage(const ImageV
 
 Containers::Optional<Image2D> AbstractImageConverter::doExportToImage(const ImageView2D&) {
     CORRADE_ASSERT(false, "Trade::AbstractImageConverter::exportToImage(): feature advertised but not implemented", {});
-    return Containers::NullOpt;
 }
 
 Containers::Optional<CompressedImage2D> AbstractImageConverter::exportToCompressedImage(const ImageView2D& image) {
@@ -83,7 +83,6 @@ Containers::Optional<CompressedImage2D> AbstractImageConverter::exportToCompress
 
 Containers::Optional<CompressedImage2D> AbstractImageConverter::doExportToCompressedImage(const ImageView2D&) {
     CORRADE_ASSERT(false, "Trade::AbstractImageConverter::exportToCompressedImage(): feature advertised but not implemented", {});
-    return Containers::NullOpt;
 }
 
 Containers::Array<char> AbstractImageConverter::exportToData(const ImageView2D& image) {
@@ -95,7 +94,6 @@ Containers::Array<char> AbstractImageConverter::exportToData(const ImageView2D& 
 
 Containers::Array<char> AbstractImageConverter::doExportToData(const ImageView2D&) {
     CORRADE_ASSERT(false, "Trade::AbstractImageConverter::exportToData(): feature advertised but not implemented", nullptr);
-    return nullptr;
 }
 
 Containers::Array<char> AbstractImageConverter::exportToData(const CompressedImageView2D& image) {
@@ -107,7 +105,6 @@ Containers::Array<char> AbstractImageConverter::exportToData(const CompressedIma
 
 Containers::Array<char> AbstractImageConverter::doExportToData(const CompressedImageView2D&) {
     CORRADE_ASSERT(false, "Trade::AbstractImageConverter::exportToData(): feature advertised but not implemented", nullptr);
-    return nullptr;
 }
 
 Containers::Array<char> AbstractImageConverter::exportToData(const ImageData2D& image) {
@@ -122,7 +119,7 @@ bool AbstractImageConverter::exportToFile(const ImageView2D& image, const std::s
 }
 
 bool AbstractImageConverter::doExportToFile(const ImageView2D& image, const std::string& filename) {
-    CORRADE_ASSERT(features() & Feature::ConvertData, "Trade::AbstractImageConverter::exportToFile(): not implemented", false);
+    CORRADE_ASSERT(features() >= Feature::ConvertData, "Trade::AbstractImageConverter::exportToFile(): feature advertised but not implemented", false);
 
     const auto data = doExportToData(image);
     if(!data) return false;
@@ -144,7 +141,7 @@ bool AbstractImageConverter::exportToFile(const CompressedImageView2D& image, co
 }
 
 bool AbstractImageConverter::doExportToFile(const CompressedImageView2D& image, const std::string& filename) {
-    CORRADE_ASSERT(features() & Feature::ConvertCompressedData, "Trade::AbstractImageConverter::exportToFile(): not implemented", false);
+    CORRADE_ASSERT(features() >= Feature::ConvertCompressedData, "Trade::AbstractImageConverter::exportToFile(): feature advertised but not implemented", false);
 
     const auto data = doExportToData(image);
     if(!data) return false;
@@ -160,6 +157,34 @@ bool AbstractImageConverter::doExportToFile(const CompressedImageView2D& image, 
 
 bool AbstractImageConverter::exportToFile(const ImageData2D& image, const std::string& filename) {
     return image.isCompressed() ? exportToFile(CompressedImageView2D(image), filename) : exportToFile(ImageView2D(image), filename);
+}
+
+Debug& operator<<(Debug& debug, const AbstractImageConverter::Feature value) {
+    switch(value) {
+        /* LCOV_EXCL_START */
+        #define _c(v) case AbstractImageConverter::Feature::v: return debug << "Trade::AbstractImageConverter::Feature::" #v;
+        _c(ConvertImage)
+        _c(ConvertCompressedImage)
+        _c(ConvertFile)
+        _c(ConvertCompressedFile)
+        _c(ConvertData)
+        _c(ConvertCompressedData)
+        #undef _c
+        /* LCOV_EXCL_STOP */
+    }
+
+    return debug << "Trade::AbstractImageConverter::Feature(" << Debug::nospace << reinterpret_cast<void*>(UnsignedByte(value)) << Debug::nospace << ")";
+}
+
+Debug& operator<<(Debug& debug, const AbstractImageConverter::Features value) {
+    return Containers::enumSetDebugOutput(debug, value, "Trade::AbstractImageConverter::Features{}", {
+        AbstractImageConverter::Feature::ConvertImage,
+        AbstractImageConverter::Feature::ConvertCompressedImage,
+        AbstractImageConverter::Feature::ConvertData,
+        AbstractImageConverter::Feature::ConvertCompressedData,
+        /* These are implied by Convert[Compressed]Data, so have to be last */
+        AbstractImageConverter::Feature::ConvertFile,
+        AbstractImageConverter::Feature::ConvertCompressedFile});
 }
 
 }}

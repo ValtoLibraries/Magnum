@@ -64,7 +64,9 @@ GlfwApplication::GlfwApplication(const Arguments& arguments, NoCreateT):
     #endif
 {
     /* Init GLFW */
-    glfwSetErrorCallback(staticErrorCallback);
+    glfwSetErrorCallback([](int, const char* const description) {
+        Error{} << description;
+    });
 
     if(!glfwInit()) {
         Error() << "Could not initialize GLFW";
@@ -138,14 +140,34 @@ bool GlfwApplication::tryCreate(const Configuration& configuration) {
     glfwSetInputMode(_window, GLFW_CURSOR, Int(configuration.cursorMode()));
 
     /* Set callbacks */
-    glfwSetFramebufferSizeCallback(_window, staticViewportEvent);
-    glfwSetKeyCallback(_window, staticKeyEvent);
-    glfwSetCursorPosCallback(_window, staticMouseMoveEvent);
-    glfwSetMouseButtonCallback(_window, staticMouseEvent);
-    glfwSetScrollCallback(_window, staticMouseScrollEvent);
-    glfwSetCharCallback(_window, staticTextInputEvent);
+    setupCallbacks();
 
     return true;
+}
+
+namespace {
+
+GlfwApplication::InputEvent::Modifiers currentGlfwModifiers(GLFWwindow* window) {
+    static_assert(GLFW_PRESS == true && GLFW_RELEASE == false,
+        "GLFW press and release constants do not correspond to bool values");
+
+    GlfwApplication::InputEvent::Modifiers mods;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) ||
+       glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT))
+        mods |= GlfwApplication::InputEvent::Modifier::Shift;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) ||
+       glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL))
+        mods |= GlfwApplication::InputEvent::Modifier::Ctrl;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_ALT) ||
+       glfwGetKey(window, GLFW_KEY_RIGHT_ALT))
+        mods |= GlfwApplication::InputEvent::Modifier::Alt;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_SUPER) ||
+       glfwGetKey(window, GLFW_KEY_RIGHT_SUPER))
+        mods |= GlfwApplication::InputEvent::Modifier::Super;
+
+    return mods;
+}
+
 }
 
 #ifdef MAGNUM_TARGET_GL
@@ -188,7 +210,13 @@ bool GlfwApplication::tryCreate(const Configuration& configuration, const GLConf
     }
     glfwWindowHint(GLFW_FOCUSED, configuration.windowFlags() >= Configuration::WindowFlag::Focused);
 
-    /* Context window hints */
+    /* Framebuffer setup */
+    glfwWindowHint(GLFW_RED_BITS, glConfiguration.colorBufferSize().r());
+    glfwWindowHint(GLFW_GREEN_BITS, glConfiguration.colorBufferSize().g());
+    glfwWindowHint(GLFW_BLUE_BITS, glConfiguration.colorBufferSize().b());
+    glfwWindowHint(GLFW_ALPHA_BITS, glConfiguration.colorBufferSize().a());
+    glfwWindowHint(GLFW_DEPTH_BITS, glConfiguration.depthBufferSize());
+    glfwWindowHint(GLFW_STENCIL_BITS, glConfiguration.stencilBufferSize());
     glfwWindowHint(GLFW_SAMPLES, glConfiguration.sampleCount());
     glfwWindowHint(GLFW_SRGB_CAPABLE, glConfiguration.isSRGBCapable());
 
@@ -300,13 +328,7 @@ bool GlfwApplication::tryCreate(const Configuration& configuration, const GLConf
     glfwSetInputMode(_window, GLFW_CURSOR, Int(configuration.cursorMode()));
 
     /* Set callbacks */
-    glfwSetWindowUserPointer(_window, this);
-    glfwSetFramebufferSizeCallback(_window, staticViewportEvent);
-    glfwSetKeyCallback(_window, staticKeyEvent);
-    glfwSetCursorPosCallback(_window, staticMouseMoveEvent);
-    glfwSetMouseButtonCallback(_window, staticMouseEvent);
-    glfwSetScrollCallback(_window, staticMouseScrollEvent);
-    glfwSetCharCallback(_window, staticTextInputEvent);
+    setupCallbacks();
 
     /* Make the final context current */
     glfwMakeContextCurrent(_window);
@@ -325,6 +347,77 @@ bool GlfwApplication::tryCreate(const Configuration& configuration, const GLConf
     return true;
 }
 #endif
+
+void GlfwApplication::setupCallbacks() {
+    glfwSetWindowUserPointer(_window, this);
+    glfwSetWindowRefreshCallback(_window, [](GLFWwindow* const window){
+        /* Properly redraw after the window is restored from minimized state */
+        static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window))->drawEvent();
+    });
+    glfwSetFramebufferSizeCallback(_window, [](GLFWwindow* const window, const int w, const int h) {
+        static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window))->viewportEvent({w, h});
+    });
+    glfwSetKeyCallback(_window, [](GLFWwindow* const window, const int key, int, const int action, const int mods) {
+        const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
+        KeyEvent e(static_cast<KeyEvent::Key>(key), {static_cast<InputEvent::Modifier>(mods)}, action == GLFW_REPEAT);
+
+        if(action == GLFW_PRESS) {
+            instance->keyPressEvent(e);
+        } else if(action == GLFW_RELEASE) {
+            instance->keyReleaseEvent(e);
+        } else if(action == GLFW_REPEAT) {
+            instance->keyPressEvent(e);
+        }
+    });
+    glfwSetMouseButtonCallback(_window, [](GLFWwindow* const window, const int button, const int action, const int mods) {
+        const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
+        MouseEvent e(static_cast<MouseEvent::Button>(button), {Int(x), Int(y)}, {static_cast<InputEvent::Modifier>(mods)});
+
+        if(action == GLFW_PRESS) {
+            instance->mousePressEvent(e);
+        } else if(action == GLFW_RELEASE) {
+            instance->mouseReleaseEvent(e);
+        } /* we don't handle GLFW_REPEAT */
+    });
+    glfwSetCursorPosCallback(_window, [](GLFWwindow* const window, const double x, const double y) {
+        MouseMoveEvent e{window, Vector2i{Int(x), Int(y)}};
+        static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window))->mouseMoveEvent(e);
+    });
+    glfwSetScrollCallback(_window, [](GLFWwindow* window, double xoffset, double yoffset) {
+        const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
+        MouseScrollEvent e(window, Vector2{Float(xoffset), Float(yoffset)});
+        instance->mouseScrollEvent(e);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        if(yoffset != 0.0) {
+            #ifdef __GNUC__
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            #endif
+            MouseEvent e1((yoffset > 0.0) ? MouseEvent::Button::WheelUp : MouseEvent::Button::WheelDown, {}, currentGlfwModifiers(window));
+            #ifdef __GNUC__
+            #pragma GCC diagnostic pop
+            #endif
+            instance->mousePressEvent(e1);
+        }
+        #endif
+    });
+    glfwSetCharCallback(_window, [](GLFWwindow* window, unsigned int codepoint) {
+        const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
+
+        if(!(instance->_flags & Flag::TextInputActive)) return;
+
+        char utf8[4];
+        const std::size_t size = Utility::Unicode::utf8(codepoint, utf8);
+        TextInputEvent e{{utf8, size}};
+        instance->textInputEvent(e);
+    });
+}
 
 GlfwApplication::~GlfwApplication() {
     glfwDestroyWindow(_window);
@@ -352,94 +445,28 @@ int GlfwApplication::exec() {
     return 0;
 }
 
-void GlfwApplication::staticViewportEvent(GLFWwindow* const window, const int w, const int h) {
-    static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window))->viewportEvent({w, h});
-}
-
-void GlfwApplication::staticKeyEvent(GLFWwindow* const window, const int key, int, const int action, const int mods) {
-    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
-
-    KeyEvent e(static_cast<KeyEvent::Key>(key), {static_cast<InputEvent::Modifier>(mods)}, action == GLFW_REPEAT);
-
-    if(action == GLFW_PRESS) {
-        instance->keyPressEvent(e);
-    } else if(action == GLFW_RELEASE) {
-        instance->keyReleaseEvent(e);
-    } else if(action == GLFW_REPEAT) {
-        instance->keyPressEvent(e);
+auto GlfwApplication::MouseMoveEvent::buttons() -> Buttons {
+    if(!_buttons) {
+        _buttons = Buttons{};
+        for(const Int button: {GLFW_MOUSE_BUTTON_LEFT,
+                               GLFW_MOUSE_BUTTON_MIDDLE,
+                               GLFW_MOUSE_BUTTON_RIGHT}) {
+            if(glfwGetMouseButton(_window, button) == GLFW_PRESS)
+                *_buttons |= Button(1 << button);
+        }
     }
+
+    return *_buttons;
 }
 
-void GlfwApplication::staticMouseMoveEvent(GLFWwindow* window, double x, double y) {
-    MouseMoveEvent e{Vector2i{Int(x), Int(y)}, KeyEvent::getCurrentGlfwModifiers(window)};
-    static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window))->mouseMoveEvent(e);
+auto GlfwApplication::MouseMoveEvent::modifiers() -> Modifiers {
+    if(!_modifiers) _modifiers = currentGlfwModifiers(_window);
+    return *_modifiers;
 }
 
-void GlfwApplication::staticMouseEvent(GLFWwindow* window, int button, int action, int mods) {
-    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
-
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-    MouseEvent e(static_cast<MouseEvent::Button>(button), {Int(x), Int(y)}, {static_cast<InputEvent::Modifier>(mods)});
-
-    if(action == GLFW_PRESS) {
-        instance->mousePressEvent(e);
-    } else if(action == GLFW_RELEASE) {
-        instance->mouseReleaseEvent(e);
-    } /* we don't handle GLFW_REPEAT */
-}
-
-void GlfwApplication::staticMouseScrollEvent(GLFWwindow* window, double xoffset, double yoffset) {
-    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
-
-    MouseScrollEvent e(Vector2{Float(xoffset), Float(yoffset)}, KeyEvent::getCurrentGlfwModifiers(window));
-    instance->mouseScrollEvent(e);
-
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    if(yoffset != 0.0) {
-        #ifdef __GNUC__
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        #endif
-        MouseEvent e1((yoffset > 0.0) ? MouseEvent::Button::WheelUp : MouseEvent::Button::WheelDown, {}, KeyEvent::getCurrentGlfwModifiers(window));
-        #ifdef __GNUC__
-        #pragma GCC diagnostic pop
-        #endif
-        instance->mousePressEvent(e1);
-    }
-    #endif
-}
-
-void GlfwApplication::staticTextInputEvent(GLFWwindow* window, unsigned int codepoint) {
-    const auto instance = static_cast<GlfwApplication*>(glfwGetWindowUserPointer(window));
-
-    if(!(instance->_flags & Flag::TextInputActive)) return;
-
-    char utf8[4];
-    const std::size_t size = Utility::Unicode::utf8(codepoint, utf8);
-    TextInputEvent e{{utf8, size}};
-    instance->textInputEvent(e);
-}
-
-void GlfwApplication::staticErrorCallback(int, const char* description) {
-    Error() << description;
-}
-
-auto GlfwApplication::KeyEvent::getCurrentGlfwModifiers(GLFWwindow* window) -> Modifiers {
-    static_assert(GLFW_PRESS == true && GLFW_RELEASE == false,
-        "GLFW press and release constants do not correspond to bool values");
-
-    Modifiers mods;
-    if(glfwGetKey(window, Int(Key::LeftShift)) || glfwGetKey(window, Int(Key::RightShift)))
-        mods |= Modifier::Shift;
-    if(glfwGetKey(window, Int(Key::LeftAlt)) || glfwGetKey(window, Int(Key::RightAlt)))
-        mods |= Modifier::Alt;
-    if(glfwGetKey(window, Int(Key::LeftCtrl)) || glfwGetKey(window, Int(Key::RightCtrl)))
-        mods |= Modifier::Ctrl;
-    if(glfwGetKey(window, Int(Key::RightSuper)))
-        mods |= Modifier::Super;
-
-    return mods;
+auto GlfwApplication::MouseScrollEvent::modifiers() -> Modifiers {
+    if(!_modifiers) _modifiers = currentGlfwModifiers(_window);
+    return *_modifiers;
 }
 
 void GlfwApplication::viewportEvent(const Vector2i&) {}
@@ -452,7 +479,9 @@ void GlfwApplication::mouseScrollEvent(MouseScrollEvent&) {}
 void GlfwApplication::textInputEvent(TextInputEvent&) {}
 
 #ifdef MAGNUM_TARGET_GL
-GlfwApplication::GLConfiguration::GLConfiguration(): _sampleCount{0}, _version{GL::Version::None} {}
+GlfwApplication::GLConfiguration::GLConfiguration():
+    _colorBufferSize{8, 8, 8, 0}, _depthBufferSize{24}, _stencilBufferSize{0},
+    _sampleCount{0}, _version{GL::Version::None} {}
 
 GlfwApplication::GLConfiguration::~GLConfiguration() = default;
 #endif

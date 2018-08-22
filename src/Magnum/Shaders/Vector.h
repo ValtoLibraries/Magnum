@@ -42,11 +42,13 @@ namespace Magnum { namespace Shaders {
 @brief Vector shader
 
 Renders vector art in plain grayscale form. See also @ref DistanceFieldVector
-for more advanced effects. For rendering unchanged texture you can use the
-@ref Flat shader. You need to provide @ref Position and @ref TextureCoordinates
-attributes in your triangle mesh and call at least
-@ref setTransformationProjectionMatrix(), @ref setColor() and
-@ref bindVectorTexture().
+for more advanced effects. For rendering an unchanged texture you can use the
+@ref Flat shader. You need to provide the @ref Position and
+@ref TextureCoordinates attributes in your triangle mesh and call at least
+@ref bindVectorTexture(). By default, the shader renders the texture with a
+white color in an identity transformation. Use
+@ref setTransformationProjectionMatrix(), @ref setColor() and others to
+configure the shader.
 
 @image html shaders-vector.png
 @image latex shaders-vector.png
@@ -84,11 +86,25 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Vector: public Abst
             #endif
             {}
 
+        /** @brief Copying is not allowed */
+        Vector(const Vector<dimensions>&) = delete;
+
+        /** @brief Move constructor */
+        Vector(Vector<dimensions>&&) noexcept = default;
+
+        /** @brief Copying is not allowed */
+        Vector<dimensions>& operator=(const Vector<dimensions>&) = delete;
+
+        /** @brief Move assignment */
+        Vector<dimensions>& operator=(Vector<dimensions>&&) noexcept = default;
+
         /**
          * @brief Set transformation and projection matrix
          * @return Reference to self (for method chaining)
+         *
+         * Default is an identity matrix.
          */
-        Vector& setTransformationProjectionMatrix(const MatrixTypeFor<dimensions, Float>& matrix) {
+        Vector<dimensions>& setTransformationProjectionMatrix(const MatrixTypeFor<dimensions, Float>& matrix) {
             GL::AbstractShaderProgram::setUniform(_transformationProjectionMatrixUniform, matrix);
             return *this;
         }
@@ -97,10 +113,10 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Vector: public Abst
          * @brief Set background color
          * @return Reference to self (for method chaining)
          *
-         * Default is transparent black.
+         * Default is @cpp 0x00000000_rgbaf @ce.
          * @see @ref setColor()
          */
-        Vector& setBackgroundColor(const Color4& color) {
+        Vector<dimensions>& setBackgroundColor(const Color4& color) {
             GL::AbstractShaderProgram::setUniform(_backgroundColorUniform, color);
             return *this;
         }
@@ -109,9 +125,10 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Vector: public Abst
          * @brief Set fill color
          * @return Reference to self (for method chaining)
          *
+         * Default is @cpp 0xffffffff_rgbaf @ce.
          * @see @ref setBackgroundColor()
          */
-        Vector& setColor(const Color4& color) {
+        Vector<dimensions>& setColor(const Color4& color) {
             GL::AbstractShaderProgram::setUniform(_colorUniform, color);
             return *this;
         }

@@ -33,10 +33,11 @@
 #include <memory>
 #include <string>
 #include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/Optional.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Tags.h"
-#include "Magnum/Math/Vector2.h"
+#include "Magnum/Math/Vector4.h"
 #include "Magnum/Platform/Platform.h"
 
 #ifdef MAGNUM_TARGET_GL
@@ -466,14 +467,7 @@ class GlfwApplication {
         typedef Containers::EnumSet<Flag> Flags;
         CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
-        static void staticErrorCallback(int error, const char* description);
-
-        static void staticViewportEvent(GLFWwindow* window, int w, int h);
-        static void staticKeyEvent(GLFWwindow* window, int key, int scancode, int action, int mod);
-        static void staticMouseEvent(GLFWwindow* window, int button, int action, int mods);
-        static void staticMouseMoveEvent(GLFWwindow* window, double x, double y);
-        static void staticMouseScrollEvent(GLFWwindow* window, double xoffset, double yoffset);
-        static void staticTextInputEvent(GLFWwindow* window, unsigned int codepoint);
+        void setupCallbacks();
 
         GLFWwindow* _window{nullptr};
         Flags _flags;
@@ -488,7 +482,12 @@ CORRADE_ENUMSET_OPERATORS(GlfwApplication::Flags)
 /**
 @brief OpenGL context configuration
 
-Double-buffered RGBA window with depth and stencil buffers.
+The created window is always with double-buffered OpenGL context.
+
+@note This function is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
+
 @see @ref GlfwApplication(), @ref create(), @ref tryCreate()
 */
 class GlfwApplication::GLConfiguration {
@@ -554,6 +553,48 @@ class GlfwApplication::GLConfiguration {
             return *this;
         }
 
+        /** @brief Color buffer size */
+        Vector4i colorBufferSize() const { return _colorBufferSize; }
+
+        /**
+         * @brief Set color buffer size
+         *
+         * Default is @cpp {8, 8, 8, 0} @ce (8-bit-per-channel RGB, no alpha).
+         * @see @ref setDepthBufferSize(), @ref setStencilBufferSize()
+         */
+        GLConfiguration& setColorBufferSize(const Vector4i& size) {
+            _colorBufferSize = size;
+            return *this;
+        }
+
+        /** @brief Depth buffer size */
+        Int depthBufferSize() const { return _depthBufferSize; }
+
+        /**
+         * @brief Set depth buffer size
+         *
+         * Default is @cpp 24 @ce bits.
+         * @see @ref setColorBufferSize(), @ref setStencilBufferSize()
+         */
+        GLConfiguration& setDepthBufferSize(Int size) {
+            _depthBufferSize = size;
+            return *this;
+        }
+
+        /** @brief Stencil buffer size */
+        Int stencilBufferSize() const { return _stencilBufferSize; }
+
+        /**
+         * @brief Set stencil buffer size
+         *
+         * Default is @cpp 0 @ce bits (i.e., no stencil buffer).
+         * @see @ref setColorBufferSize(), @ref setDepthBufferSize()
+         */
+        GLConfiguration& setStencilBufferSize(Int size) {
+            _stencilBufferSize = size;
+            return *this;
+        }
+
         /** @brief Sample count */
         Int sampleCount() const { return _sampleCount; }
 
@@ -585,6 +626,8 @@ class GlfwApplication::GLConfiguration {
         }
 
     private:
+        Vector4i _colorBufferSize;
+        Int _depthBufferSize, _stencilBufferSize;
         Int _sampleCount;
         GL::Version _version;
         Flags _flags;
@@ -597,7 +640,6 @@ CORRADE_ENUMSET_OPERATORS(GlfwApplication::GLConfiguration::Flags)
 /**
 @brief Configuration
 
-Double-buffered RGBA window with depth and stencil buffers.
 @see @ref GlfwApplication(), @ref create(), @ref tryCreate()
 */
 class GlfwApplication::Configuration {
@@ -891,7 +933,7 @@ class GlfwApplication::InputEvent {
         constexpr bool isAccepted() const { return _accepted; }
 
     protected:
-        constexpr InputEvent(): _accepted(false) {}
+        constexpr explicit InputEvent(): _accepted(false) {}
 
         ~InputEvent() = default;
 
@@ -1116,9 +1158,7 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
         constexpr bool isRepeated() const { return _repeated; }
 
     private:
-        static Modifiers getCurrentGlfwModifiers(GLFWwindow* window);
-
-        constexpr KeyEvent(Key key, Modifiers modifiers, bool repeated): _key{key}, _modifiers{modifiers}, _repeated{repeated} {}
+        constexpr explicit KeyEvent(Key key, Modifiers modifiers, bool repeated): _key{key}, _modifiers{modifiers}, _repeated{repeated} {}
 
         const Key _key;
         const Modifiers _modifiers;
@@ -1178,7 +1218,7 @@ class GlfwApplication::MouseEvent: public GlfwApplication::InputEvent {
         constexpr Modifiers modifiers() const { return _modifiers; }
 
     private:
-        constexpr MouseEvent(Button button, const Vector2i& position, Modifiers modifiers): _button(button), _position{position}, _modifiers(modifiers) {}
+        constexpr explicit MouseEvent(Button button, const Vector2i& position, Modifiers modifiers): _button{button}, _position{position}, _modifiers{modifiers} {}
 
         const Button _button;
         const Vector2i _position;
@@ -1194,17 +1234,48 @@ class GlfwApplication::MouseMoveEvent: public GlfwApplication::InputEvent {
     friend GlfwApplication;
 
     public:
-        /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        /**
+         * @brief Mouse button
+         *
+         * @see @ref Buttons, @ref buttons()
+         */
+        enum class Button: UnsignedInt {
+            Left = 1 << GLFW_MOUSE_BUTTON_LEFT,     /**< Left button */
+            Middle = 1 << GLFW_MOUSE_BUTTON_MIDDLE, /**< Middle button */
+            Right = 1 << GLFW_MOUSE_BUTTON_RIGHT    /**< Right button */
+        };
 
-        /** @brief Modifiers */
-        constexpr Modifiers modifiers() const { return _modifiers; }
+        /**
+         * @brief Set of mouse buttons
+         *
+         * @see @ref buttons()
+         */
+        typedef Containers::EnumSet<Button> Buttons;
+
+        /**
+         * @brief Mouse buttons
+         *
+         * Lazily populated on first request.
+         */
+        Buttons buttons();
+
+        /** @brief Position */
+        Vector2i position() const { return _position; }
+
+        /**
+         * @brief Modifiers
+         *
+         * Lazily populated on first request.
+         */
+        Modifiers modifiers();
 
     private:
-        constexpr MouseMoveEvent(const Vector2i& position, Modifiers modifiers): _position(position), _modifiers(modifiers) {}
+        explicit MouseMoveEvent(GLFWwindow* window, const Vector2i& position): _window{window}, _position{position} {}
 
+        GLFWwindow* _window;
+        Containers::Optional<Buttons> _buttons;
         const Vector2i _position;
-        const Modifiers _modifiers;
+        Containers::Optional<Modifiers> _modifiers;
 };
 
 /**
@@ -1217,16 +1288,21 @@ class GlfwApplication::MouseScrollEvent: public GlfwApplication::InputEvent {
 
     public:
         /** @brief Scroll offset */
-        constexpr Vector2 offset() const { return _offset; }
+        Vector2 offset() const { return _offset; }
 
-        /** @brief Modifiers */
-        constexpr Modifiers modifiers() const { return _modifiers; }
+        /**
+         * @brief Modifiers
+         *
+         * Lazily populated on first request.
+         */
+        Modifiers modifiers();
 
     private:
-        constexpr MouseScrollEvent(const Vector2& offset, Modifiers modifiers): _offset(offset), _modifiers(modifiers) {}
+        explicit MouseScrollEvent(GLFWwindow* window, const Vector2& offset): _window{window}, _offset{offset} {}
 
+        GLFWwindow* _window;
         const Vector2 _offset;
-        const Modifiers _modifiers;
+        Containers::Optional<Modifiers> _modifiers;
 };
 
 /**
@@ -1267,7 +1343,7 @@ class GlfwApplication::TextInputEvent {
         constexpr Containers::ArrayView<const char> text() const { return _text; }
 
     private:
-        constexpr TextInputEvent(Containers::ArrayView<const char> text): _text{text}, _accepted{false} {}
+        constexpr explicit TextInputEvent(Containers::ArrayView<const char> text): _text{text}, _accepted{false} {}
 
         Containers::ArrayView<const char> _text;
         bool _accepted;

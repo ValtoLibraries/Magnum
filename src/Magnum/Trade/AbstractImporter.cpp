@@ -26,11 +26,13 @@
 #include "AbstractImporter.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/EnumSet.hpp>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Directory.h>
 
 #include "Magnum/Trade/AbstractMaterialData.h"
+#include "Magnum/Trade/AnimationData.h"
 #include "Magnum/Trade/CameraData.h"
 #include "Magnum/Trade/ImageData.h"
 #include "Magnum/Trade/LightData.h"
@@ -71,6 +73,17 @@ AbstractImporter::AbstractImporter(PluginManager::Manager<AbstractImporter>& man
 
 AbstractImporter::AbstractImporter(PluginManager::AbstractManager& manager, const std::string& plugin): PluginManager::AbstractManagingPlugin<AbstractImporter>{manager, plugin} {}
 
+void AbstractImporter::setFileCallback(Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, ImporterFileCallbackPolicy, void*), void* const userData) {
+    CORRADE_ASSERT(!isOpened(), "Trade::AbstractImporter::setFileCallback(): can't be set while a file is opened", );
+    CORRADE_ASSERT(features() & (Feature::FileCallback|Feature::OpenData), "Trade::AbstractImporter::setFileCallback(): importer supports neither loading from data nor via callbacks, callbacks can't be used", );
+
+    _fileCallback = callback;
+    _fileCallbackUserData = userData;
+    doSetFileCallback(callback, userData);
+}
+
+void AbstractImporter::doSetFileCallback(Containers::Optional<Containers::ArrayView<const char>>(*)(const std::string&, ImporterFileCallbackPolicy, void*), void*) {}
+
 bool AbstractImporter::openData(Containers::ArrayView<const char> data) {
     CORRADE_ASSERT(features() & Feature::OpenData,
         "Trade::AbstractImporter::openData(): feature not supported", {});
@@ -86,7 +99,7 @@ void AbstractImporter::doOpenData(Containers::ArrayView<const char>) {
 
 bool AbstractImporter::openState(const void* state, const std::string& filePath) {
     CORRADE_ASSERT(features() & Feature::OpenState,
-        "Trade::AbstractImporter::OpenState(): feature not supported", {});
+        "Trade::AbstractImporter::openState(): feature not supported", {});
 
     close();
     doOpenState(state, filePath);
@@ -99,20 +112,63 @@ void AbstractImporter::doOpenState(const void*, const std::string&) {
 
 bool AbstractImporter::openFile(const std::string& filename) {
     close();
-    doOpenFile(filename);
+
+    /* If file loading callbacks are not set or the importer supports handling
+       them directly, call into the implementation */
+    if(!_fileCallback || (doFeatures() & Feature::FileCallback)) {
+        doOpenFile(filename);
+
+    /* Otherwise, if loading from data is supported, use the callback and pass
+       the data through to openData(). Mark the file as ready to be closed once
+       opening is finished. */
+    } else if(doFeatures() & Feature::OpenData) {
+        /* This needs to be duplicated here and in the doOpenFile()
+           implementation in order to support both following cases:
+            - plugins that don't support FileCallback but have their own
+              doOpenFile() implementation (callback needs to be used here,
+              because the base doOpenFile() implementation might never get
+              called)
+            - plugins that support FileCallback but want to delegate the actual
+              file loading to the default implementation (callback used in the
+              base doOpenFile() implementation, because this branch is never
+              taken in that case) */
+        const Containers::Optional<Containers::ArrayView<const char>> data = _fileCallback(filename, ImporterFileCallbackPolicy::LoadTemporary, _fileCallbackUserData);
+        if(!data) {
+            Error() << "Trade::AbstractImporter::openFile(): cannot open file" << filename;
+            return isOpened();
+        }
+        doOpenData(*data);
+        _fileCallback(filename, ImporterFileCallbackPolicy::Close, _fileCallbackUserData);
+
+    /* Shouldn't get here, the assert is fired already in setFileCallback() */
+    } else CORRADE_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
+
     return isOpened();
 }
 
 void AbstractImporter::doOpenFile(const std::string& filename) {
     CORRADE_ASSERT(features() & Feature::OpenData, "Trade::AbstractImporter::openFile(): not implemented", );
 
-    /* Open file */
-    if(!Utility::Directory::fileExists(filename)) {
-        Error() << "Trade::AbstractImporter::openFile(): cannot open file" << filename;
-        return;
-    }
+    /* If callbacks are set, use them. This is the same implementation as in
+       openFile(), see the comment there for details. */
+    if(_fileCallback) {
+        const Containers::Optional<Containers::ArrayView<const char>> data = _fileCallback(filename, ImporterFileCallbackPolicy::LoadTemporary, _fileCallbackUserData);
+        if(!data) {
+            Error() << "Trade::AbstractImporter::openFile(): cannot open file" << filename;
+            return;
+        }
+        doOpenData(*data);
+        _fileCallback(filename, ImporterFileCallbackPolicy::Close, _fileCallbackUserData);
 
-    doOpenData(Utility::Directory::read(filename));
+    /* Otherwise open the file directly */
+    } else {
+        if(!Utility::Directory::fileExists(filename)) {
+            Error() << "Trade::AbstractImporter::openFile(): cannot open file" << filename;
+            return;
+        }
+
+        doOpenData(Utility::Directory::read(filename));
+    }
 }
 
 void AbstractImporter::close() {
@@ -157,7 +213,41 @@ Containers::Optional<SceneData> AbstractImporter::scene(const UnsignedInt id) {
     return doScene(id);
 }
 
-Containers::Optional<SceneData> AbstractImporter::doScene(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<SceneData> AbstractImporter::doScene(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::scene(): not implemented", {});
+}
+
+UnsignedInt AbstractImporter::animationCount() const {
+    CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::animationCount(): no file opened", {});
+    return doAnimationCount();
+}
+
+UnsignedInt AbstractImporter::doAnimationCount() const { return 0; }
+
+Int AbstractImporter::animationForName(const std::string& name) {
+    CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::animationForName(): no file opened", {});
+    return doAnimationForName(name);
+}
+
+Int AbstractImporter::doAnimationForName(const std::string&) { return -1; }
+
+std::string AbstractImporter::animationName(const UnsignedInt id) {
+    CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::animationName(): no file opened", {});
+    CORRADE_ASSERT(id < doAnimationCount(), "Trade::AbstractImporter::animationName(): index out of range", {});
+    return doAnimationName(id);
+}
+
+std::string AbstractImporter::doAnimationName(UnsignedInt) { return {}; }
+
+Containers::Optional<AnimationData> AbstractImporter::animation(const UnsignedInt id) {
+    CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::animation(): no file opened", {});
+    CORRADE_ASSERT(id < doAnimationCount(), "Trade::AbstractImporter::animation(): index out of range", {});
+    return doAnimation(id);
+}
+
+Containers::Optional<AnimationData> AbstractImporter::doAnimation(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::animation(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::lightCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::lightCount(): no file opened", {});
@@ -187,7 +277,9 @@ Containers::Optional<LightData> AbstractImporter::light(const UnsignedInt id) {
     return doLight(id);
 }
 
-Containers::Optional<LightData> AbstractImporter::doLight(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<LightData> AbstractImporter::doLight(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::light(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::cameraCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::cameraCount(): no file opened", {});
@@ -217,7 +309,9 @@ Containers::Optional<CameraData> AbstractImporter::camera(const UnsignedInt id) 
     return doCamera(id);
 }
 
-Containers::Optional<CameraData> AbstractImporter::doCamera(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<CameraData> AbstractImporter::doCamera(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::camera(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::object2DCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::object2DCount(): no file opened", {});
@@ -247,7 +341,9 @@ std::unique_ptr<ObjectData2D> AbstractImporter::object2D(const UnsignedInt id) {
     return doObject2D(id);
 }
 
-std::unique_ptr<ObjectData2D> AbstractImporter::doObject2D(UnsignedInt) { return nullptr; }
+std::unique_ptr<ObjectData2D> AbstractImporter::doObject2D(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::object2D(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::object3DCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::object3DCount(): no file opened", {});
@@ -277,7 +373,9 @@ std::unique_ptr<ObjectData3D> AbstractImporter::object3D(const UnsignedInt id) {
     return doObject3D(id);
 }
 
-std::unique_ptr<ObjectData3D> AbstractImporter::doObject3D(UnsignedInt) { return nullptr; }
+std::unique_ptr<ObjectData3D> AbstractImporter::doObject3D(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::object3D(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::mesh2DCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::mesh2DCount(): no file opened", {});
@@ -295,7 +393,7 @@ Int AbstractImporter::doMesh2DForName(const std::string&) { return -1; }
 
 std::string AbstractImporter::mesh2DName(const UnsignedInt id) {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::mesh2DName(): no file opened", {});
-    CORRADE_ASSERT(id < doMesh2DCount(), "Trade::AbstractImporter::object2DName(): index out of range", {});
+    CORRADE_ASSERT(id < doMesh2DCount(), "Trade::AbstractImporter::mesh2DName(): index out of range", {});
     return doMesh2DName(id);
 }
 
@@ -303,11 +401,13 @@ std::string AbstractImporter::doMesh2DName(UnsignedInt) { return {}; }
 
 Containers::Optional<MeshData2D> AbstractImporter::mesh2D(const UnsignedInt id) {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::mesh2D(): no file opened", {});
-    CORRADE_ASSERT(id < doMesh2DCount(), "Trade::AbstractImporter::object2D(): index out of range", {});
+    CORRADE_ASSERT(id < doMesh2DCount(), "Trade::AbstractImporter::mesh2D(): index out of range", {});
     return doMesh2D(id);
 }
 
-Containers::Optional<MeshData2D> AbstractImporter::doMesh2D(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<MeshData2D> AbstractImporter::doMesh2D(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::mesh2D(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::mesh3DCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::mesh3DCount(): no file opened", {});
@@ -325,7 +425,7 @@ Int AbstractImporter::doMesh3DForName(const std::string&) { return -1; }
 
 std::string AbstractImporter::mesh3DName(const UnsignedInt id) {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::mesh3DName(): no file opened", {});
-    CORRADE_ASSERT(id < doMesh3DCount(), "Trade::AbstractImporter::object3DName(): index out of range", {});
+    CORRADE_ASSERT(id < doMesh3DCount(), "Trade::AbstractImporter::mesh3DName(): index out of range", {});
     return doMesh3DName(id);
 }
 
@@ -337,7 +437,9 @@ Containers::Optional<MeshData3D> AbstractImporter::mesh3D(const UnsignedInt id) 
     return doMesh3D(id);
 }
 
-Containers::Optional<MeshData3D> AbstractImporter::doMesh3D(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<MeshData3D> AbstractImporter::doMesh3D(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::mesh3D(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::materialCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::materialCount(): no file opened", {});
@@ -367,7 +469,9 @@ std::unique_ptr<AbstractMaterialData> AbstractImporter::material(const UnsignedI
     return doMaterial(id);
 }
 
-std::unique_ptr<AbstractMaterialData> AbstractImporter::doMaterial(UnsignedInt) { return nullptr; }
+std::unique_ptr<AbstractMaterialData> AbstractImporter::doMaterial(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::material(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::textureCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::textureCount(): no file opened", {});
@@ -397,7 +501,9 @@ Containers::Optional<TextureData> AbstractImporter::texture(const UnsignedInt id
     return doTexture(id);
 }
 
-Containers::Optional<TextureData> AbstractImporter::doTexture(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<TextureData> AbstractImporter::doTexture(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::texture(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::image1DCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::image1DCount(): no file opened", {});
@@ -427,7 +533,9 @@ Containers::Optional<ImageData1D> AbstractImporter::image1D(const UnsignedInt id
     return doImage1D(id);
 }
 
-Containers::Optional<ImageData1D> AbstractImporter::doImage1D(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<ImageData1D> AbstractImporter::doImage1D(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::image1D(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::image2DCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::image2DCount(): no file opened", {});
@@ -437,7 +545,7 @@ UnsignedInt AbstractImporter::image2DCount() const {
 UnsignedInt AbstractImporter::doImage2DCount() const { return 0; }
 
 Int AbstractImporter::image2DForName(const std::string& name) {
-    CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::image1DForName(): no file opened", {});
+    CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::image2DForName(): no file opened", {});
     return doImage2DForName(name);
 }
 
@@ -457,7 +565,9 @@ Containers::Optional<ImageData2D> AbstractImporter::image2D(const UnsignedInt id
     return doImage2D(id);
 }
 
-Containers::Optional<ImageData2D> AbstractImporter::doImage2D(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<ImageData2D> AbstractImporter::doImage2D(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::image2D(): not implemented", {});
+}
 
 UnsignedInt AbstractImporter::image3DCount() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::image3DCount(): no file opened", {});
@@ -487,7 +597,9 @@ Containers::Optional<ImageData3D> AbstractImporter::image3D(const UnsignedInt id
     return doImage3D(id);
 }
 
-Containers::Optional<ImageData3D> AbstractImporter::doImage3D(UnsignedInt) { return Containers::NullOpt; }
+Containers::Optional<ImageData3D> AbstractImporter::doImage3D(UnsignedInt) {
+    CORRADE_ASSERT(false, "Trade::AbstractImporter::image3D(): not implemented", {});
+}
 
 const void* AbstractImporter::importerState() const {
     CORRADE_ASSERT(isOpened(), "Trade::AbstractImporter::importerState(): no file opened", {});
@@ -495,5 +607,40 @@ const void* AbstractImporter::importerState() const {
 }
 
 const void* AbstractImporter::doImporterState() const { return nullptr; }
+
+Debug& operator<<(Debug& debug, const AbstractImporter::Feature value) {
+    switch(value) {
+        /* LCOV_EXCL_START */
+        #define _c(v) case AbstractImporter::Feature::v: return debug << "Trade::AbstractImporter::Feature::" #v;
+        _c(OpenData)
+        _c(OpenState)
+        _c(FileCallback)
+        #undef _c
+        /* LCOV_EXCL_STOP */
+    }
+
+    return debug << "Trade::AbstractImporter::Feature(" << Debug::nospace << reinterpret_cast<void*>(UnsignedByte(value)) << Debug::nospace << ")";
+}
+
+Debug& operator<<(Debug& debug, const AbstractImporter::Features value) {
+    return Containers::enumSetDebugOutput(debug, value, "Trade::AbstractImporter::Features{}", {
+        AbstractImporter::Feature::OpenData,
+        AbstractImporter::Feature::OpenState,
+        AbstractImporter::Feature::FileCallback});
+}
+
+Debug& operator<<(Debug& debug, const ImporterFileCallbackPolicy value) {
+    switch(value) {
+        /* LCOV_EXCL_START */
+        #define _c(v) case ImporterFileCallbackPolicy::v: return debug << "Trade::ImporterFileCallbackPolicy::" #v;
+        _c(LoadTemporary)
+        _c(LoadPernament)
+        _c(Close)
+        #undef _c
+        /* LCOV_EXCL_STOP */
+    }
+
+    return debug << "Trade::ImporterFileCallbackPolicy(" << Debug::nospace << reinterpret_cast<void*>(UnsignedByte(value)) << Debug::nospace << ")";
+}
 
 }}

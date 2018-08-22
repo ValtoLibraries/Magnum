@@ -40,11 +40,136 @@ See also:
 
 @subsection changelog-latest-new New features
 
-@subsubsection changelog-lates-new-math Math library
+@subsubsection changelog-latest-new-animation Animation library
 
+-   New experimental @ref Animation library for keyframe-based animation
+    playback
+
+@subsubsection changelog-latest-new-math Math library
+
+-   Added @ref Math::Intersection::rangeFrustum(),
+    @ref Math::Intersection::aabbFrustum(),
+    @ref Math::Intersection::sphereFrustum(),
+    @ref Math::Intersection::pointCone(),
+    @ref Math::Intersection::pointDoubleCone(),
+    @ref Math::Intersection::sphereConeView(),
+    @ref Math::Intersection::sphereCone(),
+    @ref Math::Intersection::aabbCone(),
+    @ref Math::Intersection::rangeCone()
+-   Added @ref Math::Matrix3::rotationShear(),
+    @ref Math::Matrix4::rotationShear(), @ref Math::Matrix3::scalingSquared(),
+    @ref Math::Matrix4::scalingSquared(), @ref Math::Matrix3::scaling() const
+    and @ref Math::Matrix4::scaling() const getters for extracting further
+    properties from the rotation/scaling part of a matrix
+-   Added @ref Math::Color3::fromSrgb(UnsignedInt),
+    @ref Math::Color4::fromSrgbAlpha(UnsignedInt),
+    @ref Math::Color4::fromSrgb(UnsignedInt, T), @ref Math::Color3::toSrgbInt(),
+    and @ref Math::Color4::toSrgbAlphaInt() for easier conversion of packed
+    24-/32-bit sRGB colors to and from @ref Math::Color3 / @ref Math::Color4
+-   Added @ref Math::Range2D::x(), @ref Math::Range3D::x(),
+    @ref Math::Range2D::y(), @ref Math::Range3D::y(), @ref Math::Range3D::z()
+    and @ref Math::Range3D::y() for slicing ranges into lower dimensions
+-   Added @ref Math::intersect() and @ref Math::intersects() as a counterpart
+    to @ref Math::join() for operating with @ref Math::Range instances
+-   Added @ref Math::Range::contains() overloading taking a range, in addition
+    to vector
+-   @ref Math::Range is now constructible from a @ref std::pair of values,
+    making it usable in combination with @ref Math::minmax(), for example
 -   Added @ref Math::Constants::piQuarter()
+-   Added a convenience function @ref Math::select() as a constant
+    interpolation counterpart to @ref Math::lerp()
+-   Added a convenience function @ref Math::planeEquation() to aid with passing
+    passing parameters to @ref Math::Intersection::planeLine(),
+    @ref Math::Distance::pointPlane() and others
+-   Ability to convert @ref Math::BoolVector from and to external
+    representation
+
+@subsubsection changelog-latest-new-platform Platform libraries
+
+-   Implemented @ref Platform::GlfwApplication::MouseMoveEvent::buttons() for
+    feature parity with @ref Platform::Sdl2Application
+-   Added @ref Platform::Sdl2Application::GLConfiguration::setColorBufferSize() "GLConfiguration::setColorBufferSize()",
+    @ref Platform::Sdl2Application::GLConfiguration::setDepthBufferSize() "GLConfiguration::setDepthBufferSize()",
+    @ref Platform::Sdl2Application::GLConfiguration::setStencilBufferSize() "GLConfiguration::setStencilBufferSize()",
+    to @ref Platform::Sdl2Application, @ref Platform::GlfwApplication and
+    @ref Platform::AndroidApplication. This also makes the default framebuffer
+    parameters consistent across the implementations.
+
+@subsubsection changelog-latest-new-scenegraph SceneGraph library
+
+-   New @ref SceneGraph::TranslationRotationScalingTransformation2D and
+    @ref SceneGraph::TranslationRotationScalingTransformation3D transformation
+    implementations that store separate translation, rotation and scaling
+    parameters for easier use with animated scenes
+-   Ability to affect order of items drawn by @ref SceneGraph::Camera --- see
+    @ref SceneGraph-Drawable-draw-order for more information
+
+@subsubsection changelog-latest-new-shaders Shaders library
+
+-   New dedicated @ref Shaders::VertexColor::Color3 and
+    @ref Shaders::VertexColor::Color4 attribute specifiers for more convenient
+    distinction between three- and four-component vertex color attribute.
+-   Classical alpha masking support in @ref Shaders::Flat and
+    @ref Shaders::Phong
+
+@subsubsection changelog-latest-new-trade Trade library
+
+-   @ref Trade::AnimationData class and animation import interface in
+    @ref Trade::AbstractImporter::animation() and related functions
+-   @ref Trade::ObjectData2D and @ref Trade::ObjectData3D now support also
+    separate translation / rotation / scaling specification instead of a
+    combined transformation matrix. See @ref Trade::ObjectData2D::transformation()
+    and @ref Trade::ObjectData3D::transformation() for more information.
+-   Support for file loading callbacks in @ref Trade::AbstractImporter
+-   Debug output for @ref Trade::AbstractImporter::Feature,
+    @ref Trade::AbstractImageConverter::Feature enums and
+    @ref Trade::AbstractImporter::Features,
+    @ref Trade::AbstractImageConverter::Features enum sets
+-   @ref Trade::AnyImageImporter "AnyImageImporter" plugin now supports
+    detection and loading of DDS, EXR, HDR, JPEG, PNG and TGA files from data
+    next to file type detection based on filename
+-   @ref Trade::AnyImageConverter "AnyImageConverter" learned detection of JPEG
+    output
 
 @subsection changelog-latest-changes Changes and improvements
+
+@subsubsection changelog-latest-changes-audio Audio library
+
+-   Ability to specify initial source direction using @ref Audio::Playable::Playable(SceneGraph::AbstractObject<dimensions, Float>&, const VectorTypeFor<dimensions, Float>&, PlayableGroup<dimensions>*)
+
+@subsubsection changelog-latest-changes-gl GL library
+
+-   To prevent nothing being rendered by accident, @ref GL::Mesh::setCount()
+    and @ref GL::MeshView::setCount() now has always to be called, even just to
+    set the count to @cpp 0 @ce.
+-   @ref GL::Mesh::addVertexBuffer(), @ref GL::Mesh::addVertexBufferInstanced()
+    @ref GL::Mesh::setIndexBuffer() can now take ownership of a passed
+    @ref GL::Buffer to simplify resource management on user side. See
+    @ref GL-Mesh-buffer-ownership for more information.
+-   @ref GL::Mesh::draw() and @ref GL::MeshView::draw() now return a reference
+    to self to make method-chained draws (for example using a different shader)
+    possible as well
+-   The @ref GL::BufferUsage parameter in @ref GL::Buffer::setData() is now
+    optional, defaults to @ref GL::BufferUsage::StaticDraw
+
+@subsubsection changelog-latest-changes-math Math library
+
+-   @ref Math::Matrix3::rotation() const and @ref Math::Matrix4::rotation() const
+    now allow non-uniform scaling, but expect the roation/scaling part to be
+    orthogonal after normalization
+-   @ref Math::angle(), @ref Math::Vector::lengthInverted(),
+    @ref Math::Vector::normalized(), @ref Math::Vector::resized(),
+    @ref Math::Vector::projected(), @ref Math::Vector::projectedOntoNormalized()
+    and @ref Math::Vector2::aspectRatio() are now enabled only for
+    floating-point types to avoid errors when using these functions
+    accidentally on integral vectors
+
+@subsubsection changelog-latest-changes-meshtools MeshTools library
+
+-   @ref MeshTools::compile() API got simplified to make use of the new buffer
+    ownership feature of @ref GL::Mesh
+
+@subsubsection changelog-latest-changes-platform Platform libraries
 
 -   @ref Platform::GlfwApplication now behaves the same as
     @ref Platform::Sdl2Application when creating an OpenGL context: first it
@@ -54,6 +179,53 @@ See also:
     well, see @ref opengl-workarounds for more information.
 -   @ref Platform::GlfwApplication no longer stores a needless global window
     pointer
+-   @ref Platform::GlfwApplication now loads modifiers for mouse move and mouse
+    scroll events lazily, only when needed
+
+@subsubsection changelog-latest-changes-shaders Shaders library
+
+-   All shaders now have reasonable default values for uniforms in order to
+    further simplify and remove friction from quick prototyping use cases
+-   @ref Shaders::Flat::bindTexture(), @ref Shaders::Phong::bindAmbientTexture(),
+    @ref Shaders::Phong::bindDiffuseTexture(),
+    @ref Shaders::Phong::bindSpecularTexture() and
+    @ref Shaders::Phong::bindTextures() now assert that the shader was created
+    with the corresponding flag enabled to prevent accidental "black screen of
+    death" errors.
+-   Ambient color in untextured @ref Shaders::Phong now defaults to
+    @cpp 0x00000000_rgbaf @ce in order to support alpha-masked drawing out of
+    the box
+
+@subsubsection changelog-latest-changes-texturetools TextureTools library
+
+-   Fixed @ref TextureTools::distanceField() to not require more than 8 texture
+    units, which is the limit on all iOS ES2 contexts, independently on the
+    device (ES3 contexts have 16).
+
+@subsubsection changelog-latest-changes-trade Trade library
+
+-   @ref Trade::PhongMaterialData now contains well-defined color values
+    instead of random memory after construction
+
+@subsection changelog-latest-buildsystem Build system
+
+-   There's now a PPA for Ubuntu packages. See @ref building-packages-deb
+    for more information.
+-   Magnum now links to GLVND on Linux instead of the old libGL ABI if using
+    CMake 3.11 and newer
+-   `FindSDL2.cmake` now properly links to `dl` and `pthread` libraries when
+    using a static build of SDL2 on Linux
+-   `FindSDL2.cmake` is now able to properly find a debug build of SDL, which
+    enables Vcpkg to properly copy all dependency DLLs on Windows
+-   @ref Trade::ObjImporter "ObjImporter" didn't work with CMake subprojects
+    due to an embarrassing typo (see
+    [mosra/magnum#259](https://github.com/mosra/magnum/issues/259))
+-   @ref Audio::AnyImporter "AnyAudioImporter",
+    @ref Trade::AnyImageConverter "AnyImageConverter",
+    @ref Trade::AnyImageImporter "AnyImageImporter" and
+    @ref Trade::AnySceneImporter "AnySceneImporter" plugins were not correctly
+    updated for subproject support after moving them out of the `magnum-plugins`
+    repository
 
 @subsection changelog-latest-bugfixes Bug fixes
 
@@ -61,6 +233,88 @@ See also:
     due to a pointer not being properly initialized after the
     @ref Platform::GlfwApplication::GLConfiguration "GLConfiguration" rework in
     2018.04 (see [mosra/magnum#246](https://github.com/mosra/magnum/pull/246))
+-   Vertex attribute divisor in @ref GL::Mesh::addVertexBufferInstanced() was
+    not properly cleaned up after when @gl_extension{ARB,vertex_array_object}
+    was disabled, causing subsequent draws to misbehave
+-   Fixed @ref Shaders::DistanceFieldVector and @ref Shaders::Vector to be
+    properly movable
+-   @gl_extension{ARB,direct_state_access} versions of
+    @ref GL::Framebuffer::clearColor(), @ref GL::Framebuffer::clearDepth(),
+    @ref GL::Framebuffer::clearStencil() and @ref GL::Framebuffer::clearDepthStencil()
+    were binding the framebuffer for drawing, which was completely unnecessary
+-   @ref Platform::GlfwApplication::InputEvent::Modifier::Super is properly
+    reported for both left and right modifier (Windows/⌘) key instead of just
+    the right one
+
+@subsection changelog-latest-docs Documentation
+
+-   Compiled code snippets for @ref Audio and @ref SceneGraph libraries, fixing
+    cases where outdated or plain wrong API constructs were mentioned
+-   Extended documentation for @ref Math::Matrix3::rotation(),
+    @ref Math::Matrix4::rotation() and related accessors, explaining use cases
+    and caveats
+-   Reworked documentation of @ref Math::Algorithms, adding math equations and
+    usage examples to all functions
+-   Explicitly mentioning copy/move constructibility for all classes with
+    non-trivial construction
+-   Website styling got out of sync with generated Doxygen documentation,
+    causing search icon to either disappear on some browsers or be extremely
+    oversized on others (see
+    [mosra/magnum#260](https://github.com/mosra/magnum/issues/260),
+    [mosra/magnum#261](https://github.com/mosra/magnum/issues/261))
+
+@subsection changelog-latest-deprecated Deprecated APIs
+
+-   `Math::Geometry`, `Math::Geometry::Distance` and
+    `Math::Geometry::Intersection` namespaces are deprecated for being too
+    deeply nested, use @ref Math::Distance and @ref Math::Intersection instead
+-   `Math::Geometry::Intersection::boxFrustum()` is deprecated, use
+    @ref Math::Intersection::rangeFrustum() instead
+-   @ref Math::Intersection::planeLine() taking a separate plane normal and
+    position is deprecated, use @ref Math::planeEquation() and the overload
+    taking a plane equation as @ref Math::Vector4 instead
+-   @ref Audio::PlayableGroup::setClean() is deprecated in favor of
+    @ref Audio::Listener::update(), as that one is a feature superset with
+    clearer naming
+-   @ref MeshTools::compile() taking a @ref GL::BufferUsage and returning a
+    tuple was deprecated, use the simpler version taking just
+    @ref Trade::MeshData2D / @ref Trade::MeshData3D and directly returning a
+    @ref GL::Mesh instead
+-   `Shaders::VertexColor::Color` is deprecated, use the direct
+    @ref Shaders::VertexColor::Color3 or @ref Shaders::VertexColor::Color4
+    alternatives instead
+
+@subsection changelog-latest-compatibility Potential compatibility breakages, removed APIs
+
+-   @ref Audio::Playable is now by default omnidirectional instead of having
+    source in direction of negative Z axis (the direction has effect only when
+    setting inner and outer cone properties of @ref Audio::Source).
+-   @ref Math::Matrix3::rotation() const and @ref Math::Matrix4::rotation() const
+    now allow non-uniform scaling, but expect the roation/scaling part to be
+    orthogonal after normalization (before it required uniform scaling but not
+    orthogonal axes) --- this might cause imprecise data that were previously
+    working to fail with an assertion. See the new
+    @ref Math::Matrix3::rotationShear() and @ref Math::Matrix4::rotationShear()
+    accessors for a possible solution.
+-   @ref SceneGraph::Camera::setViewport() and @ref SceneGraph::Camera::draw()
+    are no longer @cpp virtual @ce functions. If you need to override their
+    functionality, simply call the subclass implementation directly instead of
+    calling it through a @ref SceneGraph::Camera.
+-   @ref Shaders::Flat::bindTexture(), @ref Shaders::Phong::bindAmbientTexture(),
+    @ref Shaders::Phong::bindDiffuseTexture(),
+    @ref Shaders::Phong::bindSpecularTexture() and
+    @ref Shaders::Phong::bindTextures() now assert that the shader was created
+    with the corresponding flag enabled to prevent accidental "black screen of
+    death" errors. This might cause your application to abort if it was calling
+    these functions when not needed.
+-   Ambient color in untextured @ref Shaders::Phong now defaults to
+    @cpp 0x00000000_rgbaf @ce in order to support alpha-masked drawing out of
+    the box. This may break code that assumed the alpha channel being opaque by
+    default.
+-   @ref Trade::PhongMaterialData::ambientColor(),
+    @ref Trade::PhongMaterialData::diffuseColor() "diffuseColor()" and
+    @ref Trade::PhongMaterialData::specularColor() "specularColor()" now return
+    @ref Color4 instead of @ref Color3
 
 @section changelog-2018-04 2018.04
 
@@ -704,7 +958,7 @@ a high-level overview.
 -   New @ref Math::Bezier class for handling N-dimensional M-order Bézier
     curves (see [mosra/magnum#165](https://github.com/mosra/magnum/pull/165))
 -   New @ref Math::Frustum class and @ref Math::Geometry::Intersection::pointFrustum(),
-    @ref Math::Geometry::Intersection::boxFrustum() functions (see
+    `Math::Geometry::Intersection::boxFrustum()` functions (see
     [mosra/magnum#185](https://github.com/mosra/magnum/pull/185)
 -   New @ref Math::Half class, @link Math::Literals::operator""_h @endlink
     literal and @ref Math::packHalf() and @ref Math::unpackHalf() functions
@@ -730,9 +984,9 @@ a high-level overview.
 -   Added @ref Math::pow(), @ref Math::log() and @ref Math::exp()
 -   Added @ref Math::Algorithms::qr(), @ref Math::Algorithms::gaussJordanInverted(),
     @ref Math::Algorithms::kahanSum()
--   Added @ref Math::Geometry::Distance::pointPlane(),
-    @ref Math::Geometry::Distance::pointPlaneScaled(),
-    @ref Math::Geometry::Distance::pointPlaneNormalized() functions
+-   Added `Math::Geometry::Distance::pointPlane()`,
+    `Math::Geometry::Distance::pointPlaneScaled()`,
+    `Math::Geometry::Distance::pointPlaneNormalized()` functions
 -   Added @ref Math::Range::contains() and @ref Math::join() to join two ranges
 -   Ability to convert @ref Math::Complex, @ref Math::DualComplex,
     @ref Math::Quaternion, @ref Math::DualQuaternion, @ref Math::Color3,
@@ -1145,9 +1399,9 @@ a high-level overview.
 
 @subsection changelog-2018-02-compatibility Potential compatibility breakages, removed APIs
 
--   The @ref Math::Geometry::Distance and @ref Math::Geometry::Intersection
-    classes are now a namespace (might break `using` declarations, but
-    otherwise it's fully source-compatible)
+-   The `Math::Geometry::Distance` and `Math::Geometry::Intersection` classes
+    are now a namespace (might break `using` declarations, but otherwise it's
+    fully source-compatible)
 -   Removed `Context::majorVersion()` and `Context::minorVersion()` functions,
     use @ref Context::version() instead
 -   Removed deprecated `Magnum/DebugMarker.h` header, use

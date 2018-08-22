@@ -30,70 +30,38 @@
  * @brief Class @ref Magnum::Audio::Listener, @ref Magnum::Audio::Listener2D, @ref Magnum::Audio::Listener3D
  */
 
-#include <string>
-#include <al.h>
-
-#include <Magnum/Math/Matrix3.h>
-#include <Magnum/Math/Matrix4.h>
-#include <Magnum/Math/Quaternion.h>
-#include <Magnum/SceneGraph/AbstractFeature.h>
-#include <Magnum/SceneGraph/AbstractObject.h>
-
-#include "Magnum/Audio/Renderer.h"
-#include "Magnum/Audio/PlayableGroup.h"
+#include "Magnum/Audio/Audio.h"
+#include "Magnum/Audio/visibility.h"
+#include "Magnum/Math/Matrix4.h"
+#include "Magnum/SceneGraph/AbstractFeature.h"
 
 namespace Magnum { namespace Audio {
-
-namespace Implementation {
-    /* Pointer to the currently active listener. Should never be dereferenced,
-       since may be null at any given time. */
-    extern MAGNUM_AUDIO_EXPORT void* activeListener;
-}
 
 /**
 @brief Listener
 
 Feature which manages the position, orientation and gain of the OpenAL listener
-for an @ref SceneGraph::Object.
+for a @ref SceneGraph::Object.
 
 @section Audio-Listener-usage Usage
 
-Minimal scene setup for a @ref Listener3D will require the following code:
+The listener will be commonly used together with a bunch of @ref Playable
+features, managed in one or more @ref PlayableGroup instances. In order to
+reflect transformation changes affecting the scene, you need to call
+@ref update() after each change (or simply every frame):
 
-@code{.cpp}
-Scene3D scene;
-Object3D object{&scene};
-Listener3D listener{object};
+@snippet MagnumAudio-scenegraph.cpp Listener-usage
 
-// ... every frame, update the listener to changes in object transformation:
-listener.update({});
-@endcode
-
-For two dimensional scenes simply replace all `3D` with `2D`.
-
-@subsection Audio-Listener-usage-playablegroup Using Listener with PlayableGroup
-
-When using @ref PlayableGroup, you can update the listener and groups as
-follows:
-
-@code{.cpp}
-// ...
-Listener3D listener{object};
-PlayableGroup3D group1, group2;
-
-// ... and every frame:
-listener.update({group1, group2});
-@endcode
+For two-dimensional scenes simply replace all `3D` with `2D`. See @ref Playable
+for more info about how to set up and group audio sources.
 
 @section Audio-Listener-active-listener Active listener
 
-There can only be at the most *one* active listener at a given time, i.e. the
-one on which @ref Listener::update() was called last. This is because OpenAL
+There can only be at most *one* active listener at a given time, i.e. the one
+on which @ref Listener::update() was called last. This is because OpenAL
 only supports notion of one listener. Having multiple @ref Listener2D or
 @ref Listener3D instances can still be useful for conveniently switching
 between them for cinematics for example.
-
-@ref AbstractObject::setClean() will not affect inactive listeners.
 
 @section Audio-Listener-sound-transformation Sound transformation
 
@@ -104,32 +72,24 @@ into the three dimensional audio space or even scaling the audio scene to match
 a certain world scale. In the later case you might want to instead consider
 @ref Renderer::setSpeedOfSound().
 
--   @ref Listener2D
--   @ref Listener3D
-
-@see @ref Audio::Renderer, @ref Playable, @ref PlayableGroup
+@see @ref Listener2D, @ref Listener3D, @ref Renderer, @ref Playable,
+    @ref PlayableGroup
 */
-template <UnsignedInt dimensions> class Listener: public SceneGraph::AbstractFeature<dimensions, Float> {
-        friend class ActiveListenerHolder;
-
+template<UnsignedInt dimensions> class Listener: public SceneGraph::AbstractFeature<dimensions, Float> {
     public:
-
         /**
          * @brief Constructor
          * @param object    Object this listener belongs to
          *
-         * Creates a listener with a forward vector of @cpp {0.0f, 0.0f, -1.0f} @ce
-         * and up vector of @cpp {0.0f, 1.0f, 0.0f} @ce. These vectors cannot
-         * be changed, the listeners orientation and translation can be instead
-         * affected by @p object or via @ref Listener::setSoundTransformation().
+         * Creates a listener with a default orientation (i.e., forward vector
+         * is @cpp {0.0f, 0.0f, -1.0f} @ce and up vector of @cpp {0.0f, 1.0f, 0.0f} @ce).
+         * You can change this orientation by transforming the object this
+         * listener is attached to or via @ref Listener::setSoundTransformation().
          * @see @ref setGain()
          */
-        explicit Listener(SceneGraph::AbstractObject<dimensions, Float>& object):
-            SceneGraph::AbstractFeature<dimensions, Float>(object),
-            _gain{1.0f}
-        {
-            SceneGraph::AbstractFeature<dimensions, Float>::setCachedTransformations(SceneGraph::CachedTransformation::Absolute);
-        }
+        explicit Listener(SceneGraph::AbstractObject<dimensions, Float>& object);
+
+        ~Listener();
 
         /** @brief Sound transformation */
         const Matrix4& soundTransformation() const {
@@ -138,9 +98,9 @@ template <UnsignedInt dimensions> class Listener: public SceneGraph::AbstractFea
 
         /**
          * @brief Set sound transformation
-         * @param soundTransformation Transformation for transforming from
-         *        world to listener space
          * @return Reference to self (for method chaining)
+         *
+         * Global transformation for transforming from world to listener space.
          */
         Listener<dimensions>& setSoundTransformation(const Matrix4& soundTransformation) {
             _soundTransformation = soundTransformation;
@@ -152,53 +112,46 @@ template <UnsignedInt dimensions> class Listener: public SceneGraph::AbstractFea
          * @brief Update the listener
          * @param groups Groups to update
          *
-         * Makes this Listener the active listener and calls
+         * Makes this instance the active listener and calls
          * @ref SceneGraph::AbstractObject::setClean() on its parent object and
-         * all objects of the @ref Playable s in the group. Updates listene
-         * related configuration for @ref Renderer (position, orientation, gain).
+         * all objects of the @ref Playable "Playables" in the group to reflect
+         * transformation changes to spatial audio behavior. Also updates
+         * listener-related configuration for @ref Renderer (position,
+         * orientation, gain).
          */
         void update(std::initializer_list<std::reference_wrapper<PlayableGroup<dimensions>>> groups);
 
         /** @brief Listener gain */
-        Float gain() const {
-            return _gain;
-        }
+        Float gain() const { return _gain; }
 
         /**
          * @brief Set listener gain
-         * @param gain Gain
          * @return Reference to self (for method chaining)
+         *
+         * Default is @cpp 1.0f @ce (i.e., not affecting the global gain in any
+         * way).
          */
-        Listener<dimensions>& setGain(Float gain) {
-            _gain = gain;
-            if(isActive()) {
-                Renderer::setListenerGain(_gain);
-            }
-            return *this;
-        }
+        Listener<dimensions>& setGain(Float gain);
 
         /** @brief Whether this listener is the active listener */
-        bool isActive() const {
-            return this == Implementation::activeListener;
-        }
+        bool isActive() const;
 
     private:
-        virtual void clean(const MatrixTypeFor<dimensions, Float>& absoluteTransformationMatrix) override;
+        MAGNUM_AUDIO_LOCAL void clean(const MatrixTypeFor<dimensions, Float>& absoluteTransformationMatrix) override;
 
         Matrix4 _soundTransformation;
         Float _gain;
 };
 
-
 /**
- * @brief Listener for two dimensional float scenes
+ * @brief Listener for two-dimensional float scenes
  *
  * @see @ref Listener3D
  */
 typedef Listener<2> Listener2D;
 
 /**
- * @brief Listener for three dimensional float scenes
+ * @brief Listener for three-dimensional float scenes
  *
  * @see @ref Listener2D
  */

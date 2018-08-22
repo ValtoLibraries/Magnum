@@ -40,22 +40,26 @@
 namespace Magnum { namespace Shaders {
 
 namespace Implementation {
-    enum class FlatFlag: UnsignedByte { Textured = 1 << 0 };
+    enum class FlatFlag: UnsignedByte {
+        Textured = 1 << 0,
+        AlphaMask = 1 << 1
+    };
     typedef Containers::EnumSet<FlatFlag> FlatFlags;
 }
 
 /**
 @brief Flat shader
 
-Draws whole mesh with given unshaded color or texture. For colored mesh you
-need to provide @ref Position attribute in your triangle mesh and call at least
-@ref setTransformationProjectionMatrix() and @ref setColor().
+Draws the whole mesh with given color or texture. For a colored mesh you need
+to provide the @ref Position attribute in your triangle mesh. By default, the
+shader renders the mesh with a white color in an identity transformation.
+Use @ref setTransformationProjectionMatrix(), @ref setColor() and others to
+configure the shader.
 
-If you want to use texture, you need to provide also @ref TextureCoordinates
-attribute. Pass @ref Flag::Textured to constructor and then at render time
-don't forget to set also the texture via @ref bindTexture(). The texture is
-multipled by the color, which is by default set to fully opaque white if
-texturing is enabled.
+If you want to use a texture, you need to provide also @ref TextureCoordinates
+attribute. Pass @ref Flag::Textured to the constructor and then at render time
+don't forget to bind also the texture via @ref bindTexture(). The texture is
+multipled by the color, which is by default set to @cpp 0xffffffff_rgbaf @ce.
 
 For coloring the texture based on intensity you can use the @ref Vector shader.
 
@@ -83,6 +87,15 @@ Common rendering setup:
 
 @snippet MagnumShaders.cpp Flat-usage-textured2
 
+@subsection Shaders-Flat-usage-alpha Alpha blending and masking
+
+Enable @ref Flag::AlphaMask and tune @ref setAlphaMask() for simple
+binary alpha-masked drawing that doesn't require depth sorting or blending
+enabled. Note that this feature is implemented using the GLSL @glsl discard @ce
+operation which is known to have considerable performance impact on some
+platforms. With proper depth sorting and blending you'll usually get much
+better performance and output quality.
+
 @see @ref shaders, @ref Flat2D, @ref Flat3D
 */
 template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::AbstractShaderProgram {
@@ -90,16 +103,18 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::Ab
         /**
          * @brief Vertex position
          *
-         * @ref shaders-generic "Generic attribute", @ref Vector2 in 2D,
-         * @ref Vector3 in 3D.
+         * @ref shaders-generic "Generic attribute",
+         * @ref Magnum::Vector2 "Vector2" in 2D, @ref Magnum::Vector3 "Vector3"
+         * in 3D.
          */
         typedef typename Generic<dimensions>::Position Position;
 
         /**
          * @brief 2D texture coordinates
          *
-         * @ref shaders-generic "Generic attribute", @ref Vector2. Used only if
-         * @ref Flag::Textured is set.
+         * @ref shaders-generic "Generic attribute",
+         * @ref Magnum::Vector2 "Vector2". Used only if @ref Flag::Textured is
+         * set.
          */
         typedef typename Generic<dimensions>::TextureCoordinates TextureCoordinates;
 
@@ -110,7 +125,24 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::Ab
          * @see @ref Flags, @ref flags()
          */
         enum class Flag: UnsignedByte {
-            Textured = 1 << 0   /**< The shader uses texture instead of color */
+            /**
+             * Multiply color with a texture.
+             * @see @ref setColor(), @ref setTexture()
+             */
+            Textured = 1 << 0,
+
+            /**
+             * Enable alpha masking. If the combined fragment color has an
+             * alpha less than the value specified with @ref setAlphaMask(),
+             * given fragment is discarded.
+             *
+             * This uses the @glsl discard @ce operation which is known to have
+             * considerable performance impact on some platforms. While useful
+             * for cheap alpha masking that doesn't require depth sorting,
+             * with proper depth sorting and blending you'll usually get much
+             * better performance and output quality.
+             */
+            AlphaMask = 1 << 1
         };
 
         /**
@@ -120,6 +152,8 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::Ab
          */
         typedef Containers::EnumSet<Flag> Flags;
         #else
+        /* Done this way to be prepared for possible future diversion of 2D
+           and 3D flags (e.g. introducing 3D-specific features) */
         typedef Implementation::FlatFlag Flag;
         typedef Implementation::FlatFlags Flags;
         #endif
@@ -142,12 +176,26 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::Ab
          */
         explicit Flat(NoCreateT) noexcept: GL::AbstractShaderProgram{NoCreate} {}
 
+        /** @brief Copying is not allowed */
+        Flat(const Flat<dimensions>&) = delete;
+
+        /** @brief Move constructor */
+        Flat(Flat<dimensions>&&) noexcept = default;
+
+        /** @brief Copying is not allowed */
+        Flat<dimensions>& operator=(const Flat<dimensions>&) = delete;
+
+        /** @brief Move assignment */
+        Flat<dimensions>& operator=(Flat<dimensions>&&) noexcept = default;
+
         /** @brief Flags */
         Flags flags() const { return _flags; }
 
         /**
          * @brief Set transformation and projection matrix
          * @return Reference to self (for method chaining)
+         *
+         * Initial value is an identity matrix.
          */
         Flat<dimensions>& setTransformationProjectionMatrix(const MatrixTypeFor<dimensions, Float>& matrix) {
             setUniform(_transformationProjectionMatrixUniform, matrix);
@@ -158,7 +206,7 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::Ab
          * @brief Set color
          * @return Reference to self (for method chaining)
          *
-         * If @ref Flag::Textured is set, default value is
+         * If @ref Flag::Textured is set, initial value is
          * @cpp 0xffffffff_rgbaf @ce and the color will be multiplied with
          * texture.
          * @see @ref bindTexture()
@@ -169,13 +217,25 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::Ab
         }
 
         /**
-         * @brief Bind texture
+         * @brief Bind a color texture
          * @return Reference to self (for method chaining)
          *
-         * Has effect only if @ref Flag::Textured is set.
+         * Expects that the shader was created with @ref Flag::Textured
+         * enabled.
          * @see @ref setColor()
          */
         Flat<dimensions>& bindTexture(GL::Texture2D& texture);
+
+        /**
+         * @brief Set alpha mask value
+         * @return Reference to self (for method chaining)
+         *
+         * Expects that the shader was created with @ref Flag::AlphaMask
+         * enabled. Fragments with alpha values smaller than the mask value
+         * will be discarded. Initial value is @cpp 0.5f @ce. See the flag
+         * documentation for further information.
+         */
+        Flat<dimensions>& setAlphaMask(Float mask);
 
         #ifdef MAGNUM_BUILD_DEPRECATED
         /** @brief @copybrief bindTexture()
@@ -189,7 +249,8 @@ template<UnsignedInt dimensions> class MAGNUM_SHADERS_EXPORT Flat: public GL::Ab
     private:
         Flags _flags;
         Int _transformationProjectionMatrixUniform{0},
-            _colorUniform{1};
+            _colorUniform{1},
+            _alphaMaskUniform{2};
 };
 
 /** @brief 2D flat shader */

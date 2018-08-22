@@ -23,7 +23,13 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <sstream>
+
+#include "Magnum/PixelFormat.h"
+#include "Magnum/ImageView.h"
 #include "Magnum/GL/OpenGLTester.h"
+#include "Magnum/GL/Texture.h"
+#include "Magnum/GL/TextureFormat.h"
 #include "Magnum/Shaders/Phong.h"
 
 namespace Magnum { namespace Shaders { namespace Test {
@@ -31,105 +37,133 @@ namespace Magnum { namespace Shaders { namespace Test {
 struct PhongGLTest: GL::OpenGLTester {
     explicit PhongGLTest();
 
-    void compile();
-    void compileAmbientTexture();
-    void compileDiffuseTexture();
-    void compileSpecularTexture();
-    void compileAmbientDiffuseTexture();
-    void compileAmbientSpecularTexture();
-    void compileDiffuseSpecularTexture();
-    void compileAmbientDiffuseSpecularTexture();
+    void construct();
+
+    void constructMove();
+
+    void bindTextures();
+    void bindTexturesNotEnabled();
+
+    void setAlphaMask();
+    void setAlphaMaskNotEnabled();
+};
+
+constexpr struct {
+    const char* name;
+    Phong::Flags flags;
+} ConstructData[]{
+    {"", {}},
+    {"ambient texture", Phong::Flag::AmbientTexture},
+    {"diffuse texture", Phong::Flag::DiffuseTexture},
+    {"specular texture", Phong::Flag::SpecularTexture},
+    {"ambient + diffuse texture", Phong::Flag::AmbientTexture|Phong::Flag::DiffuseTexture},
+    {"ambient + specular texture", Phong::Flag::AmbientTexture|Phong::Flag::SpecularTexture},
+    {"diffuse + specular texture", Phong::Flag::DiffuseTexture|Phong::Flag::SpecularTexture},
+    {"ambient + diffuse + specular texture", Phong::Flag::AmbientTexture|Phong::Flag::DiffuseTexture|Phong::Flag::SpecularTexture},
+    {"alpha mask", Phong::Flag::AlphaMask},
+    {"alpha mask + diffuse texture", Phong::Flag::AlphaMask|Phong::Flag::DiffuseTexture}
 };
 
 PhongGLTest::PhongGLTest() {
-    addTests({&PhongGLTest::compile,
-              &PhongGLTest::compileAmbientTexture,
-              &PhongGLTest::compileDiffuseTexture,
-              &PhongGLTest::compileSpecularTexture,
-              &PhongGLTest::compileAmbientDiffuseTexture,
-              &PhongGLTest::compileAmbientSpecularTexture,
-              &PhongGLTest::compileDiffuseSpecularTexture,
-              &PhongGLTest::compileAmbientDiffuseSpecularTexture});
+    addInstancedTests({&PhongGLTest::construct}, Containers::arraySize(ConstructData));
+
+    addTests({&PhongGLTest::constructMove,
+
+              &PhongGLTest::bindTextures,
+              &PhongGLTest::bindTexturesNotEnabled,
+
+              &PhongGLTest::setAlphaMask,
+              &PhongGLTest::setAlphaMaskNotEnabled});
 }
 
-void PhongGLTest::compile() {
-    Shaders::Phong shader;
+void PhongGLTest::construct() {
+    auto&& data = ConstructData[testCaseInstanceId()];
+    setTestCaseDescription(data.name);
+
+    Phong shader{data.flags};
     {
         #ifdef CORRADE_TARGET_APPLE
         CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
         #endif
+        CORRADE_VERIFY(shader.id());
         CORRADE_VERIFY(shader.validate().first);
     }
 }
 
-void PhongGLTest::compileAmbientTexture() {
-    Shaders::Phong shader(Shaders::Phong::Flag::AmbientTexture);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+void PhongGLTest::constructMove() {
+    Phong a;
+    const GLuint id = a.id();
+    CORRADE_VERIFY(id);
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+
+    Phong b{std::move(a)};
+    CORRADE_COMPARE(b.id(), id);
+    CORRADE_VERIFY(!a.id());
+
+    Phong c{NoCreate};
+    c = std::move(b);
+    CORRADE_COMPARE(c.id(), id);
+    CORRADE_VERIFY(!b.id());
 }
 
-void PhongGLTest::compileDiffuseTexture() {
-    Shaders::Phong shader(Shaders::Phong::Flag::DiffuseTexture);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+void PhongGLTest::bindTextures() {
+    char data[4];
+
+    GL::Texture2D texture;
+    texture
+        .setMinificationFilter(SamplerFilter::Linear, SamplerMipmap::Linear)
+        .setMagnificationFilter(SamplerFilter::Linear)
+        .setWrapping(SamplerWrapping::ClampToEdge)
+        .setImage(0, GL::TextureFormat::RGBA, ImageView2D{PixelFormat::RGBA8Unorm, {1, 1}, data});
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+
+    /* Test just that no assertion is fired */
+    Phong shader{Phong::Flag::AmbientTexture|Phong::Flag::DiffuseTexture|Phong::Flag::SpecularTexture};
+    shader.bindAmbientTexture(texture)
+          .bindDiffuseTexture(texture)
+          .bindSpecularTexture(texture)
+          .bindTextures(&texture, &texture, &texture);
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void PhongGLTest::compileSpecularTexture() {
-    Shaders::Phong shader(Shaders::Phong::Flag::SpecularTexture);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+void PhongGLTest::bindTexturesNotEnabled() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    GL::Texture2D texture;
+    Phong shader;
+    shader.bindAmbientTexture(texture)
+          .bindDiffuseTexture(texture)
+          .bindSpecularTexture(texture)
+          .bindTextures(&texture, &texture, &texture);
+
+    CORRADE_COMPARE(out.str(),
+        "Shaders::Phong::bindAmbientTexture(): the shader was not created with ambient texture enabled\n"
+        "Shaders::Phong::bindDiffuseTexture(): the shader was not created with diffuse texture enabled\n"
+        "Shaders::Phong::bindSpecularTexture(): the shader was not created with specular texture enabled\n"
+        "Shaders::Phong::bindTextures(): the shader was not created with any textures enabled\n");
 }
 
-void PhongGLTest::compileAmbientDiffuseTexture() {
-    Shaders::Phong shader(Shaders::Phong::Flag::AmbientTexture|Shaders::Phong::Flag::DiffuseTexture);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+void PhongGLTest::setAlphaMask() {
+    /* Test just that no assertion is fired */
+    Phong shader{Phong::Flag::AlphaMask};
+    shader.setAlphaMask(0.25f);
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void PhongGLTest::compileAmbientSpecularTexture() {
-    Shaders::Phong shader(Shaders::Phong::Flag::AmbientTexture|Shaders::Phong::Flag::SpecularTexture);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
-}
+void PhongGLTest::setAlphaMaskNotEnabled() {
+    std::ostringstream out;
+    Error redirectError{&out};
 
-void PhongGLTest::compileDiffuseSpecularTexture() {
-    Shaders::Phong shader(Shaders::Phong::Flag::DiffuseTexture|Shaders::Phong::Flag::SpecularTexture);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
-}
+    Phong shader;
+    shader.setAlphaMask(0.75f);
 
-void PhongGLTest::compileAmbientDiffuseSpecularTexture() {
-    Shaders::Phong shader(Shaders::Phong::Flag::AmbientTexture|Shaders::Phong::Flag::DiffuseTexture|Shaders::Phong::Flag::SpecularTexture);
-    {
-        #ifdef CORRADE_TARGET_APPLE
-        CORRADE_EXPECT_FAIL("macOS drivers need insane amount of state to validate properly.");
-        #endif
-        CORRADE_VERIFY(shader.validate().first);
-    }
+    CORRADE_COMPARE(out.str(),
+        "Shaders::Phong::setAlphaMask(): the shader was not created with alpha mask enabled\n");
 }
 
 }}}

@@ -53,8 +53,20 @@ namespace Implementation {
         template<class T> constexpr static T pow(T) { return T(1); }
     };
 
-    template<class> struct IsBoolVector: std::false_type {};
-    template<std::size_t size> struct IsBoolVector<BoolVector<size>>: std::true_type {};
+    template<class> struct IsBoolVectorOrScalar: std::false_type {};
+    template<> struct IsBoolVectorOrScalar<bool>: std::true_type {};
+    template<std::size_t size> struct IsBoolVectorOrScalar<BoolVector<size>>: std::true_type {};
+
+    template<class T> struct IsVectorOrScalar: std::is_arithmetic<T>::type {};
+    template<template<class> class Derived, class T> struct IsVectorOrScalar<Unit<Derived, T>>: std::true_type {};
+    template<class T> struct IsVectorOrScalar<Deg<T>>: std::true_type {};
+    template<class T> struct IsVectorOrScalar<Rad<T>>: std::true_type {};
+    template<std::size_t size, class T> struct IsVectorOrScalar<Vector<size, T>>: std::true_type {};
+    template<class T> struct IsVectorOrScalar<Vector2<T>>: std::true_type {};
+    template<class T> struct IsVectorOrScalar<Vector3<T>>: std::true_type {};
+    template<class T> struct IsVectorOrScalar<Vector4<T>>: std::true_type {};
+    template<class T> struct IsVectorOrScalar<Color3<T>>: std::true_type {};
+    template<class T> struct IsVectorOrScalar<Color4<T>>: std::true_type {};
 }
 
 /**
@@ -333,7 +345,8 @@ template<class T> inline T max(std::initializer_list<T> list) {
 /**
 @brief Minimum and maximum of two values
 
-@see @ref min(), @ref max(), @ref clamp(), @ref Vector::minmax()
+@see @ref min(), @ref max(), @ref clamp(), @ref Vector::minmax(),
+    @ref Range::Range(const std::pair<VectorType, VectorType>&)
 */
 #ifdef DOXYGEN_GENERATING_OUTPUT
 template<class T> inline std::pair<T, T> minmax(const T& a, const T& b);
@@ -367,6 +380,7 @@ namespace Implementation {
 @brief Minimum and maximum of a range
 
 If the range is empty, returns default-constructed values.
+@see @ref Range::Range(const std::pair<VectorType, VectorType>&)
 */
 template<class T> std::pair<T, T> minmax(Corrade::Containers::ArrayView<const T> range) {
     if(range.empty()) return {};
@@ -542,21 +556,29 @@ template<std::size_t size, class T> Vector<size, T> sqrtInverted(const Vector<si
 @param t     Interpolation phase (from range @f$ [0; 1] @f$)
 
 The interpolation for vectors is done as in following, similarly for scalars: @f[
-    \boldsymbol v_{LERP} = (1 - t) \boldsymbol v_A + t \boldsymbol v_B
+    \boldsymbol{v_{LERP}} = (1 - t) \boldsymbol{v_A} + t \boldsymbol{v_B}
 @f]
+
+See @ref select() for constant interpolation using the same API.
 @see @ref lerpInverted(), @ref lerp(const Quaternion<T>&, const Quaternion<T>&, T)
 @m_keyword{mix(),GLSL mix(),}
 */
-#ifdef DOXYGEN_GENERATING_OUTPUT
-template<class T, class U> inline T lerp(const T& a, const T& b, U t);
-#else
-template<class T, class U> inline typename std::enable_if<!Implementation::IsBoolVector<U>::value, T>::type lerp(T a, T b, U t) {
-    return T(Implementation::lerp(a, b, t));
-}
-template<std::size_t size, class T, class U> inline typename std::enable_if<!Implementation::IsBoolVector<U>::value, Vector<size, T>>::type lerp(const Vector<size, T>& a, const Vector<size, T>& b, U t) {
+template<class T, class U> inline
+    #ifndef DOXYGEN_GENERATING_OUTPUT
+    typename std::enable_if<Implementation::IsVectorOrScalar<T>::value && !Implementation::IsBoolVectorOrScalar<U>::value, T>::type
+    #else
+    T
+    #endif
+lerp(const T& a, const T& b, U t) {
     return Implementation::lerp(a, b, t);
 }
-#endif
+
+/** @overload
+@m_keyword{mix(),GLSL mix(),}
+*/
+template<class T> inline T lerp(const T& a, const T& b, bool t) {
+    return t ? b : a;
+}
 
 /** @overload
 Similar to the above, but instead of multiplication and addition it just does
@@ -589,9 +611,9 @@ template<std::size_t size> inline BoolVector<size> lerp(const BoolVector<size>& 
 @param lerp Interpolated value
 
 Returns interpolation phase *t*: @f[
-    t = \frac{\boldsymbol v_{LERP} - \boldsymbol v_A}{\boldsymbol v_B - \boldsymbol v_A}
+    t = \frac{\boldsymbol{v_{LERP}} - \boldsymbol{v_A}}{\boldsymbol{v_B} - \boldsymbol{v_A}}
 @f]
-@see @ref lerp()
+@see @ref lerp(), @ref select()
 */
 #ifdef DOXYGEN_GENERATING_OUTPUT
 template<class T> inline T lerpInverted(const T& a, const T& b, const T& lerp);
@@ -603,6 +625,25 @@ template<std::size_t size, class T, class U> inline Vector<size, T> lerpInverted
     return (lerp - a)/(b - a);
 }
 #endif
+
+/**
+@brief Constant interpolation of two values
+@param a     First value
+@param b     Second value
+@param t     Interpolation phase
+
+A constant interpolation counterpart to @ref lerp(): @f[
+    \boldsymbol{v}_i = \begin{cases}
+        \boldsymbol{v_A}_i, & t_i < 1 \\
+        \boldsymbol{v_B}_i, & t_i \ge 1
+    \end{cases}
+@f]
+
+Equivalent to calling @cpp Math::lerp(a, b, t >= U(1)) @ce.
+*/
+template<class T, class U> constexpr T select(const T& a, const T& b, U t) {
+    return lerp(a, b, t >= U(1));
+}
 
 /**
 @brief Fused multiply-add

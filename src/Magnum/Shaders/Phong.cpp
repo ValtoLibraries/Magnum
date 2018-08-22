@@ -67,6 +67,7 @@ Phong::Phong(const Flags flags): _flags(flags) {
     frag.addSource(flags & Flag::AmbientTexture ? "#define AMBIENT_TEXTURE\n" : "")
         .addSource(flags & Flag::DiffuseTexture ? "#define DIFFUSE_TEXTURE\n" : "")
         .addSource(flags & Flag::SpecularTexture ? "#define SPECULAR_TEXTURE\n" : "")
+        .addSource(flags & Flag::AlphaMask ? "#define ALPHA_MASK\n" : "")
         .addSource(rs.get("Phong.frag"));
 
     CORRADE_INTERNAL_ASSERT_OUTPUT(GL::Shader::compile({vert, frag}));
@@ -81,7 +82,8 @@ Phong::Phong(const Flags flags): _flags(flags) {
     {
         bindAttributeLocation(Position::Location, "position");
         bindAttributeLocation(Normal::Location, "normal");
-        if(flags) bindAttributeLocation(TextureCoordinates::Location, "textureCoordinates");
+        if(flags & (Flag::AmbientTexture|Flag::DiffuseTexture|Flag::SpecularTexture))
+            bindAttributeLocation(TextureCoordinates::Location, "textureCoordinates");
     }
 
     CORRADE_INTERNAL_ASSERT_OUTPUT(link());
@@ -93,12 +95,13 @@ Phong::Phong(const Flags flags): _flags(flags) {
         _transformationMatrixUniform = uniformLocation("transformationMatrix");
         _projectionMatrixUniform = uniformLocation("projectionMatrix");
         _normalMatrixUniform = uniformLocation("normalMatrix");
-        _lightUniform = uniformLocation("light");
+        _lightPositionUniform = uniformLocation("lightPosition");
         _ambientColorUniform = uniformLocation("ambientColor");
         _diffuseColorUniform = uniformLocation("diffuseColor");
         _specularColorUniform = uniformLocation("specularColor");
         _lightColorUniform = uniformLocation("lightColor");
         _shininessUniform = uniformLocation("shininess");
+        if(flags & Flag::AlphaMask) _alphaMaskUniform = uniformLocation("alphaMask");
     }
 
     #ifndef MAGNUM_TARGET_GLES
@@ -114,33 +117,52 @@ Phong::Phong(const Flags flags): _flags(flags) {
     #ifdef MAGNUM_TARGET_GLES
     /* Default to fully opaque white so we can see the textures */
     if(flags & Flag::AmbientTexture) setAmbientColor(Color4{1.0f});
-    else setAmbientColor(Color4{0.0f, 1.0f});
-
-    if(flags & Flag::DiffuseTexture) setDiffuseColor(Color4{1.0f});
-
+    else setAmbientColor(Color4{0.0f});
+    setDiffuseColor(Color4{1.0f});
     setSpecularColor(Color4{1.0f});
     setLightColor(Color4{1.0f});
     setShininess(80.0f);
+    if(flags & Flag::AlphaMask) setAlphaMask(0.5f);
+
+    setTransformationMatrix({});
+    setProjectionMatrix({});
+    setNormalMatrix({});
+    /* Light position is zero by default */
     #endif
 }
 
 Phong& Phong::bindAmbientTexture(GL::Texture2D& texture) {
-    if(_flags & Flag::AmbientTexture) texture.bind(AmbientTextureLayer);
+    CORRADE_ASSERT(_flags & Flag::AmbientTexture,
+        "Shaders::Phong::bindAmbientTexture(): the shader was not created with ambient texture enabled", *this);
+    texture.bind(AmbientTextureLayer);
     return *this;
 }
 
 Phong& Phong::bindDiffuseTexture(GL::Texture2D& texture) {
-    if(_flags & Flag::DiffuseTexture) texture.bind(DiffuseTextureLayer);
+    CORRADE_ASSERT(_flags & Flag::DiffuseTexture,
+        "Shaders::Phong::bindDiffuseTexture(): the shader was not created with diffuse texture enabled", *this);
+    texture.bind(DiffuseTextureLayer);
     return *this;
 }
 
 Phong& Phong::bindSpecularTexture(GL::Texture2D& texture) {
-    if(_flags & Flag::SpecularTexture) texture.bind(SpecularTextureLayer);
+    CORRADE_ASSERT(_flags & Flag::SpecularTexture,
+        "Shaders::Phong::bindSpecularTexture(): the shader was not created with specular texture enabled", *this);
+    texture.bind(SpecularTextureLayer);
     return *this;
 }
 
 Phong& Phong::bindTextures(GL::Texture2D* ambient, GL::Texture2D* diffuse, GL::Texture2D* specular) {
+    CORRADE_ASSERT(_flags & (Flag::AmbientTexture|Flag::DiffuseTexture|Flag::SpecularTexture),
+        "Shaders::Phong::bindTextures(): the shader was not created with any textures enabled", *this);
     GL::AbstractTexture::bind(AmbientTextureLayer, {ambient, diffuse, specular});
+    return *this;
+}
+
+Phong& Phong::setAlphaMask(Float mask) {
+    CORRADE_ASSERT(_flags & Flag::AlphaMask,
+        "Shaders::Phong::setAlphaMask(): the shader was not created with alpha mask enabled", *this);
+    setUniform(_alphaMaskUniform, mask);
     return *this;
 }
 

@@ -37,7 +37,10 @@ set(Magnum_SRCS
 set(Magnum_GracefulAssert_SRCS
     Image.cpp
     ImageView.cpp
-    PixelFormat.cpp)
+    PixelFormat.cpp
+
+    Animation/Player.cpp
+    Animation/Interpolation.cpp)
 
 set(Magnum_HEADERS
     AbstractResourceLoader.h
@@ -199,6 +202,7 @@ install(TARGETS Magnum
 install(FILES ${Magnum_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/configure.h DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR})
 
+add_subdirectory(Animation)
 add_subdirectory(Math)
 add_subdirectory(Platform)
 

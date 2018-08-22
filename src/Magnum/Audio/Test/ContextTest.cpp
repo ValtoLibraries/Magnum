@@ -34,15 +34,35 @@ namespace Magnum { namespace Audio { namespace Test {
 struct ContextTest: TestSuite::Tester {
     explicit ContextTest();
 
+    void constructNoCreate();
+    void constructCopyMove();
+
     void extensions();
 
     void debugHrtfStatus();
 };
 
 ContextTest::ContextTest() {
-    addTests({&ContextTest::extensions,
+    addTests({&ContextTest::constructNoCreate,
+              &ContextTest::constructCopyMove,
+
+              &ContextTest::extensions,
 
               &ContextTest::debugHrtfStatus});
+}
+
+void ContextTest::constructNoCreate() {
+    Context context{NoCreate};
+
+    CORRADE_VERIFY(!Context::hasCurrent());
+}
+
+void ContextTest::constructCopyMove() {
+    /* Only move-construction allowed */
+    CORRADE_VERIFY(!(std::is_constructible<Context, const Context&>{}));
+    CORRADE_VERIFY((std::is_constructible<Context, Context&&>{}));
+    CORRADE_VERIFY(!(std::is_assignable<Context, const Context&>{}));
+    CORRADE_VERIFY(!(std::is_assignable<Context, Context&&>{}));
 }
 
 void ContextTest::extensions() {

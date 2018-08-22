@@ -1265,9 +1265,13 @@ void CubeMapTextureGLTest::fullImageQuery() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 
     CORRADE_COMPARE(image.size(), Vector3i(2, 2, 6));
-    CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(image.data()).suffix(FullPixelStorageData[testCaseInstanceId()].offset),
-        FullPixelStorageData[testCaseInstanceId()].data,
-        TestSuite::Compare::Container);
+    {
+        CORRADE_EXPECT_FAIL_IF((Context::current().detectedDriver() & Context::DetectedDriver::Mesa) && FullPixelStorageData[testCaseInstanceId()].storage != PixelStorage{},
+            "Mesa drivers can't handle non-default pixel storage for full cubemap image queries.");
+        CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(image.data()).suffix(FullPixelStorageData[testCaseInstanceId()].offset),
+            FullPixelStorageData[testCaseInstanceId()].data,
+            TestSuite::Compare::Container);
+    }
 }
 
 void CubeMapTextureGLTest::fullImageQueryBuffer() {
@@ -1293,8 +1297,12 @@ void CubeMapTextureGLTest::fullImageQueryBuffer() {
 
     CORRADE_COMPARE(image.size(), Vector3i(2, 2, 6));
     const auto imageData = image.buffer().data();
-    CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(imageData).suffix(FullPixelStorageData[testCaseInstanceId()].offset),
-        FullPixelStorageData[testCaseInstanceId()].data, TestSuite::Compare::Container);
+    {
+        CORRADE_EXPECT_FAIL_IF((Context::current().detectedDriver() & Context::DetectedDriver::Mesa) && FullPixelStorageData[testCaseInstanceId()].storage != PixelStorage{},
+            "Mesa drivers can't handle non-default pixel storage for full cubemap image queries.");
+        CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(imageData).suffix(FullPixelStorageData[testCaseInstanceId()].offset),
+            FullPixelStorageData[testCaseInstanceId()].data, TestSuite::Compare::Container);
+    }
 }
 
 void CubeMapTextureGLTest::compressedFullImageQuery() {
@@ -1320,9 +1328,13 @@ void CubeMapTextureGLTest::compressedFullImageQuery() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 
     CORRADE_COMPARE(image.size(), (Vector3i{4, 4, 6}));
-    CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(image.data()).suffix(CompressedFullPixelStorageData[testCaseInstanceId()].offset),
-        CompressedFullPixelStorageData[testCaseInstanceId()].data,
-        TestSuite::Compare::Container);
+    {
+        CORRADE_EXPECT_FAIL_IF((Context::current().detectedDriver() & Context::DetectedDriver::Mesa) && CompressedFullPixelStorageData[testCaseInstanceId()].storage != CompressedPixelStorage{},
+            "Mesa drivers can't handle non-default pixel storage for full cubemap image queries.");
+        CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(image.data()).suffix(CompressedFullPixelStorageData[testCaseInstanceId()].offset),
+            CompressedFullPixelStorageData[testCaseInstanceId()].data,
+            TestSuite::Compare::Container);
+    }
 }
 
 void CubeMapTextureGLTest::compressedFullImageQueryBuffer() {
@@ -1350,9 +1362,13 @@ void CubeMapTextureGLTest::compressedFullImageQueryBuffer() {
 
     CORRADE_COMPARE(image.size(), (Vector3i{4, 4, 6}));
     const auto imageData = image.buffer().data();
-    CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(imageData).suffix(CompressedFullPixelStorageData[testCaseInstanceId()].offset),
-        CompressedFullPixelStorageData[testCaseInstanceId()].data,
-        TestSuite::Compare::Container);
+    {
+        CORRADE_EXPECT_FAIL_IF((Context::current().detectedDriver() & Context::DetectedDriver::Mesa) && CompressedFullPixelStorageData[testCaseInstanceId()].storage != CompressedPixelStorage{},
+            "Mesa drivers can't handle non-default pixel storage for full cubemap image queries.");
+        CORRADE_COMPARE_AS(Containers::arrayCast<UnsignedByte>(imageData).suffix(CompressedFullPixelStorageData[testCaseInstanceId()].offset),
+            CompressedFullPixelStorageData[testCaseInstanceId()].data,
+            TestSuite::Compare::Container);
+    }
 }
 #endif
 
@@ -1431,7 +1447,7 @@ void CubeMapTextureGLTest::invalidateSubImage() {
            only single layer instead of 6, so the above invalidation call
            fails. Relevant source code (scroll up to see imageDepth = 1):
            https://github.com/mesa3d/mesa/blob/051fddb4a9e6abb6f2cf9c892e34c8739983c794/src/mesa/main/texobj.c#L2293 */
-        CORRADE_EXPECT_FAIL_IF((Context::current().detectedDriver() & Context::DetectedDriver::Mesa),
+        CORRADE_EXPECT_FAIL_IF((Context::current().detectedDriver() & Context::DetectedDriver::Mesa) && Context::current().isExtensionSupported<Extensions::ARB::invalidate_subdata>(),
             "Broken on Mesa.");
         #endif
 

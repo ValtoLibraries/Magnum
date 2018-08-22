@@ -125,9 +125,13 @@ class MAGNUM_GL_EXPORT MeshView {
          * @return Reference to self (for method chaining)
          *
          * Ignored when calling @ref draw(AbstractShaderProgram&, TransformFeedback&, UnsignedInt).
-         * Default is @cpp 0 @ce.
+         *
+         * @attention To prevent nothing being rendered by accident, this
+         *      function has to be always called, even to just set the count to
+         *      @cpp 0 @ce.
          */
         MeshView& setCount(Int count) {
+            _countSet = true;
             _count = count;
             return *this;
         }
@@ -231,6 +235,7 @@ class MAGNUM_GL_EXPORT MeshView {
 
         /**
          * @brief Draw the mesh
+         * @return Reference to self (for method chaining)
          *
          * See @ref Mesh::draw(AbstractShaderProgram&) for more information.
          * @see @ref draw(AbstractShaderProgram&, std::initializer_list<std::reference_wrapper<MeshView>>),
@@ -250,12 +255,15 @@ class MAGNUM_GL_EXPORT MeshView {
          * @requires_gl Specifying base vertex for indexed meshes is not
          *      available in OpenGL ES or WebGL.
          */
-        void draw(AbstractShaderProgram& shader);
-        void draw(AbstractShaderProgram&& shader) { draw(shader); } /**< @overload */
+        MeshView& draw(AbstractShaderProgram& shader);
+        MeshView& draw(AbstractShaderProgram&& shader) {
+            return draw(shader);
+        } /**< @overload */
 
         #ifndef MAGNUM_TARGET_GLES
         /**
          * @brief Draw the mesh with vertices coming out of transform feedback
+         * @return Reference to self (for method chaining)
          *
          * Everything set by @ref setCount(), @ref setBaseInstance(),
          * @ref setBaseVertex(), @ref setIndexRange() and @ref Mesh::setIndexBuffer()
@@ -270,12 +278,10 @@ class MAGNUM_GL_EXPORT MeshView {
          * @requires_gl42 Extension @gl_extension{ARB,transform_feedback_instanced}
          *      if @ref instanceCount() is more than `1`.
          */
-        void draw(AbstractShaderProgram& shader, TransformFeedback& xfb, UnsignedInt stream = 0);
-
-        /** @overload */
-        void draw(AbstractShaderProgram&& shader, TransformFeedback& xfb, UnsignedInt stream = 0) {
-            draw(shader, xfb, stream);
-        }
+        MeshView& draw(AbstractShaderProgram& shader, TransformFeedback& xfb, UnsignedInt stream = 0);
+        MeshView& draw(AbstractShaderProgram&& shader, TransformFeedback& xfb, UnsignedInt stream = 0) {
+            return draw(shader, xfb, stream);
+        } /**< @overload */
         #endif
 
     private:
@@ -286,25 +292,18 @@ class MAGNUM_GL_EXPORT MeshView {
 
         std::reference_wrapper<Mesh> _original;
 
-        Int _count, _baseVertex, _instanceCount;
+        bool _countSet{};
+        Int _count{}, _baseVertex{}, _instanceCount{1};
         #ifndef MAGNUM_TARGET_GLES
-        UnsignedInt _baseInstance;
+        UnsignedInt _baseInstance{};
         #endif
-        GLintptr _indexOffset;
+        GLintptr _indexOffset{};
         #ifndef MAGNUM_TARGET_GLES2
-        UnsignedInt _indexStart, _indexEnd;
+        UnsignedInt _indexStart{}, _indexEnd{};
         #endif
 };
 
-inline MeshView::MeshView(Mesh& original): _original(original), _count(0), _baseVertex(0), _instanceCount{1},
-    #ifndef MAGNUM_TARGET_GLES
-    _baseInstance{0},
-    #endif
-    _indexOffset(0)
-    #ifndef MAGNUM_TARGET_GLES2
-    , _indexStart(0), _indexEnd(0)
-    #endif
-    {}
+inline MeshView::MeshView(Mesh& original): _original{original} {}
 
 inline MeshView& MeshView::setIndexRange(Int first, UnsignedInt start, UnsignedInt end) {
     setIndexRange(first);

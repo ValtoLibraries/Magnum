@@ -23,12 +23,19 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-corrade_add_test(MathGeometryDistanceTest DistanceTest.cpp LIBRARIES MagnumMathTestLib)
-target_compile_definitions(MathGeometryDistanceTest PRIVATE "CORRADE_GRACEFUL_ASSERT")
+set(MagnumAnimation_HEADERS
+    Animation.h
+    Interpolation.h
+    Player.h
+    Player.hpp
+    Track.h)
 
-corrade_add_test(MathGeometryIntersectionTest IntersectionTest.cpp LIBRARIES MagnumMathTestLib)
+# Force IDEs to display all header files in project view
+add_custom_target(MagnumAnimation SOURCES ${MagnumAnimation_HEADERS})
+set_target_properties(MagnumAnimation PROPERTIES FOLDER "Magnum/Animation")
 
-set_target_properties(
-    MathGeometryDistanceTest
-    MathGeometryIntersectionTest
-    PROPERTIES FOLDER "Magnum/Math/Geometry/Test")
+install(FILES ${MagnumAnimation_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Animation)
+
+if(BUILD_TESTS)
+    add_subdirectory(Test)
+endif()

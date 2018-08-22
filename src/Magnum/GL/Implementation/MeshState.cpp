@@ -54,6 +54,8 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
         #endif
 
         createImplementation = &Mesh::createImplementationVAO;
+        moveConstructImplementation = &Mesh::moveConstructImplementationVAO;
+        moveAssignImplementation = &Mesh::moveAssignImplementationVAO;
         destroyImplementation = &Mesh::destroyImplementationVAO;
 
         #ifndef MAGNUM_TARGET_GLES
@@ -67,6 +69,7 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
             attributePointerImplementation = &Mesh::attributePointerImplementationVAO;
         }
 
+        acquireVertexBufferImplementation = &Mesh::acquireVertexBufferImplementationVAO;
         bindIndexBufferImplementation = &Mesh::bindIndexBufferImplementationVAO;
         bindVAOImplementation = &Mesh::bindVAOImplementationVAO;
         bindImplementation = &Mesh::bindImplementationVAO;
@@ -75,8 +78,11 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
     #if !defined(MAGNUM_TARGET_GLES) || defined(MAGNUM_TARGET_GLES2)
     else {
         createImplementation = &Mesh::createImplementationDefault;
+        moveConstructImplementation = &Mesh::moveConstructImplementationDefault;
+        moveAssignImplementation = &Mesh::moveAssignImplementationDefault;
         destroyImplementation = &Mesh::destroyImplementationDefault;
         attributePointerImplementation = &Mesh::attributePointerImplementationDefault;
+        acquireVertexBufferImplementation = &Mesh::acquireVertexBufferImplementationDefault;
         bindIndexBufferImplementation = &Mesh::bindIndexBufferImplementationDefault;
         bindVAOImplementation = &Mesh::bindVAOImplementationDefault;
         bindImplementation = &Mesh::bindImplementationDefault;
@@ -86,7 +92,7 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
 
     #ifndef MAGNUM_TARGET_GLES
     /* DSA create implementation (other cases handled above) */
-    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>()) {
+    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>() && context.isExtensionSupported<Extensions::ARB::vertex_array_object>()) {
         extensions.emplace_back(Extensions::ARB::direct_state_access::string());
         createImplementation = &Mesh::createImplementationVAODSA;
     }

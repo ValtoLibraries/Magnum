@@ -40,9 +40,27 @@ endif()
 
 add_library(snippets-Magnum STATIC
     Magnum.cpp
-    MagnumMath.cpp)
+    MagnumAnimation.cpp
+    MagnumAnimation-custom.cpp
+    MagnumMath.cpp
+    MagnumMathAlgorithms.cpp)
 target_link_libraries(snippets-Magnum PRIVATE Magnum)
 set_target_properties(snippets-Magnum PROPERTIES FOLDER "Magnum/doc/snippets")
+
+if(WITH_AUDIO)
+    add_library(snippets-MagnumAudio STATIC MagnumAudio.cpp)
+    target_link_libraries(snippets-MagnumAudio PRIVATE MagnumAudio)
+    set_target_properties(snippets-MagnumAudio PROPERTIES FOLDER "Magnum/doc/snippets")
+
+    if(WITH_SCENEGRAPH)
+        add_library(snippets-MagnumAudio-scenegraph STATIC
+            MagnumAudio-scenegraph.cpp)
+        target_link_libraries(snippets-MagnumAudio-scenegraph PRIVATE
+            MagnumAudio
+            MagnumSceneGraph)
+        set_target_properties(snippets-MagnumAudio-scenegraph PROPERTIES FOLDER "Magnum/doc/snippets")
+    endif()
+endif()
 
 if(WITH_GL)
     add_library(snippets-MagnumGL STATIC
@@ -85,6 +103,28 @@ if(WITH_DEBUGTOOLS AND Corrade_TestSuite_FOUND AND NOT CORRADE_TARGET_IOS)
     target_link_libraries(debugtools-compareimage PRIVATE MagnumDebugTools)
     target_include_directories(debugtools-compareimage PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     set_target_properties(debugtools-compareimage PROPERTIES FOLDER "Magnum/doc/snippets")
+endif()
+
+if(WITH_SCENEGRAPH)
+    add_library(snippets-MagnumSceneGraph STATIC
+        MagnumSceneGraph.cpp)
+    target_link_libraries(snippets-MagnumSceneGraph PRIVATE MagnumSceneGraph)
+    set_target_properties(snippets-MagnumSceneGraph
+        PROPERTIES FOLDER "Magnum/doc/snippets")
+
+    if(WITH_SDL2APPLICATION AND WITH_GL AND WITH_PRIMITIVES AND WITH_SHADERS AND WITH_MESHTOOLS)
+        add_library(snippets-MagnumSceneGraph-gl STATIC
+            MagnumSceneGraph-gl.cpp)
+        target_link_libraries(snippets-MagnumSceneGraph-gl PRIVATE
+            MagnumGL
+            MagnumMeshTools
+            MagnumPrimitives
+            MagnumSceneGraph
+            MagnumSdl2Application
+            MagnumShaders)
+        set_target_properties(snippets-MagnumSceneGraph-gl
+            PROPERTIES FOLDER "Magnum/doc/snippets")
+    endif()
 endif()
 
 if(WITH_SDL2APPLICATION)

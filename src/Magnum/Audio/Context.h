@@ -27,26 +27,22 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Audio::Context
+ * @brief Class @ref Magnum::Audio::Context, macro @ref MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED()
  */
 
+#include <cstdlib>
 #include <string>
 #include <vector>
-#include <array>
 #include <bitset>
 #include <al.h>
-
+#include <alc.h>
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Utility/Debug.h>
 
-#include "Magnum/Audio/Audio.h"
-#include "Magnum/Audio/Buffer.h"
-#include "Magnum/Audio/Extensions.h"
+#include "Magnum/Magnum.h"
+#include "Magnum/Tags.h"
 #include "Magnum/Audio/visibility.h"
-
-#ifndef DOXYGEN_GENERATING_OUTPUT
-typedef struct ALCdevice_struct ALCdevice;
-typedef struct ALCcontext_struct ALCcontext;
-#endif
+#include "MagnumExternal/OpenAL/extensions.h"
 
 namespace Magnum { namespace Audio {
 
@@ -170,16 +166,55 @@ class MAGNUM_AUDIO_EXPORT Context {
         #endif
 
         /**
+         * @brief Construct without creating the underlying OpenAL context
+         *
+         * Useful in cases where you need to defer context creation to a later
+         * time, for example to do a more involved configuration. Call
+         * @ref create() or @ref tryCreate() to create the actual context.
+         */
+        explicit Context(NoCreateT) noexcept;
+
+        /** @brief Copying is not allowed */
+        Context(const Context&) = delete;
+
+        /** @brief Move constructor */
+        Context(Context&& other) noexcept;
+
+        /**
          * @brief Destructor
          *
          * Destroys OpenAL context.
          */
         ~Context();
 
+        /** @brief Copying is not allowed */
+        Context& operator=(const Context&) = delete;
+
+        /** @brief Move assignment is not allowed */
+        Context& operator=(Context&& other) = delete;
+
         #if defined(MAGNUM_BUILD_DEPRECATED) && !defined(DOXYGEN_GENERATING_OUTPUT)
         CORRADE_DEPRECATED("Audio::Context::current() returns reference now") Context* operator->() { return this; }
         CORRADE_DEPRECATED("Audio::Context::current() returns reference now") operator Context*() { return this; }
         #endif
+
+        /**
+         * @brief Complete the context setup and exit on failure
+         *
+         * Finalizes the setup after the class was created using
+         * @ref Context(NoCreateT). If any error occurs, a message is printed
+         * to error output and the application exits. See @ref tryCreate() for
+         * an alternative.
+         */
+        void create(const Configuration& configuration);
+
+        /**
+         * @brief Complete the context setup
+         *
+         * Unlike @ref create() just prints a message to error output and
+         * returns `false` on error.
+         */
+        bool tryCreate(const Configuration& configuration);
 
         /**
          * @brief Whether HRTFs (Head Related Transfer Functions) are enabled
@@ -281,13 +316,7 @@ class MAGNUM_AUDIO_EXPORT Context {
          * Extensions usable with this function are listed in @ref Extensions
          * namespace in header @ref Extensions.h. Example usage:
          *
-         * @code{.cpp}
-         * if(Context::current().isExtensionSupported<Extensions::ALC::SOFTX::HRTF>()) {
-         *     // amazing binaural audio
-         * } else {
-         *     // probably left/right stereo only
-         * }
-         * @endcode
+         * @snippet MagnumAudio.cpp Context-isExtensionSupported
          *
          * @see @ref isExtensionSupported(const Extension&) const,
          *      @ref MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED()
@@ -311,10 +340,6 @@ class MAGNUM_AUDIO_EXPORT Context {
 
     private:
         MAGNUM_AUDIO_LOCAL static Context* _current;
-
-        /* Create a context with given configuration. Returns `true` on success.
-         * @ref alcCreateContext(). */
-        MAGNUM_AUDIO_LOCAL bool tryCreateContext(const Configuration& config);
 
         ALCdevice* _device;
         ALCcontext* _context;
@@ -366,7 +391,8 @@ class MAGNUM_AUDIO_EXPORT Context::Configuration {
          * @brief Set sampling rate
          * @return Reference to self (for method chaining)
          *
-         * If set to `-1` (the default), system OpenAL configuration is used.
+         * If set to @cpp -1 @ce (the default), system OpenAL configuration is
+         * used.
          */
         Configuration& setFrequency(Int hz) {
             _frequency = hz;
@@ -399,7 +425,8 @@ class MAGNUM_AUDIO_EXPORT Context::Configuration {
          * @brief Set hint for how many mono sources to support
          * @return Reference to self (for method chaining)
          *
-         * If set to `-1` (the default), no hint will be given to OpenAL.
+         * If set to @cpp -1 @ce (the default), no hint will be given to
+         * OpenAL.
          */
         Configuration& setMonoSourceCount(Int count) {
             _monoSources = count;
@@ -413,7 +440,8 @@ class MAGNUM_AUDIO_EXPORT Context::Configuration {
          * @brief Set hint for how many stereo sources to support
          * @return Reference to self (for method chaining)
          *
-         * If set to `-1` (the default), no hint will be given to OpenAL.
+         * If set to @cpp -1 @ce (the default), no hint will be given to
+         * OpenAL.
          */
         Configuration& setStereoSourceCount(Int count) {
             _stereoSources = count;
@@ -427,7 +455,8 @@ class MAGNUM_AUDIO_EXPORT Context::Configuration {
          * @brief Set refresh rate
          * @return Reference to self (for method chaining)
          *
-         * If set to `-1` (the default), system OpenAL configuration is used.
+         * If set to @cpp -1 @ce (the default), system OpenAL configuration is
+         * used.
          */
         Configuration& setRefreshRate(Int hz) {
             _refreshRate = hz;
@@ -458,9 +487,7 @@ By default, if assertion fails, an message is printed to error output and the
 application aborts. If `CORRADE_NO_ASSERT` is defined, this macro does nothing.
 Example usage:
 
-@code{.cpp}
-MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED(Extensions::ALC::SOFTX::HRTF);
-@endcode
+@snippet MagnumAudio.cpp MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED
 
 @see @ref Magnum::Audio::Context::isExtensionSupported() "Audio::Context::isExtensionSupported()",
     @ref CORRADE_ASSERT(), @ref CORRADE_INTERNAL_ASSERT()

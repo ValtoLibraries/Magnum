@@ -173,7 +173,7 @@ cmake -DCMAKE_INSTALL_PREFIX=/path/to/my/emscripten/deploy ..
 cmake --build . --target install
 
 cd /path/to/my/emscripten/deploy
-python -m http.server
+python -m http.server # or python -m SimpleHTTPServer with Python 2
 @endcode
 
 After that, you can open http://localhost:8000 to see the files. Stop the
@@ -302,6 +302,23 @@ WebGL specification provide even more detail:
 
 @section platforms-html5-troubleshooting Troubleshooting
 
+@subsection platforms-html5-troubleshooting-macos Setting up Emscripten on macOS
+
+Emscripten is available through Homebrew:
+
+@code{.sh}
+brew install emscripten
+@endcode
+
+Because LLVM is also distributed as part of Xcode, it will get picked up by
+default. Emscripten however needs to use its own bundled version, so you may
+need to export the @cb{.sh} $LLVM @ce environment variable to port to the other
+location:
+
+@code{.sh}
+export LLVM=/usr/local/opt/emscripten/libexec/llvm/bin
+@endcode
+
 @subsection platforms-html5-troubleshooting-bootstrap First Emscripten run takes long or fails
 
 Emscripten downloads and builds a lot of things on first startup or after
@@ -332,6 +349,9 @@ echo "int main() {}" > main.cpp
 em++ -s WASM=1 main.cpp
 @endcode
 
+After this step it might be also needed to purge all CMake build directories
+and set them up again to ensure no bad state got cached.
+
 @subsection platforms-html5-troubleshooting-corrade-not-found CMake can't find _CORRADE_MODULE_DIR
 
 If initial CMake configuration fails with
@@ -341,13 +361,15 @@ If initial CMake configuration fails with
 @endcode
 
 The solution is to explicitly pass `CMAKE_PREFIX_PATH` pointing to directory
-where Corrade is installed, for example:
+where Corrade is installed. In some cases it might also be needed to point
+`CMAKE_FIND_ROOT_PATH` to the same location. For example:
 
 @code{.sh}
 mkdir build-emscripten && cd build-emscripte
 cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=../toolchains/generic/Emscripten-wasm.cmake \
-    -DCMAKE_PREFIX_PATH=/usr/lib/emscripten/system/ \
+    -DCMAKE_PREFIX_PATH=/your/emscripten/libs/ \
+    -DCMAKE_FIND_ROOT_PATH=/your/emscripten/libs/ \
     -G Ninja
 @endcode
 
@@ -374,6 +396,33 @@ following scenarios are possible:
     flags or a different Emscripten version than your dependencies, it can fail
     to load for a variety of random reasons. Try to rebuild everything with the
     same set of flags.
+
+@subsection platforms-html5-troubleshooting-mime Incorrect response MIME type
+
+Depending on your browser, you might see a warning similar to the following in
+the console:
+
+@code{.shell-session}
+wasm streaming compile failed: TypeError: Failed to execute 'compile' on
+    'WebAssembly': Incorrect response MIME type. Expected 'application/wasm'.
+falling back to ArrayBuffer instantiation
+@endcode
+
+This is not a critical error, but causes slow startup since the browser usually
+attempts to load the file twice. This is because the HTTP `Content-Type` header
+is not set properly by the webserver. In case you use Apache, fixing this is a
+matter of adding the following line to your `.htaccess`:
+
+    AddType application/wasm .wasm
+
+@todoc use .htaccess extension for the code here once Pygments know it
+
+It is not possible when using Python `http.server` from the command line, but
+the mapping [can be added programmatically](https://docs.python.org/3/library/http.server.html#http.server.SimpleHTTPRequestHandler):
+
+@code{.py}
+http.server.SimpleHTTPRequestHandler.extensions_map['.wasm'] = 'application/wasm'
+@endcode
 
 */
 

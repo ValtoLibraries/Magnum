@@ -33,24 +33,6 @@
 #define const
 #endif
 
-#ifdef EXPLICIT_UNIFORM_LOCATION
-layout(location = 7)
-#endif
-uniform lowp vec4 lightColor
-    #ifndef GL_ES
-    = vec4(1.0)
-    #endif
-    ;
-
-#ifdef EXPLICIT_UNIFORM_LOCATION
-layout(location = 8)
-#endif
-uniform mediump float shininess
-    #ifndef GL_ES
-    = 80.0
-    #endif
-    ;
-
 #ifdef AMBIENT_TEXTURE
 #ifdef EXPLICIT_TEXTURE_LAYER
 layout(binding = 0)
@@ -64,7 +46,7 @@ layout(location = 4)
 uniform lowp vec4 ambientColor
     #ifndef GL_ES
     #ifndef AMBIENT_TEXTURE
-    = vec4(0.0, 0.0, 0.0, 1.0)
+    = vec4(0.0)
     #else
     = vec4(1.0)
     #endif
@@ -82,7 +64,7 @@ uniform lowp sampler2D diffuseTexture;
 layout(location = 5)
 #endif
 uniform lowp vec4 diffuseColor
-    #if !defined(GL_ES) && defined(DIFFUSE_TEXTURE)
+    #ifndef GL_ES
     = vec4(1.0)
     #endif
     ;
@@ -102,6 +84,35 @@ uniform lowp vec4 specularColor
     = vec4(1.0)
     #endif
     ;
+
+#ifdef EXPLICIT_UNIFORM_LOCATION
+layout(location = 7)
+#endif
+uniform lowp vec4 lightColor
+    #ifndef GL_ES
+    = vec4(1.0)
+    #endif
+    ;
+
+#ifdef EXPLICIT_UNIFORM_LOCATION
+layout(location = 8)
+#endif
+uniform mediump float shininess
+    #ifndef GL_ES
+    = 80.0
+    #endif
+    ;
+
+#ifdef ALPHA_MASK
+#ifdef EXPLICIT_UNIFORM_LOCATION
+layout(location = 9)
+#endif
+uniform lowp float alphaMask
+    #ifndef GL_ES
+    = 0.5
+    #endif
+    ;
+#endif
 
 in mediump vec3 transformedNormal;
 in highp vec3 lightDirection;
@@ -148,4 +159,8 @@ void main() {
         mediump float specularity = pow(max(0.0, dot(normalize(cameraDirection), reflection)), shininess);
         color += finalSpecularColor*specularity;
     }
+
+    #ifdef ALPHA_MASK
+    if(color.a < alphaMask) discard;
+    #endif
 }

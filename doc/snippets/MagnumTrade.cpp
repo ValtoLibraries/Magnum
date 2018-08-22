@@ -23,9 +23,20 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <unordered_map>
+#include <Corrade/Utility/Directory.h>
+
 #include "Magnum/PixelFormat.h"
+#include "Magnum/Animation/Player.h"
+#include "Magnum/MeshTools/Transform.h"
 #include "Magnum/Trade/AbstractImporter.h"
+#include "Magnum/Trade/AnimationData.h"
 #include "Magnum/Trade/ImageData.h"
+#include "Magnum/Trade/MeshData2D.h"
+#include "Magnum/Trade/MeshData3D.h"
+#include "Magnum/Trade/ObjectData2D.h"
+#include "Magnum/Trade/ObjectData3D.h"
+#include "Magnum/Trade/PhongMaterialData.h"
 #ifdef MAGNUM_TARGET_GL
 #include "Magnum/GL/Texture.h"
 #endif
@@ -34,6 +45,125 @@ using namespace Magnum;
 using namespace Magnum::Math::Literals;
 
 int main() {
+
+{
+/* [AbstractImporter-usage] */
+PluginManager::Manager<Trade::AbstractImporter> manager;
+std::unique_ptr<Trade::AbstractImporter> importer =
+    manager.loadAndInstantiate("AnyImageImporter");
+if(!importer || !importer->openFile("image.png"))
+    Fatal{} << "Can't open image.png with AnyImageImporter";
+
+Containers::Optional<Trade::ImageData2D> image = importer->image2D(0);
+if(!image) Fatal{} << "Importing the image failed";
+
+// use the image ...
+/* [AbstractImporter-usage] */
+}
+
+#if defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT))
+{
+std::unique_ptr<Trade::AbstractImporter> importer;
+/* [AbstractImporter-usage-callbacks] */
+struct Data {
+    std::unordered_map<std::string,
+        Containers::Array<const char, Utility::Directory::MapDeleter>> files;
+} data;
+
+importer->setFileCallback([](const std::string& filename,
+    Trade::ImporterFileCallbackPolicy policy, Data& data)
+        -> Containers::Optional<Containers::ArrayView<const char>>
+    {
+        auto found = data.files.find(filename);
+
+        /* Discard the memory mapping, if not needed anymore */
+        if(policy == Trade::ImporterFileCallbackPolicy::Close) {
+            if(found != data.files.end()) data.files.erase(found);
+            return {};
+        }
+
+        /* Load if not there yet */
+        if(found == data.files.end()) found = data.files.emplace(
+            filename, Utility::Directory::mapRead(filename)).first;
+
+        return Containers::arrayView(found->second);
+    }, data);
+
+importer->openFile("scene.gltf"); // memory-maps all files
+/* [AbstractImporter-usage-callbacks] */
+}
+#endif
+
+{
+std::unique_ptr<Trade::AbstractImporter> importer;
+Float shininess;
+/* [AbstractImporter-usage-cast] */
+std::unique_ptr<Trade::AbstractMaterialData> data = importer->material(12);
+if(data && data->type() == Trade::MaterialType::Phong) {
+    auto& phong = static_cast<Trade::PhongMaterialData&>(*data);
+
+    shininess = phong.shininess();
+    // ...
+}
+/* [AbstractImporter-usage-cast] */
+static_cast<void>(shininess);
+}
+
+{
+std::unique_ptr<Trade::AbstractImporter> importer;
+/* [AbstractImporter-setFileCallback] */
+importer->setFileCallback([](const std::string& filename,
+    Trade::ImporterFileCallbackPolicy, void*) {
+        Utility::Resource rs("data");
+        return Containers::optional(rs.getRaw(filename));
+    });
+/* [AbstractImporter-setFileCallback] */
+}
+
+{
+std::unique_ptr<Trade::AbstractImporter> importer;
+/* [AbstractImporter-setFileCallback-template] */
+struct Data {
+    std::unordered_map<std::string, Containers::Array<char>> files;
+} data;
+
+importer->setFileCallback([](const std::string& filename,
+    Trade::ImporterFileCallbackPolicy, Data& data)
+        -> Containers::Optional<Containers::ArrayView<const char>>
+    {
+        auto found = data.files.find(filename);
+        if(found == data.files.end()) {
+            if(!Utility::Directory::fileExists(filename))
+                return Containers::NullOpt;
+            found = data.files.emplace(filename, Utility::Directory::read(filename)).first;
+        }
+        return Containers::ArrayView<const char>{found->second};
+    }, data);
+/* [AbstractImporter-setFileCallback-template] */
+}
+
+{
+UnsignedInt id{};
+std::unique_ptr<Trade::AbstractImporter> importer;
+/* [AnimationData-usage] */
+
+Containers::Optional<Trade::AnimationData> data = importer->animation(id);
+
+Animation::Player<Float> player;
+Containers::Array<Vector3> positions; /* Translations for all objects */
+for(UnsignedInt i = 0; i != data->trackCount(); ++i) {
+    if(data->trackTarget(i) == Trade::AnimationTrackTarget::Translation3D) {
+        CORRADE_INTERNAL_ASSERT(data->trackType(i) ==
+            Trade::AnimationTrackType::Vector3);
+        player.add(data->track<Vector3>(i), positions[data->trackTargetId(i)]);
+    }
+
+    // similarly for rotation / scaling ...
+}
+
+Containers::Array<char> animationData = data->release(); /* Take ownership */
+/* [AnimationData-usage] */
+}
 
 {
 /* [ImageData-construction] */
@@ -66,5 +196,51 @@ else
 /* [ImageData-usage] */
 }
 #endif
+
+{
+Trade::MeshData2D& foo();
+Trade::MeshData2D& data = foo();
+/* [MeshData2D-transform] */
+Matrix3 transformation =
+    Matrix3::translation({3.0f, -2.0f})*
+    Matrix3::scaling(Vector2{2.0f})*
+    Matrix3::rotation(45.0_degf);
+MeshTools::transformPointsInPlace(transformation, data.positions(0));
+/* [MeshData2D-transform] */
+}
+
+{
+Trade::ObjectData2D& baz();
+Trade::ObjectData2D& data = baz();
+/* [ObjectData2D-transformation] */
+Matrix3 transformation =
+    Matrix3::from(data.rotation().toMatrix(), data.translation())*
+    Matrix3::scaling(data.scaling());
+/* [ObjectData2D-transformation] */
+static_cast<void>(transformation);
+}
+
+{
+Trade::MeshData3D& bar();
+Trade::MeshData3D& data = bar();
+/* [MeshData3D-transform] */
+Matrix4 transformation =
+    Matrix4::translation({3.0f, 1.5f, -2.0f})*
+    Matrix4::rotationX(45.0_degf);
+MeshTools::transformPointsInPlace(transformation, data.positions(0));
+MeshTools::transformVectorsInPlace(transformation, data.normals(0));
+/* [MeshData3D-transform] */
+}
+
+{
+Trade::ObjectData3D& fizz();
+Trade::ObjectData3D& data = fizz();
+/* [ObjectData3D-transformation] */
+Matrix4 transformation =
+    Matrix4::from(data.rotation().toMatrix(), data.translation())*
+    Matrix4::scaling(data.scaling());
+/* [ObjectData3D-transformation] */
+static_cast<void>(transformation);
+}
 
 }

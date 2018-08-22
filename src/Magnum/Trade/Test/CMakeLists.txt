@@ -34,26 +34,34 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
-corrade_add_test(TradeAbstractImageConverterTest AbstractImageConverterTest.cpp LIBRARIES MagnumTrade)
+corrade_add_test(TradeAbstractImageConverterTest AbstractImageConverterTest.cpp LIBRARIES MagnumTradeTestLib)
 target_include_directories(TradeAbstractImageConverterTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(TradeAbstractImporterTest AbstractImporterTest.cpp
-    LIBRARIES MagnumTrade
+    LIBRARIES MagnumTradeTestLib
     FILES file.bin)
 target_include_directories(TradeAbstractImporterTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(TradeAnimationDataTest AnimationDataTest.cpp LIBRARIES MagnumTradeTestLib)
 corrade_add_test(TradeCameraDataTest CameraDataTest.cpp LIBRARIES MagnumTrade)
 corrade_add_test(TradeImageDataTest ImageDataTest.cpp LIBRARIES MagnumTradeTestLib)
 corrade_add_test(TradeLightDataTest LightDataTest.cpp LIBRARIES MagnumTrade)
-corrade_add_test(TradeMaterialDataTest MaterialDataTest.cpp LIBRARIES MagnumTrade)
+corrade_add_test(TradeMaterialDataTest MaterialDataTest.cpp LIBRARIES MagnumTradeTestLib)
 corrade_add_test(TradeMeshData2DTest MeshData2DTest.cpp LIBRARIES MagnumTrade)
 corrade_add_test(TradeMeshData3DTest MeshData3DTest.cpp LIBRARIES MagnumTrade)
-corrade_add_test(TradeObjectData2DTest ObjectData2DTest.cpp LIBRARIES MagnumTrade)
-corrade_add_test(TradeObjectData3DTest ObjectData3DTest.cpp LIBRARIES MagnumTrade)
+corrade_add_test(TradeObjectData2DTest ObjectData2DTest.cpp LIBRARIES MagnumTradeTestLib)
+corrade_add_test(TradeObjectData3DTest ObjectData3DTest.cpp LIBRARIES MagnumTradeTestLib)
 corrade_add_test(TradeSceneDataTest SceneDataTest.cpp LIBRARIES MagnumTrade)
 corrade_add_test(TradeTextureDataTest TextureDataTest.cpp LIBRARIES MagnumTrade)
+
+set_property(TARGET
+    TradeAnimationDataTest
+    APPEND PROPERTY COMPILE_DEFINITIONS "CORRADE_GRACEFUL_ASSERT")
 
 set_target_properties(
     TradeAbstractImageConverterTest
     TradeAbstractImporterTest
+    TradeAnimationDataTest
     TradeCameraDataTest
     TradeImageDataTest
     TradeLightDataTest

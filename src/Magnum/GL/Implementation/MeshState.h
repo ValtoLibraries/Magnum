@@ -40,12 +40,15 @@ struct MeshState {
 
     void reset();
 
-    void(Mesh::*createImplementation)();
-    void(Mesh::*destroyImplementation)();
-    void(Mesh::*attributePointerImplementation)(Mesh::AttributeLayout&);
+    void(Mesh::*createImplementation)(bool);
+    void(Mesh::*moveConstructImplementation)(Mesh&&);
+    void(Mesh::*moveAssignImplementation)(Mesh&&);
+    void(Mesh::*destroyImplementation)(bool);
+    void(Mesh::*attributePointerImplementation)(Mesh::AttributeLayout&&);
     #if !defined(MAGNUM_TARGET_GLES) || defined(MAGNUM_TARGET_GLES2)
     void(Mesh::*vertexAttribDivisorImplementation)(GLuint, GLuint);
     #endif
+    void(Mesh::*acquireVertexBufferImplementation)(Buffer&&);
     void(Mesh::*bindIndexBufferImplementation)(Buffer&);
     void(Mesh::*bindImplementation)();
     void(Mesh::*unbindImplementation)();

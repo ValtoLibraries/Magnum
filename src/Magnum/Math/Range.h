@@ -58,7 +58,8 @@ template<UnsignedInt dimensions, class T> class Range {
         /**
          * @brief Underlying vector type
          *
-         * `T` in 1D, @ref Vector2<T> in 2D, @ref Vector3<T> in 3D.
+         * `T` in 1D, @ref Math::Vector2 "Vector2<T>" in 2D,
+         * @ref Math::Vector3 "Vector3<T>" in 3D.
          */
         typedef typename Implementation::RangeTraits<dimensions, T>::Type VectorType;
 
@@ -81,8 +82,27 @@ template<UnsignedInt dimensions, class T> class Range {
         /** @brief Construct without initializing the contents */
         explicit Range(NoInitT) noexcept: _min{NoInit}, _max{NoInit} {}
 
-        /** @brief Construct range from minimal and maximal coordinates */
+        /** @brief Construct a range from minimal and maximal coordinates */
         constexpr /*implicit*/ Range(const VectorType& min, const VectorType& max) noexcept: _min{min}, _max{max} {}
+
+        /**
+         * @brief Construct a range from a pair of minimal and maximal coordinates
+         *
+         * Useful in combination with e.g. @ref minmax(), here for example to
+         * calculate bounds of a triangle:
+         *
+         * @snippet MagnumMath.cpp Range-construct-minmax
+         *
+         * @todo std::pair constructors are not constexpr in C++11, make it so in C++14 */
+        /*implicit*/ Range(const std::pair<VectorType, VectorType>& minmax) noexcept:
+            _min{minmax.first}, _max{minmax.second} {}
+
+        /** @overload */
+        /** @todo std::pair constructors are not constexpr in C++11, make it so in C++14 */
+        #ifndef DOXYGEN_GENERATING_OUTPUT
+        template<UnsignedInt d = dimensions, class = std::enable_if<d != 1>>
+        #endif
+        /*implicit*/ Range(const std::pair<Vector<dimensions, T>, Vector<dimensions, T>>& minmax) noexcept: _min{minmax.first}, _max{minmax.second} {}
 
         /**
          * @brief Construct range from another of different type
@@ -128,6 +148,7 @@ template<UnsignedInt dimensions, class T> class Range {
         /**
          * @brief Minimal coordinates (inclusive)
          *
+         * Denoted as @f$ \operatorname{min}(A) @f$ in related math equations.
          * @see @ref size(), @ref Range2D::bottomLeft(),
          *      @ref Range3D::backBottomLeft()
          */
@@ -137,6 +158,7 @@ template<UnsignedInt dimensions, class T> class Range {
         /**
          * @brief Maximal coordinates (exclusive)
          *
+         * Denoted as @f$ \operatorname{max}(A) @f$ in related math equations.
          * @see @ref size(), @ref Range2D::topRight(),
          *      @ref Range3D::frontTopRight()
          */
@@ -187,9 +209,41 @@ template<UnsignedInt dimensions, class T> class Range {
          */
         Range<dimensions, T> scaled(const VectorType& scaling) const;
 
-        /** @brief Whether given point is contained inside the range */
-        constexpr bool contains(const VectorType& a) const {
-            return (a >= _min).all() && (a < _max).all();
+        /**
+         * @brief Whether given point is contained inside the range
+         *
+         * Returns @cpp true @ce if the following holds for all dimensions
+         * @f$ i @f$, @cpp false @ce otherwise. @f[
+         *      \bigwedge_i
+         *      (b_i \ge \operatorname{min}(A)_i) \land
+         *      (b_i < \operatorname{max}(A)_i)
+         * @f]
+         *
+         * The range minimum is interpreted as inclusive, maximum as exclusive.
+         * Results are undefined if the range has negative size.
+         * @see @ref intersects(), @ref contains(const Range<dimensions, T>&) const,
+         *      @ref min(), @ref max()
+         */
+        bool contains(const VectorType& b) const {
+            return (b >= _min).all() && (b < _max).all();
+        }
+
+        /**
+         * @brief Whether another range is fully contained inside this range
+         *
+         * Returns @cpp true @ce if the following holds for all dimensions
+         * @f$ i @f$, @cpp false @ce otherwise. @f[
+         *      \bigwedge_i
+         *      (\operatorname{min}(B)_i \ge \operatorname{min}(A)_i) \land
+         *      (\operatorname{max}(B)_i \le \operatorname{max}(A)_i)
+         * @f]
+         *
+         * Results are undefined if the range has negative size.
+         * @see @ref intersects(), @ref contains(const VectorType&) const,
+         *      @ref min(), @ref max()
+         */
+        bool contains(const Range<dimensions, T>& b) const {
+            return (b._min >= _min).all() && (b._max <= _max).all();
         }
 
     private:
@@ -315,6 +369,16 @@ template<class T> class Range2D: public Range<2, T> {
         /** @brief Top edge */
         T& top() { return Range<2, T>::max().y(); }
         constexpr T top() const { return Range<2, T>::max().y(); } /**< @overload */
+
+        /** @brief Range in the X axis */
+        constexpr Range<1, T> x() const {
+            return {Range<2, T>::min().x(), Range<2, T>::max().x()};
+        }
+
+        /** @brief Range in the Y axis */
+        constexpr Range<1, T> y() const {
+            return {Range<2, T>::min().y(), Range<2, T>::max().y()};
+        }
 
         /**
          * @brief Range width
@@ -469,6 +533,26 @@ template<class T> class Range3D: public Range<3, T> {
         T& front() { return Range<3, T>::max().z(); }
         constexpr T front() const { return Range<3, T>::max().z(); } /**< @overload */
 
+        /** @brief Range in the X axis */
+        constexpr Range<1, T> x() const {
+            return {Range<3, T>::min().x(), Range<3, T>::max().x()};
+        }
+
+        /** @brief Range in the Y axis */
+        constexpr Range<1, T> y() const {
+            return {Range<3, T>::min().y(), Range<3, T>::max().y()};
+        }
+
+        /** @brief Range in the Z axis */
+        constexpr Range<1, T> z() const {
+            return {Range<3, T>::min().z(), Range<3, T>::max().z()};
+        }
+
+        /** @brief Range in the XY plane */
+        constexpr Range<2, T> xy() const {
+            return {Range<3, T>::min().xy(), Range<3, T>::max().xy()};
+        }
+
         /**
          * @brief Range width
          *
@@ -531,13 +615,45 @@ template<class T> class Range3D: public Range<3, T> {
 @brief Join two ranges
 
 Returns a range that contains both input ranges. If one of the ranges is empty,
-only the other is returned. Results are undefined if any range has negative
+only the other is returned. Results are undefined if any range has a negative
 size.
 */
 template<UnsignedInt dimensions, class T> inline Range<dimensions, T> join(const Range<dimensions, T>& a, const Range<dimensions, T>& b) {
     if(a.min() == a.max()) return b;
     if(b.min() == b.max()) return a;
     return {min(a.min(), b.min()), max(a.max(), b.max())};
+}
+
+/** @relatesalso Range
+@brief Intersect two ranges
+
+Returns a range that covers the intersection of both ranges. If the
+intersection is empty, a default-constructed range is returned. The range
+minimum is interpreted as inclusive, maximum as exclusive. Results are
+undefined if any range has a negative size.
+@see @ref intersects()
+*/
+template<UnsignedInt dimensions, class T> inline Range<dimensions, T> intersect(const Range<dimensions, T>& a, const Range<dimensions, T>& b) {
+    if(!intersects(a, b)) return {};
+    return {max(a.min(), b.min()), min(a.max(), b.max())};
+}
+
+/** @relatesalso Range
+@brief Whether two ranges intersect
+
+Returns @cpp true @ce if the following holds for all dimensions @f$ i @f$,
+@cpp false @ce otherwise. @f[
+    \bigwedge_i
+    (\operatorname{max}(A)_i > \operatorname{min}(B)_i) \land
+    (\operatorname{min}(A)_i < \operatorname{max}(B)_i)
+@f]
+The range minimum is interpreted as inclusive, maximum as exclusive. Results
+are undefined if any range has a negative size.
+@see @ref Range::contains(), @ref intersect(), @ref join(), @ref Range::min(),
+    @ref Range::max()
+*/
+template<UnsignedInt dimensions, class T> inline bool intersects(const Range<dimensions, T>& a, const Range<dimensions, T>& b) {
+    return (a.max() > b.min()).all() && (a.min() < b.max()).all();
 }
 
 /** @debugoperator{Range} */

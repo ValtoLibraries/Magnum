@@ -34,24 +34,56 @@ namespace Magnum { namespace Audio { namespace Test {
 struct ContextALTest: TestSuite::Tester {
     explicit ContextALTest();
 
+    void construct();
+    void constructMove();
+
     void extensionsString();
     void isExtensionEnabled();
-
-    Context _context;
 };
 
 ContextALTest::ContextALTest() {
-    addTests({&ContextALTest::extensionsString,
+    addTests({&ContextALTest::construct,
+              &ContextALTest::constructMove,
+
+              &ContextALTest::extensionsString,
               &ContextALTest::isExtensionEnabled});
 }
 
+void ContextALTest::construct() {
+    CORRADE_VERIFY(!Context::hasCurrent());
+
+    {
+        Context context;
+        CORRADE_VERIFY(Context::hasCurrent());
+        CORRADE_COMPARE(&Context::current(), &context);
+    }
+
+    CORRADE_VERIFY(!Context::hasCurrent());
+}
+
+void ContextALTest::constructMove() {
+    Context context;
+    CORRADE_COMPARE(&Context::current(), &context);
+
+    {
+        Context second{std::move(context)};
+        CORRADE_COMPARE(&Context::current(), &second);
+    }
+
+    CORRADE_VERIFY(!Context::hasCurrent());
+}
+
 void ContextALTest::extensionsString() {
-    std::vector<std::string> extensions = _context.extensionStrings();
+    Context context;
+
+    std::vector<std::string> extensions = context.extensionStrings();
 
     CORRADE_VERIFY(!extensions.empty());
 }
 
 void ContextALTest::isExtensionEnabled() {
+    Context context;
+
     CORRADE_VERIFY(Context::current().isExtensionSupported<Extensions::ALC::EXT::ENUMERATION>());
 }
 
