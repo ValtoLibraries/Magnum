@@ -54,11 +54,16 @@ corrade_add_test(MathQuaternionTest QuaternionTest.cpp LIBRARIES MagnumMathTestL
 corrade_add_test(MathDualQuaternionTest DualQuaternionTest.cpp LIBRARIES MagnumMathTestLib)
 
 corrade_add_test(MathBezierTest BezierTest.cpp LIBRARIES MagnumMathTestLib)
+corrade_add_test(MathCubicHermiteTest CubicHermiteTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathFrustumTest FrustumTest.cpp LIBRARIES MagnumMathTestLib)
 
 corrade_add_test(MathDistanceTest DistanceTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathIntersectionTest IntersectionTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathIntersectionBenchmark IntersectionBenchmark.cpp LIBRARIES MagnumMathTestLib)
+
+corrade_add_test(MathInterpolationBenchmark InterpolationBenchmark.cpp LIBRARIES MagnumMathTestLib)
+
+corrade_add_test(MathStrictWeakOrderingTest StrictWeakOrderingTest.cpp LIBRARIES MagnumMathTestLib)
 
 set_property(TARGET
     MathVectorTest
@@ -66,6 +71,7 @@ set_property(TARGET
     MathMatrix3Test
     MathMatrix4Test
     MathComplexTest
+    MathCubicHermiteTest
     MathDualComplexTest
     MathQuaternionTest
     MathDualQuaternionTest
@@ -106,9 +112,12 @@ set_target_properties(
     MathDualQuaternionTest
 
     MathBezierTest
+    MathCubicHermiteTest
     MathFrustumTest
 
     MathDistanceTest
     MathIntersectionTest
     MathIntersectionBenchmark
+
+    MathStrictWeakOrderingTest
     PROPERTIES FOLDER "Magnum/Math/Test")

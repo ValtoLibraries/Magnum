@@ -39,7 +39,7 @@ See also:
 
 Released 2015-05-09, tagged as
 [v2015.05](https://github.com/mosra/magnum/releases/tag/v2015.05). See the
-[release announcement](http://blog.magnum.graphics/announcements/may-2015-updates/)
+[release announcement](https://blog.magnum.graphics/announcements/may-2015-updates/)
 for a high-level overview.
 
 @subsection changelog-2015-05-new New features
@@ -262,7 +262,7 @@ for a high-level overview.
 
 Released 2014-06-30, tagged as
 [v2014.06](https://github.com/mosra/magnum/releases/tag/v2014.06). See the
-[release announcement](http://blog.magnum.graphics/announcements/june-2014-updates/)
+[release announcement](https://blog.magnum.graphics/announcements/june-2014-updates/)
 for a high-level overview.
 
 @subsection changelog-2014-06-dependencies Dependency changes
@@ -421,7 +421,7 @@ for a high-level overview.
         @cpp ImageFormat @ce/@cpp ImageType @ce enums, use `Magnum/ColorFormat.h`
         header and @cpp ColorFormat @ce/@cpp ColorType @ce enums instead
     -   Removed deprecated @cpp Matrix2 @ce and @cpp Matrix2d @ce typedefs, use
-        :ref:`Matrix2x2` and :ref:`Matrix2x2d` instead
+        @ref Matrix2x2 and @ref Matrix2x2d instead
     -   Removed deprecated `Magnum/Swizzle.h` header and @cpp Magnum::swizzle() @ce
         function, use @ref Magnum/Math/Swizzle.h and @ref Math::swizzle()
         instead
@@ -444,7 +444,7 @@ for a high-level overview.
 
 Released 2014-01-21, tagged as
 [v2014.01](https://github.com/mosra/magnum/releases/tag/v2014.01). See the
-[release announcement](http://blog.magnum.graphics/announcements/january-2014-updates/)
+[release announcement](https://blog.magnum.graphics/announcements/january-2014-updates/)
 for a high-level overview.
 
 @subsection changelog-2014-01-dependencies Dependency changes
@@ -629,7 +629,7 @@ No dependency changes in this release.
 
 Released 2013-10-30, tagged as
 [v2013.10](https://github.com/mosra/magnum/releases/tag/v2013.10). See the
-[release announcement](http://blog.magnum.graphics/announcements/october-2013-updates/)
+[release announcement](https://blog.magnum.graphics/announcements/october-2013-updates/)
 for a high-level overview.
 
 @subsection changelog-2013-10-dependencies Dependency changes
@@ -641,7 +641,8 @@ for a high-level overview.
     [mosra/magnum#16](https://github.com/mosra/magnum/issues/16),
     [mosra/magnum#21](https://github.com/mosra/magnum/issues/21),
     [mosra/magnum#22](https://github.com/mosra/magnum/issues/22),
-    [mosra/magnum#23](https://github.com/mosra/magnum/pull/23).
+    [mosra/magnum#23](https://github.com/mosra/magnum/pull/23),
+    [mosra/magnum-bootstrap#2](https://github.com/mosra/magnum-bootstrap/issues/2).
 
 @subsection changelog-2013-10-new New features
 
@@ -701,6 +702,8 @@ for a high-level overview.
     [mosra/magnum#17](https://github.com/mosra/magnum/issues/17))
 -   Extension support queries depend on selected GLSL version (see
     [mosra/magnum-examples#3](https://github.com/mosra/magnum-examples/issues/3))
+-   Properly exporting `SceneGraph::AbstractCamera` symbols (see
+    [mosra/magnum-bootstrap#3](https://github.com/mosra/magnum-bootstrap/issues/3))
 
 @subsection changelog-2013-10-deprecated Deprecated APIs
 
@@ -726,6 +729,11 @@ for a high-level overview.
     verbose @cpp AbstractShaderProgram::maxVertexAttributes() @ce,
     @cpp AbstractTexture::maxLayers() @ce and @cpp Sampler::maxAnisotropy() @ce
 
+@subsection changelog-2013-10-documentation Documentation
+
+-   Fixed @ref SceneGraph bootstrap branch name (see
+    [mosra/magnum-bootstrap#1](https://github.com/mosra/magnum-bootstrap/issues/1))
+
 @subsection changelog-2013-10-compatibility Potential compatibility breakages, removed APIs
 
 No deprecated API was removed in this release.
@@ -734,7 +742,7 @@ No deprecated API was removed in this release.
 
 Released 2013-08-30, tagged as
 [v2013.08](https://github.com/mosra/magnum/releases/tag/v2013.08). See the
-[project announcement](http://blog.magnum.graphics/announcements/introducing-magnum/)
+[project announcement](https://blog.magnum.graphics/announcements/introducing-magnum/)
 for a high-level overview.
 
 */

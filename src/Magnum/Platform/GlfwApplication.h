@@ -51,6 +51,10 @@
 
 namespace Magnum { namespace Platform {
 
+namespace Implementation {
+    enum class GlfwDpiScalingPolicy: UnsignedByte;
+}
+
 /** @nosubgrouping
 @brief GLFW application
 
@@ -60,6 +64,14 @@ mouse handling with support for changing cursor and mouse tracking and warping.
 This application library is available on all platforms where GLFW is ported. It
 depends on the [GLFW](http://glfw.org) library and is built if
 `WITH_GLFWAPPLICATION` is enabled when building Magnum.
+
+@m_class{m-block m-success}
+
+@thirdparty This library makes use of [GLFW](https://www.glfw.org/), released
+    under the @m_class{m-label m-success} **zlib/libpng license**
+    ([license text](https://www.glfw.org/license.html),
+    [choosealicense.com](https://choosealicense.com/licenses/zlib/)).
+    Attribution is appreciated but not required.
 
 @section Platform-GlfwApplication-bootstrap Bootstrap application
 
@@ -114,6 +126,13 @@ MAGNUM_GLFWAPPLICATION_MAIN(MyApplication)
 If no other application header is included, this class is also aliased to
 @cpp Platform::Application @ce and the macro is aliased to
 @cpp MAGNUM_APPLICATION_MAIN() @ce to simplify porting.
+
+@section Platform-GlfwApplication-dpi DPI awareness
+
+DPI awareness behavior is consistent with @ref Sdl2Application except that iOS
+or Emscripten specifics don't apply here. See
+@ref Platform-Sdl2Application-dpi "its DPI awareness documentation" for more
+information.
 */
 class GlfwApplication {
     public:
@@ -130,6 +149,8 @@ class GlfwApplication {
         #ifdef MAGNUM_TARGET_GL
         class GLConfiguration;
         #endif
+        class ExitEvent;
+        class ViewportEvent;
         class InputEvent;
         class KeyEvent;
         class MouseEvent;
@@ -330,16 +351,57 @@ class GlfwApplication {
 
         /** @{ @name Screen handling */
 
-        #ifndef CORRADE_TARGET_EMSCRIPTEN
+    public:
         /**
          * @brief Window size
          *
          * Window size to which all input event coordinates can be related.
-         * Note that especially on HiDPI systems the reported window size might
-         * not be the same as framebuffer size.
+         * Note that, especially on HiDPI systems, it may be different from
+         * @ref framebufferSize(). Expects that a window is already created.
+         * See @ref Platform-GlfwApplication-dpi for more information.
+         * @see @ref dpiScaling()
          */
-        Vector2i windowSize();
+        Vector2i windowSize() const;
+
+        #if defined(MAGNUM_TARGET_GL) || defined(DOXYGEN_GENERATING_OUTPUT)
+        /**
+         * @brief Framebuffer size
+         *
+         * Size of the default framebuffer. Note that, especially on HiDPI
+         * systems, it may be different from @ref windowSize(). Expects that a
+         * window is already created. See @ref Platform-GlfwApplication-dpi for
+         * more information.
+         *
+         * @note This function is available only if Magnum is compiled with
+         *      @ref MAGNUM_TARGET_GL enabled (done by default). See
+         *      @ref building-features for more information.
+         *
+         * @see @ref dpiScaling()
+         */
+        Vector2i framebufferSize() const;
         #endif
+
+        /**
+         * @brief DPI scaling
+         *
+         * How the content should be scaled relative to system defaults for
+         * given @ref windowSize(). If a window is not created yet, returns
+         * zero vector, use @ref dpiScaling(const Configuration&) const for
+         * calculating a value independently. See @ref Platform-GlfwApplication-dpi
+         * for more information.
+         * @see @ref framebufferSize()
+         */
+        Vector2 dpiScaling() const { return _dpiScaling; }
+
+        /**
+         * @brief DPI scaling for given configuration
+         *
+         * Calculates DPI scaling that would be used when creating a window
+         * with given @p configuration. Takes into account DPI scaling policy
+         * and custom scaling specified on the command-line. See
+         * @ref Platform-GlfwApplication-dpi for more information.
+         */
+        Vector2 dpiScaling(const Configuration& configuration) const;
 
         /**
          * @brief Swap buffers
@@ -365,8 +427,48 @@ class GlfwApplication {
     #else
     private:
     #endif
-        /** @copydoc Sdl2Application::viewportEvent() */
-        virtual void viewportEvent(const Vector2i& size);
+        /**
+         * @brief Exit event
+         *
+         * If implemented, it allows the application to react to an application
+         * exit (for example to save its internal state) and suppress it as
+         * well (for example to show a exit confirmation dialog). The default
+         * implementation calls @ref ExitEvent::setAccepted() on @p event,
+         * which tells the application that it's safe to exit.
+         */
+        virtual void exitEvent(ExitEvent& event);
+
+        /**
+         * @brief Viewport event
+         *
+         * Called when window size changes. The default implementation does
+         * nothing. If you want to respond to size changes, you should pass the
+         * new size to @ref GL::DefaultFramebuffer::setViewport() (if using
+         * OpenGL) and possibly elsewhere (to
+         * @ref SceneGraph::Camera::setViewport(), other framebuffers...).
+         *
+         * Note that this function might not get called at all if the window
+         * size doesn't change. You should configure the initial state of your
+         * cameras, framebuffers etc. in application constructor rather than
+         * relying on this function to be called. Size of the window can be
+         * retrieved using @ref windowSize(), size of the backing framebuffer
+         * via @ref framebufferSize() and DPI scaling using @ref dpiScaling().
+         * See @ref Platform-GlfwApplication-dpi for detailed info about these
+         * values.
+         */
+        virtual void viewportEvent(ViewportEvent& event);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief viewportEvent(ViewportEvent&)
+         * @deprecated Use @ref viewportEvent(ViewportEvent&) instead.
+         *      To preserve backwards compatibility, this function is called
+         *      from @ref viewportEvent(ViewportEvent&) with
+         *      @ref ViewportEvent::windowSize() passed to @p size. Overriding
+         *      the new function will cause this function to not be called
+         *      anymore.
+         */
+        virtual CORRADE_DEPRECATED("use viewportEvent(ViewportEvent&) instead") void viewportEvent(const Vector2i& size);
+        #endif
 
         /** @copydoc Sdl2Application::drawEvent() */
         virtual void drawEvent() = 0;
@@ -469,6 +571,12 @@ class GlfwApplication {
 
         void setupCallbacks();
 
+        /* These are saved from command-line arguments */
+        bool _verboseLog{};
+        Implementation::GlfwDpiScalingPolicy _commandLineDpiScalingPolicy{};
+        Vector2 _commandLineDpiScaling;
+
+        Vector2 _dpiScaling;
         GLFWwindow* _window{nullptr};
         Flags _flags;
         #ifdef MAGNUM_TARGET_GL
@@ -497,7 +605,17 @@ class GlfwApplication::GLConfiguration {
          *
          * @see @ref Flags, @ref setFlags(), @ref Context::Flag
          */
-        enum class Flag: Int {
+        enum class Flag: UnsignedByte {
+            #ifndef MAGNUM_TARGET_GLES
+            /**
+             * Forward compatible context
+             *
+             * @requires_gl Core/compatibility profile distinction and forward
+             *      compatibility applies only to desktop GL.
+             */
+            ForwardCompatible = 1 << 0,
+            #endif
+
             #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(GLFW_CONTEXT_NO_ERROR)
             /**
              * Specifies whether errors should be generated by the context.
@@ -506,11 +624,11 @@ class GlfwApplication::GLConfiguration {
              *
              * @note Supported since GLFW 3.2.
              */
-            NoError = GLFW_CONTEXT_NO_ERROR,
+            NoError = 1 << 1,
             #endif
 
-            Debug = GLFW_OPENGL_DEBUG_CONTEXT,  /**< Debug context */
-            Stereo = GLFW_STEREO,               /**< Stereo rendering */
+            Debug = 1 << 2,     /**< Debug context */
+            Stereo = 1 << 3     /**< Stereo rendering */
         };
 
         /**
@@ -530,10 +648,38 @@ class GlfwApplication::GLConfiguration {
          * @brief Set context flags
          * @return Reference to self (for method chaining)
          *
-         * Default is no flag.
+         * Default is @ref Flag::ForwardCompatible on desktop GL and no flags
+         * on OpenGL ES.
+         * @see @ref addFlags(), @ref clearFlags(), @ref GL::Context::flags()
          */
         GLConfiguration& setFlags(Flags flags) {
             _flags = flags;
+            return *this;
+        }
+
+        /**
+         * @brief Add context flags
+         * @return Reference to self (for method chaining)
+         *
+         * Unlike @ref setFlags(), ORs the flags with existing instead of
+         * replacing them. Useful for preserving the defaults.
+         * @see @ref clearFlags()
+         */
+        GLConfiguration& addFlags(Flags flags) {
+            _flags |= flags;
+            return *this;
+        }
+
+        /**
+         * @brief Clear context flags
+         * @return Reference to self (for method chaining)
+         *
+         * Unlike @ref setFlags(), ANDs the inverse of @p flags with existing
+         * instead of replacing them. Useful for removing default flags.
+         * @see @ref addFlags()
+         */
+        GLConfiguration& clearFlags(Flags flags) {
+            _flags &= ~flags;
             return *this;
         }
 
@@ -612,18 +758,35 @@ class GlfwApplication::GLConfiguration {
         }
 
         /** @brief sRGB-capable default framebuffer */
-        bool isSRGBCapable() const {
-            return _srgbCapable;
-        }
+        bool isSrgbCapable() const { return _srgbCapable; }
 
         /**
          * @brief Set sRGB-capable default framebuffer
+         *
+         * Default is @cpp false @ce. See also
+         * @ref GL::Renderer::Feature::FramebufferSrgb.
          * @return Reference to self (for method chaining)
          */
-        GLConfiguration& setSRGBCapable(bool enabled) {
+        GLConfiguration& setSrgbCapable(bool enabled) {
             _srgbCapable = enabled;
             return *this;
         }
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /**
+         * @brief @copybrief isSrgbCapable()
+         * @deprecated Use @ref isSrgbCapable() instead.
+         */
+        CORRADE_DEPRECATED("use isSrgbCapable() instead") bool isSRGBCapable() const { return isSrgbCapable(); }
+
+        /**
+         * @brief @copybrief setSrgbCapable()
+         * @deprecated Use @ref setSrgbCapable() instead.
+         */
+        CORRADE_DEPRECATED("use setSrgbCapable() instead") GLConfiguration& setSRGBCapable(bool enabled) {
+            return setSrgbCapable(enabled);
+        }
+        #endif
 
     private:
         Vector4i _colorBufferSize;
@@ -636,6 +799,29 @@ class GlfwApplication::GLConfiguration {
 
 CORRADE_ENUMSET_OPERATORS(GlfwApplication::GLConfiguration::Flags)
 #endif
+
+namespace Implementation {
+    enum class GlfwDpiScalingPolicy: UnsignedByte {
+        /* Using 0 for an "unset" value */
+
+        #ifdef CORRADE_TARGET_APPLE
+        Framebuffer = 1,
+        #endif
+
+        #ifndef CORRADE_TARGET_APPLE
+        Virtual = 2,
+
+        Physical = 3,
+        #endif
+
+        Default
+            #ifdef CORRADE_TARGET_APPLE
+            = Framebuffer
+            #else
+            = Virtual
+            #endif
+    };
+}
 
 /**
 @brief Configuration
@@ -664,14 +850,6 @@ class GlfwApplication::Configuration {
         enum class WindowFlag: UnsignedShort {
             Fullscreen = 1 << 0,   /**< Fullscreen window */
             Resizable = 1 << 1,    /**< Resizable window */
-
-            #ifdef MAGNUM_BUILD_DEPRECATED
-            /** @copydoc WindowFlag::Resizable
-             * @deprecated Use @ref WindowFlag::Resizable instead.
-             */
-            Resizeable CORRADE_DEPRECATED_ENUM("use WindowFlag::Resizable instead") = UnsignedShort(WindowFlag::Resizable),
-            #endif
-
             Hidden = 1 << 2,       /**< Hidden window */
 
             #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(GLFW_MAXIMIZED)
@@ -716,6 +894,62 @@ class GlfwApplication::Configuration {
          */
         typedef Containers::EnumSet<WindowFlag> WindowFlags;
 
+        /**
+         * @brief DPI scaling policy
+         *
+         * DPI scaling policy when requesting a particular window size. Can
+         * be overriden on command-line using `--magnum-dpi-scaling` or via
+         * the `MAGNUM_DPI_SCALING` environment variable.
+         * @see @ref setSize(), @ref Platform-Sdl2Application-dpi
+         */
+        #ifdef DOXYGEN_GENERATING_OUTPUT
+        enum class DpiScalingPolicy: UnsignedByte {
+            /**
+             * Framebuffer DPI scaling. The window will have the same size as
+             * requested, but the framebuffer size will be different. Supported
+             * only on macOS and iOS and is also the only supported value
+             * there.
+             */
+            Framebuffer,
+
+            /**
+             * Virtual DPI scaling. Scales the window based on UI scaling
+             * setting in the system. Falls back to
+             * @ref DpiScalingPolicy::Physical on platforms that don't support
+             * it. Supported only on desktop platforms (except macOS) and it's
+             * the default there.
+             *
+             * Equivalent to `--magnum-dpi-scaling virtual` passed on
+             * command-line.
+             */
+            Virtual,
+
+            /**
+             * Physical DPI scaling. Takes the requested window size as a
+             * physical size that a window would have on platform's default DPI
+             * and scales it to have the same size on given display physical
+             * DPI. On platforms that don't have a concept of a window it
+             * causes the framebuffer to match screen pixels 1:1 without any
+             * scaling. Supported on desktop platforms except macOS and on
+             * mobile and web. Default on mobile and web.
+             *
+             * Equivalent to `--magnum-dpi-scaling physical` passed on
+             * command-line.
+             */
+            Physical,
+
+            /**
+             * Default policy for current platform. Alias to one of
+             * @ref DpiScalingPolicy::Framebuffer, @ref DpiScalingPolicy::Virtual
+             * or @ref DpiScalingPolicy::Physical depending on platform. See
+             * @ref Platform-Sdl2Application-dpi for details.
+             */
+            Default
+        };
+        #else
+        typedef Implementation::GlfwDpiScalingPolicy DpiScalingPolicy;
+        #endif
+
         /** @brief Cursor mode */
         enum class CursorMode: Int {
             /** Visible unconstrained cursor */
@@ -749,13 +983,57 @@ class GlfwApplication::Configuration {
         Vector2i size() const { return _size; }
 
         /**
+         * @brief DPI scaling policy
+         *
+         * If @ref dpiScaling() is non-zero, it has a priority over this value.
+         * The `--magnum-dpi-scaling` command-line option has a priority over
+         * any application-set value.
+         * @see @ref setSize(const Vector2i&, DpiScalingPolicy)
+         */
+        DpiScalingPolicy dpiScalingPolicy() const { return _dpiScalingPolicy; }
+
+        /**
+         * @brief Custom DPI scaling
+         *
+         * If zero, then @ref dpiScalingPolicy() has a priority over this
+         * value. The `--magnum-dpi-scaling` command-line option has a priority
+         * over any application-set value.
+         * @see @ref setSize(const Vector2i&, const Vector2&)
+         * @todo change this on a DPI change event (GLFW 3.3 has a callback:
+         *  https://github.com/mosra/magnum/issues/243#issuecomment-388384089)
+         */
+        Vector2 dpiScaling() const { return _dpiScaling; }
+
+        /**
          * @brief Set window size
+         * @param size              Desired window size
+         * @param dpiScalingPolicy  Policy based on which DPI scaling will be set
          * @return Reference to self (for method chaining)
          *
-         * Default is @cpp {800, 600} @ce.
+         * Default is @cpp {800, 600} @ce. See @ref Platform-GlfwApplication-dpi
+         * for more information.
+         * @see @ref setSize(const Vector2i&, const Vector2&)
          */
-        Configuration& setSize(const Vector2i& size) {
+        Configuration& setSize(const Vector2i& size, DpiScalingPolicy dpiScalingPolicy = DpiScalingPolicy::Default) {
             _size = size;
+            _dpiScalingPolicy = dpiScalingPolicy;
+            return *this;
+        }
+
+        /**
+         * @brief Set window size with custom DPI scaling
+         * @param size              Desired window size
+         * @param dpiScaling        Custom DPI scaling value
+         *
+         * Compared to @ref setSize(const Vector2i&, DpiScalingPolicy) which
+         * autodetects the DPI scaling value according to given policy, this
+         * function sets the DPI scaling directly. The resulting
+         * @ref GlfwApplication::windowSize() is @cpp size*dpiScaling @ce and
+         * @ref GlfwApplication::dpiScaling() is @p dpiScaling.
+         */
+        Configuration& setSize(const Vector2i& size, const Vector2& dpiScaling) {
+            _size = size;
+            _dpiScaling = dpiScaling;
             return *this;
         }
 
@@ -831,17 +1109,17 @@ class GlfwApplication::Configuration {
             return *this;
         }
 
-        /** @brief @copybrief GLConfiguration::isSRGBCapable()
-         * @deprecated Use @ref GLConfiguration::isSRGBCapable() instead.
+        /** @brief @copybrief GLConfiguration::isSrgbCapable()
+         * @deprecated Use @ref GLConfiguration::isSrgbCapable() instead.
          */
         CORRADE_DEPRECATED("use GLConfiguration::isSRGBCapable() instead") bool isSRGBCapable() const {
             return _srgbCapable;
         }
 
-        /** @brief @copybrief GLConfiguration::setSRGBCapable()
-         * @deprecated Use @ref GLConfiguration::setSRGBCapable() instead.
+        /** @brief @copybrief GLConfiguration::setSrgbCapable()
+         * @deprecated Use @ref GLConfiguration::setSrgbCapable() instead.
          */
-        CORRADE_DEPRECATED("use GLConfiguration::setSRGBCapable() instead") Configuration& setSRGBCapable(bool enabled) {
+        CORRADE_DEPRECATED("use GLConfiguration::setSrgbCapable() instead") Configuration& setSRGBCapable(bool enabled) {
             _srgbCapable = enabled;
             return *this;
         }
@@ -851,6 +1129,8 @@ class GlfwApplication::Configuration {
         std::string _title;
         Vector2i _size;
         WindowFlags _windowFlags;
+        DpiScalingPolicy _dpiScalingPolicy;
+        Vector2 _dpiScaling;
         CursorMode _cursorMode;
         #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
         Int _sampleCount;
@@ -861,6 +1141,92 @@ class GlfwApplication::Configuration {
 };
 
 CORRADE_ENUMSET_OPERATORS(GlfwApplication::Configuration::WindowFlags)
+
+/**
+@brief Exit event
+
+@see @ref exitEvent()
+*/
+class GlfwApplication::ExitEvent {
+    public:
+        /** @brief Copying is not allowed */
+        ExitEvent(const ExitEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ExitEvent(ExitEvent&&) = delete;
+
+        /** @brief Copying is not allowed */
+        ExitEvent& operator=(const ExitEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ExitEvent& operator=(ExitEvent&&) = delete;
+
+        /** @brief Whether the event is accepted */
+        bool isAccepted() const { return _accepted; }
+
+        /**
+         * @brief Set event as accepted
+         *
+         * If the event is ignored (i.e., not set as accepted) in
+         * @ref exitEvent(), the application won't exit. Default implementation
+         * of @ref exitEvent() accepts the event.
+         */
+        void setAccepted(bool accepted = true) { _accepted = accepted; }
+
+    private:
+        friend GlfwApplication;
+
+        explicit ExitEvent(): _accepted(false) {}
+
+        bool _accepted;
+};
+
+/**
+@brief Viewport event
+
+@see @ref viewportEvent()
+*/
+class GlfwApplication::ViewportEvent {
+    public:
+        /**
+         * @brief Window size
+         *
+         * On some platforms with HiDPI displays, window size can be different
+         * from @ref framebufferSize(). See @ref Platform-GlfwApplication-dpi
+         * for more information.
+         * @see @ref GlfwApplication::windowSize()
+         */
+        Vector2i windowSize() const { return _windowSize; }
+
+        /**
+         * @brief Framebuffer size
+         *
+         * On some platforms with HiDPI displays, framebuffer size can be
+         * different from @ref windowSize(). See
+         * @ref Platform-GlfwApplication-dpi for more information.
+         * @see @ref GlfwApplication::framebufferSize()
+         */
+        Vector2i framebufferSize() const { return _framebufferSize; }
+
+        /**
+         * @brief DPI scaling
+         *
+         * On some platforms moving an app between displays can result in DPI
+         * scaling value being changed in tandem with a window/framebuffer
+         * size. Simply resizing a window doesn't change the DPI scaling value.
+         * See @ref Platform-GlfwApplication-dpi for more information.
+         * @see @ref GlfwApplication::dpiScaling()
+         */
+        Vector2 dpiScaling() const { return _dpiScaling; }
+
+    private:
+        friend GlfwApplication;
+
+        explicit ViewportEvent(const Vector2i& windowSize, const Vector2i& framebufferSize, const Vector2& dpiScaling): _windowSize{windowSize}, _framebufferSize{framebufferSize}, _dpiScaling{dpiScaling} {}
+
+        Vector2i _windowSize, _framebufferSize;
+        Vector2 _dpiScaling;
+};
 
 /**
 @brief Base for input events
@@ -930,10 +1296,10 @@ class GlfwApplication::InputEvent {
         void setAccepted(bool accepted = true) { _accepted = accepted; }
 
         /** @copydoc Sdl2Application::InputEvent::isAccepted() */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
     protected:
-        constexpr explicit InputEvent(): _accepted(false) {}
+        explicit InputEvent(): _accepted(false) {}
 
         ~InputEvent() = default;
 
@@ -1095,12 +1461,13 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
             Y = GLFW_KEY_Y,                     /**< Letter Y */
             Z = GLFW_KEY_Z,                     /**< Letter Z */
 
-            /* Function keys */
             CapsLock = GLFW_KEY_CAPS_LOCK,      /**< Caps lock */
             ScrollLock = GLFW_KEY_SCROLL_LOCK,  /**< Scroll lock */
             NumLock = GLFW_KEY_NUM_LOCK,        /**< Num lock */
             PrintScreen = GLFW_KEY_PRINT_SCREEN,/**< Print screen */
             Pause = GLFW_KEY_PAUSE,             /**< Pause */
+            Menu = GLFW_KEY_MENU,               /**< Menu */
+
             NumZero = GLFW_KEY_KP_0,            /**< Numpad zero */
             NumOne = GLFW_KEY_KP_1,             /**< Numpad one */
             NumTwo = GLFW_KEY_KP_2,             /**< Numpad two */
@@ -1117,8 +1484,7 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
             NumSubtract = GLFW_KEY_KP_SUBTRACT, /**< Numpad subtract */
             NumAdd = GLFW_KEY_KP_ADD,           /**< Numpad add */
             NumEnter = GLFW_KEY_KP_ENTER,       /**< Numpad enter */
-            NumEqual = GLFW_KEY_KP_EQUAL,       /**< Numpad equal */
-            Menu = GLFW_KEY_MENU                /**< Menu */
+            NumEqual = GLFW_KEY_KP_EQUAL        /**< Numpad equal */
         };
 
         #if defined(DOXYGEN_GENERATING_OUTPUT) || GLFW_VERSION_MAJOR*100 + GLFW_VERSION_MINOR >= 302
@@ -1135,7 +1501,7 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
         #endif
 
         /** @copydoc Sdl2Application::KeyEvent::key() */
-        constexpr Key key() const { return _key; }
+        Key key() const { return _key; }
 
         #if defined(DOXYGEN_GENERATING_OUTPUT) || GLFW_VERSION_MAJOR*100 + GLFW_VERSION_MINOR >= 302
         /**
@@ -1152,13 +1518,13 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
         #endif
 
         /** @brief Modifiers */
-        constexpr Modifiers modifiers() const { return _modifiers; }
+        Modifiers modifiers() const { return _modifiers; }
 
         /** @copydoc Sdl2Application::KeyEvent::isRepeated() */
-        constexpr bool isRepeated() const { return _repeated; }
+        bool isRepeated() const { return _repeated; }
 
     private:
-        constexpr explicit KeyEvent(Key key, Modifiers modifiers, bool repeated): _key{key}, _modifiers{modifiers}, _repeated{repeated} {}
+        explicit KeyEvent(Key key, Modifiers modifiers, bool repeated): _key{key}, _modifiers{modifiers}, _repeated{repeated} {}
 
         const Key _key;
         const Modifiers _modifiers;
@@ -1192,33 +1558,19 @@ class GlfwApplication::MouseEvent: public GlfwApplication::InputEvent {
             Button6 = GLFW_MOUSE_BUTTON_6,        /**< Mouse button 6 */
             Button7 = GLFW_MOUSE_BUTTON_7,        /**< Mouse button 7 */
             Button8 = GLFW_MOUSE_BUTTON_8,        /**< Mouse button 8 */
-
-            #ifdef MAGNUM_BUILD_DEPRECATED
-            /**
-             * Wheel up
-             * @deprecated Use @ref MouseScrollEvent and @ref mouseScrollEvent() instead.
-             */
-            WheelUp CORRADE_DEPRECATED_ENUM("use mouseScrollEvent() and MouseScrollEvent instead") = GLFW_MOUSE_BUTTON_LAST + 1,
-
-            /**
-             * Wheel down
-             * @deprecated Use @ref MouseScrollEvent and @ref mouseScrollEvent() instead.
-             */
-            WheelDown CORRADE_DEPRECATED_ENUM("use mouseScrollEvent() and MouseScrollEvent instead") = GLFW_MOUSE_BUTTON_LAST + 2
-            #endif
         };
 
         /** @brief Button */
-        constexpr Button button() const { return _button; }
+        Button button() const { return _button; }
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
         /** @brief Modifiers */
-        constexpr Modifiers modifiers() const { return _modifiers; }
+        Modifiers modifiers() const { return _modifiers; }
 
     private:
-        constexpr explicit MouseEvent(Button button, const Vector2i& position, Modifiers modifiers): _button{button}, _position{position}, _modifiers{modifiers} {}
+        explicit MouseEvent(Button button, const Vector2i& position, Modifiers modifiers): _button{button}, _position{position}, _modifiers{modifiers} {}
 
         const Button _button;
         const Vector2i _position;
@@ -1291,6 +1643,13 @@ class GlfwApplication::MouseScrollEvent: public GlfwApplication::InputEvent {
         Vector2 offset() const { return _offset; }
 
         /**
+         * @brief Position
+         *
+         * Lazily populated on first request.
+         */
+        Vector2i position();
+
+        /**
          * @brief Modifiers
          *
          * Lazily populated on first request.
@@ -1302,6 +1661,7 @@ class GlfwApplication::MouseScrollEvent: public GlfwApplication::InputEvent {
 
         GLFWwindow* _window;
         const Vector2 _offset;
+        Containers::Optional<Vector2i> _position;
         Containers::Optional<Modifiers> _modifiers;
 };
 
@@ -1327,7 +1687,7 @@ class GlfwApplication::TextInputEvent {
         TextInputEvent& operator=(TextInputEvent&&) = delete;
 
         /** @brief Whether the event is accepted */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
         /**
          * @brief Set event as accepted
@@ -1340,10 +1700,10 @@ class GlfwApplication::TextInputEvent {
         void setAccepted(bool accepted = true) { _accepted = accepted; }
 
         /** @brief Input text in UTF-8 */
-        constexpr Containers::ArrayView<const char> text() const { return _text; }
+        Containers::ArrayView<const char> text() const { return _text; }
 
     private:
-        constexpr explicit TextInputEvent(Containers::ArrayView<const char> text): _text{text}, _accepted{false} {}
+        explicit TextInputEvent(Containers::ArrayView<const char> text): _text{text}, _accepted{false} {}
 
         Containers::ArrayView<const char> _text;
         bool _accepted;

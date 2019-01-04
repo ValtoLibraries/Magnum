@@ -39,6 +39,7 @@ struct SamplerTest: TestSuite::Tester {
     void mapMipmap();
     void mapMipmapInvalid();
     void mapWrapping();
+    void mapWrappingArray();
     void mapWrappingInvalid();
     void mapWrappingUnsupported();
 
@@ -60,6 +61,7 @@ SamplerTest::SamplerTest() {
               &SamplerTest::mapMipmap,
               &SamplerTest::mapMipmapInvalid,
               &SamplerTest::mapWrapping,
+              &SamplerTest::mapWrappingArray,
               &SamplerTest::mapWrappingInvalid,
               &SamplerTest::mapWrappingUnsupported,
 
@@ -102,7 +104,7 @@ void SamplerTest::mapMipmapInvalid() {
 
     samplerMipmap(Magnum::SamplerMipmap(0x123));
     CORRADE_COMPARE(out.str(),
-        "GL::samplerMipmap(): invalid filter SamplerMipmap(0x123)\n");
+        "GL::samplerMipmap(): invalid mode SamplerMipmap(0x123)\n");
 }
 
 void SamplerTest::mapWrapping() {
@@ -126,6 +128,10 @@ void SamplerTest::mapWrapping() {
     #endif
 }
 
+void SamplerTest::mapWrappingArray() {
+    CORRADE_COMPARE(samplerWrapping<2>({Magnum::SamplerWrapping::Repeat, Magnum::SamplerWrapping::ClampToEdge}), (Array2D<SamplerWrapping>{SamplerWrapping::Repeat, SamplerWrapping::ClampToEdge}));
+}
+
 void SamplerTest::mapWrappingInvalid() {
     std::ostringstream out;
     Error redirectError{&out};
@@ -141,10 +147,13 @@ void SamplerTest::mapWrappingUnsupported() {
     #ifndef MAGNUM_TARGET_GLES
     CORRADE_SKIP("All pixel formats are supported on desktop");
     #else
-    std::ostringstream out;
-    Error redirectError{&out};
+    CORRADE_VERIFY(!hasSamplerWrapping(Magnum::SamplerWrapping::MirrorClampToEdge));
 
-    samplerWrapping(Magnum::SamplerWrapping::MirrorClampToEdge);
+    std::ostringstream out;
+    {
+        Error redirectError{&out};
+        samplerWrapping(Magnum::SamplerWrapping::MirrorClampToEdge);
+    }
     CORRADE_COMPARE(out.str(),
         "GL::samplerWrapping(): wrapping SamplerWrapping::MirrorClampToEdge is not supported on this target\n");
     #endif

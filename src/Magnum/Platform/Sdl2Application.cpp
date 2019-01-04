@@ -26,6 +26,7 @@
 #include "Sdl2Application.h"
 
 #include <cstring>
+#include <SDL.h>
 #ifndef CORRADE_TARGET_EMSCRIPTEN
 #include <tuple>
 #else
@@ -34,6 +35,7 @@
 
 #include "Magnum/Math/Range.h"
 #include "Magnum/Platform/ScreenedApplication.hpp"
+#include "Magnum/Platform/Implementation/dpiScaling.hpp"
 
 #ifdef MAGNUM_TARGET_GL
 #include "Magnum/GL/Version.h"
@@ -78,18 +80,55 @@ Sdl2Application::Sdl2Application(const Arguments& arguments, NoCreateT):
     _minimalLoopPeriod{0},
     #endif
     #ifdef MAGNUM_TARGET_GL
-    _glContext{nullptr}, _context{new GLContext{NoCreate, arguments.argc, arguments.argv}},
+    _glContext{nullptr},
     #endif
     _flags{Flag::Redraw}
 {
+    Utility::Arguments args{Implementation::windowScalingArguments()};
+    #ifdef MAGNUM_TARGET_GL
+    _context.reset(new GLContext{NoCreate, args, arguments.argc, arguments.argv});
+    #else
+    args.parse(arguments.argc, arguments.argv);
+    #endif
+
+    /* Available since 2.0.4, disables interception of SIGINT and SIGTERM so
+       it's possible to Ctrl-C the application even if exitEvent() doesn't set
+       event.setAccepted(). */
+    #ifdef SDL_HINT_NO_SIGNAL_HANDLERS
+    SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+    #endif
+    /* Available since 2.0.8, disables compositor bypass on X11, which causes
+       flickering on KWin as the compositor gets shut down on every startup */
+    #ifdef SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
+    SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+    #endif
+
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
         Error() << "Cannot initialize SDL.";
         std::exit(1);
     }
 
-    #ifndef MAGNUM_TARGET_GL
-    static_cast<void>(arguments);
+    /* Save command-line arguments */
+    if(args.value("log") == "verbose") _verboseLog = true;
+    const std::string dpiScaling = args.value("dpi-scaling");
+    if(dpiScaling == "default")
+        _commandLineDpiScalingPolicy = Implementation::Sdl2DpiScalingPolicy::Default;
+    #ifdef CORRADE_TARGET_APPLE
+    else if(dpiScaling == "framebuffer")
+        _commandLineDpiScalingPolicy = Implementation::Sdl2DpiScalingPolicy::Framebuffer;
     #endif
+    #ifndef CORRADE_TARGET_APPLE
+    #if !defined(CORRADE_TARGET_EMSCRIPTEN) && !defined(CORRADE_TARGET_ANDROID)
+    else if(dpiScaling == "virtual")
+        _commandLineDpiScalingPolicy = Implementation::Sdl2DpiScalingPolicy::Virtual;
+    #endif
+    else if(dpiScaling == "physical")
+        _commandLineDpiScalingPolicy = Implementation::Sdl2DpiScalingPolicy::Physical;
+    #endif
+    else if(dpiScaling.find_first_of(" \t\n") != std::string::npos)
+        _commandLineDpiScaling = args.value<Vector2>("dpi-scaling");
+    else
+        _commandLineDpiScaling = Vector2{args.value<Float>("dpi-scaling")};
 }
 
 void Sdl2Application::create() {
@@ -106,11 +145,103 @@ void Sdl2Application::create(const Configuration& configuration, const GLConfigu
 }
 #endif
 
+Vector2 Sdl2Application::dpiScaling(const Configuration& configuration) const {
+    std::ostream* verbose = _verboseLog ? Debug::output() : nullptr;
+
+    /* Print a helpful warning in case some extra steps are needed for HiDPI
+       support */
+    #ifdef CORRADE_TARGET_APPLE
+    if(!Implementation::isAppleBundleHiDpiEnabled())
+        Warning{} << "Platform::Sdl2Application: warning: the executable is not a HiDPI-enabled app bundle";
+    #elif defined(CORRADE_TARGET_WINDOWS)
+    /** @todo */
+    #endif
+
+    /* Use values from the configuration only if not overriden on command line.
+       In any case explicit scaling has a precedence before the policy. */
+    Implementation::Sdl2DpiScalingPolicy dpiScalingPolicy{};
+    if(!_commandLineDpiScaling.isZero()) {
+        Debug{verbose} << "Platform::Sdl2Application: user-defined DPI scaling" << _commandLineDpiScaling.x();
+        return _commandLineDpiScaling;
+    } else if(UnsignedByte(_commandLineDpiScalingPolicy)) {
+        dpiScalingPolicy = _commandLineDpiScalingPolicy;
+    } else if(!configuration.dpiScaling().isZero()) {
+        Debug{verbose} << "Platform::Sdl2Application: app-defined DPI scaling" << _commandLineDpiScaling.x();
+        return configuration.dpiScaling();
+    } else {
+        dpiScalingPolicy = configuration.dpiScalingPolicy();
+    }
+
+    /* There's no choice on Apple, it's all controlled by the plist file. So
+       unless someone specified custom scaling via config or command-line
+       above, return the default. */
+    #ifdef CORRADE_TARGET_APPLE
+    return Vector2{1.0f};
+
+    /* Otherwise there's a choice between virtual and physical DPI scaling */
+    #else
+    /* Try to get virtual DPI scaling first, if supported and requested */
+    #if !defined(CORRADE_TARGET_EMSCRIPTEN) && !defined(CORRADE_TARGET_ANDROID)
+    if(dpiScalingPolicy == Implementation::Sdl2DpiScalingPolicy::Virtual) {
+        /* Use Xft.dpi on X11 */
+        #ifdef _MAGNUM_PLATFORM_USE_X11
+        const Vector2 dpiScaling{Implementation::x11DpiScaling()};
+        if(!dpiScaling.isZero()) {
+            Debug{verbose} << "Platform::Sdl2Application: virtual DPI scaling" << dpiScaling.x();
+            return dpiScaling;
+        }
+
+        /* Otherwise ¯\_(ツ)_/¯ */
+        #else
+        Debug{verbose} << "Platform::Sdl2Application: sorry, virtual DPI scaling not implemented on this platform yet, falling back to physical DPI scaling";
+        #endif
+    }
+    #endif
+
+    /* At this point, either the virtual DPI query failed or a physical DPI
+       scaling is requested */
+    #if !defined(CORRADE_TARGET_EMSCRIPTEN) && !defined(CORRADE_TARGET_ANDROID)
+    CORRADE_INTERNAL_ASSERT(dpiScalingPolicy == Implementation::Sdl2DpiScalingPolicy::Virtual || dpiScalingPolicy == Implementation::Sdl2DpiScalingPolicy::Physical);
+    #else
+    CORRADE_INTERNAL_ASSERT(dpiScalingPolicy == Implementation::Sdl2DpiScalingPolicy::Physical);
+    #endif
+
+    /* Take device pixel ratio on Emscripten */
+    #ifdef CORRADE_TARGET_EMSCRIPTEN
+    const Vector2 dpiScaling{Implementation::emscriptenDpiScaling()};
+    Debug{verbose} << "Platform::Sdl2Application: physical DPI scaling" << dpiScaling.x();
+    return dpiScaling;
+
+    /* Take display DPI elsewhere. Enable only on Linux for now, I need to
+       test this properly on Windows first. Also only since SDL 2.0.4. */
+    #elif defined(CORRADE_TARGET_UNIX) && SDL_VERSION_ATLEAST(2, 0, 4)
+    Vector2 dpi;
+    if(SDL_GetDisplayDPI(0, nullptr, &dpi.x(), &dpi.y()) == 0) {
+        const Vector2 dpiScaling{dpi/96.0f};
+        Debug{verbose} << "Platform::Sdl2Application: physical DPI scaling" << dpiScaling;
+        return dpiScaling;
+    }
+
+    Warning{} << "Platform::Sdl2Application: can't get physical display DPI, falling back to no scaling:" << SDL_GetError();
+    return Vector2{1.0f};
+
+    /* Not implemented otherwise */
+    #else
+    Debug{verbose} << "Platform::Sdl2Application: sorry, physical DPI scaling not implemented on this platform yet";
+    return Vector2{1.0f};
+    #endif
+    #endif
+}
+
 bool Sdl2Application::tryCreate(const Configuration& configuration) {
     #ifdef MAGNUM_TARGET_GL
     if(!(configuration.windowFlags() & Configuration::WindowFlag::Contextless))
         return tryCreate(configuration, GLConfiguration{});
     #endif
+
+    /* Scale window based on DPI */
+    _dpiScaling = dpiScaling(configuration);
+    const Vector2i scaledWindowSize = configuration.size()*_dpiScaling;
 
     #ifndef CORRADE_TARGET_EMSCRIPTEN
     /* Create window */
@@ -121,15 +252,15 @@ bool Sdl2Application::tryCreate(const Configuration& configuration) {
         nullptr,
         #endif
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        configuration.size().x(), configuration.size().y(),
-        Uint32(configuration.windowFlags()&~Configuration::WindowFlag::Contextless))))
+        scaledWindowSize.x(), scaledWindowSize.y(),
+        SDL_WINDOW_ALLOW_HIGHDPI|Uint32(configuration.windowFlags() & ~Configuration::WindowFlag::Contextless))))
     {
         Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
         return false;
     }
     #else
     /* Emscripten-specific initialization */
-    if(!(_glContext = SDL_SetVideoMode(configuration.size().x(), configuration.size().y(), 24, SDL_OPENGL|SDL_HWSURFACE|SDL_DOUBLEBUF))) {
+    if(!(_glContext = SDL_SetVideoMode(scaledWindowSize.x(), scaledWindowSize.y(), 24, SDL_OPENGL|SDL_HWSURFACE|SDL_DOUBLEBUF))) {
         Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
         return false;
     }
@@ -150,8 +281,13 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
     GLConfiguration glConfiguration{_glConfiguration};
     CORRADE_IGNORE_DEPRECATED_PUSH
     #ifndef CORRADE_TARGET_EMSCRIPTEN
+    #ifndef MAGNUM_TARGET_GLES
+    if(configuration.flags() && glConfiguration.flags() == GLConfiguration::Flag::ForwardCompatible)
+        glConfiguration.setFlags(configuration.flags()|GLConfiguration::Flag::ForwardCompatible);
+    #else
     if(configuration.flags() && !glConfiguration.flags())
         glConfiguration.setFlags(configuration.flags());
+    #endif
     if(configuration.version() != GL::Version::None && glConfiguration.version() == GL::Version::None)
         glConfiguration.setVersion(configuration.version());
     #endif
@@ -181,11 +317,15 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
 
     #ifndef CORRADE_TARGET_EMSCRIPTEN
     /* sRGB */
-    SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, glConfiguration.isSRGBCapable());
+    SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, glConfiguration.isSrgbCapable());
     #endif
 
     /** @todo Remove when Emscripten has proper SDL2 support */
     #ifndef CORRADE_TARGET_EMSCRIPTEN
+    /* Scale window based on DPI */
+    _dpiScaling = dpiScaling(configuration);
+    const Vector2i scaledWindowSize = configuration.size()*_dpiScaling;
+
     /* Set context version, if user-specified */
     if(glConfiguration.version() != GL::Version::None) {
         Int major, minor;
@@ -217,7 +357,7 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
         #endif
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(glConfiguration.flags())|SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(glConfiguration.flags()));
         #else
         /* For ES the major context version is compile-time constant */
         #ifdef MAGNUM_TARGET_GLES3
@@ -241,8 +381,8 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
         nullptr,
         #endif
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        configuration.size().x(), configuration.size().y(),
-        SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|Uint32(configuration.windowFlags()))))
+        scaledWindowSize.x(), scaledWindowSize.y(),
+        SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|SDL_WINDOW_ALLOW_HIGHDPI|Uint32(configuration.windowFlags()))))
     {
         Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
         return false;
@@ -290,12 +430,13 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(glConfiguration.flags()));
+        /** @todo or keep the fwcompat? */
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, int(glConfiguration.flags() & ~GLConfiguration::Flag::ForwardCompatible));
 
         if(!(_window = SDL_CreateWindow(configuration.title().data(),
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            configuration.size().x(), configuration.size().y(),
-            SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|Uint32(configuration.windowFlags()&~Configuration::WindowFlag::Contextless))))
+            scaledWindowSize.x(), scaledWindowSize.y(),
+            SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|SDL_WINDOW_ALLOW_HIGHDPI|Uint32(configuration.windowFlags()&~Configuration::WindowFlag::Contextless))))
         {
             Error() << "Platform::Sdl2Application::tryCreate(): cannot create window:" << SDL_GetError();
             return false;
@@ -319,13 +460,47 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
        in so all other code can assume that the viewport is set to sane values.
        Fortunately on iOS we also don't have to load any function pointers so
        it's safe to do the glViewport() call as it is linked statically. */
-    Vector2i drawableSize;
-    SDL_GL_GetDrawableSize(_window, &drawableSize.x(), &drawableSize.y());
-    glViewport(0, 0, drawableSize.x(), drawableSize.y());
+    {
+        const Vector2i viewport = framebufferSize();
+        glViewport(0, 0, viewport.x(), viewport.y());
+    }
     #endif
-    #else
+
     /* Emscripten-specific initialization */
-    if(!(_glContext = SDL_SetVideoMode(configuration.size().x(), configuration.size().y(), 24, SDL_OPENGL|SDL_HWSURFACE|SDL_DOUBLEBUF))) {
+    #else
+    /* Get CSS canvas size. This is used later to detect canvas resizes and
+       fire viewport events, because Emscripten doesn't do that. Related info:
+       https://github.com/kripken/emscripten/issues/1731 */
+    /** @todo don't hardcode "module" here, make it configurable from outside */
+    {
+        Vector2d canvasSize;
+        emscripten_get_element_css_size("module", &canvasSize.x(), &canvasSize.y());
+        _lastKnownCanvasSize = Vector2i{canvasSize};
+    }
+
+    /* By default Emscripten creates a 300x150 canvas. That's so freaking
+       random I'm getting mad. Use the real (CSS pixels) canvas size instead,
+       if the size is not hardcoded from the configuration. This is then
+       multiplied by the DPI scaling. */
+    Vector2i windowSize;
+    if(!configuration.size().isZero()) {
+        windowSize = configuration.size();
+    } else {
+        windowSize = _lastKnownCanvasSize;
+        Debug{_verboseLog ? Debug::output() : nullptr} << "Platform::Sdl2Application::tryCreate(): autodetected canvas size" << windowSize;
+    }
+    _dpiScaling = dpiScaling(configuration);
+    const Vector2i scaledWindowSize = windowSize*_dpiScaling;
+
+    Uint32 flags = SDL_OPENGL|SDL_HWSURFACE|SDL_DOUBLEBUF;
+    if(configuration.windowFlags() & Configuration::WindowFlag::Resizable) {
+        _flags |= Flag::Resizable;
+        /* Actually not sure if this makes any difference:
+           https://github.com/kripken/emscripten/issues/1731 */
+        flags |= SDL_RESIZABLE;
+    }
+
+    if(!(_glContext = SDL_SetVideoMode(scaledWindowSize.x(), scaledWindowSize.y(), 24, flags))) {
         Error() << "Platform::Sdl2Application::tryCreate(): cannot create context:" << SDL_GetError();
         return false;
     }
@@ -354,15 +529,38 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
 }
 #endif
 
-Vector2i Sdl2Application::windowSize() {
-    #ifndef CORRADE_TARGET_EMSCRIPTEN
+Vector2i Sdl2Application::windowSize() const {
     Vector2i size;
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    CORRADE_ASSERT(_window, "Platform::Sdl2Application::windowSize(): no window opened", {});
     SDL_GetWindowSize(_window, &size.x(), &size.y());
-    return size;
     #else
-    return {_glContext->w, _glContext->h};
+    CORRADE_ASSERT(_glContext, "Platform::Sdl2Application::windowSize(): no window opened", {});
+    emscripten_get_canvas_element_size(nullptr, &size.x(), &size.y());
     #endif
+    return size;
 }
+
+Vector2i Sdl2Application::framebufferSize() const {
+    Vector2i size;
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    CORRADE_ASSERT(_window, "Platform::Sdl2Application::framebufferSize(): no window opened", {});
+    SDL_GL_GetDrawableSize(_window, &size.x(), &size.y());
+    #else
+    CORRADE_ASSERT(_glContext, "Platform::Sdl2Application::framebufferSize(): no window opened", {});
+    emscripten_get_canvas_element_size(nullptr, &size.x(), &size.y());
+    #endif
+    return size;
+}
+
+#ifdef CORRADE_TARGET_EMSCRIPTEN
+void Sdl2Application::setContainerCssClass(const std::string& cssClass) {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wdollar-in-identifier-extension"
+    EM_ASM_({document.getElementById('container').className = Pointer_stringify($0, $1);}, cssClass.data(), cssClass.size());
+    #pragma GCC diagnostic pop
+}
+#endif
 
 void Sdl2Application::swapBuffers() {
     #ifndef CORRADE_TARGET_EMSCRIPTEN
@@ -434,22 +632,44 @@ void Sdl2Application::mainLoopIteration() {
     const UnsignedInt timeBefore = _minimalLoopPeriod ? SDL_GetTicks() : 0;
     #endif
 
+    #ifdef CORRADE_TARGET_EMSCRIPTEN
+    /* The resize event is not fired on window resize, so poll for the canvas
+       size here. But only if the window was requested to be resizable, to
+       avoid resizing the canvas when the user doesn't want that. Related
+       issue: https://github.com/kripken/emscripten/issues/1731 */
+    if(_flags & Flag::Resizable) {
+        /** @todo don't hardcode "module" here, make it configurable from outside */
+        Vector2d canvasSize;
+        emscripten_get_element_css_size("module", &canvasSize.x(), &canvasSize.y());
+        const Vector2i canvasSizei{canvasSize};
+        if(canvasSizei != _lastKnownCanvasSize) {
+            _lastKnownCanvasSize = canvasSizei;
+            const Vector2i size = _dpiScaling*canvasSizei;
+            emscripten_set_canvas_element_size(nullptr, size.x(), size.y());
+            ViewportEvent e{size, size, _dpiScaling};
+            viewportEvent(e);
+            _flags |= Flag::Redraw;
+        }
+    }
+    #endif
+
     SDL_Event event;
     while(SDL_PollEvent(&event)) {
         switch(event.type) {
             case SDL_WINDOWEVENT:
                 switch(event.window.event) {
                     case SDL_WINDOWEVENT_RESIZED: {
-                        #ifndef CORRADE_TARGET_IOS
-                        viewportEvent({event.window.data1, event.window.data2});
+                        #ifdef CORRADE_TARGET_EMSCRIPTEN
+                        /* If anybody sees this assert, then emscripten finally
+                           implemented resize events. Praise them for that.
+                           https://github.com/kripken/emscripten/issues/1731 */
+                        CORRADE_ASSERT_UNREACHABLE();
                         #else
-                        /* On iOS the window event is in points and not pixels,
-                           but we need pixels to call glViewport() properly */
-                        Vector2i drawableSize;
-                        SDL_GL_GetDrawableSize(_window, &drawableSize.x(), &drawableSize.y());
-                        viewportEvent(drawableSize);
-                        #endif
+                        ViewportEvent e{{event.window.data1, event.window.data2}, framebufferSize(), _dpiScaling};
+                        /** @todo handle also WM_DPICHANGED events when a window is moved between displays with different DPI */
+                        viewportEvent(e);
                         _flags |= Flag::Redraw;
+                        #endif
                     } break;
                     case SDL_WINDOWEVENT_EXPOSED:
                         _flags |= Flag::Redraw;
@@ -475,24 +695,6 @@ void Sdl2Application::mainLoopIteration() {
             case SDL_MOUSEWHEEL: {
                 MouseScrollEvent e{{Float(event.wheel.x), Float(event.wheel.y)}};
                 mouseScrollEvent(e);
-
-                #ifdef MAGNUM_BUILD_DEPRECATED
-                if(event.wheel.y != 0) {
-                    #ifdef __GNUC__
-                    #pragma GCC diagnostic push
-                    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                    #endif
-                    MouseEvent ew(event.wheel.y > 0 ? MouseEvent::Button::WheelUp : MouseEvent::Button::WheelDown, {event.wheel.x, event.wheel.y}
-                        #ifndef CORRADE_TARGET_EMSCRIPTEN
-                        , 0
-                        #endif
-                        );
-                    #ifdef __GNUC__
-                    #pragma GCC diagnostic pop
-                    #endif
-                    mousePressEvent(ew);
-                }
-                #endif
             } break;
 
             case SDL_MOUSEMOTION: {
@@ -517,13 +719,18 @@ void Sdl2Application::mainLoopIteration() {
                 textEditingEvent(e);
             } break;
 
-            case SDL_QUIT:
-                #ifndef CORRADE_TARGET_EMSCRIPTEN
-                _flags |= Flag::Exit;
-                #else
-                emscripten_cancel_main_loop();
-                #endif
-                return;
+            case SDL_QUIT: {
+                ExitEvent e;
+                exitEvent(e);
+                if(e.isAccepted()) {
+                    #ifndef CORRADE_TARGET_EMSCRIPTEN
+                    _flags |= Flag::Exit;
+                    #else
+                    emscripten_cancel_main_loop();
+                    #endif
+                    return;
+                }
+            } break;
         }
     }
 
@@ -599,13 +806,30 @@ void Sdl2Application::setTextInputRect(const Range2Di& rect) {
     SDL_SetTextInputRect(&r);
 }
 
+void Sdl2Application::exitEvent(ExitEvent& event) {
+    event.setAccepted();
+}
+
 void Sdl2Application::tickEvent() {
     /* If this got called, the tick event is not implemented by user and thus
        we don't need to call it ever again */
     _flags |= Flag::NoTickEvent;
 }
 
+void Sdl2Application::viewportEvent(ViewportEvent& event) {
+    #ifdef MAGNUM_BUILD_DEPRECATED
+    CORRADE_IGNORE_DEPRECATED_PUSH
+    viewportEvent(event.framebufferSize());
+    CORRADE_IGNORE_DEPRECATED_POP
+    #else
+    static_cast<void>(event);
+    #endif
+}
+
+#ifdef MAGNUM_BUILD_DEPRECATED
 void Sdl2Application::viewportEvent(const Vector2i&) {}
+#endif
+
 void Sdl2Application::keyPressEvent(KeyEvent&) {}
 void Sdl2Application::keyReleaseEvent(KeyEvent&) {}
 void Sdl2Application::mousePressEvent(MouseEvent&) {}
@@ -621,7 +845,13 @@ Sdl2Application::GLConfiguration::GLConfiguration():
     _colorBufferSize{8, 8, 8, 0}, _depthBufferSize{24}, _stencilBufferSize{0},
     _sampleCount(0)
     #ifndef CORRADE_TARGET_EMSCRIPTEN
-    , _version(GL::Version::None), _sRGBCapable{false}
+    , _version(GL::Version::None),
+    #ifndef MAGNUM_TARGET_GLES
+    _flags{Flag::ForwardCompatible},
+    #else
+    _flags{},
+    #endif
+    _srgbCapable{false}
     #endif
     {}
 
@@ -632,17 +862,19 @@ Sdl2Application::Configuration::Configuration():
     #if !defined(CORRADE_TARGET_EMSCRIPTEN) && !defined(CORRADE_TARGET_IOS)
     _title("Magnum SDL2 Application"),
     #endif
-    #ifdef CORRADE_TARGET_EMSCRIPTEN
-    _size{640, 480}
-    #elif !defined(CORRADE_TARGET_IOS)
-    _size{800, 600}
+    #if !defined(CORRADE_TARGET_IOS) && !defined(CORRADE_TARGET_EMSCRIPTEN)
+    _size{800, 600},
     #else
-    _size{} /* SDL2 detects someting for us */
+    _size{}, /* SDL2 detects someting for us */
     #endif
+    _dpiScalingPolicy{DpiScalingPolicy::Default}
     #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
     , _sampleCount(0)
     #ifndef CORRADE_TARGET_EMSCRIPTEN
-    , _version(GL::Version::None), _sRGBCapable{false}
+    /* Deliberately not setting _flags to ForwardCompatible to avoid them
+       having higher priority over GLConfiguration flags, appending that flag
+       later */
+    , _version(GL::Version::None), _srgbCapable{false}
     #endif
     #endif
     {}
@@ -667,6 +899,13 @@ Sdl2Application::InputEvent::Modifiers Sdl2Application::MouseMoveEvent::modifier
     if(_modifiersLoaded) return _modifiers;
     _modifiersLoaded = true;
     return _modifiers = fixedModifiers(Uint16(SDL_GetModState()));
+}
+
+Vector2i Sdl2Application::MouseScrollEvent::position() {
+    if(_positionLoaded) return _position;
+    _positionLoaded = true;
+    SDL_GetMouseState(&_position.x(), &_position.y());
+    return _position;
 }
 
 Sdl2Application::InputEvent::Modifiers Sdl2Application::MouseScrollEvent::modifiers() {

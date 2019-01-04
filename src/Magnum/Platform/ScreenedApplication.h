@@ -130,14 +130,6 @@ template<class Application> class BasicScreenedApplication: public Application, 
          */
         explicit BasicScreenedApplication(const typename Application::Arguments& arguments, NoCreateT);
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief @copybrief BasicScreenedApplication(const typename Application::Arguments&, NoCreateT)
-         * @deprecated Use @ref BasicScreenedApplication(const typename Application::Arguments&, NoCreateT) instead.
-         */
-        CORRADE_DEPRECATED("use BasicScreenedApplication(const Arguments&, NoCreateT) instead") explicit BasicScreenedApplication(const typename Application::Arguments& arguments, std::nullptr_t): BasicScreenedApplication{arguments, NoCreate} {}
-        #endif
-
         /**
          * @brief Add screen to application
          * @return Reference to self (for method chaining)
@@ -204,7 +196,7 @@ template<class Application> class BasicScreenedApplication: public Application, 
          * implementation does nothing. See @ref Sdl2Application::viewportEvent() "*Application::viewportEvent()"
          * for more information.
          */
-        virtual void globalViewportEvent(const Vector2i& size);
+        virtual void globalViewportEvent(typename Application::ViewportEvent& size);
 
         /**
          * @brief Draw event
@@ -222,11 +214,10 @@ template<class Application> class BasicScreenedApplication: public Application, 
         friend Containers::LinkedListItem<BasicScreen<Application>, BasicScreenedApplication<Application>>;
         friend BasicScreen<Application>;
         #endif
-
         /* The user is supposed to override only globalViewportEvent() and
            globalDrawEvent(), these implementations are dispatching the events
            to attached screens. */
-        void viewportEvent(const Vector2i& size) override final;
+        void viewportEvent(typename Application::ViewportEvent& event) override final;
         void drawEvent() override final;
         void keyPressEvent(typename Application::KeyEvent& event) override final;
         void keyReleaseEvent(typename Application::KeyEvent& event) override final;

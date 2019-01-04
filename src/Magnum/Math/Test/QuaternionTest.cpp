@@ -26,9 +26,11 @@
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
+#include <Corrade/Utility/Configuration.h>
 
 #include "Magnum/Math/Matrix4.h"
 #include "Magnum/Math/Quaternion.h"
+#include "Magnum/Math/StrictWeakOrdering.h"
 
 struct Quat {
     float x, y, z, w;
@@ -64,9 +66,13 @@ struct QuaternionTest: Corrade::TestSuite::Tester {
     void constructCopy();
     void convert();
 
+    void data();
+
     void compare();
     void isNormalized();
     template<class T> void isNormalizedEpsilon();
+    void axisAngle();
+    void axisAngleNotNormalized();
 
     void addSubtract();
     void negated();
@@ -82,16 +88,34 @@ struct QuaternionTest: Corrade::TestSuite::Tester {
     void conjugated();
     void inverted();
     void invertedNormalized();
+    void invertedNormalizedNotNormalized();
 
     void rotation();
+    void rotationNotNormalized();
     void angle();
+    void angleNotNormalized();
     void matrix();
+    void matrixNotOrthogonal();
+
     void lerp();
+    void lerp2D();
+    void lerpNotNormalized();
+    void lerpShortestPath();
+    void lerpShortestPathNotNormalized();
     void slerp();
+    void slerp2D();
+    void slerpNotNormalized();
+    void slerpShortestPath();
+    void slerpShortestPathNotNormalized();
+
     void transformVector();
     void transformVectorNormalized();
+    void transformVectorNormalizedNotNormalized();
+
+    void strictWeakOrdering();
 
     void debug();
+    void configuration();
 };
 
 typedef Math::Deg<Float> Deg;
@@ -101,6 +125,8 @@ typedef Math::Matrix4<Float> Matrix4;
 typedef Math::Quaternion<Float> Quaternion;
 typedef Math::Vector3<Float> Vector3;
 typedef Math::Vector4<Float> Vector4;
+
+using namespace Math::Literals;
 
 QuaternionTest::QuaternionTest() {
     addTests({&QuaternionTest::construct,
@@ -112,10 +138,14 @@ QuaternionTest::QuaternionTest() {
               &QuaternionTest::constructCopy,
               &QuaternionTest::convert,
 
+              &QuaternionTest::data,
+
               &QuaternionTest::compare,
               &QuaternionTest::isNormalized,
               &QuaternionTest::isNormalizedEpsilon<Float>,
               &QuaternionTest::isNormalizedEpsilon<Double>,
+              &QuaternionTest::axisAngle,
+              &QuaternionTest::axisAngleNotNormalized,
 
               &QuaternionTest::addSubtract,
               &QuaternionTest::negated,
@@ -134,26 +164,41 @@ QuaternionTest::QuaternionTest() {
     addTests({&QuaternionTest::conjugated,
               &QuaternionTest::inverted,
               &QuaternionTest::invertedNormalized,
+              &QuaternionTest::invertedNormalizedNotNormalized,
 
               &QuaternionTest::rotation,
+              &QuaternionTest::rotationNotNormalized,
               &QuaternionTest::angle,
+              &QuaternionTest::angleNotNormalized,
               &QuaternionTest::matrix,
+              &QuaternionTest::matrixNotOrthogonal,
+
               &QuaternionTest::lerp,
+              &QuaternionTest::lerp2D,
+              &QuaternionTest::lerpNotNormalized,
+              &QuaternionTest::lerpShortestPath,
+              &QuaternionTest::lerpShortestPathNotNormalized,
               &QuaternionTest::slerp,
+              &QuaternionTest::slerp2D,
+              &QuaternionTest::slerpNotNormalized,
+              &QuaternionTest::slerpShortestPath,
+              &QuaternionTest::slerpShortestPathNotNormalized,
+
               &QuaternionTest::transformVector,
               &QuaternionTest::transformVectorNormalized,
+              &QuaternionTest::transformVectorNormalizedNotNormalized,
 
-              &QuaternionTest::debug});
+              &QuaternionTest::strictWeakOrdering,
+
+              &QuaternionTest::debug,
+              &QuaternionTest::configuration});
 }
 
 void QuaternionTest::construct() {
     constexpr Quaternion a = {{1.0f, 2.0f, 3.0f}, -4.0f};
     CORRADE_COMPARE(a, Quaternion({1.0f, 2.0f, 3.0f}, -4.0f));
-
-    constexpr Vector3 b = a.vector();
-    constexpr Float c = a.scalar();
-    CORRADE_COMPARE(b, Vector3(1.0f, 2.0f, 3.0f));
-    CORRADE_COMPARE(c, -4.0f);
+    CORRADE_COMPARE(a.vector(), Vector3(1.0f, 2.0f, 3.0f));
+    CORRADE_COMPARE(a.scalar(), -4.0f);
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Quaternion, Vector3, Float>::value));
 }
@@ -246,6 +291,27 @@ void QuaternionTest::convert() {
     CORRADE_VERIFY(!(std::is_convertible<Quaternion, Quat>::value));
 }
 
+void QuaternionTest::data() {
+    constexpr Quaternion ca{{1.0f, 2.0f, 3.0f}, -4.0f};
+    constexpr Vector3 vector = ca.vector();
+    constexpr Float scalar = ca.scalar();
+    CORRADE_COMPARE(vector, (Vector3{1.0f, 2.0f, 3.0f}));
+    CORRADE_COMPARE(scalar, -4.0f);
+
+    Quaternion a{{1.0f, 2.0f, 3.0f}, -4.0f};
+    a.vector().y() = 4.3f;
+    a.scalar() = 1.1f;
+    CORRADE_COMPARE(a, (Quaternion{{1.0f, 4.3f, 3.0f}, 1.1f}));
+
+    #ifndef CORRADE_MSVC2015_COMPATIBILITY /* Apparently dereferencing a pointer is verboten */
+    constexpr
+    #endif
+    Float b = *ca.data();
+    Float c = a.data()[3];
+    CORRADE_COMPARE(b, 1.0f);
+    CORRADE_COMPARE(c, 1.1f);
+}
+
 void QuaternionTest::compare() {
     CORRADE_VERIFY(Quaternion({1.0f+TypeTraits<Float>::epsilon()/2, 2.0f, 3.0f}, -4.0f) == Quaternion({1.0f, 2.0f, 3.0f}, -4.0f));
     CORRADE_VERIFY(Quaternion({1.0f+TypeTraits<Float>::epsilon()*2, 2.0f, 3.0f}, -4.0f) != Quaternion({1.0f, 2.0f, 3.0f}, -4.0f));
@@ -263,6 +329,24 @@ template<class T> void QuaternionTest::isNormalizedEpsilon() {
 
     CORRADE_VERIFY((Math::Quaternion<T>{{T(0.0106550719778129), T(0.311128101752138), T(-0.0468823167023769)}, T(0.949151106053128) + TypeTraits<T>::epsilon()/T(2.0)}.isNormalized()));
     CORRADE_VERIFY(!(Math::Quaternion<T>{{T(0.0106550719778129), T(0.311128101752138), T(-0.0468823167023769)}, T(0.949151106053128) + TypeTraits<T>::epsilon()*T(2.0)}.isNormalized()));
+}
+
+void QuaternionTest::axisAngle() {
+    Quaternion a = Quaternion::rotation(23.0_degf, {0.6f, -0.8f, 0.0f});
+    CORRADE_COMPARE(a.angle(), 23.0_degf);
+    CORRADE_COMPARE(a.axis(), (Vector3{0.6f, -0.8f, 0.0f}));
+}
+
+void QuaternionTest::axisAngleNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion a = Quaternion::rotation(23.0_degf, {0.6f, -0.8f, 0.0f})*2;
+    a.angle();
+    a.axis();
+    CORRADE_COMPARE(out.str(),
+        "Math::Quaternion::angle(): Quaternion({0.239242, -0.318989, 0}, 1.95985) is not normalized\n"
+        "Math::Quaternion::axis(): Quaternion({0.239242, -0.318989, 0}, 1.95985) is not normalized\n");
 }
 
 void QuaternionTest::addSubtract() {
@@ -343,29 +427,24 @@ void QuaternionTest::inverted() {
 }
 
 void QuaternionTest::invertedNormalized() {
-    Quaternion a = Quaternion({1.0f, 3.0f, -2.0f}, -4.0f);
+    Quaternion a = Quaternion{{1.0f, 3.0f, -2.0f}, -4.0f}.normalized();
 
-    std::ostringstream o;
-    Error redirectError{&o};
-    a.invertedNormalized();
-    CORRADE_COMPARE(o.str(), "Math::Quaternion::invertedNormalized(): quaternion must be normalized\n");
-
-    Quaternion aNormalized = a.normalized();
-    Quaternion inverted = aNormalized.invertedNormalized();
-    CORRADE_COMPARE(aNormalized*inverted, Quaternion());
-    CORRADE_COMPARE(inverted*aNormalized, Quaternion());
+    Quaternion inverted = a.invertedNormalized();
+    CORRADE_COMPARE(a*inverted, Quaternion());
+    CORRADE_COMPARE(inverted*a, Quaternion());
     CORRADE_COMPARE(inverted, Quaternion({-1.0f, -3.0f, 2.0f}, -4.0f)/std::sqrt(30.0f));
 }
 
+void QuaternionTest::invertedNormalizedNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion{{1.0f, 3.0f, -2.0f}, -4.0f}.invertedNormalized();
+    CORRADE_COMPARE(out.str(), "Math::Quaternion::invertedNormalized(): Quaternion({1, 3, -2}, -4) is not normalized\n");
+}
+
 void QuaternionTest::rotation() {
-    std::ostringstream o;
-    Error redirectError{&o};
-
     Vector3 axis(1.0f/Constants<Float>::sqrt3());
-
-    CORRADE_COMPARE(Quaternion::rotation(Deg(-74.0f), {-1.0f, 2.0f, 2.0f}), Quaternion());
-    CORRADE_COMPARE(o.str(), "Math::Quaternion::rotation(): axis must be normalized\n");
-
     Quaternion q = Quaternion::rotation(Deg(120.0f), axis);
     CORRADE_COMPARE(q.length(), 1.0f);
     CORRADE_COMPARE(q, Quaternion(Vector3(0.5f, 0.5f, 0.5f), 0.5f));
@@ -384,22 +463,33 @@ void QuaternionTest::rotation() {
     CORRADE_VERIFY(Quaternion().axis() != Quaternion().axis());
 }
 
+void QuaternionTest::rotationNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion::rotation(-74.0_degf, {-1.0f, 2.0f, 2.0f});
+    CORRADE_COMPARE(out.str(), "Math::Quaternion::rotation(): axis Vector(-1, 2, 2) is not normalized\n");
+}
+
 void QuaternionTest::angle() {
-    std::ostringstream o;
-    Error redirectError{&o};
-    Math::angle(Quaternion({1.0f, 2.0f, -3.0f}, -4.0f).normalized(), {{4.0f, -3.0f, 2.0f}, -1.0f});
-    CORRADE_COMPARE(o.str(), "Math::angle(): quaternions must be normalized\n");
-
-    o.str({});
-    Math::angle({{1.0f, 2.0f, -3.0f}, -4.0f}, Quaternion({4.0f, -3.0f, 2.0f}, -1.0f).normalized());
-    CORRADE_COMPARE(o.str(), "Math::angle(): quaternions must be normalized\n");
-
     /* Verify also that the angle is the same as angle between 4D vectors */
     Rad angle = Math::angle(Quaternion({1.0f, 2.0f, -3.0f}, -4.0f).normalized(),
                             Quaternion({4.0f, -3.0f, 2.0f}, -1.0f).normalized());
     CORRADE_COMPARE(angle, Math::angle(Vector4(1.0f, 2.0f, -3.0f, -4.0f).normalized(),
-                                 Vector4(4.0f, -3.0f, 2.0f, -1.0f).normalized()));
+                                       Vector4(4.0f, -3.0f, 2.0f, -1.0f).normalized()));
     CORRADE_COMPARE(angle, Rad(1.704528f));
+}
+
+void QuaternionTest::angleNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Math::angle(Quaternion{{1.0f, 2.0f, -3.0f}, -4.0f}.normalized(), {{4.0f, -3.0f, 2.0f}, -1.0f});
+    Math::angle({{1.0f, 2.0f, -3.0f}, -4.0f}, Quaternion{{4.0f, -3.0f, 2.0f}, -1.0f}.normalized());
+
+    CORRADE_COMPARE(out.str(),
+        "Math::angle(): quaternions Quaternion({0.182574, 0.365148, -0.547723}, -0.730297) and Quaternion({4, -3, 2}, -1) are not normalized\n"
+        "Math::angle(): quaternions Quaternion({1, 2, -3}, -4) and Quaternion({0.730297, -0.547723, 0.365148}, -0.182574) are not normalized\n");
 }
 
 void QuaternionTest::matrix() {
@@ -411,11 +501,6 @@ void QuaternionTest::matrix() {
     /* Verify that negated quaternion gives the same rotation */
     CORRADE_COMPARE(q.toMatrix(), m);
     CORRADE_COMPARE((-q).toMatrix(), m);
-
-    std::ostringstream o;
-    Error redirectError{&o};
-    Quaternion::fromMatrix(m*2);
-    CORRADE_COMPARE(o.str(), "Math::Quaternion::fromMatrix(): the matrix is not orthogonal\n");
 
     /* Trace > 0 */
     CORRADE_COMPARE_AS(m.trace(), 0.0f, Corrade::TestSuite::Compare::Greater);
@@ -451,44 +536,161 @@ void QuaternionTest::matrix() {
     CORRADE_COMPARE(Quaternion::fromMatrix(m4), q4);
 }
 
+void QuaternionTest::matrixNotOrthogonal() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Vector3 axis = Vector3(-3.0f, 1.0f, 5.0f).normalized();
+    Matrix3x3 m = Matrix4::rotation(37.0_degf, axis).rotationScaling();
+    Quaternion::fromMatrix(m*2);
+    CORRADE_COMPARE(out.str(),
+        "Math::Quaternion::fromMatrix(): the matrix is not orthogonal:\n"
+        "Matrix(1.70083, -1.05177, 0.0308525,\n"
+        "       0.982733, 1.60878, 0.667885,\n"
+        "       -0.376049, -0.552819, 1.88493)\n");
+}
+
 void QuaternionTest::lerp() {
-    Quaternion a = Quaternion::rotation(Deg(15.0f), Vector3(1.0f/Constants<Float>::sqrt3()));
-    Quaternion b = Quaternion::rotation(Deg(23.0f), Vector3::xAxis());
-
-    std::ostringstream o;
-    Error redirectError{&o};
-
-    Math::lerp(a*3.0f, b, 0.35f);
-    CORRADE_COMPARE(o.str(), "Math::lerp(): quaternions must be normalized\n");
-
-    o.str({});
-    Math::lerp(a, b*-3.0f, 0.35f);
-    CORRADE_COMPARE(o.str(), "Math::lerp(): quaternions must be normalized\n");
+    Quaternion a = Quaternion::rotation(15.0_degf, Vector3(1.0f/Constants<Float>::sqrt3()));
+    Quaternion b = Quaternion::rotation(23.0_degf, Vector3::xAxis());
 
     Quaternion lerp = Math::lerp(a, b, 0.35f);
-    CORRADE_COMPARE(lerp, Quaternion({0.119127f, 0.049134f, 0.049134f}, 0.990445f));
+    Quaternion lerpShortestPath = Math::lerpShortestPath(a, b, 0.35f);
+    Quaternion expected{{0.119127f, 0.049134f, 0.049134f}, 0.990445f};
+
+    /* Both should give the same result */
+    CORRADE_VERIFY(lerp.isNormalized());
+    CORRADE_VERIFY(lerpShortestPath.isNormalized());
+    CORRADE_COMPARE(lerp, expected);
+    CORRADE_COMPARE(lerpShortestPath, expected);
+}
+
+void QuaternionTest::lerp2D() {
+    /* Results should be consistent with ComplexTest::lerp() */
+    Quaternion a = Quaternion::rotation(15.0_degf, Vector3::zAxis());
+    Quaternion b = Quaternion::rotation(57.0_degf, Vector3::zAxis());
+    Quaternion lerp = Math::lerp(a, b, 0.35f);
+
+    CORRADE_VERIFY(lerp.isNormalized());
+    CORRADE_COMPARE(lerp.angle(), 29.6351_degf); /* almost but not quite 29.7 */
+    CORRADE_COMPARE(lerp, (Quaternion{{0.0f, 0.0f, 0.255742f}, 0.966745f}));
+}
+
+void QuaternionTest::lerpNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion a;
+    Math::lerp(a*3.0f, a, 0.35f);
+    Math::lerp(a, a*-3.0f, 0.35f);
+    CORRADE_COMPARE(out.str(),
+        "Math::lerp(): quaternions Quaternion({0, 0, 0}, 3) and Quaternion({0, 0, 0}, 1) are not normalized\n"
+        "Math::lerp(): quaternions Quaternion({0, 0, 0}, 1) and Quaternion({-0, -0, -0}, -3) are not normalized\n");
+}
+
+void QuaternionTest::lerpShortestPath() {
+    Quaternion a = Quaternion::rotation(0.0_degf, Vector3::zAxis());
+    Quaternion b = Quaternion::rotation(225.0_degf, Vector3::zAxis());
+
+    Quaternion lerp = Math::lerp(a, b, 0.25f);
+    Quaternion lerpShortestPath = Math::lerpShortestPath(a, b, 0.25f);
+
+    CORRADE_VERIFY(lerp.isNormalized());
+    CORRADE_VERIFY(lerpShortestPath.isNormalized());
+    CORRADE_COMPARE(lerp.axis(), Vector3::zAxis());
+    CORRADE_COMPARE(lerpShortestPath.axis(), Vector3::zAxis());
+    CORRADE_COMPARE(lerp.angle(), 38.8848_degf);
+    CORRADE_COMPARE(lerpShortestPath.angle(), 329.448_degf);
+
+    CORRADE_COMPARE(lerp, (Quaternion{{0.0f, 0.0f, 0.332859f}, 0.942977f}));
+    CORRADE_COMPARE(lerpShortestPath, (Quaternion{{0.0f, 0.0f, 0.26347f}, -0.964667f}));
+}
+
+void QuaternionTest::lerpShortestPathNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion a;
+    Math::lerpShortestPath(a*3.0f, a, 0.35f);
+    Math::lerpShortestPath(a, a*-3.0f, 0.35f);
+    /* lerpShortestPath() is calling lerp(), so the message is from there */
+    CORRADE_COMPARE(out.str(),
+        "Math::lerp(): quaternions Quaternion({0, 0, 0}, 3) and Quaternion({0, 0, 0}, 1) are not normalized\n"
+        "Math::lerp(): quaternions Quaternion({-0, -0, -0}, -1) and Quaternion({-0, -0, -0}, -3) are not normalized\n");
 }
 
 void QuaternionTest::slerp() {
-    Quaternion a = Quaternion::rotation(Deg(15.0f), Vector3(1.0f/Constants<Float>::sqrt3()));
-    Quaternion b = Quaternion::rotation(Deg(23.0f), Vector3::xAxis());
-
-    std::ostringstream o;
-    Error redirectError{&o};
-
-    Math::slerp(a*3.0f, b, 0.35f);
-    CORRADE_COMPARE(o.str(), "Math::slerp(): quaternions must be normalized\n");
-
-    o.str({});
-    Math::slerp(a, b*-3.0f, 0.35f);
-    CORRADE_COMPARE(o.str(), "Math::slerp(): quaternions must be normalized\n");
+    Quaternion a = Quaternion::rotation(15.0_degf, Vector3(1.0f/Constants<Float>::sqrt3()));
+    Quaternion b = Quaternion::rotation(23.0_degf, Vector3::xAxis());
 
     Quaternion slerp = Math::slerp(a, b, 0.35f);
-    CORRADE_COMPARE(slerp, Quaternion({0.1191653f, 0.0491109f, 0.0491109f}, 0.9904423f));
+    Quaternion slerpShortestPath = Math::slerpShortestPath(a, b, 0.35f);
+    Quaternion expected{{0.1191653f, 0.0491109f, 0.0491109f}, 0.9904423f};
+
+    /* Both should give the same result */
+    CORRADE_VERIFY(slerp.isNormalized());
+    CORRADE_COMPARE(slerp, expected);
+    CORRADE_VERIFY(slerpShortestPath.isNormalized());
+    CORRADE_COMPARE(slerpShortestPath, expected);
 
     /* Avoid division by zero */
     CORRADE_COMPARE(Math::slerp(a, a, 0.25f), a);
     CORRADE_COMPARE(Math::slerp(a, -a, 0.42f), a);
+    CORRADE_COMPARE(Math::slerpShortestPath(a, a, 0.25f), a);
+    CORRADE_COMPARE(Math::slerpShortestPath(a, -a, 0.25f), a);
+}
+
+void QuaternionTest::slerp2D() {
+    /* Result angle should be equivalent to ComplexTest::slerp() */
+    Quaternion a = Quaternion::rotation(15.0_degf, Vector3::zAxis());
+    Quaternion b = Quaternion::rotation(57.0_degf, Vector3::zAxis());
+    Quaternion slerp = Math::slerp(a, b, 0.35f);
+
+    CORRADE_VERIFY(slerp.isNormalized());
+    CORRADE_COMPARE(slerp.angle(), 29.7_degf); /* 15 + (57-15)*0.35 */
+    CORRADE_COMPARE(slerp, (Quaternion{{0.0f, 0.0f, 0.256289f}, 0.9666f}));
+}
+
+void QuaternionTest::slerpNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion a;
+    Math::slerp(a*3.0f, a, 0.35f);
+    Math::slerp(a, a*-3.0f, 0.35f);
+    CORRADE_COMPARE(out.str(),
+        "Math::slerp(): quaternions Quaternion({0, 0, 0}, 3) and Quaternion({0, 0, 0}, 1) are not normalized\n"
+        "Math::slerp(): quaternions Quaternion({0, 0, 0}, 1) and Quaternion({-0, -0, -0}, -3) are not normalized\n");
+}
+
+void QuaternionTest::slerpShortestPath() {
+    Quaternion a = Quaternion::rotation(0.0_degf, Vector3::zAxis());
+    Quaternion b = Quaternion::rotation(225.0_degf, Vector3::zAxis());
+
+    Quaternion slerp = Math::slerp(a, b, 0.25f);
+    Quaternion slerpShortestPath = Math::slerpShortestPath(a, b, 0.25f);
+
+    CORRADE_VERIFY(slerp.isNormalized());
+    CORRADE_VERIFY(slerpShortestPath.isNormalized());
+    CORRADE_COMPARE(slerp.axis(), Vector3::zAxis());
+    CORRADE_COMPARE(slerpShortestPath.axis(), Vector3::zAxis());
+    CORRADE_COMPARE(slerp.angle(), 56.25_degf);
+    CORRADE_COMPARE(slerpShortestPath.angle(), 326.25_degf);
+
+    CORRADE_COMPARE(slerp, (Quaternion{{0.0f, 0.0f, 0.471397f}, 0.881921f}));
+    CORRADE_COMPARE(slerpShortestPath, (Quaternion{{0.0f, 0.0f, 0.290285f}, -0.95694f}));
+}
+
+void QuaternionTest::slerpShortestPathNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion a;
+    Math::slerpShortestPath(a*3.0f, a, 0.35f);
+    Math::slerpShortestPath(a, a*-3.0f, 0.35f);
+    CORRADE_COMPARE(out.str(),
+        "Math::slerpShortestPath(): quaternions Quaternion({0, 0, 0}, 3) and Quaternion({0, 0, 0}, 1) are not normalized\n"
+        "Math::slerpShortestPath(): quaternions Quaternion({0, 0, 0}, 1) and Quaternion({-0, -0, -0}, -3) are not normalized\n");
 }
 
 void QuaternionTest::transformVector() {
@@ -505,15 +707,34 @@ void QuaternionTest::transformVectorNormalized() {
     Quaternion a = Quaternion::rotation(Deg(23.0f), Vector3::xAxis());
     Matrix4 m = Matrix4::rotationX(Deg(23.0f));
     Vector3 v(5.0f, -3.6f, 0.7f);
-
-    std::ostringstream o;
-    Error redirectError{&o};
-    (a*2).transformVectorNormalized(v);
-    CORRADE_COMPARE(o.str(), "Math::Quaternion::transformVectorNormalized(): quaternion must be normalized\n");
-
     Vector3 rotated = a.transformVectorNormalized(v);
     CORRADE_COMPARE(rotated, m.transformVector(v));
     CORRADE_COMPARE(rotated, a.transformVector(v));
+}
+
+void QuaternionTest::transformVectorNormalizedNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Quaternion a = Quaternion::rotation(23.0_degf, Vector3::xAxis());
+    (a*2).transformVectorNormalized({});
+    CORRADE_COMPARE(out.str(), "Math::Quaternion::transformVectorNormalized(): Quaternion({0.398736, 0, 0}, 1.95985) is not normalized\n");
+}
+
+void QuaternionTest::strictWeakOrdering() {
+    StrictWeakOrdering o;
+    const Quaternion a{{1.0f, 2.0f, 3.0f}, 4.0f};
+    const Quaternion b{{2.0f, 3.0f, 4.0f}, 5.0f};
+    const Quaternion c{{1.0f, 2.0f, 3.0f}, 5.0f};
+
+    CORRADE_VERIFY( o(a, b));
+    CORRADE_VERIFY(!o(b, a));
+    CORRADE_VERIFY( o(a, c));
+    CORRADE_VERIFY(!o(c, a));
+    CORRADE_VERIFY( o(c, b));
+    CORRADE_VERIFY(!o(b, c));
+
+    CORRADE_VERIFY(!o(a, a));
 }
 
 void QuaternionTest::debug() {
@@ -521,6 +742,25 @@ void QuaternionTest::debug() {
 
     Debug(&o) << Quaternion({1.0f, 2.0f, 3.0f}, -4.0f);
     CORRADE_COMPARE(o.str(), "Quaternion({1, 2, 3}, -4)\n");
+}
+
+void QuaternionTest::configuration() {
+    Corrade::Utility::Configuration c;
+
+    Quaternion q{{3.0f, 3.125f, 9.0f}, 9.55f};
+    std::string value{"3 3.125 9 9.55"};
+
+    c.setValue("quat", q);
+    CORRADE_COMPARE(c.value("quat"), value);
+    CORRADE_COMPARE(c.value<Quaternion>("quat"), q);
+
+    /* Underflow */
+    c.setValue("underflow", "2.1 8.9");
+    CORRADE_COMPARE(c.value<Quaternion>("underflow"), (Quaternion{{2.1f, 8.9f, 0.0f}, 0.0f}));
+
+    /* Overflow */
+    c.setValue("overflow", "2 1 8 9 16 33");
+    CORRADE_COMPARE(c.value<Quaternion>("overflow"), (Quaternion{{2.0f, 1.0f, 8.0f}, 9.0f}));
 }
 
 }}}

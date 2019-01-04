@@ -25,9 +25,11 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/Configuration.h>
 
 #include "Magnum/Math/Complex.h"
 #include "Magnum/Math/Matrix3.h"
+#include "Magnum/Math/StrictWeakOrdering.h"
 
 struct Cmpl {
     float re, im;
@@ -63,6 +65,8 @@ struct ComplexTest: Corrade::TestSuite::Tester {
     void constructCopy();
     void convert();
 
+    void data();
+
     void compare();
     void isNormalized();
     template<class T> void isNormalizedEpsilon();
@@ -70,6 +74,7 @@ struct ComplexTest: Corrade::TestSuite::Tester {
     void addSubtract();
     void negated();
     void multiplyDivideScalar();
+    void multiplyDivideVector();
     void multiply();
 
     void dot();
@@ -81,13 +86,23 @@ struct ComplexTest: Corrade::TestSuite::Tester {
     void conjugated();
     void inverted();
     void invertedNormalized();
+    void invertedNormalizedNotNormalized();
 
     void angle();
+    void angleNotNormalized();
     void rotation();
     void matrix();
+    void matrixNotOrthogonal();
+    void lerp();
+    void lerpNotNormalized();
+    void slerp();
+    void slerpNotNormalized();
     void transformVector();
 
+    void strictWeakOrdering();
+
     void debug();
+    void configuration();
 };
 
 ComplexTest::ComplexTest() {
@@ -100,6 +115,8 @@ ComplexTest::ComplexTest() {
               &ComplexTest::constructCopy,
               &ComplexTest::convert,
 
+              &ComplexTest::data,
+
               &ComplexTest::compare,
               &ComplexTest::isNormalized,
               &ComplexTest::isNormalizedEpsilon<Float>,
@@ -108,6 +125,7 @@ ComplexTest::ComplexTest() {
               &ComplexTest::addSubtract,
               &ComplexTest::negated,
               &ComplexTest::multiplyDivideScalar,
+              &ComplexTest::multiplyDivideVector,
               &ComplexTest::multiply,
 
               &ComplexTest::dot,
@@ -122,13 +140,23 @@ ComplexTest::ComplexTest() {
     addTests({&ComplexTest::conjugated,
               &ComplexTest::inverted,
               &ComplexTest::invertedNormalized,
+              &ComplexTest::invertedNormalizedNotNormalized,
 
               &ComplexTest::angle,
+              &ComplexTest::angleNotNormalized,
               &ComplexTest::rotation,
               &ComplexTest::matrix,
+              &ComplexTest::matrixNotOrthogonal,
+              &ComplexTest::lerp,
+              &ComplexTest::lerpNotNormalized,
+              &ComplexTest::slerp,
+              &ComplexTest::slerpNotNormalized,
               &ComplexTest::transformVector,
 
-              &ComplexTest::debug});
+              &ComplexTest::strictWeakOrdering,
+
+              &ComplexTest::debug,
+              &ComplexTest::configuration});
 }
 
 typedef Math::Deg<Float> Deg;
@@ -138,14 +166,13 @@ typedef Math::Vector2<Float> Vector2;
 typedef Math::Matrix3<Float> Matrix3;
 typedef Math::Matrix2x2<Float> Matrix2x2;
 
+using namespace Math::Literals;
+
 void ComplexTest::construct() {
     constexpr Complex a = {0.5f, -3.7f};
     CORRADE_COMPARE(a, Complex(0.5f, -3.7f));
-
-    constexpr Float b = a.real();
-    constexpr Float c = a.imaginary();
-    CORRADE_COMPARE(b, 0.5f);
-    CORRADE_COMPARE(c, -3.7f);
+    CORRADE_COMPARE(a.real(), 0.5f);
+    CORRADE_COMPARE(a.imaginary(), -3.7f);
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Complex, Float, Float>::value));
 }
@@ -242,6 +269,24 @@ void ComplexTest::convert() {
     CORRADE_VERIFY(!(std::is_convertible<Complex, Cmpl>::value));
 }
 
+void ComplexTest::data() {
+    constexpr Complex ca{1.5f, -3.5f};
+    constexpr Float real = ca.real();
+    constexpr Float imaginary = ca.imaginary();
+    CORRADE_COMPARE(real, 1.5f);
+    CORRADE_COMPARE(imaginary, -3.5f);
+
+    Complex a{1.5f, -3.5f};
+    a.real() = 2.0f;
+    a.imaginary() = -3.5f;
+    CORRADE_COMPARE(a, (Complex{2.0f, -3.5f}));
+
+    constexpr Float b = *ca.data();
+    Float c = a.data()[1];
+    CORRADE_COMPARE(b, 1.5f);
+    CORRADE_COMPARE(c, -3.5f);
+}
+
 void ComplexTest::compare() {
     CORRADE_VERIFY(Complex(3.7f, -1.0f+TypeTraits<Float>::epsilon()/2) == Complex(3.7f, -1.0f));
     CORRADE_VERIFY(Complex(3.7f, -1.0f+TypeTraits<Float>::epsilon()*2) != Complex(3.7f, -1.0f));
@@ -284,6 +329,19 @@ void ComplexTest::multiplyDivideScalar() {
 
     Complex c(-0.8f, 4.0f);
     CORRADE_COMPARE(-2.0f/a, c);
+}
+
+void ComplexTest::multiplyDivideVector() {
+    Complex a{ 2.5f, -0.5f};
+    Vector2 b{-3.0f,  0.8f};
+    Complex c{-7.5f, -0.4f};
+
+    CORRADE_COMPARE(a*b, c);
+    CORRADE_COMPARE(b*a, c);
+    CORRADE_COMPARE(c/b, a);
+
+    Complex d(-0.8f, -3.2f);
+    CORRADE_COMPARE((Vector2{-2.0f, 1.6f}/a), d);
 }
 
 void ComplexTest::multiply() {
@@ -345,14 +403,8 @@ void ComplexTest::inverted() {
 }
 
 void ComplexTest::invertedNormalized() {
-    std::ostringstream o;
-    Error redirectError{&o};
-
     Complex a(-0.6f, 0.8f);
     Complex b(-0.6f, -0.8f);
-
-    (a*2).invertedNormalized();
-    CORRADE_COMPARE(o.str(), "Math::Complex::invertedNormalized(): complex number must be normalized\n");
 
     Complex inverted = a.invertedNormalized();
     CORRADE_COMPARE(a*inverted, Complex());
@@ -360,22 +412,31 @@ void ComplexTest::invertedNormalized() {
     CORRADE_COMPARE(inverted, b);
 }
 
+void ComplexTest::invertedNormalizedNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    (Complex(-0.6f, 0.8f)*2).invertedNormalized();
+    CORRADE_COMPARE(out.str(), "Math::Complex::invertedNormalized(): Complex(-1.2, 1.6) is not normalized\n");
+}
+
 void ComplexTest::angle() {
-    std::ostringstream o;
-    Error redirectError{&o};
-    Math::angle(Complex(1.5f, -2.0f).normalized(), {-4.0f, 3.5f});
-    CORRADE_COMPARE(o.str(), "Math::angle(): complex numbers must be normalized\n");
-
-    o.str({});
-    Math::angle({1.5f, -2.0f}, Complex(-4.0f, 3.5f).normalized());
-    CORRADE_COMPARE(o.str(), "Math::angle(): complex numbers must be normalized\n");
-
     /* Verify also that the angle is the same as angle between 2D vectors */
     Rad angle = Math::angle(Complex( 1.5f, -2.0f).normalized(),
                             Complex(-4.0f,  3.5f).normalized());
     CORRADE_COMPARE(angle, Math::angle(Vector2( 1.5f, -2.0f).normalized(),
                                        Vector2(-4.0f,  3.5f).normalized()));
     CORRADE_COMPARE(angle, Rad(2.933128f));
+}
+
+void ComplexTest::angleNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+    Math::angle(Complex(1.5f, -2.0f).normalized(), {-4.0f, 3.5f});
+    Math::angle({1.5f, -2.0f}, Complex(-4.0f, 3.5f).normalized());
+    CORRADE_COMPARE(out.str(),
+        "Math::angle(): complex numbers Complex(0.6, -0.8) and Complex(-4, 3.5) are not normalized\n"
+        "Math::angle(): complex numbers Complex(1.5, -2) and Complex(-0.752577, 0.658505) are not normalized\n");
 }
 
 void ComplexTest::rotation() {
@@ -398,14 +459,69 @@ void ComplexTest::matrix() {
     Matrix2x2 m = Matrix3::rotation(Deg(37.0f)).rotationScaling();
 
     CORRADE_COMPARE(a.toMatrix(), m);
+    CORRADE_COMPARE(Complex::fromMatrix(m), a);
+}
 
-    std::ostringstream o;
-    Error redirectError{&o};
-    Complex::fromMatrix(m*2);
-    CORRADE_COMPARE(o.str(), "Math::Complex::fromMatrix(): the matrix is not orthogonal\n");
+void ComplexTest::matrixNotOrthogonal() {
+    std::ostringstream out;
+    Error redirectError{&out};
 
-    Complex b = Complex::fromMatrix(m);
-    CORRADE_COMPARE(b, a);
+    Complex::fromMatrix(Matrix3::rotation(Deg(37.0f)).rotationScaling()*2);
+    CORRADE_COMPARE(out.str(),
+        "Math::Complex::fromMatrix(): the matrix is not orthogonal:\n"
+        "Matrix(1.59727, -1.20363,\n"
+        "       1.20363, 1.59727)\n");
+}
+
+void ComplexTest::lerp() {
+    /* Results should be consistent with QuaternionTest::lerp2D() (but not
+       equivalent, probably because quaternions double cover and complex
+       numbers not) */
+    Complex a = Complex::rotation(15.0_degf);
+    Complex b = Complex::rotation(57.0_degf);
+    Complex lerp = Math::lerp(a, b, 0.35f);
+
+    CORRADE_VERIFY(lerp.isNormalized());
+    CORRADE_COMPARE(lerp.angle(), 29.4308_degf); /* almost but not quite 29.7 */
+    CORRADE_COMPARE(lerp, (Complex{0.87095f, 0.491372f}));
+}
+
+void ComplexTest::lerpNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Complex a;
+    Math::lerp(a*3.0f, a, 0.35f);
+    Math::lerp(a, a*-3.0f, 0.35f);
+    CORRADE_COMPARE(out.str(),
+        "Math::lerp(): complex numbers Complex(3, 0) and Complex(1, 0) are not normalized\n"
+        "Math::lerp(): complex numbers Complex(1, 0) and Complex(-3, -0) are not normalized\n");
+}
+
+void ComplexTest::slerp() {
+    /* Result angle should be equivalent to QuaternionTest::slerp2D() */
+    Complex a = Complex::rotation(15.0_degf);
+    Complex b = Complex::rotation(57.0_degf);
+    Complex slerp = Math::slerp(a, b, 0.35f);
+
+    CORRADE_VERIFY(slerp.isNormalized());
+    CORRADE_COMPARE(slerp.angle(), 29.7_degf); /* 15 + (57-15)*0.35 */
+    CORRADE_COMPARE(slerp, (Complex{0.868632f, 0.495459f}));
+
+    /* Avoid division by zero */
+    CORRADE_COMPARE(Math::slerp(a, a, 0.25f), a);
+}
+
+void ComplexTest::slerpNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Complex a;
+    Math::slerp(a*3.0f, a, 0.35f);
+    Math::slerp(a, a*-3.0f, 0.35f);
+    CORRADE_COMPARE(out.str(),
+        "Math::slerp(): complex numbers Complex(3, 0) and Complex(1, 0) are not normalized\n"
+        "Math::slerp(): complex numbers Complex(1, 0) and Complex(-3, -0) are not normalized\n");
 }
 
 void ComplexTest::transformVector() {
@@ -418,11 +534,45 @@ void ComplexTest::transformVector() {
     CORRADE_COMPARE(rotated, Vector2(-3.58733f, -0.762279f));
 }
 
+void ComplexTest::strictWeakOrdering() {
+    StrictWeakOrdering o;
+    const Complex a{1.0f, 2.0f};
+    const Complex b{2.0f, 3.0f};
+    const Complex c{1.0f, 3.0f};
+
+    CORRADE_VERIFY( o(a, b));
+    CORRADE_VERIFY(!o(b, a));
+    CORRADE_VERIFY( o(a, c));
+    CORRADE_VERIFY(!o(c, a));
+    CORRADE_VERIFY( o(c, b));
+    CORRADE_VERIFY(!o(b, c));
+    CORRADE_VERIFY(!o(a, a));
+}
+
 void ComplexTest::debug() {
     std::ostringstream o;
 
     Debug(&o) << Complex(2.5f, -7.5f);
     CORRADE_COMPARE(o.str(), "Complex(2.5, -7.5)\n");
+}
+
+void ComplexTest::configuration() {
+    Corrade::Utility::Configuration c;
+
+    Complex x{3.0f, 3.125f};
+    std::string value{"3 3.125"};
+
+    c.setValue("complex", x);
+    CORRADE_COMPARE(c.value("complex"), value);
+    CORRADE_COMPARE(c.value<Complex>("complex"), x);
+
+    /* Underflow */
+    c.setValue("underflow", "2.1");
+    CORRADE_COMPARE(c.value<Complex>("underflow"), (Complex{2.1f, 0.0f}));
+
+    /* Overflow */
+    c.setValue("overflow", "2 9 16 33");
+    CORRADE_COMPARE(c.value<Complex>("overflow"), (Complex{2.0f, 9.0f}));
 }
 
 }}}

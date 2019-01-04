@@ -213,11 +213,7 @@ OpenGL function                         | Matching API
 @fn_gl{GetProgramInterface}             | |
 @fn_gl{GetProgramPipeline}              | |
 @fn_gl{GetProgramPipelineInfoLog}       | |
-@fn_gl{GetProgramResource}              | |
-@fn_gl{GetProgramResourceIndex}         | |
-@fn_gl{GetProgramResourceLocation}      | |
-@fn_gl{GetProgramResourceLocationIndex} | |
-@fn_gl{GetProgramResourceName}          | |
+@fn_gl{GetProgramResource}, \n @fn_gl{GetProgramResourceIndex}, \n @fn_gl{GetProgramResourceLocation}, \n @fn_gl{GetProgramResourceLocationIndex}, \n @fn_gl{GetProgramResourceName} | not queryable, set them in shader code directly as described in @ref GL::AbstractShaderProgram docs
 @fn_gl{GetProgramStage}                 | |
 @fn_gl{GetQueryIndexed}                 | |
 @fn_gl{GetQueryObject}                  | @ref GL::AbstractQuery::result()
@@ -294,7 +290,7 @@ OpenGL function                         | Matching API
 @fn_gl_extension{MakeTextureHandleNonResident,ARB,bindless_texture} | |
 @fn_gl{MapBuffer}, \n `glMapNamedBuffer()`, \n @fn_gl_extension{MapNamedBuffer,EXT,direct_state_access}, \n @fn_gl{MapBufferRange}, \n `glMapNamedBufferRange()`, \n @fn_gl_extension{MapNamedBufferRange,EXT,direct_state_access}, \n @fn_gl{UnmapBuffer}, \n `glUnmapNamedBuffer()`, \n @fn_gl_extension{UnmapNamedBuffer,EXT,direct_state_access} | @ref GL::Buffer::map(), @ref GL::Buffer::unmap()
 @fn_gl{MemoryBarrier}, \n `glMemoryBarrierByRegion()` | @ref GL::Renderer::setMemoryBarrier(), \n @ref GL::Renderer::setMemoryBarrierByRegion()
-@fn_gl{MinSampleShading}                | |
+@fn_gl{MinSampleShading}                | @ref GL::Renderer::setMinSampleShading()
 @fn_gl{MultiDrawArrays}, \n @fn_gl{MultiDrawElements}, \n @fn_gl{MultiDrawElementsBaseVertex} | @ref GL::MeshView::draw(AbstractShaderProgram&, std::initializer_list<std::reference_wrapper<MeshView>>)
 @fn_gl{MultiDrawArraysIndirectCount}, \n @fn_gl{MultiDrawElementsIndirectCount} | |
 
@@ -378,7 +374,7 @@ OpenGL function                         | Matching API
 @fn_gl{TexImage1D}, \n @fn_gl{TexImage2D}, \n @fn_gl{TexImage3D} | @ref GL::Texture::setImage(), \n @ref GL::TextureArray::setImage(), \n @ref GL::CubeMapTexture::setImage(), \n @ref GL::CubeMapTextureArray::setImage(), \n @ref GL::RectangleTexture::setImage()
 @fn_gl{TexImage2DMultisample}, \n @fn_gl{TexImage3DMultisample} | @ref GL::MultisampleTexture::setStorage()
 @fn_gl_extension{TexPageCommitment,ARB,sparse_texture} | |
-@fn_gl{TexParameter}, \n `glTextureParameter()`, \n @fn_gl_extension{TextureParameter,EXT,direct_state_access} | @ref GL::Texture::setBaseLevel() "*Texture::setBaseLevel()", \n @ref GL::Texture::setMaxLevel() "*Texture::setMaxLevel()", \n @ref GL::Texture::setMinificationFilter() "*Texture::setMinificationFilter()", \n @ref GL::Texture::setMagnificationFilter() "*Texture::setMagnificationFilter()", \n @ref GL::Texture::setMinLod() "*Texture::setMinLod()", \n @ref GL::Texture::setMaxLod() "*Texture::setMaxLod()", \n @ref GL::Texture::setLodBias() "*Texture::setLodBias()", \n @ref GL::Texture::setWrapping() "*Texture::setWrapping()", \n @ref GL::Texture::setBorderColor() "*Texture::setBorderColor()", \n @ref GL::Texture::setMaxAnisotropy() "*Texture::setMaxAnisotropy()", \n @ref GL::Texture::setSRGBDecode() "*Texture::setSRGBDecode()", \n @ref GL::Texture::setSwizzle() "*Texture::setSwizzle()", \n @ref GL::Texture::setCompareMode() "*Texture::setCompareMode()", \n @ref GL::Texture::setCompareFunction() "*Texture::setCompareFunction()", \n @ref GL::Texture::setDepthStencilMode() "*Texture::setDepthStencilMode()"
+@fn_gl{TexParameter}, \n `glTextureParameter()`, \n @fn_gl_extension{TextureParameter,EXT,direct_state_access} | @ref GL::Texture::setBaseLevel() "*Texture::setBaseLevel()", \n @ref GL::Texture::setMaxLevel() "*Texture::setMaxLevel()", \n @ref GL::Texture::setMinificationFilter() "*Texture::setMinificationFilter()", \n @ref GL::Texture::setMagnificationFilter() "*Texture::setMagnificationFilter()", \n @ref GL::Texture::setMinLod() "*Texture::setMinLod()", \n @ref GL::Texture::setMaxLod() "*Texture::setMaxLod()", \n @ref GL::Texture::setLodBias() "*Texture::setLodBias()", \n @ref GL::Texture::setWrapping() "*Texture::setWrapping()", \n @ref GL::Texture::setBorderColor() "*Texture::setBorderColor()", \n @ref GL::Texture::setMaxAnisotropy() "*Texture::setMaxAnisotropy()", \n @ref GL::Texture::setSrgbDecode() "*Texture::setSrgbDecode()", \n @ref GL::Texture::setSwizzle() "*Texture::setSwizzle()", \n @ref GL::Texture::setCompareMode() "*Texture::setCompareMode()", \n @ref GL::Texture::setCompareFunction() "*Texture::setCompareFunction()", \n @ref GL::Texture::setDepthStencilMode() "*Texture::setDepthStencilMode()"
 @fn_gl{TexStorage1D}, \n `glTextureStorage1D()`, \n @fn_gl_extension{TextureStorage1D,EXT,direct_state_access}, \n @fn_gl{TexStorage2D}, \n `glTextureStorage2D()`, \n @fn_gl_extension{TextureStorage2D,EXT,direct_state_access}, \n @fn_gl{TexStorage3D}, \n `glTextureStorage3D()`, \n @fn_gl_extension{TextureStorage3D,EXT,direct_state_access} | @ref GL::Texture::setStorage(), \n @ref GL::TextureArray::setStorage(), \n @ref GL::CubeMapTexture::setStorage(), \n @ref GL::CubeMapTextureArray::setStorage(), \n @ref GL::RectangleTexture::setStorage()
 @fn_gl{TexStorage2DMultisample}, \n `glTextureStorage2DMultisample()`, \n @fn_gl_extension{TextureStorage2DMultisample,EXT,direct_state_access}, \n @fn_gl{TexStorage3DMultisample}, \n `glTextureStorage3DMultisample()`, \n @fn_gl_extension{TextureStorage3DMultisample,EXT,direct_state_access} | @ref GL::MultisampleTexture::setStorage()
 @fn_gl{TexSubImage1D}, \n `glTextureSubImage1D()`, \n @fn_gl_extension{TextureSubImage1D,EXT,direct_state_access}, \n @fn_gl{TexSubImage2D}, \n `glTextureSubImage2D()`, \n @fn_gl_extension{TextureSubImage2D,EXT,direct_state_access}, \n @fn_gl{TexSubImage3D}, \n `glTextureSubImage3D()`, \n @fn_gl_extension{TextureSubImage3D,EXT,direct_state_access} | @ref GL::Texture::setSubImage(), \n @ref GL::TextureArray::setSubImage(), \n @ref GL::CubeMapTexture::setSubImage(), \n @ref GL::CubeMapTextureArray::setSubImage(), \n @ref GL::RectangleTexture::setSubImage()
@@ -436,7 +432,7 @@ OpenGL function                         | Matching API
 glGet() parameter                       | Matching API
 --------------------------------------- | ------------
 @def_gl{ACTIVE_TEXTURE}, \n @def_gl{TEXTURE_BINDING_1D_ARRAY}, \n @def_gl{TEXTURE_BINDING_1D}, \n @def_gl{TEXTURE_BINDING_2D_ARRAY}, \n @def_gl{TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY}, \n @def_gl{TEXTURE_BINDING_2D_MULTISAMPLE}, \n @def_gl{TEXTURE_BINDING_2D}           , \n @def_gl{TEXTURE_BINDING_3D}, \n @def_gl{TEXTURE_BINDING_BUFFER}, \n @def_gl{TEXTURE_BINDING_BUFFER}, \n @def_gl{TEXTURE_BINDING_CUBE_MAP}, \n @def_gl{TEXTURE_BINDING_RECTANGLE} | not queryable but tracked internally
-@def_gl{ALIASED_LINE_WIDTH_RANGE}       | |
+@def_gl{ALIASED_LINE_WIDTH_RANGE}       | @ref GL::Renderer::lineWidthRange()
 @def_gl{ARRAY_BUFFER_BINDING}, \n @def_gl{DISPATCH_INDIRECT_BUFFER_BINDING}, \n @def_gl{ELEMENT_ARRAY_BUFFER_BINDING}, \n @def_gl{PIXEL_PACK_BUFFER_BINDING}, \n @def_gl{PIXEL_UNPACK_BUFFER_BINDING} | not queryable but tracked internally
 @def_gl{BLEND_COLOR}                    | not queryable, @ref GL::Renderer::setBlendColor() setter only
 @def_gl{BLEND_DST_ALPHA}, \n @def_gl{BLEND_DST_RGB}, \n @def_gl{BLEND_SRC_ALPHA}, \n @def_gl{BLEND_SRC_RGB} | not queryable, @ref GL::Renderer::setBlendFunction() setter only
@@ -458,7 +454,6 @@ glGet() parameter                       | Matching API
 @def_gl{IMPLEMENTATION_COLOR_READ_TYPE} | |
 @def_gl{LAYER_PROVOKING_VERTEX}         | |
 @def_gl{LINE_SMOOTH}, \n @def_gl{POLYGON_SMOOTH} | not supported (@ref opengl-unsupported "details")
-@def_gl{LINE_WIDTH_GRANULARITY}, \n @def_gl{LINE_WIDTH_RANGE} | |
 @def_gl{LINE_WIDTH}                     | not queryable, @ref GL::Renderer::setLineWidth() setter only
 @def_gl{LOGIC_OP_MODE}                  | not queryable, @ref GL::Renderer::setLogicOperation() setter only
 @def_gl{MAJOR_VERSION}, \n @def_gl{MINOR_VERSION} | @ref GL::Context::version()
@@ -559,7 +554,8 @@ glGet() parameter                       | Matching API
 @def_gl{SHADER_COMPILER}                | not supported (@ref opengl-unsupported "details")
 @def_gl{SHADER_STORAGE_BUFFER_BINDING}, \n @def_gl{SHADER_STORAGE_BUFFER_SIZE}, \n @def_gl{SHADER_STORAGE_BUFFER_START} | not queryable
 @def_gl{SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT} | @ref GL::Buffer::shaderStorageOffsetAlignment()
-@def_gl{SMOOTH_LINE_WIDTH_GRANULARITY}, \n @def_gl{SMOOTH_LINE_WIDTH_RANGE} | |
+@def_gl{SMOOTH_LINE_WIDTH_GRANULARITY} / @def_gl{LINE_WIDTH_GRANULARITY}, \n
+@def_gl{SMOOTH_LINE_WIDTH_RANGE} / @def_gl{LINE_WIDTH_RANGE} | not supported (@ref opengl-unsupported "details")
 @def_gl{STENCIL_BACK_FUNC}, \n @def_gl{STENCIL_BACK_REF}, \n @def_gl{STENCIL_BACK_VALUE_MASK}, \n @def_gl{STENCIL_FUNC}, \n @def_gl{STENCIL_REF}, \n @def_gl{STENCIL_VALUE_MASK} | not queryable, @ref GL::Renderer::setStencilFunction() setter only
 @def_gl{STENCIL_BACK_FAIL}, \n @def_gl{STENCIL_BACK_PASS_DEPTH_FAIL}, \n @def_gl{STENCIL_BACK_PASS_DEPTH_PASS}, \n @def_gl{STENCIL_FAIL}, \n @def_gl{STENCIL_PASS_DEPTH_FAIL}, \n @def_gl{STENCIL_PASS_DEPTH_PASS} | not queryable, @ref GL::Renderer::setStencilOperation() setter only
 @def_gl{SUBPIXEL_BITS}                  | |

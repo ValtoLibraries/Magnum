@@ -72,6 +72,7 @@ if(WITH_ANDROIDAPPLICATION)
         message(FATAL_ERROR "AndroidApplication is available only when targeting Android. Set WITH_ANDROIDAPPLICATION to OFF to skip building it.")
     endif()
 
+    find_package(EGL REQUIRED)
     set(NEED_EGLCONTEXT 1)
 
     set(MagnumAndroidApplication_SRCS
@@ -101,7 +102,10 @@ if(WITH_ANDROIDAPPLICATION)
         FOLDER "Magnum/Platform")
     # Assuming that PIC is not needed because the Application lib is always
     # linked to the executable and not to any intermediate shared lib
-    target_link_libraries(MagnumAndroidApplication PUBLIC MagnumGL)
+    target_link_libraries(MagnumAndroidApplication PUBLIC
+        MagnumGL
+        android
+        EGL::EGL)
 
     install(FILES ${MagnumAndroidApplication_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
     install(TARGETS MagnumAndroidApplication
@@ -125,6 +129,9 @@ if(WITH_GLFWAPPLICATION)
     if(TARGET_GL)
         list(APPEND MagnumGlfwApplication_SRCS ${MagnumSomeContext_OBJECTS})
     endif()
+    if(CORRADE_TARGET_APPLE)
+        list(APPEND MagnumGlfwApplication_SRCS Implementation/dpiScaling.mm)
+    endif()
 
     add_library(MagnumGlfwApplication STATIC
         ${MagnumGlfwApplication_SRCS}
@@ -142,6 +149,26 @@ if(WITH_GLFWAPPLICATION)
             ${MagnumSomeContext_LIBRARY})
     endif()
 
+    # Use the Foundation framework on Apple to query the DPI awareness
+    if(CORRADE_TARGET_APPLE)
+        find_library(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY Foundation)
+        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY)
+        find_path(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR NAMES NSBundle.h)
+        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR)
+        target_link_libraries(MagnumGlfwApplication PUBLIC ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY})
+        target_include_directories(MagnumGlfwApplication PRIVATE ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR})
+
+    # If there is X11, ask it for DPI
+    elseif(CORRADE_TARGET_UNIX)
+        find_package(X11)
+        if(X11_FOUND)
+            # Not linking to X11, we dlopen() instead
+            target_include_directories(MagnumGlfwApplication PRIVATE ${X11_X11_INCLUDE_PATH})
+            target_link_libraries(MagnumGlfwApplication PUBLIC ${CMAKE_DL_LIBS})
+            target_compile_definitions(MagnumGlfwApplication PRIVATE "_MAGNUM_PLATFORM_USE_X11")
+        endif()
+    endif()
+
     install(FILES ${MagnumGlfwApplication_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
     install(TARGETS MagnumGlfwApplication
         RUNTIME DESTINATION ${MAGNUM_BINARY_INSTALL_DIR}
@@ -154,6 +181,10 @@ endif()
 
 # GLUT application
 if(WITH_GLUTAPPLICATION)
+    if(NOT MAGNUM_BUILD_DEPRECATED)
+        message(FATAL_ERROR "GlutApplication is scheduled for removal and not available if BUILD_DEPRECATED is disabled. Please consider switching to Sdl2Application or GlfwApplication instead.")
+    endif()
+
     find_package(GLUT)
     if(NOT GLUT_FOUND)
         message(FATAL_ERROR "GLUT library, required by GlutApplication, was not found. Set WITH_GLUTAPPLICATION to OFF to skip building it.")
@@ -201,6 +232,9 @@ if(WITH_SDL2APPLICATION)
     if(TARGET_GL)
         list(APPEND MagnumSdl2Application_SRCS ${MagnumSomeContext_OBJECTS})
     endif()
+    if(CORRADE_TARGET_APPLE)
+        list(APPEND MagnumSdl2Application_SRCS Implementation/dpiScaling.mm)
+    endif()
 
     add_library(MagnumSdl2Application STATIC
         ${MagnumSdl2Application_SRCS}
@@ -218,6 +252,26 @@ if(WITH_SDL2APPLICATION)
             ${MagnumSomeContext_LIBRARY})
     endif()
 
+    # Use the Foundation framework on Apple to query the DPI awareness
+    if(CORRADE_TARGET_APPLE)
+        find_library(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY Foundation)
+        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY)
+        find_path(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR NAMES NSBundle.h)
+        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR)
+        target_link_libraries(MagnumSdl2Application PUBLIC ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY})
+        target_include_directories(MagnumSdl2Application PRIVATE ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR})
+
+    # If there is X11, ask it for DPI
+    elseif(CORRADE_TARGET_UNIX)
+        find_package(X11)
+        if(X11_FOUND)
+            # Not linking to X11, we dlopen() instead
+            target_include_directories(MagnumSdl2Application PRIVATE ${X11_X11_INCLUDE_PATH})
+            target_link_libraries(MagnumSdl2Application PUBLIC ${CMAKE_DL_LIBS})
+            target_compile_definitions(MagnumSdl2Application PRIVATE "_MAGNUM_PLATFORM_USE_X11")
+        endif()
+    endif()
+
     install(FILES ${MagnumSdl2Application_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
     install(TARGETS MagnumSdl2Application
         RUNTIME DESTINATION ${MAGNUM_BINARY_INSTALL_DIR}
@@ -228,20 +282,16 @@ if(WITH_SDL2APPLICATION)
     add_library(Magnum::Sdl2Application ALIAS MagnumSdl2Application)
 endif()
 
-# JavaScript and CSS stuff for Emscripten
+# JavaScript and CSS stuff for Emscripten. Installed unconditionally so it can
+# be also used by people who hate the Application classes
 if(CORRADE_TARGET_EMSCRIPTEN)
-    set(MagnumEmscriptenApplication_FILES )
-    if(WITH_SDL2APPLICATION)
-        list(APPEND MagnumEmscriptenApplication_FILES EmscriptenApplication.js)
-    endif()
-    if(WITH_WINDOWLESSEGLAPPLICATION)
-        list(APPEND MagnumEmscriptenApplication_FILES WindowlessEmscriptenApplication.js)
-    endif()
-    if(WITH_SDL2APPLICATION OR WITH_WINDOWLESSEGLAPPLICATION)
-        list(APPEND MagnumEmscriptenApplication_FILES WebApplication.css)
-        list(APPEND MagnumPlatform_FILES ${MagnumEmscriptenApplication_FILES})
-        install(FILES ${MagnumEmscriptenApplication_FILES} DESTINATION ${MAGNUM_DATA_INSTALL_DIR})
-    endif()
+    set(MagnumEmscriptenApplication_FILES
+        EmscriptenApplication.js
+        WindowlessEmscriptenApplication.js
+        WebApplication.css)
+
+    list(APPEND MagnumPlatform_FILES ${MagnumEmscriptenApplication_FILES})
+    install(FILES ${MagnumEmscriptenApplication_FILES} DESTINATION ${MAGNUM_DATA_INSTALL_DIR})
 endif()
 
 # GLX application

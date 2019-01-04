@@ -56,9 +56,9 @@ struct CubeMapTextureGLTest: OpenGLTester {
 
     template<class T> void sampling();
     #ifndef MAGNUM_TARGET_WEBGL
-    void samplingSRGBDecode();
+    void samplingSrgbDecode();
     #endif
-    #ifndef MAGNUM_TARGET_GLES2
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     void samplingSwizzle();
     #elif !defined(MAGNUM_TARGET_WEBGL)
     void samplingMaxLevel();
@@ -66,8 +66,6 @@ struct CubeMapTextureGLTest: OpenGLTester {
     #endif
     #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     void samplingBorderInteger();
-    #endif
-    #ifndef MAGNUM_TARGET_GLES2
     void samplingDepthStencilMode();
     #endif
     #if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_WEBGL)
@@ -311,9 +309,9 @@ CubeMapTextureGLTest::CubeMapTextureGLTest() {
               &CubeMapTextureGLTest::sampling<GenericSampler>,
               &CubeMapTextureGLTest::sampling<GLSampler>,
               #ifndef MAGNUM_TARGET_WEBGL
-              &CubeMapTextureGLTest::samplingSRGBDecode,
+              &CubeMapTextureGLTest::samplingSrgbDecode,
               #endif
-              #ifndef MAGNUM_TARGET_GLES2
+              #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
               &CubeMapTextureGLTest::samplingSwizzle,
               #elif !defined(MAGNUM_TARGET_WEBGL)
               &CubeMapTextureGLTest::samplingMaxLevel,
@@ -321,8 +319,6 @@ CubeMapTextureGLTest::CubeMapTextureGLTest() {
               #endif
               #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
               &CubeMapTextureGLTest::samplingBorderInteger,
-              #endif
-              #ifndef MAGNUM_TARGET_GLES2
               &CubeMapTextureGLTest::samplingDepthStencilMode,
               #endif
               #if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_WEBGL)
@@ -498,7 +494,7 @@ template<class T> void CubeMapTextureGLTest::sampling() {
 }
 
 #ifndef MAGNUM_TARGET_WEBGL
-void CubeMapTextureGLTest::samplingSRGBDecode() {
+void CubeMapTextureGLTest::samplingSrgbDecode() {
     #ifdef MAGNUM_TARGET_GLES2
     if(!Context::current().isExtensionSupported<Extensions::EXT::sRGB>())
         CORRADE_SKIP(Extensions::EXT::sRGB::string() + std::string(" is not supported."));
@@ -507,13 +503,13 @@ void CubeMapTextureGLTest::samplingSRGBDecode() {
         CORRADE_SKIP(Extensions::EXT::texture_sRGB_decode::string() + std::string(" is not supported."));
 
     CubeMapTexture texture;
-    texture.setSRGBDecode(false);
+    texture.setSrgbDecode(false);
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 #endif
 
-#ifndef MAGNUM_TARGET_GLES2
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void CubeMapTextureGLTest::samplingSwizzle() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::texture_swizzle>())
@@ -525,7 +521,9 @@ void CubeMapTextureGLTest::samplingSwizzle() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
-#elif !defined(MAGNUM_TARGET_WEBGL)
+#endif
+
+#if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void CubeMapTextureGLTest::samplingMaxLevel() {
     if(!Context::current().isExtensionSupported<Extensions::APPLE::texture_max_level>())
         CORRADE_SKIP(Extensions::APPLE::texture_max_level::string() + std::string(" is not supported."));
@@ -568,9 +566,7 @@ void CubeMapTextureGLTest::samplingBorderInteger() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
-#endif
 
-#ifndef MAGNUM_TARGET_GLES2
 void CubeMapTextureGLTest::samplingDepthStencilMode() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::stencil_texturing>())
@@ -613,7 +609,7 @@ void CubeMapTextureGLTest::storage() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 
-    #ifndef MAGNUM_TARGET_GLES2
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     #ifdef MAGNUM_TARGET_GLES
     if(!Context::current().isVersionSupported(Version::GLES310))
         CORRADE_SKIP("OpenGL ES 3.1 not supported, skipping image size testing");
@@ -990,8 +986,13 @@ void CubeMapTextureGLTest::immutableCompressedImage() {
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_storage>())
         CORRADE_SKIP(Extensions::EXT::texture_storage::string() + std::string(" is not supported."));
     #endif
+    #ifndef MAGNUM_TARGET_WEBGL
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_compression_s3tc>())
         CORRADE_SKIP(Extensions::EXT::texture_compression_s3tc::string() + std::string(" is not supported."));
+    #else
+    if(!Context::current().isExtensionSupported<Extensions::WEBGL::compressed_texture_s3tc>())
+        CORRADE_SKIP(Extensions::WEBGL::compressed_texture_s3tc::string() + std::string(" is not supported."));
+    #endif
 
     #ifndef MAGNUM_TARGET_GLES
     if(CompressedPixelStorageData[testCaseInstanceId()].storage != CompressedPixelStorage{} && !Context::current().isExtensionSupported<Extensions::ARB::compressed_texture_pixel_storage>())
@@ -1398,6 +1399,8 @@ void CubeMapTextureGLTest::generateMipmap() {
     CORRADE_COMPARE(texture.imageSize(0), Vector2i(32));
     CORRADE_COMPARE(texture.imageSize(1), Vector2i( 0));
     #endif
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
 
     texture.generateMipmap();
 

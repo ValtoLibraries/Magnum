@@ -164,9 +164,37 @@ class WindowlessWindowsEglContext::Configuration {
             return *this;
         }
 
+        /**
+         * @brief Add context flags
+         * @return Reference to self (for method chaining)
+         *
+         * Unlike @ref setFlags(), ORs the flags with existing instead of
+         * replacing them. Useful for preserving the defaults.
+         * @see @ref clearFlags()
+         */
+        Configuration& addFlags(Flags flags) {
+            _flags |= flags;
+            return *this;
+        }
+
+        /**
+         * @brief Clear context flags
+         * @return Reference to self (for method chaining)
+         *
+         * Unlike @ref setFlags(), ANDs the inverse of @p flags with existing
+         * instead of replacing them. Useful for removing default flags.
+         * @see @ref addFlags()
+         */
+        Configuration& clearFlags(Flags flags) {
+            _flags &= ~flags;
+            return *this;
+        }
+
     private:
         Flags _flags;
 };
+
+CORRADE_ENUMSET_OPERATORS(WindowlessWindowsEglContext::Configuration::Flags)
 
 /**
 @brief Windowless Windows/EGL application
@@ -278,14 +306,6 @@ class WindowlessWindowsEglApplication {
          * with @ref createContext() or @ref tryCreateContext().
          */
         explicit WindowlessWindowsEglApplication(const Arguments& arguments, NoCreateT);
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief @copybrief WindowlessWindowsEglApplication(const Arguments&, NoCreateT)
-         * @deprecated Use @ref WindowlessWindowsEglApplication(const Arguments&, NoCreateT) instead.
-         */
-        CORRADE_DEPRECATED("use WindowlessWindowsEglApplication(const Arguments&, NoCreateT) instead") explicit WindowlessWindowsEglApplication(const Arguments& arguments, std::nullptr_t): WindowlessWindowsEglApplication{arguments, NoCreate} {}
-        #endif
 
         /** @brief Copying is not allowed */
         WindowlessWindowsEglApplication(const WindowlessWindowsEglApplication&) = delete;

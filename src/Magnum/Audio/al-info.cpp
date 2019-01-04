@@ -33,8 +33,24 @@ namespace Magnum {
 @brief Displays information about Magnum OpenAL capabilities
 
 @m_footernavigation
+@m_keywords{magnum-al-info al-info}
 
-@m_div{m-button m-primary} <a href="http://magnum.graphics/showcase/magnum-al-info/">@m_div{m-big}Live web version @m_enddiv @m_div{m-small} uses WebAssembly & WebAudio @m_enddiv </a> @m_enddiv
+@m_div{m-button m-primary} <a href="https://magnum.graphics/showcase/magnum-al-info/">@m_div{m-big}Live web version @m_enddiv @m_div{m-small} uses WebAssembly & WebAudio @m_enddiv </a> @m_enddiv
+
+This utility depends on the [OpenAL](https://www.openal.org/) library. It is
+built if both `WITH_AUDIO` and `WITH_AL_INFO` is enabled when building Magnum.
+To use this utility with CMake, you need to request the `al-info` component of
+the `Magnum` package and use the `Magnum::al-info` target for example in a
+custom command:
+
+@code{.cmake}
+find_package(Magnum REQUIRED al-info)
+
+add_custom_command(OUTPUT ... COMMAND Magnum::al-info ...)
+@endcode
+
+See @ref building, @ref cmake and the @ref Audio namespace for more
+information.
 
 @section magnum-al-info-usage Usage
 
@@ -62,7 +78,7 @@ above to it via GET parameters. See the relevant section of the
 @code{.shell-session}
 
   +---------------------------------------------------------+
-  | Information about Magnum engine and OpenAL capabilities |
+  |   Information about Magnum engine OpenAL capabilities   |
   +---------------------------------------------------------+
 
 Audio Renderer: OpenAL Soft by OpenAL Community
@@ -96,7 +112,7 @@ int main(const int argc, const char** const argv) {
 
     Debug() << "";
     Debug() << "  +---------------------------------------------------------+";
-    Debug() << "  | Information about Magnum engine and OpenAL capabilities |";
+    Debug() << "  |   Information about Magnum engine OpenAL capabilities   |";
     Debug() << "  +---------------------------------------------------------+";
     Debug() << "";
 

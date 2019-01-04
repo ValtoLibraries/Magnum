@@ -36,14 +36,37 @@
 @page vulkan Vulkan
 @page opengl OpenGL
 @page openal OpenAL
+@page partialsupport List of partially supported features
+@m_keyword{Partially supported features,,}
 
 @page changelog Changelog
 @page changelog-old Archived changelogs
 
 @page developers Developers guide
 @page coding-style Coding style
+@page credits-third-party Third-party components
+@page credits-contributors Contributors
 @page debugoperators Debug output operators for custom types
+
+See also and @ref configurationvalues, @ref tweakableliterals and a
+@m_class{m-dox-external} [related section in Corrade](https://doc.magnum.graphics/corrade/corrade-debugoperators.html).
+
+@todoc remove the above workaround once Doxygen is not totally fucked up and able to export xrefitems to tagfiles
+
 @page configurationvalues Configuration value parsers and writers for custom types
+
+See also @ref debugoperators, @ref tweakableliterals and a
+@m_class{m-dox-external} [related section in Corrade](https://doc.magnum.graphics/corrade/corrade-configurationvalues.html).
+
+@todoc remove the above workaround once Doxygen is not totally fucked up and able to export xrefitems to tagfiles
+
+@page tweakableliterals Tweakable literal parsers
+
+See also @ref debugoperators, @ref configurationvalues and a
+@m_class{m-dox-external} [related section in Corrade](https://doc.magnum.graphics/corrade/corrade-tweakableliterals.html).
+
+@todoc remove the above workaround once Doxygen is not totally fucked up and able to export xrefitems to tagfiles
+
 @page deprecated Deprecated list
 
 */

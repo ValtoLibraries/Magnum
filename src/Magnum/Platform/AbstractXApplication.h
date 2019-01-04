@@ -73,6 +73,7 @@ class AbstractXApplication {
 
         class Configuration;
         class GLConfiguration;
+        class ViewportEvent;
         class InputEvent;
         class KeyEvent;
         class MouseEvent;
@@ -179,6 +180,23 @@ class AbstractXApplication {
 
         /** @{ @name Screen handling */
 
+    public:
+        /**
+         * @brief Window size
+         *
+         * Window size to which all input event coordinates can be related.
+         * Same as @ref framebufferSize().
+         */
+        Vector2i windowSize() const { return _windowSize; }
+
+        /**
+         * @brief Framebuffer size
+         *
+         * Size of the default framebuffer. Same as @ref windowSize().
+         */
+        Vector2i framebufferSize() const { return _windowSize; }
+
+    protected:
         /**
          * @brief Swap buffers
          *
@@ -194,8 +212,27 @@ class AbstractXApplication {
     #else
     private:
     #endif
-        /** @copydoc Sdl2Application::viewportEvent() */
-        virtual void viewportEvent(const Vector2i& size);
+        /**
+         * @brief Viewport event
+         *
+         * Called when window size changes. The default implementation does
+         * nothing. If you want to respond to size changes, you should pass the
+         * new size to @ref GL::DefaultFramebuffer::setViewport() (if using
+         * OpenGL) and possibly elsewhere (to
+         * @ref SceneGraph::Camera::setViewport(), other framebuffers...).
+         *
+         * Note that this function might not get called at all if the window
+         * size doesn't change. You should configure the initial state of your
+         * cameras, framebuffers etc. in application constructor rather than
+         * relying on this function to be called. Size of the window can be
+         * retrieved using @ref windowSize().
+         */
+        virtual void viewportEvent(ViewportEvent& event);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @copydoc GlfwApplication::viewportEvent(const Vector2i&) */
+        virtual CORRADE_DEPRECATED("use viewportEvent(ViewportEvent&) instead") void viewportEvent(const Vector2i& size);
+        #endif
 
         /** @copydoc Sdl2Application::drawEvent() */
         virtual void drawEvent() = 0;
@@ -243,15 +280,15 @@ class AbstractXApplication {
         typedef Containers::EnumSet<Flag> Flags;
         CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
-        Display* _display;
-        Window _window;
-        Atom _deleteWindow;
+        Display* _display{};
+        Window _window{};
+        Atom _deleteWindow{};
 
         std::unique_ptr<Implementation::AbstractContextHandler<GLConfiguration, Display*, VisualID, Window>> _contextHandler;
         std::unique_ptr<Platform::GLContext> _context;
 
         /** @todo Get this from the created window */
-        Vector2i _viewportSize;
+        Vector2i _windowSize;
 
         Flags _flags;
 };
@@ -347,6 +384,37 @@ class AbstractXApplication::Configuration {
 };
 
 /**
+@brief Viewport event
+
+@see @ref viewportEvent()
+*/
+class AbstractXApplication::ViewportEvent {
+    public:
+        /**
+         * @brief Window size
+         *
+         * Same as @ref framebufferSize().
+         * @see @ref AbstractXApplication::windowSize()
+         */
+        Vector2i windowSize() const { return _size; }
+
+        /**
+         * @brief Framebuffer size
+         *
+         * Same as @ref windowSize().
+         * @see @ref AbstractXApplication::framebufferSize()
+         */
+        Vector2i framebufferSize() const { return _size; }
+
+    private:
+        friend AbstractXApplication;
+
+        explicit ViewportEvent(const Vector2i& size): _size{size} {}
+
+        Vector2i _size;
+};
+
+/**
 @brief Base for input events
 
 @see @ref KeyEvent, @ref MouseEvent, @ref MouseMoveEvent, @ref keyPressEvent(),
@@ -410,17 +478,17 @@ class AbstractXApplication::InputEvent {
         void setAccepted(bool accepted = true) { _accepted = accepted; }
 
         /** @copydoc Sdl2Application::InputEvent::isAccepted() */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
         /** @brief Modifiers */
-        constexpr Modifiers modifiers() const { return _modifiers; }
+        Modifiers modifiers() const { return _modifiers; }
 
         /** @brief Mouse buttons */
-        constexpr Buttons buttons() const { return Button(static_cast<unsigned int>(_modifiers)); }
+        Buttons buttons() const { return Button(static_cast<unsigned int>(_modifiers)); }
 
     #ifndef DOXYGEN_GENERATING_OUTPUT
     protected:
-        constexpr InputEvent(Modifiers modifiers): _modifiers(modifiers), _accepted(false) {}
+        explicit InputEvent(Modifiers modifiers): _modifiers(modifiers), _accepted(false) {}
 
         ~InputEvent() = default;
     #endif
@@ -521,13 +589,13 @@ class AbstractXApplication::KeyEvent: public AbstractXApplication::InputEvent {
         };
 
         /** @brief Key */
-        constexpr Key key() const { return _key; }
+        Key key() const { return _key; }
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
     private:
-        constexpr KeyEvent(Key key, Modifiers modifiers, const Vector2i& position): InputEvent(modifiers), _key(key), _position(position) {}
+        explicit KeyEvent(Key key, Modifiers modifiers, const Vector2i& position): InputEvent(modifiers), _key(key), _position(position) {}
 
         const Key _key;
         const Vector2i _position;
@@ -556,13 +624,13 @@ class AbstractXApplication::MouseEvent: public AbstractXApplication::InputEvent 
         };
 
         /** @brief Button */
-        constexpr Button button() const { return _button; }
+        Button button() const { return _button; }
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
     private:
-        constexpr MouseEvent(Button button, Modifiers modifiers, const Vector2i& position): InputEvent(modifiers), _button(button), _position(position) {}
+        explicit MouseEvent(Button button, Modifiers modifiers, const Vector2i& position): InputEvent(modifiers), _button(button), _position(position) {}
 
         const Button _button;
         const Vector2i _position;
@@ -578,10 +646,10 @@ class AbstractXApplication::MouseMoveEvent: public AbstractXApplication::InputEv
 
     public:
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
     private:
-        constexpr MouseMoveEvent(Modifiers modifiers, const Vector2i& position): InputEvent(modifiers), _position(position) {}
+        explicit MouseMoveEvent(Modifiers modifiers, const Vector2i& position): InputEvent(modifiers), _position(position) {}
 
         const Vector2i _position;
 };

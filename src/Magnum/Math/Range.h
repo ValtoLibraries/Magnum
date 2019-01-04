@@ -37,7 +37,7 @@ namespace Magnum { namespace Math {
 namespace Implementation {
     template<UnsignedInt, class> struct RangeTraits;
 
-    template<class T> struct RangeTraits<1, T> { typedef Vector<1, T> Type; };
+    template<class T> struct RangeTraits<1, T> { typedef T Type; };
     template<class T> struct RangeTraits<2, T> { typedef Vector2<T> Type; };
     template<class T> struct RangeTraits<3, T> { typedef Vector3<T> Type; };
 
@@ -47,9 +47,19 @@ namespace Implementation {
 /**
 @brief N-dimensional range
 
-Axis-aligned line (in 1D), rectangle (in 2D) or cube (in 3D). Minimal
+Axis-aligned line (in 1D), rectangle (in 2D) or cube (in 3D). The minimal
 coordinate is inclusive, maximal exclusive. See @ref Range1D, @ref Range2D and
 @ref Range3D specializations for given dimension count.
+
+@section Math-Range-generic Use in generic code
+
+While @ref Range2D and @ref Range3D have a vector underlying type, @ref Range1D
+is just a scalar. This makes common usage simpler, but may break in generic
+code that expects a vector type for any dimension. Solution is to
+unconditionally cast the value to a vector type or explicitly specify template
+parameters to choose a vector function overload. For example:
+
+@snippet MagnumMath.cpp Range-generic
 */
 template<UnsignedInt dimensions, class T> class Range {
     template<UnsignedInt, class> friend class Range;
@@ -58,13 +68,13 @@ template<UnsignedInt dimensions, class T> class Range {
         /**
          * @brief Underlying vector type
          *
-         * `T` in 1D, @ref Math::Vector2 "Vector2<T>" in 2D,
+         * @cpp T @ce in 1D, @ref Math::Vector2 "Vector2<T>" in 2D,
          * @ref Math::Vector3 "Vector3<T>" in 3D.
          */
         typedef typename Implementation::RangeTraits<dimensions, T>::Type VectorType;
 
         /**
-         * @brief Create range from minimal coordinates and size
+         * @brief Create a range from minimal coordinates and size
          * @param min   Minimal coordinates
          * @param size  Range size
          */
@@ -73,14 +83,28 @@ template<UnsignedInt dimensions, class T> class Range {
         }
 
         /**
+         * @brief Create a range from center and half size
+         * @param center    Range center
+         * @param halfSize  Half size
+         *
+         * For creating integer center ranges you can use @ref fromSize()
+         * together with @ref padded(), for example:
+         *
+         * @snippet MagnumMath.cpp Range-fromCenter-integer
+         */
+        static Range<dimensions, T> fromCenter(const VectorType& center, const VectorType& halfSize) {
+            return {center - halfSize, center + halfSize};
+        }
+
+        /**
          * @brief Construct zero range
          *
          * Construct zero-size range positioned at origin.
          */
-        constexpr /*implicit*/ Range(ZeroInitT = ZeroInit) noexcept: _min{ZeroInit}, _max{ZeroInit} {}
+        constexpr /*implicit*/ Range(ZeroInitT = ZeroInit) noexcept: Range<dimensions, T>{ZeroInit, typename std::conditional<dimensions == 1, void*, ZeroInitT*>::type{}} {}
 
         /** @brief Construct without initializing the contents */
-        explicit Range(NoInitT) noexcept: _min{NoInit}, _max{NoInit} {}
+        explicit Range(NoInitT) noexcept: Range<dimensions, T>{NoInit, typename std::conditional<dimensions == 1, void*, NoInitT*>::type{}} {}
 
         /** @brief Construct a range from minimal and maximal coordinates */
         constexpr /*implicit*/ Range(const VectorType& min, const VectorType& max) noexcept: _min{min}, _max{max} {}
@@ -100,7 +124,7 @@ template<UnsignedInt dimensions, class T> class Range {
         /** @overload */
         /** @todo std::pair constructors are not constexpr in C++11, make it so in C++14 */
         #ifndef DOXYGEN_GENERATING_OUTPUT
-        template<UnsignedInt d = dimensions, class = std::enable_if<d != 1>>
+        template<UnsignedInt d = dimensions, class = typename std::enable_if<d != 1>::type>
         #endif
         /*implicit*/ Range(const std::pair<Vector<dimensions, T>, Vector<dimensions, T>>& minmax) noexcept: _min{minmax.first}, _max{minmax.second} {}
 
@@ -129,12 +153,10 @@ template<UnsignedInt dimensions, class T> class Range {
         }
 
         /** @brief Equality comparison */
-        constexpr bool operator==(const Range<dimensions, T>& other) const {
-            return _min == other._min && _max == other._max;
-        }
+        bool operator==(const Range<dimensions, T>& other) const;
 
         /** @brief Non-equality comparison */
-        constexpr bool operator!=(const Range<dimensions, T>& other) const {
+        bool operator!=(const Range<dimensions, T>& other) const {
             return !operator==(other);
         }
 
@@ -142,8 +164,12 @@ template<UnsignedInt dimensions, class T> class Range {
          * @brief Raw data
          * @return One-dimensional array of `dimensions`*2 length.
          */
-        T* data() { return _min.data(); }
-        constexpr const T* data() const { return _min.data(); } /**< @overload */
+        T* data() {
+            return dataInternal(typename std::conditional<dimensions == 1, void*, T*>::type{});
+        }
+        constexpr const T* data() const {
+            return dataInternal(typename std::conditional<dimensions == 1, void*, T*>::type{});
+        } /**< @overload */
 
         /**
          * @brief Minimal coordinates (inclusive)
@@ -190,24 +216,43 @@ template<UnsignedInt dimensions, class T> class Range {
          * remains the same.
          * @see @ref padded()
          */
-        Range<dimensions, T> translated(const VectorType& vector) const;
+        Range<dimensions, T> translated(const VectorType& vector) const {
+            return {_min + vector, _max + vector};
+        }
 
         /**
          * @brief Padded rage
          *
          * Translates the minimal and maximal coordinates by given amount.
          * Center remains the same.
-         * @see @ref translated()
+         * @see @ref translated(), @ref fromCenter()
          */
-        Range<dimensions, T> padded(const VectorType& padding) const;
+        Range<dimensions, T> padded(const VectorType& padding) const {
+            return {_min - padding, _max + padding};
+        }
 
         /**
          * @brief Scaled range
          *
          * Multiplies the minimal and maximal coordinates by given amount.
+         * Center *doesn't* remain the same, use @ref scaledFromCenter() for
+         * that operation.
          * @see @ref padded()
          */
-        Range<dimensions, T> scaled(const VectorType& scaling) const;
+        Range<dimensions, T> scaled(const VectorType& scaling) const {
+            return {_min*scaling, _max*scaling};
+        }
+
+        /**
+         * @brief Range scaled from the center
+         *
+         * Scales the size, while center remains the same.
+         * @see @ref scaled(), @ref padded(), @ref fromCenter()
+         */
+        Range<dimensions, T> scaledFromCenter(const VectorType& scaling) const {
+            /* Can't use *T(0.5) because that won't work for integers */
+            return fromCenter(center(), size()*scaling/T(2));
+        }
 
         /**
          * @brief Whether given point is contained inside the range
@@ -225,7 +270,8 @@ template<UnsignedInt dimensions, class T> class Range {
          *      @ref min(), @ref max()
          */
         bool contains(const VectorType& b) const {
-            return (b >= _min).all() && (b < _max).all();
+            return (Vector<dimensions, T>{b} >= _min).all() &&
+                   (Vector<dimensions, T>{b} < _max).all();
         }
 
         /**
@@ -243,10 +289,27 @@ template<UnsignedInt dimensions, class T> class Range {
          *      @ref min(), @ref max()
          */
         bool contains(const Range<dimensions, T>& b) const {
-            return (b._min >= _min).all() && (b._max <= _max).all();
+            return (Vector<dimensions, T>{b._min} >= _min).all() &&
+                   (Vector<dimensions, T>{b._max} <= _max).all();
         }
 
     private:
+        /* Called from Range(ZeroInit), either using the ZeroInit constructor
+           (if available) or passing zero directly (for scalar types) */
+        constexpr explicit Range(ZeroInitT, ZeroInitT*) noexcept: _min{ZeroInit}, _max{ZeroInit} {}
+        constexpr explicit Range(ZeroInitT, void*) noexcept: _min{T(0)}, _max{T(0)} {}
+
+        /* Called from Range(NoInit), either using the NoInit constructor (if
+           available) or not doing anything */
+        explicit Range(NoInitT, NoInitT*) noexcept: _min{NoInit}, _max{NoInit} {}
+        explicit Range(NoInitT, void*) noexcept {}
+
+        /* Called from data(), always returning a T* */
+        constexpr const VectorType* dataInternal(void*) const { return &_min; }
+        VectorType* dataInternal(void*) { return &_min; }
+        constexpr const T* dataInternal(T*) const { return _min.data(); }
+        T* dataInternal(T*) { return _min.data(); }
+
         VectorType _min, _max;
 };
 
@@ -254,6 +317,9 @@ template<UnsignedInt dimensions, class T> class Range {
 #define MAGNUM_RANGE_SUBCLASS_IMPLEMENTATION(dimensions, Type, VectorType)  \
     static Type<T> fromSize(const VectorType<T>& min, const VectorType<T>& size) { \
         return Range<dimensions, T>::fromSize(min, size);                   \
+    }                                                                       \
+    static Type<T> fromCenter(const VectorType<T>& center, const VectorType<T>& halfSize) { \
+        return Range<dimensions, T>::fromCenter(center, halfSize);          \
     }                                                                       \
                                                                             \
     Type<T> translated(const VectorType<T>& vector) const {                 \
@@ -272,6 +338,8 @@ template<UnsignedInt dimensions, class T> class Range {
 
 Convenience alternative to @cpp Range<1, T> @ce. See @ref Range for more
 information.
+@see @ref Range2D, @ref Range3D, @ref Magnum::Range1D, @ref Magnum::Range1Di,
+    @ref Magnum::Range1Dd
 */
 #ifndef CORRADE_MSVC2015_COMPATIBILITY /* Multiple definitions still broken */
 template<class T> using Range1D = Range<1, T>;
@@ -281,7 +349,8 @@ template<class T> using Range1D = Range<1, T>;
 @brief Two-dimensional range
 
 See @ref Range for more information.
-@see @ref Range1D, @ref Range3D
+@see @ref Range1D, @ref Range3D, @ref Magnum::Range2D, @ref Magnum::Range2Di,
+    @ref Magnum::Range2Dd
 */
 template<class T> class Range2D: public Range<2, T> {
     public:
@@ -420,10 +489,11 @@ template<class T> class Range2D: public Range<2, T> {
 };
 
 /**
-@brief Two-dimensional range
+@brief Three-dimensional range
 
 See @ref Range for more information.
-@see @ref Range1D, @ref Range2D
+@see @ref Range1D, @ref Range2D, @ref Magnum::Range3D, @ref Magnum::Range3Di,
+    @ref Magnum::Range3Dd
 */
 template<class T> class Range3D: public Range<3, T> {
     public:
@@ -653,19 +723,27 @@ are undefined if any range has a negative size.
     @ref Range::max()
 */
 template<UnsignedInt dimensions, class T> inline bool intersects(const Range<dimensions, T>& a, const Range<dimensions, T>& b) {
-    return (a.max() > b.min()).all() && (a.min() < b.max()).all();
+    return (Vector<dimensions, T>{a.max()} > b.min()).all() &&
+           (Vector<dimensions, T>{a.min()} < b.max()).all();
 }
 
 /** @debugoperator{Range} */
 template<UnsignedInt dimensions, class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Range<dimensions, T>& value) {
-    debug << "Range({" << Corrade::Utility::Debug::nospace << value.min()[0];
+    debug << "Range({" << Corrade::Utility::Debug::nospace << Vector<dimensions, T>{value.min()}[0];
     for(UnsignedInt i = 1; i != dimensions; ++i)
-        debug << Corrade::Utility::Debug::nospace << "," << value.min()[i];
+        debug << Corrade::Utility::Debug::nospace << "," << Vector<dimensions, T>{value.min()}[i];
     debug << Corrade::Utility::Debug::nospace << "}, {"
-          << Corrade::Utility::Debug::nospace << value.max()[0];
+          << Corrade::Utility::Debug::nospace << Vector<dimensions, T>{value.max()}[0];
     for(UnsignedInt i = 1; i != dimensions; ++i)
-        debug << Corrade::Utility::Debug::nospace << "," << value.max()[i];
+        debug << Corrade::Utility::Debug::nospace << "," << Vector<dimensions, T>{value.max()}[i];
     return debug << Corrade::Utility::Debug::nospace << "})";
+}
+
+template<UnsignedInt dimensions, class T> inline bool Range<dimensions, T>::operator==(const Range<dimensions, T>& other) const {
+    /* For non-scalar types default implementation of TypeTraits would be used,
+       which is just operator== */
+    return TypeTraits<VectorType>::equals(_min, other._min) &&
+        TypeTraits<VectorType>::equals(_max, other._max);
 }
 
 /* Explicit instantiation for commonly used types */
@@ -681,16 +759,19 @@ extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utili
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Range<3, Double>&);
 #endif
 
-template<UnsignedInt dimensions, class T> Range<dimensions, T> Range<dimensions, T>::translated(const VectorType& vector) const {
-    return {_min + vector, _max + vector};
-}
+namespace Implementation {
 
-template<UnsignedInt dimensions, class T> Range<dimensions, T> Range<dimensions, T>::padded(const VectorType& padding) const {
-    return {_min - padding, _max + padding};
-}
+template<UnsignedInt dimensions, class T> struct StrictWeakOrdering<Range<dimensions, T>> {
+    bool operator()(const Range<dimensions, T>& a, const Range<dimensions, T>& b) const {
+        StrictWeakOrdering<typename Range<dimensions, T>::VectorType> o;
+        if(o(a.min(), b.min()))
+            return true;
+        if(o(b.min(), a.min()))
+            return false;
+        return o(a.max(), b.max());
+    }
+};
 
-template<UnsignedInt dimensions, class T> Range<dimensions, T> Range<dimensions, T>::scaled(const VectorType& scaling) const {
-    return {_min*scaling, _max*scaling};
 }
 
 }}

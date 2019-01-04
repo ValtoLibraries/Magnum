@@ -67,7 +67,8 @@ find_package(Magnum REQUIRED Sdl2Application)
 target_link_libraries(your-app Magnum::Application)
 @endcode
 
-See documentation of particular `*Application` classs, @ref building,
+See documentation of particular `*Application` classs, the
+@ref magnum-gl-info "magnum-gl-info" utility documentation, @ref building,
 @ref cmake and @ref platform for more information.
 */
 
@@ -185,8 +186,8 @@ See @ref building and @ref cmake for more information.
 @brief Keyframe-based animation
 
 This library is built as part of Magnum by default. To use it, you need to
-find `Magnum` package and link to `Magnum::Magnum` target. See @ref building
-and @ref cmake for more information.
+find `Magnum` package and link to `Magnum::Magnum` target. See @ref building,
+@ref cmake and @ref animation for more information.
 @experimental
 */
 
@@ -210,11 +211,15 @@ find_package(Magnum REQUIRED Audio)
 target_link_libraries(your-app Magnum::Audio)
 @endcode
 
-See @ref building and @ref cmake for more information.
-
-Additional plugins are built separately, see particular `Audio::*Importer`
-class documentation, @ref building, @ref building-plugins, @ref cmake,
+Additional plugins and utilities are built separately. See particular
+`Audio::*Importer` class documentation, the @ref magnum-al-info "magnum-al-info"
+utility documentation, @ref building, @ref building-plugins, @ref cmake,
 @ref cmake-plugins and @ref plugins for more information.
+
+@m_class{m-block m-default}
+
+@thirdparty This library makes use of the [OpenAL](https://www.openal.org/)
+    API.
 */
 
 /** @dir Magnum/DebugTools
@@ -261,6 +266,17 @@ target_link_libraries(your-app Magnum::GL)
 @endcode
 
 See @ref building, @ref cmake and @ref opengl for more information.
+
+@m_class{m-block m-success}
+
+@thirdparty This library makes use of the
+    [OpenGL](https://www.opengl.org/) and [WebGL](https://www.khronos.org/webgl/)
+    APIs. In addition, the library uses code generated using
+    [flextGL](https://github.com/mosra/flextgl), copyright © 2011--2018 Thomas
+    Weber, licensed under @m_class{m-label m-success} **MIT**
+    ([license text](https://github.com/mosra/flextgl/blog/master/LICENSE),
+    [choosealicense.com](https://choosealicense.com/licenses/mit/)). It
+    requires attribution for public use.
 */
 
 /** @dir Magnum/MeshTools
@@ -356,10 +372,26 @@ See @ref building, @ref cmake and @ref shaders for more information.
 */
 
 /** @dir Magnum/Shapes
- * @brief Namespace @ref Magnum::Shapes
- */
+@brief Namespace @ref Magnum::Shapes
+
+@deprecated The @ref Magnum::Shapes library is a failed design experiment and
+    is scheduled for removal in a future release. Related geometry algorithms
+    were moved to @ref Magnum::Math::Distance and @ref Magnum::Math::Intersection;
+    if you need a full-fledged physics library, please have look at
+    [Bullet](https://bulletphysics.org), which has Magnum integration in
+    @ref Magnum::BulletIntegration, or at [Box2D](https://box2d.org/), which
+    has a @ref examples-box2d "Magnum example" as well.
+*/
 /** @namespace Magnum::Shapes
 @brief Shape library
+
+@deprecated This library is a failed design experiment and is scheduled for
+    removal in a future release. Related geometry algorithms were moved to
+    @ref Math::Distance and @ref Math::Intersection; if you need a full-fledged
+    physics library, please have look at [Bullet](https://bulletphysics.org),
+    which has Magnum integration in @ref BulletIntegration, or at
+    [Box2D](https://box2d.org/), which has a @ref examples-box2d "Magnum example"
+    as well.
 
 Collision detection system.
 
@@ -396,11 +428,11 @@ find_package(Magnum REQUIRED Text)
 target_link_libraries(your-app Magnum::Text)
 @endcode
 
-See @ref building and @ref cmake for more information.
-
-Additional plugins are built separately, see particular `*Font` and
-`*FontConverter` class documentation, @ref building, @ref building-plugins,
-@ref cmake, @ref cmake-plugins and @ref plugins for more information.
+Additional plugins and utilities are built separately. See particular `*Font`
+and `*FontConverter` class documentation, the
+@ref magnum-fontconverter "magnum-fontconverter" utility documentation,
+@ref building, @ref building-plugins, @ref cmake, @ref cmake-plugins and
+@ref plugins for more information.
 */
 
 /** @dir Magnum/TextureTools
@@ -427,7 +459,9 @@ Note that functionality depending on @ref GL APIs is available only if Magnum
 is built with both `WITH_GL` and `TARGET_GL` enabled (which is done by
 default).
 
-See @ref building and @ref cmake for more information.
+Additional utilities are built separately. See the
+@ref magnum-distancefieldconverter "magnum-distancefieldconverter" utility
+documentation, @ref building and @ref cmake for more information.
 */
 
 /** @dir Magnum/Trade
@@ -450,12 +484,11 @@ find_package(Magnum REQUIRED Trade)
 target_link_libraries(your-app Magnum::Trade)
 @endcode
 
-See @ref building and @ref cmake for more information.
-
-Additional plugins are built separately, see particular `Trade::*Importer` and
-`*ImageConverter` class documentation, @ref building, @ref building-plugins,
-@ref cmake, @ref cmake-plugins and @ref plugins for more
-information.
+Additional plugins and utilities are built separately. See particular
+`Trade::*Importer` and `*ImageConverter` class documentation, the
+@ref magnum-imageconverter "magnum-imageconverter" utility documentation,
+@ref building, @ref building-plugins, @ref cmake, @ref cmake-plugins and
+@ref plugins for more information.
 */
 
 /** @dir Magnum/Vk
@@ -478,6 +511,17 @@ target_link_libraries(your-app Magnum::Vk)
 @endcode
 
 See @ref building, @ref cmake and @ref vulkan for more information.
+
+@m_class{m-block m-success}
+
+@thirdparty This library makes use of the
+    [Vulkan](https://www.khronos.org/vulkan/) API. In addition, the library
+    uses code generated using
+    [flextGL](https://github.com/mosra/flextgl), copyright © 2011--2018 Thomas
+    Weber, licensed under @m_class{m-label m-success} **MIT**
+    ([license text](https://github.com/mosra/flextgl/blog/master/LICENSE),
+    [choosealicense.com](https://choosealicense.com/licenses/mit/)). It
+    requires attribution for public use.
 */
 
 /** @dir magnum/src/MagnumPlugins

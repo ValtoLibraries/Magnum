@@ -26,8 +26,13 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Platform::GlutApplication, macro @ref MAGNUM_GLUTAPPLICATION_MAIN()
- */
+@brief Class @ref Magnum::Platform::GlutApplication, macro @ref MAGNUM_GLUTAPPLICATION_MAIN()
+
+@deprecated This application is based on an outdated toolkit and scheduled for
+    removal in a future release. Please consider switching to either
+    @ref Magnum::Platform::Sdl2Application or @ref Magnum::Platform::GlfwApplication
+    as soon as possible.
+*/
 
 #include <memory>
 #include <string>
@@ -43,10 +48,24 @@
 
 #include <GL/freeglut.h>
 
+#ifndef MAGNUM_BUILD_DEPRECATED
+#error scheduled for removal, consider switching to Sdl2Application or GlfwApplication instead
+#endif
+
+/* I still have a test for this class and it shouldn't pollute the log there */
+#ifndef _MAGNUM_DO_NOT_WARN_DEPRECATED_GLUTAPPLICATION
+CORRADE_DEPRECATED_FILE("scheduled for removal, consider switching to Sdl2Application or GlfwApplication instead")
+#endif
+
 namespace Magnum { namespace Platform {
 
+CORRADE_IGNORE_DEPRECATED_PUSH
 /** @nosubgrouping
 @brief GLUT application
+
+@deprecated This application is based on an outdated toolkit and scheduled for
+    removal in a future release. Please consider switching to either
+    @ref Sdl2Application or @ref GlfwApplication as soon as possible.
 
 Application using the [GLUT](http://freeglut.sourceforge.net/) toolkit.
 Supports keyboard and mouse handling with support for changing cursor and mouse
@@ -56,24 +75,13 @@ This application library is available only on desktop OpenGL (Linux, Windows,
 macOS). It depends on the [GLUT](http://freeglut.sourceforge.net/) library and
 is built if `WITH_GLUTAPPLICATION` is enabled when building Magnum.
 
-@section Platform-GlutApplication-bootstrap Bootstrap application
+@m_class{m-block m-success}
 
-Fully contained base application using @ref GlutApplication along with
-CMake setup is available in `base-glut` branch of
-[Magnum Bootstrap](https://github.com/mosra/magnum-bootstrap) repository,
-download it as [tar.gz](https://github.com/mosra/magnum-bootstrap/archive/base-glut.tar.gz)
-or [zip](https://github.com/mosra/magnum-bootstrap/archive/base-glut.zip) file.
-After extracting the downloaded archive you can build and run the application
-with these four commands:
-
-@code{.sh}
-mkdir build && cd build
-cmake ..
-cmake --build .
-./src/MyApplication # or ./src/Debug/MyApplication
-@endcode
-
-See @ref cmake for more information.
+@thirdparty This plugin makes use of the [freeGLUT](http://freeglut.sourceforge.net/)
+    library, licensed under @m_class{m-label m-success} **MIT**
+    ([license text](https://github.com/dcnieho/FreeGLUT/blob/git_master/freeglut/freeglut/COPYING),
+    [choosealicense.com](https://choosealicense.com/licenses/mit/)).
+    It requires attribution for public use.
 
 @section Platform-GlutApplication-usage General usage
 
@@ -108,7 +116,7 @@ If no other application header is included, this class is also aliased to
 @cpp Platform::Application @ce and the macro is aliased to
 @cpp MAGNUM_APPLICATION_MAIN() @ce to simplify porting.
 */
-class GlutApplication {
+class CORRADE_DEPRECATED("scheduled for removal, consider switching to Sdl2Application or GlfwApplication instead") GlutApplication {
     public:
         /** @brief Application arguments */
         struct Arguments {
@@ -121,6 +129,7 @@ class GlutApplication {
 
         class Configuration;
         class GLConfiguration;
+        class ViewportEvent;
         class InputEvent;
         class KeyEvent;
         class MouseEvent;
@@ -272,6 +281,7 @@ class GlutApplication {
 
         /** @{ @name Screen handling */
 
+    public:
         /**
          * @brief Swap buffers
          *
@@ -287,8 +297,33 @@ class GlutApplication {
     #else
     private:
     #endif
-        /** @copydoc Sdl2Application::viewportEvent() */
-        virtual void viewportEvent(const Vector2i& size);
+        /**
+         * @brief Viewport event
+         *
+         * Called when window size changes. The default implementation does
+         * nothing. If you want to respond to size changes, you should pass the
+         * new size to @ref GL::DefaultFramebuffer::setViewport() (if using
+         * OpenGL) and possibly elsewhere (to
+         * @ref SceneGraph::Camera::setViewport(), other framebuffers...).
+         *
+         * Note that this function might not get called at all if the window
+         * size doesn't change. You should configure the initial state of your
+         * cameras, framebuffers etc. in application constructor rather than
+         * relying on this function to be called.
+         */
+        virtual void viewportEvent(ViewportEvent& event);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief viewportEvent(ViewportEvent&)
+         * @deprecated Use @ref viewportEvent(ViewportEvent&) instead.
+         *      To preserve backwards compatibility, this function is called
+         *      from @ref viewportEvent(ViewportEvent&) with
+         *      @ref ViewportEvent::windowSize() passed to @p size. Overriding
+         *      the new function will cause this function to not be called
+         *      anymore.
+         */
+        virtual CORRADE_DEPRECATED("use viewportEvent(ViewportEvent&) instead") void viewportEvent(const Vector2i& size);
+        #endif
 
         /** @copydoc Sdl2Application::drawEvent() */
         virtual void drawEvent() = 0;
@@ -361,9 +396,7 @@ class GlutApplication {
         /*@}*/
 
     private:
-        static void staticViewportEvent(int x, int y) {
-            _instance->viewportEvent({x, y});
-        }
+        static void staticViewportEvent(int x, int y);
 
         static void staticKeyPressEvent(unsigned char key, int x, int y);
         static void staticKeyReleaseEvent(unsigned char key, int x, int y);
@@ -575,6 +608,24 @@ class GlutApplication::Configuration {
 };
 
 /**
+@brief Viewport event
+
+@see @ref viewportEvent()
+*/
+class GlutApplication::ViewportEvent {
+    public:
+        /** @brief Window size */
+        Vector2i windowSize() const { return _windowSize; }
+
+    private:
+        friend GlutApplication;
+
+        explicit ViewportEvent(const Vector2i& windowSize): _windowSize{windowSize} {}
+
+        Vector2i _windowSize;
+};
+
+/**
 @brief Base for input events
 
 @see @ref KeyEvent, @ref MouseEvent, @ref MouseMoveEvent, @ref keyPressEvent(),
@@ -598,10 +649,10 @@ class GlutApplication::InputEvent {
         void setAccepted(bool accepted = true) { _accepted = accepted; }
 
         /** @copydoc Sdl2Application::InputEvent::isAccepted() */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
     protected:
-        constexpr InputEvent(): _accepted(false) {}
+        explicit InputEvent(): _accepted(false) {}
 
         ~InputEvent() = default;
 
@@ -696,13 +747,13 @@ class GlutApplication::KeyEvent: public GlutApplication::InputEvent {
         };
 
         /** @brief Key */
-        constexpr Key key() const { return _key; }
+        Key key() const { return _key; }
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
     private:
-        constexpr KeyEvent(Key key, const Vector2i& position): _key(key), _position(position) {}
+        explicit KeyEvent(Key key, const Vector2i& position): _key(key), _position(position) {}
 
         const Key _key;
         const Vector2i _position;
@@ -731,13 +782,13 @@ class GlutApplication::MouseEvent: public GlutApplication::InputEvent {
         };
 
         /** @brief Button */
-        constexpr Button button() const { return _button; }
+        Button button() const { return _button; }
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
     private:
-        constexpr MouseEvent(Button button, const Vector2i& position): _button(button), _position(position) {}
+        explicit MouseEvent(Button button, const Vector2i& position): _button(button), _position(position) {}
 
         const Button _button;
         const Vector2i _position;
@@ -773,13 +824,13 @@ class GlutApplication::MouseMoveEvent: public GlutApplication::InputEvent {
         typedef Containers::EnumSet<Button> Buttons;
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
         /** @brief Mouse buttons */
-        constexpr Buttons buttons() const { return _buttons; }
+        Buttons buttons() const { return _buttons; }
 
     private:
-        constexpr MouseMoveEvent(const Vector2i& position, Buttons buttons): _position(position), _buttons(buttons) {}
+        explicit MouseMoveEvent(const Vector2i& position, Buttons buttons): _position(position), _buttons(buttons) {}
 
         const Vector2i _position;
         const Buttons _buttons;
@@ -788,6 +839,12 @@ class GlutApplication::MouseMoveEvent: public GlutApplication::InputEvent {
 /** @hideinitializer
 @brief Entry point for GLUT-based applications
 @param className Class name
+
+@deprecated This application is based on an outdated toolkit and scheduled for
+    removal in a future release. Please consider switching to either
+    @ref Magnum::Platform::Sdl2Application "Platform::Sdl2Application" or
+    @ref Magnum::Platform::GlfwApplication "Platform::GlfwApplication" as soon
+    as possible.
 
 See @ref Magnum::Platform::GlutApplication "Platform::GlutApplication" for
 usage information. This macro abstracts out platform-specific entry point code
@@ -805,6 +862,7 @@ When no other application header is included this macro is also aliased to
 @cpp MAGNUM_APPLICATION_MAIN() @ce.
 */
 #define MAGNUM_GLUTAPPLICATION_MAIN(className)                              \
+    CORRADE_DEPRECATED_MACRO(MAGNUM_APPLICATION_MAIN(), "scheduled for removal, consider switching to Sdl2Application or GlfwApplication instead") \
     int main(int argc, char** argv) {                                       \
         className app({argc, argv});                                        \
         return app.exec();                                                  \
@@ -812,16 +870,25 @@ When no other application header is included this macro is also aliased to
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 #ifndef MAGNUM_APPLICATION_MAIN
-typedef GlutApplication Application;
-typedef BasicScreen<GlutApplication> Screen;
-typedef BasicScreenedApplication<GlutApplication> ScreenedApplication;
+typedef CORRADE_DEPRECATED("scheduled for removal, consider switching to Sdl2Application or GlfwApplication instead") GlutApplication Application;
+typedef CORRADE_DEPRECATED("scheduled for removal, consider switching to Sdl2Application or GlfwApplication instead")BasicScreen<GlutApplication> Screen;
+typedef CORRADE_DEPRECATED("scheduled for removal, consider switching to Sdl2Application or GlfwApplication instead") BasicScreenedApplication<GlutApplication> ScreenedApplication;
+#ifndef _MAGNUM_DO_NOT_WARN_DEPRECATED_GLUTAPPLICATION
 #define MAGNUM_APPLICATION_MAIN(className) MAGNUM_GLUTAPPLICATION_MAIN(className)
+#else
+#define MAGNUM_APPLICATION_MAIN(className)                                  \
+    int main(int argc, char** argv) {                                       \
+        className app({argc, argv});                                        \
+        return app.exec();                                                  \
+    }
+#endif
 #else
 #undef MAGNUM_APPLICATION_MAIN
 #endif
 #endif
 
 CORRADE_ENUMSET_OPERATORS(GlutApplication::MouseMoveEvent::Buttons)
+CORRADE_IGNORE_DEPRECATED_POP
 
 }}
 

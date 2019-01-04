@@ -43,8 +43,14 @@ namespace Implementation {
 @brief Dual complex number
 @tparam T   Underlying data type
 
-Represents 2D rotation and translation. See @ref transformations for brief
-introduction.
+Represents 2D rotation and translation. Usually denoted as the following in
+equations, with @f$ q_0 @f$ being the @ref real() part and @f$ q_\epsilon @f$
+the @ref dual() part: @f[
+    \hat q = q_0 + \epsilon q_\epsilon
+@f]
+
+See @ref Dual and @ref Complex for further notation description and
+@ref transformations for brief introduction.
 @see @ref Magnum::DualComplex, @ref Magnum::DualComplexd, @ref Dual,
     @ref Complex, @ref Matrix3
 @todo Can this be done similarly as in dual quaternions? It sort of works, but
@@ -59,7 +65,7 @@ template<class T> class DualComplex: public Dual<Complex<T>> {
          * @param angle         Rotation angle (counterclockwise)
          *
          * @f[
-         *      \hat c = (cos \theta + i sin \theta) + \epsilon (0 + i0)
+         *      \hat c = (\cos(\theta) + i \sin(\theta)) + \epsilon (0 + i0)
          * @f]
          * @see @ref Complex::rotation(), @ref Matrix3::rotation(),
          *      @ref DualQuaternion::rotation()
@@ -92,7 +98,7 @@ template<class T> class DualComplex: public Dual<Complex<T>> {
          */
         static DualComplex<T> fromMatrix(const Matrix3<T>& matrix) {
             CORRADE_ASSERT(matrix.isRigidTransformation(),
-                "Math::DualComplex::fromMatrix(): the matrix doesn't represent rigid transformation", {});
+                "Math::DualComplex::fromMatrix(): the matrix doesn't represent rigid transformation:" << Corrade::Utility::Debug::newline << matrix, {});
             return {Implementation::complexFromMatrix(matrix.rotationScaling()), Complex<T>(matrix.translation())};
         }
 
@@ -173,6 +179,15 @@ template<class T> class DualComplex: public Dual<Complex<T>> {
         template<class U, class V = decltype(Implementation::DualComplexConverter<T, U>::to(std::declval<DualComplex<T>>()))> constexpr explicit operator U() const {
             return Implementation::DualComplexConverter<T, U>::to(*this);
         }
+
+        /**
+         * @brief Raw data
+         * @return One-dimensional array of four elements
+         *
+         * @see @ref real(), @ref dual()
+         */
+        T* data() { return Dual<Complex<T>>::data()->data(); }
+        constexpr const T* data() const { return Dual<Complex<T>>::data()->data(); } /**< @overload */
 
         /**
          * @brief Whether the dual complex number is normalized
@@ -369,6 +384,32 @@ template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& d
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const DualComplex<Float>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const DualComplex<Double>&);
 #endif
+
+namespace Implementation {
+    template<class T> struct StrictWeakOrdering<DualComplex<T>>: StrictWeakOrdering<Dual<Complex<T>>> {};
+}
+
+}}
+
+namespace Corrade { namespace Utility {
+
+/** @configurationvalue{Magnum::Math::DualComplex} */
+template<class T> struct ConfigurationValue<Magnum::Math::DualComplex<T>> {
+    ConfigurationValue() = delete;
+
+    /** @brief Writes elements separated with spaces */
+    static std::string toString(const Magnum::Math::DualComplex<T>& value, ConfigurationValueFlags flags) {
+        return ConfigurationValue<Magnum::Math::Vector<4, T>>::toString(reinterpret_cast<const Magnum::Math::Vector<4, T>&>(value), flags);
+    }
+
+    /** @brief Reads elements separated with whitespace */
+    static Magnum::Math::DualComplex<T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
+        const Magnum::Math::Vector<4, T> value = ConfigurationValue<Magnum::Math::Vector<4, T>>::fromString(stringValue, flags);
+        return reinterpret_cast<const Magnum::Math::DualComplex<T>&>(value);
+    }
+};
+
+/* No explicit instantiation needed, as Vector<4, T> is instantiated already */
 
 }}
 

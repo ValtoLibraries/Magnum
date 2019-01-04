@@ -30,6 +30,7 @@ set(MagnumMath_HEADERS
     Color.h
     Complex.h
     Constants.h
+    CubicHermite.h
     Distance.h
     Dual.h
     DualComplex.h
@@ -47,6 +48,7 @@ set(MagnumMath_HEADERS
     Packing.h
     Range.h
     RectangularMatrix.h
+    StrictWeakOrdering.h
     Swizzle.h
     Tags.h
     Unit.h

@@ -38,12 +38,17 @@ if(CORRADE_TARGET_EMSCRIPTEN AND NOT TARGET_GLES2)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_WEBGL2=1")
 endif()
 
-add_library(snippets-Magnum STATIC
+set(snippets_Magnum_SRCS
     Magnum.cpp
     MagnumAnimation.cpp
     MagnumAnimation-custom.cpp
     MagnumMath.cpp
     MagnumMathAlgorithms.cpp)
+if(CORRADE_TARGET_EMSCRIPTEN)
+    list(APPEND snippets_Magnum_SRCS platforms-html5.cpp)
+endif()
+
+add_library(snippets-Magnum STATIC ${snippets_Magnum_SRCS})
 target_link_libraries(snippets-Magnum PRIVATE Magnum)
 set_target_properties(snippets-Magnum PROPERTIES FOLDER "Magnum/doc/snippets")
 
@@ -100,9 +105,19 @@ if(WITH_DEBUGTOOLS AND Corrade_TestSuite_FOUND AND NOT CORRADE_TARGET_IOS)
     # corrade_add_test() because it shouldn't be run as part of CTest as it
     # purposedly fails.
     add_executable(debugtools-compareimage debugtools-compareimage.cpp)
-    target_link_libraries(debugtools-compareimage PRIVATE MagnumDebugTools)
+    target_link_libraries(debugtools-compareimage PRIVATE
+        MagnumDebugTools
+        MagnumTrade)
     target_include_directories(debugtools-compareimage PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     set_target_properties(debugtools-compareimage PROPERTIES FOLDER "Magnum/doc/snippets")
+endif()
+
+if(WITH_PRIMITIVES)
+    add_library(snippets-MagnumPrimitives STATIC
+        MagnumPrimitives.cpp)
+    target_link_libraries(snippets-MagnumPrimitives PRIVATE MagnumPrimitives)
+    set_target_properties(snippets-MagnumPrimitives
+        PROPERTIES FOLDER "Magnum/doc/snippets")
 endif()
 
 if(WITH_SCENEGRAPH)

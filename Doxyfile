@@ -241,9 +241,12 @@ ALIASES                = \
     "debugoperatorenum{1}=@brief Debug output operator @xrefitem debugoperators \"Debug output operator\" \"Debug output operators for custom types\" Allows printing @ref \1 with @ref Corrade::Utility::Debug and friends." \
     "debugoperatorclassenum{2}=@relatesalso \1 @brief Debug output operator @xrefitem debugoperators \"Debug output operator\" \"Debug output operators for custom types\" Allows printing @ref \2 with @ref Corrade::Utility::Debug and friends." \
     "configurationvalueref{1}=@see @ref configurationvalues \"Corrade::Utility::ConfigurationValue<\1>\"" \
-    "configurationvalue{1}=@brief Configuration value parser and writer @xrefitem configurationvalues \"Configuration value parser and writer\" \"Configuration value parsers and writers for custom types\" Allows parsing and writing @ref \1 from and to @ref Corrade::Utility::Configuration." \
+    "configurationvalue{1}=@brief Configuration value parser and writer @xrefitem configurationvalues \"Configuration value parser and writer\" \"Configuration value parsers and writers for custom types\" Allows parsing and writing @ref \1 from and to @ref Corrade::Utility::Configuration and use it with @ref Corrade::Utility::Arguments." \
+    "tweakableliteral{1}=@brief Tweakable literal parser @xrefitem tweakableliterals \"Tweakable literal parser\" \"Tweakable literal parsers\" Allows using @ref \1 with @ref Corrade::Utility::Tweakable." \
     "collisionoccurenceoperator{2}=@relatesalso \1 @brief Collision occurence of @ref \1 and @ref \2 @see @ref \2::operator%(const \1&) const" \
     "collisionoperator{2}=@relatesalso \1 @brief Collision of @ref \1 and @ref \2 @see @ref \2::operator/(const \1&) const" \
+    "partialsupport=@xrefitem partialsupport \"Partially supported\" \"List of partially supported features\"" \
+    "thirdparty=@xrefitem credits-third-party \"Third-party components\" \"Third-party components\"" \
     "todoc=@xrefitem todoc \"Documentation todo\" \"Documentation-related todo list\"" \
     "fn_gl{1}=<a href=\"https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/gl\1.xhtml\">gl\1()</a>" \
     "fn_gl2{2}=<a href=\"https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/gl\2.xhtml\">gl\1()</a>" \
@@ -925,10 +928,12 @@ EXCLUDE_SYMBOLS        = Magnum::*Implementation \
 # that contain example code fragments that are included (see the \include
 # command).
 
-EXAMPLE_PATH           = doc/snippets/ \
+EXAMPLE_PATH           = doc/generated/ \
+                         doc/snippets/ \
                          src/ \
                          ../magnum-plugins/src/ \
                          ../magnum-examples/src/ \
+                         ../magnum-extras/doc/snippets/ \
                          ../magnum-integration/doc/snippets/ \
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
@@ -951,7 +956,8 @@ EXAMPLE_RECURSIVE      = NO
 
 IMAGE_PATH             = doc/ \
                          doc/snippets/ \
-                         ../magnum-examples/doc
+                         ../magnum-examples/doc \
+                         ../magnum-extras/doc
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -2196,14 +2202,14 @@ DOT_NUM_THREADS        = 0
 # The default value is: Helvetica.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_FONTNAME           = Verdana
+DOT_FONTNAME           = Source Sans Pro
 
 # The DOT_FONTSIZE tag can be used to set the size (in points) of the font of
 # dot graphs.
 # Minimum value: 4, maximum value: 24, default value: 10.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_FONTSIZE           = 8
+DOT_FONTSIZE           = 16
 
 # By default doxygen will tell dot to use the default font as specified with
 # DOT_FONTNAME. If you specify a different font using DOT_FONTNAME you can set
@@ -2355,7 +2361,10 @@ DOT_PATH               =
 # command).
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOTFILE_DIRS           =
+DOTFILE_DIRS           = doc/ \
+                         ../magnum-plugins/doc \
+                         ../magnum-integration/doc \
+                         ../magnum-extras/doc
 
 # The MSCFILE_DIRS tag can be used to specify one or more directories that
 # contain msc files that are included in the documentation (see the \mscfile

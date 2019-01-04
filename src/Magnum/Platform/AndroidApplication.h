@@ -128,6 +128,15 @@ If no other application header is included, this class is also aliased to
 @cpp Platform::Application @ce and the macro is aliased to @cpp MAGNUM_APPLICATION_MAIN() @ce
 to simplify porting.
 
+@section Platform-AndroidApplication-resizing Responding to viewport events
+
+Unlike in desktop application implementations, where this is controlled via
+@ref Sdl2Application::Configuration::WindowFlag::Resizable, for example, on
+Android you have to describe this in the `AndroidManifest.xml` file, as by
+default the application gets killed and relaunched on screen orientation
+change. See the @ref platforms-android-apps-manifest-screen-resize "manifest file docs"
+for more information.
+
 @section Platform-AndroidApplication-output-redirection Redirecting output to Android log buffer
 
 The application by default redirects @ref Corrade::Utility::Debug "Debug",
@@ -143,6 +152,7 @@ class AndroidApplication {
 
         class Configuration;
         class GLConfiguration;
+        class ViewportEvent;
         class InputEvent;
         class MouseEvent;
         class MouseMoveEvent;
@@ -300,8 +310,50 @@ class AndroidApplication {
 
         /** @{ @name Screen handling */
 
-        /** @copydoc Sdl2Application::windowSize() */
-        Vector2i windowSize();
+    public:
+        /**
+         * @brief Window size
+         *
+         * Window size to which all input event coordinates can be related.
+         * Expects that a window is already created, equivalent to
+         * @ref framebufferSize().
+         *
+         * @attention The reported value will be incorrect in case you use
+         *      the [Screen Compatibility Mode](http://www.androiddocs.com/guide/practices/screen-compat-mode.html).
+         *      See @ref platforms-android-apps-manifest-screen-compatibility-mode
+         *      for details.
+         */
+        Vector2i windowSize() const { return framebufferSize(); }
+
+        /**
+         * @brief Framebuffer size
+         *
+         * Size of the default framebuffer, equivalent to @ref windowSize().
+         * Expects that a window is already created.
+         * @see @ref dpiScaling()
+         */
+        Vector2i framebufferSize() const;
+
+        /**
+         * @brief DPI scaling
+         *
+         * Provided only for compatibility with other toolkits. Returns always
+         * @cpp {1.0f, 1.0f} @ce.
+         * @see @ref framebufferSize()
+         */
+        Vector2 dpiScaling() const { return Vector2{1.0f}; }
+
+        /**
+         * @brief DPI scaling for given configuration
+         *
+         * Provided only for compatibility with other toolkits. Returns always
+         * @cpp {1.0f, 1.0f} @ce.
+         * @see @ref framebufferSize()
+         */
+        Vector2 dpiScaling(const Configuration& configuration) const {
+            static_cast<void>(configuration);
+            return Vector2{1.0f};
+        }
 
         /**
          * @brief Swap buffers
@@ -318,8 +370,38 @@ class AndroidApplication {
     #else
     private:
     #endif
-        /** @copydoc Sdl2Application::viewportEvent() */
-        virtual void viewportEvent(const Vector2i& size);
+        /**
+         * @brief Viewport event
+         *
+         * Called when window size changes, for example after device
+         * orientation change. The default implementation does nothing. If you
+         * want to respond to size changes, you should pass the new size to
+         * @ref GL::DefaultFramebuffer::setViewport() (if using OpenGL) and
+         * possibly elsewhere (to @ref SceneGraph::Camera::setViewport(), other
+         * framebuffers...).
+         *
+         * @attention Android by default kills and fully recreates the
+         *      application on device orientation change instead of calling the
+         *      viewport event. To prevent that, you need to modify the
+         *      `AndroidManifest.xml` file. See the
+         *      @ref platforms-android-apps-manifest-screen-resize "manifest file docs"
+         *      for more information.
+         *
+         * Note that this function might not get called at all if the window
+         * size doesn't change. You should configure the initial state of your
+         * cameras, framebuffers etc. in application constructor rather than
+         * relying on this function to be called. Size of the window can be
+         * retrieved using @ref windowSize(), size of the backing framebuffer
+         * via @ref framebufferSize() and DPI scaling using @ref dpiScaling().
+         * See @ref Platform-GlfwApplication-dpi for detailed info about these
+         * values.
+         */
+        virtual void viewportEvent(ViewportEvent& event);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @copydoc GlfwApplication::viewportEvent(const Vector2i&) */
+        virtual CORRADE_DEPRECATED("use viewportEvent(ViewportEvent&) instead") void viewportEvent(const Vector2i& size);
+        #endif
 
         /** @copydoc Sdl2Application::drawEvent() */
         virtual void drawEvent() = 0;
@@ -498,6 +580,44 @@ class AndroidApplication::Configuration {
 
     private:
         Vector2i _size;
+};
+
+/**
+@brief Viewport event
+
+@see @ref viewportEvent()
+*/
+class AndroidApplication::ViewportEvent {
+    public:
+        /**
+         * @brief Window size
+         *
+         * The same as @ref framebufferSize(). See
+         * @ref AndroidApplication::windowSize() for possible caveats.
+         */
+        Vector2i windowSize() const { return _windowSize; }
+
+        /**
+         * @brief Framebuffer size
+         *
+         * The same as @ref windowSize(). See
+         * @ref AndroidApplication::framebufferSize() for possible caveats.
+         */
+        Vector2i framebufferSize() const { return _windowSize; }
+
+        /**
+         * @brief DPI scaling
+         *
+         * Always @cpp {1.0f, 1.0f} @ce.
+         */
+        Vector2 dpiScaling() const { return Vector2{1.0f}; }
+
+    private:
+        friend AndroidApplication;
+
+        explicit ViewportEvent(const Vector2i& windowSize): _windowSize{windowSize} {}
+
+        Vector2i _windowSize;
 };
 
 /**

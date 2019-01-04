@@ -23,25 +23,7 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-cmake_minimum_required(VERSION 2.8.12)
-
-# CMake policies. 0025 needs to be before project(), so putting all there.
-# Use AppleClang instead of Clang on Apple
-if(POLICY CMP0025)
-    cmake_policy(SET CMP0025 NEW)
-endif()
-# Don't treat imported targets with :: as files
-if(POLICY CMP0028)
-    cmake_policy(SET CMP0028 NEW)
-endif()
-# Enable MACOSX_RPATH by default
-if(POLICY CMP0042)
-    cmake_policy(SET CMP0042 NEW)
-endif()
-# Quoted variables should not be dereferenced
-if(POLICY CMP0054)
-    cmake_policy(SET CMP0054 NEW)
-endif()
+cmake_minimum_required(VERSION 3.1)
 
 # Configuration fails on < 3.4 if only C++ is enabled (CheckFunctionExists
 # macro called from FindX11). Also, Android needs C for compiling some glue
@@ -49,7 +31,17 @@ endif()
 if(NOT CMAKE_VERSION VERSION_LESS 3.4.0 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
     set(LANG CXX)
 endif()
+
+option(HUNTER_ENABLED "Get dependencies (Corrade, GLFW, SDL2, ...) via Hunter" OFF)
+if(HUNTER_ENABLED)
+    include(${CMAKE_CURRENT_LIST_DIR}/package/hunter/HunterInit.cmake)
+endif()
+
 project(Magnum ${LANG})
+
+if(HUNTER_ENABLED)
+    include(${CMAKE_CURRENT_LIST_DIR}/package/hunter/HunterAddPackages.cmake)
+endif()
 
 # Use folders for nice tree in Visual Studio and XCode
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -108,7 +100,7 @@ cmake_dependent_option(WITH_TGAIMPORTER "Build TgaImporter plugin" OFF "NOT WITH
 cmake_dependent_option(WITH_AUDIO "Build Audio library" OFF "NOT WITH_AL_INFO;NOT WITH_ANYAUDIOIMPORTER;NOT WITH_WAVAUDIOIMPORTER" ON)
 option(WITH_DEBUGTOOLS "Build DebugTools library" ON)
 cmake_dependent_option(WITH_MESHTOOLS "Build MeshTools library" ON "NOT WITH_OBJIMPORTER" ON)
-option(WITH_SHAPES "Build Shapes library" ON)
+option(WITH_SHAPES "Build Shapes library" OFF)
 cmake_dependent_option(WITH_SCENEGRAPH "Build SceneGraph library" ON "NOT WITH_SHAPES" ON)
 option(WITH_SHADERS "Build Shaders library" ON)
 cmake_dependent_option(WITH_TEXT "Build Text library" ON "NOT WITH_FONTCONVERTER;NOT WITH_MAGNUMFONT;NOT WITH_MAGNUMFONTCONVERTER" ON)
@@ -194,6 +186,14 @@ if(BUILD_TESTS)
         set(CORRADE_TESTSUITE_BUNDLE_IDENTIFIER_PREFIX "cz.mosra.magnum")
     endif()
     enable_testing()
+
+    # For experimental Gradle-less Android APK creation. Only with CMake > 3.7
+    # that has builtin Android support -- Gradle uses 3.6 so this will nicely
+    # work in both cases.
+    if(CORRADE_TARGET_ANDROID AND CMAKE_ANDROID_NDK)
+        list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/toolchains/modules/")
+        include(UseAndroid)
+    endif()
 endif()
 
 # OpenGLTester library, built by default only if GL tests are enabled
@@ -213,13 +213,15 @@ if(BUILD_STATIC)
 endif()
 
 # Check dependencies
-if(NOT TARGET_GLES OR TARGET_DESKTOP_GLES)
-    set(OpenGL_GL_PREFERENCE GLVND) # since CMake 3.11
-    find_package(OpenGL REQUIRED)
-elseif(TARGET_GLES2)
-    find_package(OpenGLES2 REQUIRED)
-else()
-    find_package(OpenGLES3 REQUIRED)
+if(WITH_GL)
+    if(NOT TARGET_GLES OR TARGET_DESKTOP_GLES)
+        set(OpenGL_GL_PREFERENCE GLVND) # since CMake 3.11
+        find_package(OpenGL REQUIRED)
+    elseif(TARGET_GLES2)
+        find_package(OpenGLES2 REQUIRED)
+    else()
+        find_package(OpenGLES3 REQUIRED)
+    endif()
 endif()
 
 # Configuration variables (saved later to configure.h)
@@ -371,7 +373,7 @@ set(MAGNUM_PLUGINS_AUDIOIMPORTER_DEBUG_DIR ${MAGNUM_PLUGINS_DEBUG_DIR}/audioimpo
 set(MAGNUM_PLUGINS_AUDIOIMPORTER_RELEASE_DIR ${MAGNUM_PLUGINS_RELEASE_DIR}/audioimporters)
 
 # Library version
-set(MAGNUM_LIBRARY_VERSION 2.0)
+set(MAGNUM_LIBRARY_VERSION 2.1)
 set(MAGNUM_LIBRARY_SOVERSION 2)
 
 add_subdirectory(modules)

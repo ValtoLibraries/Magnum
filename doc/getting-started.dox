@@ -70,7 +70,7 @@ these two new subdirectories using @cmake add_subdirectory() @ce so the file
 looks like this:
 
 @code{.cmake}
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1)
 project(MyApplication)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/modules/")
@@ -169,7 +169,7 @@ cmake --build .
 @subsection getting-started-windows Windows
 
 On Windows you can use either MSVC 2015+ or MinGW-w64. Prebuilt SDL2 binaries
-can be downloaded at https://libsdl.org/download-2.0.php, dependeding on where
+can be downloaded at https://libsdl.org/download-2.0.php. Depending on where
 you extract them you may need to specify `CMAKE_PREFIX_PATH` so CMake is able
 to find them. For running the executable properly, Windows also need to have
 all dependency DLLs copied along it. That can be done by setting
@@ -250,6 +250,7 @@ experimenting on your own!
 -   @subpage cmake-plugins --- @copybrief cmake-plugins
 -   @subpage cmake-integration --- @copybrief cmake-integration
 -   @subpage cmake-extras --- @copybrief cmake-extras
+-   @subpage custom-buildsystems --- @copybrief custom-buildsystems
 
 */
 }

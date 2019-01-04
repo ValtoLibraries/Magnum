@@ -266,7 +266,7 @@ template<class T> class Matrix4: public Matrix4x4<T> {
          *      \boldsymbol{A} = \begin{pmatrix}
          *          \frac{2}{s_x} & 0 & 0 & 0 \\
          *          0 & \frac{2}{s_y} & 0 & 0 \\
-         *          0 & 0 & \frac{2}{n - f} & \frac{2n}{n - f} - 1 \\
+         *          0 & 0 & \frac{2}{n - f} & \frac{n + f}{n - f} \\
          *          0 & 0 & 0 & 1
          *      \end{pmatrix}
          * @f]
@@ -298,7 +298,8 @@ template<class T> class Matrix4: public Matrix4x4<T> {
          *          0 & 0 & -1 & 0
          *      \end{pmatrix}
          * @f]
-         * @see @ref orthographicProjection(), @ref Matrix3::projection(),
+         * @see @ref perspectiveProjection(Rad<T> fov, T, T, T),
+         *      @ref orthographicProjection(), @ref Matrix3::projection(),
          *      @ref Constants::inf()
          * @m_keywords{gluPerspective()}
          */
@@ -306,15 +307,15 @@ template<class T> class Matrix4: public Matrix4x4<T> {
 
         /**
          * @brief 3D perspective projection matrix
-         * @param fov           Field of view angle (horizontal)
-         * @param aspectRatio   Aspect ratio
-         * @param near          Near clipping plane
-         * @param far           Far clipping plane
+         * @param fov           Horizontal field of view angle @f$ \theta @f$
+         * @param aspectRatio   Horizontal:vertical aspect ratio @f$ a @f$
+         * @param near          Near clipping plane @f$ n @f$
+         * @param far           Far clipping plane @f$ f @f$
          *
          * If @p far is finite, the result is: @f[
          *      \boldsymbol{A} = \begin{pmatrix}
-         *          \frac{1}{\tan{\frac{\theta}{2}}} & 0 & 0 & 0 \\
-         *          0 & \frac{a}{\tan{\frac{\theta}{2}}} & 0 & 0 \\
+         *          \frac{1}{\tan \left(\frac{\theta}{2} \right)} & 0 & 0 & 0 \\
+         *          0 & \frac{a}{\tan \left(\frac{\theta}{2} \right)} & 0 & 0 \\
          *          0 & 0 & \frac{n + f}{n - f} & \frac{2nf}{n - f} \\
          *          0 & 0 & -1 & 0
          *      \end{pmatrix}
@@ -322,19 +323,29 @@ template<class T> class Matrix4: public Matrix4x4<T> {
          *
          * For infinite @p far, the result is: @f[
          *      \boldsymbol{A} = \begin{pmatrix}
-         *          \frac{1}{\tan{\frac{\theta}{2}}} & 0 & 0 & 0 \\
-         *          0 & \frac{a}{\tan{\frac{\theta}{2}}} & 0 & 0 \\
+         *          \frac{1}{\tan \left( \frac{\theta}{2} \right) } & 0 & 0 & 0 \\
+         *          0 & \frac{a}{\tan \left( \frac{\theta}{2} \right) } & 0 & 0 \\
          *          0 & 0 & -1 & -2n \\
          *          0 & 0 & -1 & 0
          *      \end{pmatrix}
          * @f]
+         *
+         * This function is equivalent to calling
+         * @ref perspectiveProjection(const Vector2<T>&, T, T) with the
+         * @p size parameter calculated as @f[
+         *      \boldsymbol{s} = 2 n \tan \left(\tfrac{\theta}{2} \right)
+         *      \begin{pmatrix}
+         *          1 \\
+         *          \frac{1}{a}
+         *      \end{pmatrix}
+         * @f]
+         *
          * @see @ref orthographicProjection(), @ref Matrix3::projection(),
          *      @ref Constants::inf()
          * @m_keywords{gluPerspective()}
          */
         static Matrix4<T> perspectiveProjection(Rad<T> fov, T aspectRatio, T near, T far) {
-            const T xyScale = 2*std::tan(T(fov)/2)*near;
-            return perspectiveProjection(Vector2<T>(xyScale, xyScale/aspectRatio), near, far);
+            return perspectiveProjection(T(2)*near*std::tan(T(fov)*T(0.5))*Vector2<T>::yScale(T(1)/aspectRatio), near, far);
         }
 
         /**
@@ -414,6 +425,15 @@ template<class T> class Matrix4: public Matrix4x4<T> {
 
         /** @brief Construct matrix from external representation */
         template<class U, class V = decltype(Implementation::RectangularMatrixConverter<4, 4, T, U>::from(std::declval<U>()))> constexpr explicit Matrix4(const U& other): Matrix4x4<T>(Implementation::RectangularMatrixConverter<4, 4, T, U>::from(other)) {}
+
+        /**
+         * @brief Construct matrix by slicing or expanding another of a different size
+         *
+         * If the other matrix is larger, takes only the first @cpp size @ce
+         * columns and rows from it; if the other matrix is smaller, it's
+         * expanded to an identity (ones on diagonal, zeros elsewhere).
+         */
+        template<std::size_t otherSize> constexpr explicit Matrix4(const RectangularMatrix<otherSize, otherSize, T>& other) noexcept: Matrix4x4<T>{other} {}
 
         /** @brief Copy constructor */
         constexpr /*implicit*/ Matrix4(const RectangularMatrix<4, 4, T>& other) noexcept: Matrix4x4<T>(other) {}
@@ -870,7 +890,7 @@ MAGNUM_MATRIXn_OPERATOR_IMPLEMENTATION(4, Matrix4)
 
 template<class T> Matrix4<T> Matrix4<T>::rotation(const Rad<T> angle, const Vector3<T>& normalizedAxis) {
     CORRADE_ASSERT(normalizedAxis.isNormalized(),
-                   "Math::Matrix4::rotation(): axis must be normalized", {});
+        "Math::Matrix4::rotation(): axis" << normalizedAxis << "is not normalized", {});
 
     const T sine = std::sin(T(angle));
     const T cosine = std::cos(T(angle));
@@ -932,7 +952,7 @@ template<class T> Matrix4<T> Matrix4<T>::rotationZ(const Rad<T> angle) {
 
 template<class T> Matrix4<T> Matrix4<T>::reflection(const Vector3<T>& normal) {
     CORRADE_ASSERT(normal.isNormalized(),
-                    "Math::Matrix4::reflection(): normal must be normalized", {});
+        "Math::Matrix4::reflection(): normal" << normal << "is not normalized", {});
     return from(Matrix3x3<T>() - T(2)*normal*RectangularMatrix<1, 3, T>(normal).transposed(), {});
 }
 
@@ -975,7 +995,7 @@ template<class T> Matrix3x3<T> Matrix4<T>::rotation() const {
                           (*this)[1].xyz().normalized(),
                           (*this)[2].xyz().normalized()};
     CORRADE_ASSERT(rotation.isOrthogonal(),
-        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal", {});
+        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal:" << Corrade::Utility::Debug::newline << rotation, {});
     return rotation;
 }
 
@@ -984,7 +1004,7 @@ template<class T> Matrix3x3<T> Matrix4<T>::rotationNormalized() const {
                           (*this)[1].xyz(),
                           (*this)[2].xyz()};
     CORRADE_ASSERT(rotation.isOrthogonal(),
-        "Math::Matrix4::rotationNormalized(): the rotation part is not orthogonal", {});
+        "Math::Matrix4::rotationNormalized(): the rotation part is not orthogonal:" << Corrade::Utility::Debug::newline << rotation, {});
     return rotation;
 }
 
@@ -992,16 +1012,20 @@ template<class T> T Matrix4<T>::uniformScalingSquared() const {
     const T scalingSquared = (*this)[0].xyz().dot();
     CORRADE_ASSERT(TypeTraits<T>::equals((*this)[1].xyz().dot(), scalingSquared) &&
                    TypeTraits<T>::equals((*this)[2].xyz().dot(), scalingSquared),
-        "Math::Matrix4::uniformScaling(): the matrix doesn't have uniform scaling", {});
+        "Math::Matrix4::uniformScaling(): the matrix doesn't have uniform scaling:" << Corrade::Utility::Debug::newline << rotationScaling(), {});
     return scalingSquared;
 }
 
 template<class T> Matrix4<T> Matrix4<T>::invertedRigid() const {
     CORRADE_ASSERT(isRigidTransformation(),
-        "Math::Matrix4::invertedRigid(): the matrix doesn't represent rigid transformation", {});
+        "Math::Matrix4::invertedRigid(): the matrix doesn't represent a rigid transformation:" << Corrade::Utility::Debug::newline << *this, {});
 
     Matrix3x3<T> inverseRotation = rotationScaling().transposed();
     return from(inverseRotation, inverseRotation*-translation());
+}
+
+namespace Implementation {
+    template<class T> struct StrictWeakOrdering<Matrix4<T>>: StrictWeakOrdering<RectangularMatrix<4, 4, T>> {};
 }
 
 }}

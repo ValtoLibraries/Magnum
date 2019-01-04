@@ -25,8 +25,10 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/Configuration.h>
 
 #include "Magnum/Math/DualQuaternion.h"
+#include "Magnum/Math/StrictWeakOrdering.h"
 
 struct DualQuat {
     struct { float x, y, z, w; } re;
@@ -66,6 +68,8 @@ struct DualQuaternionTest: Corrade::TestSuite::Tester {
     void constructCopy();
     void convert();
 
+    void data();
+
     void isNormalized();
     template<class T> void isNormalizedEpsilonRotation();
     template<class T> void isNormalizedEpsilonTranslation();
@@ -80,17 +84,25 @@ struct DualQuaternionTest: Corrade::TestSuite::Tester {
     void conjugated();
     void inverted();
     void invertedNormalized();
+    void invertedNormalizedNotNormalized();
 
     void rotation();
+    void rotationNotNormalized();
     void translation();
     void combinedTransformParts();
     void matrix();
+    void matrixNotOrthogonal();
     void transformPoint();
     void transformPointNormalized();
+    void transformPointNormalizedNotNormalized();
 
     void sclerp();
+    void sclerpShortestPath();
+
+    void strictWeakOrdering();
 
     void debug();
+    void configuration();
 };
 
 typedef Math::Deg<Float> Deg;
@@ -114,6 +126,8 @@ DualQuaternionTest::DualQuaternionTest() {
               &DualQuaternionTest::constructCopy,
               &DualQuaternionTest::convert,
 
+              &DualQuaternionTest::data,
+
               &DualQuaternionTest::isNormalized,
               &DualQuaternionTest::isNormalizedEpsilonRotation<Float>,
               &DualQuaternionTest::isNormalizedEpsilonRotation<Double>,
@@ -133,31 +147,35 @@ DualQuaternionTest::DualQuaternionTest() {
               &DualQuaternionTest::conjugated,
               &DualQuaternionTest::inverted,
               &DualQuaternionTest::invertedNormalized,
+              &DualQuaternionTest::invertedNormalizedNotNormalized,
 
               &DualQuaternionTest::rotation,
+              &DualQuaternionTest::rotationNotNormalized,
               &DualQuaternionTest::translation,
               &DualQuaternionTest::combinedTransformParts,
               &DualQuaternionTest::matrix,
+              &DualQuaternionTest::matrixNotOrthogonal,
               &DualQuaternionTest::transformPoint,
               &DualQuaternionTest::transformPointNormalized,
+              &DualQuaternionTest::transformPointNormalizedNotNormalized,
 
               &DualQuaternionTest::sclerp,
+              &DualQuaternionTest::sclerpShortestPath,
 
-              &DualQuaternionTest::debug});
+              &DualQuaternionTest::strictWeakOrdering,
+
+              &DualQuaternionTest::debug,
+              &DualQuaternionTest::configuration});
 }
 
 void DualQuaternionTest::construct() {
     constexpr DualQuaternion a = {{{1.0f, 2.0f, 3.0f}, -4.0f}, {{0.5f, -3.1f, 3.3f}, 2.0f}};
     CORRADE_COMPARE(a, DualQuaternion({{1.0f, 2.0f, 3.0f}, -4.0f}, {{0.5f, -3.1f, 3.3f}, 2.0f}));
+    CORRADE_COMPARE(a.real(), Quaternion({1.0f, 2.0f, 3.0f}, -4.0f));
+    CORRADE_COMPARE(a.dual(), Quaternion({0.5f, -3.1f, 3.3f}, 2.0f));
 
-    constexpr Quaternion b = a.real();
-    CORRADE_COMPARE(b, Quaternion({1.0f, 2.0f, 3.0f}, -4.0f));
-
-    constexpr Quaternion c = a.dual();
-    CORRADE_COMPARE(c, Quaternion({0.5f, -3.1f, 3.3f}, 2.0f));
-
-    constexpr DualQuaternion d({{1.0f, 2.0f, 3.0f}, -4.0f});
-    CORRADE_COMPARE(d, DualQuaternion({{1.0f, 2.0f, 3.0f}, -4.0f}, {{0.0f, 0.0f, 0.0f}, 0.0f}));
+    constexpr DualQuaternion b({{1.0f, 2.0f, 3.0f}, -4.0f});
+    CORRADE_COMPARE(b, DualQuaternion({{1.0f, 2.0f, 3.0f}, -4.0f}, {{0.0f, 0.0f, 0.0f}, 0.0f}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<DualQuaternion, Quaternion, Quaternion>::value));
 }
@@ -270,6 +288,26 @@ void DualQuaternionTest::convert() {
     CORRADE_VERIFY(!(std::is_convertible<DualQuaternion, DualQuat>::value));
 }
 
+void DualQuaternionTest::data() {
+    constexpr DualQuaternion ca{{{1.0f, 2.0f, 3.0f}, -4.0f}, {{0.5f, -3.1f, 3.3f}, 2.0f}};
+
+    constexpr Quaternion b = ca.real();
+    CORRADE_COMPARE(b, Quaternion({1.0f, 2.0f, 3.0f}, -4.0f));
+
+    constexpr Quaternion c = ca.dual();
+    CORRADE_COMPARE(c, Quaternion({0.5f, -3.1f, 3.3f}, 2.0f));
+
+    DualQuaternion a{{{1.0f, 2.0f, 3.0f}, -4.0f}, {{0.5f, -3.1f, 3.3f}, 2.0f}};
+
+    #ifndef CORRADE_MSVC2015_COMPATIBILITY /* Apparently dereferencing a pointer is verboten */
+    constexpr
+    #endif
+    Float d = *ca.data();
+    Float e = a.data()[7];
+    CORRADE_COMPARE(d, 1.0f);
+    CORRADE_COMPARE(e, 2.0f);
+}
+
 void DualQuaternionTest::isNormalized() {
     CORRADE_VERIFY(!DualQuaternion({{1.0f, 2.0f, 3.0f}, 4.0f}, {}).isNormalized());
     CORRADE_VERIFY((DualQuaternion::rotation(Deg(23.0f), Vector3::xAxis())*DualQuaternion::translation({0.9f, -1.0f, -0.5f})).isNormalized());
@@ -366,11 +404,6 @@ void DualQuaternionTest::invertedNormalized() {
     DualQuaternion a({{ 1.0f,  2.0f,  3.0f}, -4.0f}, {{ 2.5f, -3.1f,  3.3f}, 2.0f});
     DualQuaternion b({{-1.0f, -2.0f, -3.0f}, -4.0f}, {{-2.5f,  3.1f, -3.3f}, 2.0f});
 
-    std::ostringstream o;
-    Error redirectError{&o};
-    CORRADE_COMPARE(a.invertedNormalized(), DualQuaternion());
-    CORRADE_COMPARE(o.str(), "Math::DualQuaternion::invertedNormalized(): dual quaternion must be normalized\n");
-
     DualQuaternion normalized = a.normalized();
     DualQuaternion inverted = normalized.invertedNormalized();
     CORRADE_COMPARE(normalized*inverted, DualQuaternion());
@@ -378,14 +411,16 @@ void DualQuaternionTest::invertedNormalized() {
     CORRADE_COMPARE(inverted, b/Math::sqrt(Dual(30.0f, -3.6f)));
 }
 
+void DualQuaternionTest::invertedNormalizedNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    DualQuaternion({{ 1.0f,  2.0f,  3.0f}, -4.0f}, {{ 2.5f, -3.1f,  3.3f}, 2.0f}).invertedNormalized();
+    CORRADE_COMPARE(out.str(), "Math::DualQuaternion::invertedNormalized(): DualQuaternion({{1, 2, 3}, -4}, {{2.5, -3.1, 3.3}, 2}) is not normalized\n");
+}
+
 void DualQuaternionTest::rotation() {
-    std::ostringstream o;
-    Error redirectError{&o};
-
     Vector3 axis(1.0f/Constants<Float>::sqrt3());
-
-    CORRADE_COMPARE(DualQuaternion::rotation(Deg(120.0f), axis*2.0f), DualQuaternion());
-    CORRADE_COMPARE(o.str(), "Math::Quaternion::rotation(): axis must be normalized\n");
 
     DualQuaternion q = DualQuaternion::rotation(Deg(120.0f), axis);
     CORRADE_COMPARE(q.length(), 1.0f);
@@ -397,6 +432,14 @@ void DualQuaternionTest::rotation() {
     constexpr DualQuaternion b({{-1.0f, 2.0f, 3.0f}, 4.0f}, {});
     constexpr Quaternion c = b.rotation();
     CORRADE_COMPARE(c, Quaternion({-1.0f, 2.0f, 3.0f}, 4.0f));
+}
+
+void DualQuaternionTest::rotationNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    DualQuaternion::rotation(120.0_degf, Vector3(2.0f));
+    CORRADE_COMPARE(out.str(), "Math::Quaternion::rotation(): axis Vector(2, 2, 2) is not normalized\n");
 }
 
 void DualQuaternionTest::translation() {
@@ -429,13 +472,20 @@ void DualQuaternionTest::matrix() {
     CORRADE_COMPARE(q.toMatrix(), m);
     CORRADE_COMPARE((-q).toMatrix(), m);
 
-    std::ostringstream o;
-    Error redirectError{&o};
-    DualQuaternion::fromMatrix(m*2);
-    CORRADE_COMPARE(o.str(), "Math::DualQuaternion::fromMatrix(): the matrix doesn't represent rigid transformation\n");
+    CORRADE_COMPARE(DualQuaternion::fromMatrix(m), q);
+}
 
-    DualQuaternion p = DualQuaternion::fromMatrix(m);
-    CORRADE_COMPARE(p, q);
+void DualQuaternionTest::matrixNotOrthogonal() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    DualQuaternion::fromMatrix(Matrix4::rotationX(23.0_degf)*Matrix4::translation({-1.0f, 2.0f, 3.0f})*2);
+    CORRADE_COMPARE(out.str(),
+        "Math::DualQuaternion::fromMatrix(): the matrix doesn't represent a rigid transformation:\n"
+        "Matrix(2, 0, 0, -2,\n"
+        "       0, 1.84101, -0.781462, 1.33763,\n"
+        "       0, 0.781462, 1.84101, 7.08595,\n"
+        "       0, 0, 0, 2)\n");
 }
 
 void DualQuaternionTest::transformPoint() {
@@ -461,11 +511,6 @@ void DualQuaternionTest::transformPointNormalized() {
     Matrix4 n = Matrix4::rotationX(Deg(23.0f))*Matrix4::translation({-1.0f, 2.0f, 3.0f});
     Vector3 v(0.0f, -3.6f, 0.7f);
 
-    std::ostringstream o;
-    Error redirectError{&o};
-    (a*Dual(2)).transformPointNormalized(v);
-    CORRADE_COMPARE(o.str(), "Math::DualQuaternion::transformPointNormalized(): dual quaternion must be normalized\n");
-
     Vector3 transformedA = a.transformPointNormalized(v);
     CORRADE_COMPARE(transformedA, m.transformPoint(v));
     CORRADE_COMPARE(transformedA, Vector3(-1.0f, -1.58733f, 2.237721f));
@@ -475,6 +520,126 @@ void DualQuaternionTest::transformPointNormalized() {
     CORRADE_COMPARE(transformedB, Vector3(-1.0f, -2.918512f, 2.780698f));
 }
 
+void DualQuaternionTest::transformPointNormalizedNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    DualQuaternion a = DualQuaternion::translation({-1.0f, 2.0f, 3.0f})*DualQuaternion::rotation(Deg(23.0f), Vector3::xAxis());
+    (a*Dual(2)).transformPointNormalized({});
+    CORRADE_COMPARE(out.str(), "Math::DualQuaternion::transformPointNormalized(): DualQuaternion({{0.398736, 0, 0}, 1.95985}, {{-0.979925, 2.55795, 2.54104}, 0.199368}) is not normalized\n");
+}
+
+void DualQuaternionTest::sclerp() {
+    auto from = DualQuaternion::translation({20.0f, 0.0f, 0.0f})*
+        DualQuaternion::rotation(65.0_degf, Vector3::yAxis());
+    auto to = DualQuaternion::translation({42.0f, 42.0f, 42.0f})*
+        DualQuaternion::rotation(75.0_degf, Vector3::xAxis());
+
+    const DualQuaternion begin = Math::sclerp(from, to, 0.0f);
+    const DualQuaternion beginShortestPath = Math::sclerpShortestPath(from, to, 0.0f);
+    const DualQuaternion end = Math::sclerp(from, to, 1.0f);
+    const DualQuaternion endShortestPath = Math::sclerpShortestPath(from, to, 1.0f);
+    CORRADE_COMPARE(begin, from);
+    CORRADE_COMPARE(beginShortestPath, from);
+    CORRADE_COMPARE(end, to);
+    CORRADE_COMPARE(endShortestPath, to);
+
+    DualQuaternion expected1{
+        {{0.170316f, 0.424975f, 0.0f}, 0.889038f},
+        {{10.689f, 7.47059f, 5.33428f}, -5.61881f}};
+    DualQuaternion expected2{
+        {{0.34568f, 0.282968f, 0.0f}, 0.89467f},
+        {{12.8764f, 15.8357f, 5.03088f}, -9.98371f}};
+    DualQuaternion expected3{
+        {{0.550678f, 0.072563f, 0.0f}, 0.831558f},
+        {{15.6916f, 26.3477f, 4.23219f}, -12.6905f}};
+
+    const DualQuaternion interp1 = Math::sclerp(from, to, 0.25f);
+    const DualQuaternion interp1ShortestPath = Math::sclerpShortestPath(from, to, 0.25f);
+    const DualQuaternion interp2 = Math::sclerp(from, to, 0.52f);
+    const DualQuaternion interp2ShortestPath = Math::sclerpShortestPath(from, to, 0.52f);
+    const DualQuaternion interp3 = Math::sclerp(from, to, 0.88f);
+    const DualQuaternion interp3ShortestPath = Math::sclerpShortestPath(from, to, 0.88f);
+
+    CORRADE_COMPARE(interp1, expected1);
+    CORRADE_COMPARE(interp1ShortestPath, expected1);
+    CORRADE_COMPARE(interp2, expected2);
+    CORRADE_COMPARE(interp2ShortestPath, expected2);
+    CORRADE_COMPARE(interp3, expected3);
+    CORRADE_COMPARE(interp3ShortestPath, expected3);
+
+    /* Edge cases: */
+
+    /* Dual quaternions with identical rotation */
+    CORRADE_COMPARE(Math::sclerp(from, from, 0.42f), from);
+    CORRADE_COMPARE(Math::sclerpShortestPath(from, from, 0.42f), from);
+    CORRADE_COMPARE(Math::sclerp(from, -from, 0.42f), from);
+    CORRADE_COMPARE(Math::sclerpShortestPath(from, -from, 0.42f), from);
+
+    /* No difference in rotation, but in translation */
+    {
+        auto rotation = DualQuaternion::rotation(35.0_degf, Vector3{0.3f, 0.2f, 0.1f}.normalized());
+        auto a = DualQuaternion::translation({1.0f, 2.0f, 4.0f})*rotation;
+        auto b = DualQuaternion::translation({5.0f, -6.0f, 2.0f})*rotation;
+        auto expected = DualQuaternion::translation({2.0f, 0.0f, 3.5f})*rotation;
+
+        auto interpolateTranslation = Math::sclerp(a, b, 0.25f);
+        auto interpolateTranslationShortestPath = Math::sclerpShortestPath(a, b, 0.25f);
+        CORRADE_VERIFY(interpolateTranslation.isNormalized());
+        CORRADE_VERIFY(interpolateTranslationShortestPath.isNormalized());
+        CORRADE_COMPARE(interpolateTranslation, expected);
+        CORRADE_COMPARE(interpolateTranslationShortestPath, expected);
+    }
+}
+
+void DualQuaternionTest::sclerpShortestPath() {
+    DualQuaternion a = DualQuaternion::translation({1.5f, 0.3f, 0.0f})*
+        DualQuaternion::rotation(0.0_degf, Vector3::zAxis());
+    DualQuaternion b = DualQuaternion::translation({3.5f, 0.3f, 1.0f})*
+        DualQuaternion::rotation(225.0_degf, Vector3::zAxis());
+
+    DualQuaternion sclerp = Math::sclerp(a, b, 0.25f);
+    DualQuaternion sclerpShortestPath = Math::sclerpShortestPath(a, b, 0.25f);
+
+    CORRADE_VERIFY(sclerp.isNormalized());
+    CORRADE_VERIFY(sclerpShortestPath.isNormalized());
+    CORRADE_COMPARE(sclerp.rotation().axis(), Vector3::zAxis());
+    /** @todo why is this inverted compared to QuaternionTest::slerpShortestPath()? */
+    CORRADE_COMPARE(sclerpShortestPath.rotation().axis(), -Vector3::zAxis());
+    CORRADE_COMPARE(sclerp.rotation().angle(), 56.25_degf);
+    /* Because the axis is inverted, this is also inverted compared to
+       QuaternionTest::slerpShortestPath() */
+    CORRADE_COMPARE(sclerpShortestPath.rotation().angle(), 360.0_degf - 326.25_degf);
+
+    CORRADE_COMPARE(sclerp, (DualQuaternion{
+        {{0.0f, 0.0f, 0.471397f}, 0.881921f},
+        {{0.536892f, -0.692656f, 0.11024f}, -0.0589246f}}));
+    /* Also inverted compared to QuaternionTest::slerpShortestPath() */
+    CORRADE_COMPARE(sclerpShortestPath, (DualQuaternion{
+        {{0.0f, 0.0f, -0.290285f}, 0.95694f},
+        {{0.794402f, 0.651539f, 0.119618f}, 0.0362856f}}));
+
+    /* Translation along Z should be the same in both, in 25% of the way.
+       Translation in the XY plane is along a screw, so that's different. */
+    CORRADE_COMPARE(sclerpShortestPath.translation().z(), 0.25f);
+    CORRADE_COMPARE(sclerpShortestPath.translation().z(), 0.25f);
+}
+
+void DualQuaternionTest::strictWeakOrdering() {
+    StrictWeakOrdering o;
+    const DualQuaternion a{{{1.0f, 2.0f, 3.0f}, 0.0f}, {{1.0f, 2.0f, 3.0f}, 3.0f}};
+    const DualQuaternion b{{{1.0f, 2.0f, 3.0f}, 2.0f}, {{3.0f, 2.0f, 3.0f}, 4.0f}};
+    const DualQuaternion c{{{1.0f, 2.0f, 3.0f}, 0.0f}, {{1.0f, 2.0f, 3.0f}, 4.0f}};
+
+    CORRADE_VERIFY( o(a, b));
+    CORRADE_VERIFY(!o(b, a));
+    CORRADE_VERIFY( o(a, c));
+    CORRADE_VERIFY(!o(c, a));
+    CORRADE_VERIFY( o(c, b));
+    CORRADE_VERIFY(!o(b, c));
+    CORRADE_VERIFY(!o(a, a));
+}
+
 void DualQuaternionTest::debug() {
     std::ostringstream o;
 
@@ -482,35 +647,23 @@ void DualQuaternionTest::debug() {
     CORRADE_COMPARE(o.str(), "DualQuaternion({{1, 2, 3}, -4}, {{0.5, -3.1, 3.3}, 2})\n");
 }
 
-void DualQuaternionTest::sclerp() {
-    const DualQuaternion from = DualQuaternion::translation(Vector3{20.0f, .0f, .0f})*DualQuaternion::rotation(180.0_degf, Vector3{.0f, 1.0f, .0f});
-    const DualQuaternion to = DualQuaternion::translation(Vector3{42.0f, 42.0f, 42.0f})*DualQuaternion::rotation(75.0_degf, Vector3{1.0f, .0f, .0f});
+void DualQuaternionTest::configuration() {
+    Corrade::Utility::Configuration c;
 
-    constexpr DualQuaternion expected1{Quaternion{{.23296291314453416f, .9238795325112867f, .0f}, .303603179340959f},
-                                       Quaternion{{2.235619101917766f, 2.8169719855488395f, 10.722240915237789f}, -10.287636336847847f}};
-    constexpr DualQuaternion expected2{Quaternion{{.4437679833315842f, .6845471059286887f, .0f}, .5783296955322937f},
-                                       Quaternion{{5.764394870292371f, 11.161306653193549f, 9.671267015501789f}, -17.634394590712066f}};
-    constexpr DualQuaternion expected3{Quaternion{{.5979785904506439f, .18738131458572468f, .0f}, .7793008714910992f},
-                                       Quaternion{{13.409627907069353f, 25.452124456683414f, 5.681581047706807f}, -16.409481115504978f}};
+    DualQuaternion a{{{3.0f, 3.125f, 9.0f}, 9.55f}, {{-1.2f, 0.3f, 1.1f}, 92.05f}};
+    std::string value{"3 3.125 9 9.55 -1.2 0.3 1.1 92.05"};
 
-    const DualQuaternion interp1 = Math::sclerp(from, to, 0.25f);
-    const DualQuaternion interp2 = Math::sclerp(from, to, 0.52f);
-    const DualQuaternion interp3 = Math::sclerp(from, to, 0.88f);
+    c.setValue("dualquat", a);
+    CORRADE_COMPARE(c.value("dualquat"), value);
+    CORRADE_COMPARE(c.value<DualQuaternion>("dualquat"), a);
 
-    CORRADE_COMPARE(interp1, expected1);
-    CORRADE_COMPARE(interp2, expected2);
-    CORRADE_COMPARE(interp3, expected3);
+    /* Underflow */
+    c.setValue("underflow", "2.1 8.9");
+    CORRADE_COMPARE(c.value<DualQuaternion>("underflow"), (DualQuaternion{{{2.1f, 8.9f, 0.0f}, 0.0f}, {{0.0f, 0.0f, 0.0f}, 0.0f}}));
 
-    /* Edge cases: */
-
-    /* Dual quaternions with identical rotation */
-    CORRADE_COMPARE(Math::sclerp(from, from, 0.42f), from);
-    CORRADE_COMPARE(Math::sclerp(from, DualQuaternion(-from.real(), from.dual()), 0.42f), from);
-
-    /* No difference in rotation, but in translation */
-    const auto rotation = DualQuaternion::rotation(35.0_degf, Vector3{0.3f, 0.2f, 0.1f});
-    CORRADE_COMPARE(Math::sclerp(DualQuaternion::translation(Vector3{1.0f, 2.0f, 4.0f})*rotation, DualQuaternion::translation(Vector3{5, -6, 2})*rotation, 0.25f),
-                    DualQuaternion::translation(Vector3{2.0f, 0.0f, 3.5f})*rotation);
+    /* Overflow */
+    c.setValue("overflow", "2 1 8 9 16 33 -1 5 2 10");
+    CORRADE_COMPARE(c.value<DualQuaternion>("overflow"), (DualQuaternion{{{2.0f, 1.0f, 8.0f}, 9.0f}, {{16.0f, 33.0f, -1.0f}, 5.0f}}));
 }
 
 }}}

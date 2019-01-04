@@ -69,20 +69,13 @@ class MAGNUM_TRADE_EXPORT MeshData3D {
          */
         explicit MeshData3D(MeshPrimitive primitive, std::vector<UnsignedInt> indices, std::vector<std::vector<Vector3>> positions, std::vector<std::vector<Vector3>> normals, std::vector<std::vector<Vector2>> textureCoords2D, std::vector<std::vector<Color4>> colors, const void* importerState = nullptr);
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief MeshData3D(MeshPrimitive, std::vector<UnsignedInt>, std::vector<std::vector<Vector3>>, std::vector<std::vector<Vector3>>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Color4>>, const void*)
-         * @deprecated Use @ref MeshData3D(MeshPrimitive, std::vector<UnsignedInt>, std::vector<std::vector<Vector3>>, std::vector<std::vector<Vector3>>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Color4>>, const void*) instead.
-         */
-        CORRADE_DEPRECATED("Use MeshData3D(MeshPrimitive, std::vector<UnsignedInt>, std::vector<std::vector<Vector3>>, std::vector<std::vector<Vector3>>, std::vector<std::vector<Vector2>>, std::vector<std::vector<Color4>>, const void*) instead") explicit MeshData3D(MeshPrimitive primitive, std::vector<UnsignedInt> indices, std::vector<std::vector<Vector3>> positions, std::vector<std::vector<Vector3>> normals, std::vector<std::vector<Vector2>> textureCoords2D, const void* importerState = nullptr);
-        #endif
-
         /** @brief Copying is not allowed */
         MeshData3D(const MeshData3D&) = delete;
 
         /** @brief Move constructor */
         MeshData3D(MeshData3D&&)
             /* GCC 4.9.0 (the one from Android NDK) thinks this does not match
-               the implicit signature so it can't be defaulted. Works on 4.7,
+               the implicit signature so it can't be defaulted. Works on 4.8,
                5.0 and everywhere else, so I don't bother. */
             #if !defined(__GNUC__) || __GNUC__*100 + __GNUC_MINOR__ != 409
             noexcept
@@ -97,7 +90,7 @@ class MAGNUM_TRADE_EXPORT MeshData3D {
         /** @brief Move assignment */
         MeshData3D& operator=(MeshData3D&&)
             /* GCC 4.9.0 (the one from Android NDK) thinks this does not match
-               the implicit signature so it can't be defaulted. Works on 4.7,
+               the implicit signature so it can't be defaulted. Works on 4.8,
                5.0 and everywhere else, so I don't bother. */
             #if !defined(__GNUC__) || __GNUC__*100 + __GNUC_MINOR__ != 409
             noexcept

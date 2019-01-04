@@ -132,6 +132,7 @@ struct MeshGLTest: OpenGLTester {
 
     void unbindVAOWhenSettingIndexBufferData();
     void unbindVAOBeforeEnteringExternalSection();
+    void bindScratchVaoWhenEnteringExternalSection();
 
     #ifndef MAGNUM_TARGET_GLES
     void setBaseVertex();
@@ -251,6 +252,7 @@ MeshGLTest::MeshGLTest() {
 
               &MeshGLTest::unbindVAOWhenSettingIndexBufferData,
               &MeshGLTest::unbindVAOBeforeEnteringExternalSection,
+              &MeshGLTest::bindScratchVaoWhenEnteringExternalSection,
 
               #ifndef MAGNUM_TARGET_GLES
               &MeshGLTest::setBaseVertex,
@@ -312,6 +314,7 @@ void MeshGLTest::constructMove() {
     const Float data = Math::unpack<Float, UnsignedByte>(96);
     Buffer buffer1, buffer2;
     buffer1.setData({&data, 1}, BufferUsage::StaticDraw);
+    buffer2.setData({nullptr, 8}, BufferUsage::StaticDraw);
 
     Mesh a;
     a.addVertexBuffer(buffer1, 0, Attribute<0, Float>{});
@@ -336,7 +339,7 @@ void MeshGLTest::constructMove() {
 
     /* Move assign */
     Mesh c;
-    c.addVertexBuffer(buffer2, 1, Attribute<1, Float>{});
+    c.addVertexBuffer(buffer2, 4, Attribute<1, Float>{});
     const Int cId = c.id();
     c = std::move(b);
 
@@ -424,8 +427,8 @@ void MeshGLTest::wrap() {
 
 template<class T> void MeshGLTest::primitive() {
     setTestCaseName(std::is_same<T, MeshPrimitive>::value ?
-        "setPrimitive<GL::MeshPrimitive>" :
-        "setPrimitive<Magnum::MeshPrimitive>");
+        "primitive<GL::MeshPrimitive>" :
+        "primitive<Magnum::MeshPrimitive>");
 
     {
         Mesh mesh{T::LineLoop};
@@ -518,7 +521,7 @@ FloatShader::FloatShader(const std::string& type, const std::string& conversion)
         "#if !defined(GL_ES) && __VERSION__ == 120\n"
         "#define mediump\n"
         "#endif\n"
-        "#if defined(GL_ES) || __VERSION__ == 120\n"
+        "#if (defined(GL_ES) && __VERSION__ < 300) || __VERSION__ == 120\n"
         "#define in attribute\n"
         "#define out varying\n"
         "#endif\n"
@@ -532,12 +535,12 @@ FloatShader::FloatShader(const std::string& type, const std::string& conversion)
         "#if !defined(GL_ES) && __VERSION__ == 120\n"
         "#define mediump\n"
         "#endif\n"
-        "#if defined(GL_ES) || __VERSION__ == 120\n"
+        "#if (defined(GL_ES) && __VERSION__ < 300) || __VERSION__ == 120\n"
         "#define in varying\n"
         "#define result gl_FragColor\n"
         "#endif\n"
         "in mediump " + type + " valueInterpolated;\n"
-        "#if !defined(GL_ES) && __VERSION__ >= 130\n"
+        "#if (defined(GL_ES) && __VERSION__ >= 300) || (!defined(GL_ES) && __VERSION__ >= 130)\n"
         "out mediump vec4 result;\n"
         "#endif\n"
         "void main() { result = " + conversion + "; }\n");
@@ -1877,7 +1880,7 @@ template<class T> void MeshGLTest::setIndexBuffer() {
     Mesh mesh;
     mesh.addVertexBuffer(vertices, 1*4,  MultipleShader::Position(),
                          MultipleShader::Normal(), MultipleShader::TextureCoordinates())
-        .setIndexBuffer(indices, 2, T::UnsignedByte);
+        .setIndexBuffer(indices, 1, T::UnsignedByte);
 
     MAGNUM_VERIFY_NO_GL_ERROR();
     CORRADE_COMPARE(mesh.indexType(), MeshIndexType::UnsignedByte);
@@ -1980,7 +1983,7 @@ template<class T> void MeshGLTest::setIndexBufferTransferOwnership() {
         "setIndexBufferTransferOwnership<Magnum::MeshIndexType>");
 
     const UnsignedShort data = 0;
-    Buffer buffer;
+    Buffer buffer{Buffer::TargetHint::ElementArray};
     buffer.setData({&data, 1}, BufferUsage::StaticDraw);
 
     const GLuint id = buffer.id();
@@ -2013,7 +2016,7 @@ template<class T> void MeshGLTest::setIndexBufferRangeTransferOwnership() {
         "setIndexBufferRangeTransferOwnership<Magnum::MeshIndexType>");
 
     const UnsignedShort data = 0;
-    Buffer buffer;
+    Buffer buffer{Buffer::TargetHint::ElementArray};
     buffer.setData({&data, 1}, BufferUsage::StaticDraw);
 
     const GLuint id = buffer.id();
@@ -2109,6 +2112,48 @@ void MeshGLTest::unbindVAOBeforeEnteringExternalSection() {
         Context::current().resetState(Context::State::MeshVao);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        /* Be nice to the other tests */
+        Context::current().resetState(Context::State::ExitExternal);
+    }
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+
+    const auto value = Checker(FloatShader("float", "vec4(valueInterpolated, 0.0, 0.0, 0.0)"),
+        #ifndef MAGNUM_TARGET_GLES2
+        RenderbufferFormat::RGBA8,
+        #else
+        RenderbufferFormat::RGBA4,
+        #endif
+        mesh).get<UnsignedByte>(PixelFormat::RGBA, PixelType::UnsignedByte);
+
+    MAGNUM_VERIFY_NO_GL_ERROR();
+    CORRADE_COMPARE(value, 92);
+}
+
+void MeshGLTest::bindScratchVaoWhenEnteringExternalSection() {
+    typedef Attribute<0, Float> Attribute;
+
+    const Float data[] = { -0.7f, Math::unpack<Float, UnsignedByte>(92), Math::unpack<Float, UnsignedByte>(32) };
+    Buffer buffer{Buffer::TargetHint::Array};
+    buffer.setData(data, BufferUsage::StaticDraw);
+
+    Buffer indices{Buffer::TargetHint::ElementArray};
+    indices.setData(std::vector<UnsignedByte>{5, 0}, BufferUsage::StaticDraw);
+
+    Mesh mesh;
+    mesh.addVertexBuffer(buffer, 4, Attribute{})
+        .setIndexBuffer(indices, 0, MeshIndexType::UnsignedByte);
+
+    {
+        /* Should bind a scratch VAO only on desktop with core profile and be
+           a no-op everywhere else */
+        Context::current().resetState(Context::State::EnterExternal
+            |Context::State::BindScratchVao /* Comment this out to watch the world burn */
+            );
+
+        /* Should throw no GL error if scratch VAO is bound */
+        glDrawArrays(GL_POINTS, 0, 0);
 
         /* Be nice to the other tests */
         Context::current().resetState(Context::State::ExitExternal);

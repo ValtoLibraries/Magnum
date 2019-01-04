@@ -25,6 +25,7 @@
 
 #include "DistanceField.h"
 
+#include <Corrade/Utility/Format.h>
 #include <Corrade/Utility/Resource.h>
 
 #include "Magnum/Math/Range.h"
@@ -52,12 +53,7 @@ class DistanceFieldShader: public GL::AbstractShaderProgram {
     public:
         typedef GL::Attribute<0, Vector2> Position;
 
-        explicit DistanceFieldShader();
-
-        DistanceFieldShader& setRadius(Int radius) {
-            setUniform(radiusUniform, radius);
-            return *this;
-        }
+        explicit DistanceFieldShader(UnsignedInt radius);
 
         DistanceFieldShader& setScaling(const Vector2& scaling) {
             setUniform(scalingUniform, scaling);
@@ -76,15 +72,14 @@ class DistanceFieldShader: public GL::AbstractShaderProgram {
 
     private:
         /* ES2 on iOS (apparently independent on the device) has only 8 texture
-           units, so be careful to not step over that. ES3 has 16. */
+           units, so be careful to not step over that. ES3 on the same has 16. */
         enum: Int { TextureUnit = 7 };
 
-        Int radiusUniform{0},
-            scalingUniform{1},
+        Int scalingUniform{0},
             imageSizeInvertedUniform;
 };
 
-DistanceFieldShader::DistanceFieldShader() {
+DistanceFieldShader::DistanceFieldShader(const UnsignedInt radius) {
     #ifdef MAGNUM_BUILD_STATIC
     /* Import resources on static build, if not already */
     if(!Utility::Resource::hasGroup("MagnumTextureTools"))
@@ -103,7 +98,8 @@ DistanceFieldShader::DistanceFieldShader() {
 
     vert.addSource(rs.get("FullScreenTriangle.glsl"))
         .addSource(rs.get("DistanceFieldShader.vert"));
-    frag.addSource(rs.get("DistanceFieldShader.frag"));
+    frag.addSource(Utility::formatString("#define RADIUS {}\n", radius))
+        .addSource(rs.get("DistanceFieldShader.frag"));
 
     CORRADE_INTERNAL_ASSERT_OUTPUT(GL::Shader::compile({vert, frag}));
 
@@ -125,7 +121,6 @@ DistanceFieldShader::DistanceFieldShader() {
     if(!GL::Context::current().isExtensionSupported<GL::Extensions::ARB::explicit_uniform_location>())
     #endif
     {
-        radiusUniform = uniformLocation("radius");
         scalingUniform = uniformLocation("scaling");
 
         #ifndef MAGNUM_TARGET_GLES
@@ -147,54 +142,24 @@ DistanceFieldShader::DistanceFieldShader() {
 }
 
 }
-#ifndef MAGNUM_TARGET_GLES
-void distanceField(GL::Texture2D& input, GL::Texture2D& output, const Range2Di& rectangle, const Int radius, const Vector2i&)
-#else
-void distanceField(GL::Texture2D& input, GL::Texture2D& output, const Range2Di& rectangle, const Int radius, const Vector2i& imageSize)
-#endif
-{
+
+struct DistanceField::State {
+    explicit State(UnsignedInt radius): shader{radius}, radius{radius} {}
+
+    DistanceFieldShader shader;
+    UnsignedInt radius;
+    GL::Mesh mesh;
+};
+
+DistanceField::DistanceField(const UnsignedInt radius): _state{new State{radius}} {
     #ifndef MAGNUM_TARGET_GLES
     MAGNUM_ASSERT_GL_EXTENSION_SUPPORTED(GL::Extensions::ARB::framebuffer_object);
     #endif
 
-    /** @todo Disable depth test, blending and then enable it back (if was previously) */
-
-    #ifndef MAGNUM_TARGET_GLES
-    Vector2i imageSize = input.imageSize(0);
-    #endif
-
-    GL::Framebuffer framebuffer(rectangle);
-    framebuffer.attachTexture(GL::Framebuffer::ColorAttachment(0), output, 0);
-    framebuffer.bind();
-    framebuffer.clear(GL::FramebufferClear::Color);
-
-    const GL::Framebuffer::Status status = framebuffer.checkStatus(GL::FramebufferTarget::Draw);
-    if(status != GL::Framebuffer::Status::Complete) {
-        Error() << "TextureTools::distanceField(): cannot render to given output texture, unexpected framebuffer status"
-                << status;
-        return;
-    }
-
-    DistanceFieldShader shader;
-    shader.setRadius(radius)
-        .setScaling(Vector2(imageSize)/Vector2(rectangle.size()))
-        .bindTexture(input);
-
-    #ifndef MAGNUM_TARGET_GLES
-    if(!GL::Context::current().isVersionSupported(GL::Version::GL320))
-    #else
-    if(!GL::Context::current().isVersionSupported(GL::Version::GLES300))
-    #endif
-    {
-        shader.setImageSizeInverted(1.0f/Vector2(imageSize));
-    }
-
-    GL::Mesh mesh;
-    mesh.setPrimitive(GL::MeshPrimitive::Triangles)
+    _state->mesh.setPrimitive(GL::MeshPrimitive::Triangles)
         .setCount(3);
 
     /* Older GLSL doesn't have gl_VertexID, vertices must be supplied explicitly */
-    GL::Buffer buffer;
     #ifndef MAGNUM_TARGET_GLES
     if(!GL::Context::current().isVersionSupported(GL::Version::GL300))
     #else
@@ -206,12 +171,55 @@ void distanceField(GL::Texture2D& input, GL::Texture2D& output, const Range2Di& 
             Vector2(-1.0, -3.0),
             Vector2( 3.0,  1.0)
         };
+        GL::Buffer buffer;
         buffer.setData(triangle, GL::BufferUsage::StaticDraw);
-        mesh.addVertexBuffer(buffer, 0, DistanceFieldShader::Position());
+        _state->mesh.addVertexBuffer(std::move(buffer), 0, DistanceFieldShader::Position());
+    }
+}
+
+DistanceField::~DistanceField() = default;
+
+UnsignedInt DistanceField::radius() const { return _state->radius; }
+
+void DistanceField::operator()(GL::Texture2D& input, GL::Texture2D& output, const Range2Di& rectangle, const Vector2i&
+    #ifdef MAGNUM_TARGET_GLES
+    imageSize
+    #endif
+) {
+    /** @todo Disable depth test, blending and then enable it back (if was previously) */
+
+    #ifndef MAGNUM_TARGET_GLES
+    Vector2i imageSize = input.imageSize(0);
+    #endif
+
+    /* Framebuffer is instantiated here so it gets correctly unbound at the end
+       (and bound framebuffer reset back to the default) */
+    GL::Framebuffer framebuffer{rectangle};
+    framebuffer.attachTexture(GL::Framebuffer::ColorAttachment(0), output, 0)
+        .clear(GL::FramebufferClear::Color)
+        .bind();
+
+    const GL::Framebuffer::Status status = framebuffer.checkStatus(GL::FramebufferTarget::Draw);
+    if(status != GL::Framebuffer::Status::Complete) {
+        Error() << "TextureTools::DistanceField: cannot render to given output texture, unexpected framebuffer status"
+                << status;
+        return;
+    }
+
+    _state->shader.setScaling(Vector2(imageSize)/Vector2(rectangle.size()))
+        .bindTexture(input);
+
+    #ifndef MAGNUM_TARGET_GLES
+    if(!GL::Context::current().isVersionSupported(GL::Version::GL320))
+    #else
+    if(!GL::Context::current().isVersionSupported(GL::Version::GLES300))
+    #endif
+    {
+        _state->shader.setImageSizeInverted(1.0f/Vector2(imageSize));
     }
 
     /* Draw the mesh */
-    mesh.draw(shader);
+    _state->mesh.draw(_state->shader);
 }
 
 }}

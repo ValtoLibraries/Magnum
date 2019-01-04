@@ -165,7 +165,7 @@ bool AndroidApplication::tryCreate(const Configuration& configuration, const GLC
     return _context->tryCreate();
 }
 
-Vector2i AndroidApplication::windowSize() {
+Vector2i AndroidApplication::framebufferSize() const {
     return {ANativeWindow_getWidth(_state->window),
             ANativeWindow_getHeight(_state->window)};
 }
@@ -174,7 +174,20 @@ void AndroidApplication::swapBuffers() {
     eglSwapBuffers(_display, _surface);
 }
 
+void AndroidApplication::viewportEvent(ViewportEvent& event) {
+    #ifdef MAGNUM_BUILD_DEPRECATED
+    CORRADE_IGNORE_DEPRECATED_PUSH
+    viewportEvent(event.windowSize());
+    CORRADE_IGNORE_DEPRECATED_POP
+    #else
+    static_cast<void>(event);
+    #endif
+}
+
+#ifdef MAGNUM_BUILD_DEPRECATED
 void AndroidApplication::viewportEvent(const Vector2i&) {}
+#endif
+
 void AndroidApplication::mousePressEvent(MouseEvent&) {}
 void AndroidApplication::mouseReleaseEvent(MouseEvent&) {}
 void AndroidApplication::mouseMoveEvent(MouseMoveEvent&) {}
@@ -193,7 +206,7 @@ namespace {
 void AndroidApplication::commandEvent(android_app* state, int32_t cmd) {
     Data& data = *static_cast<Data*>(state->userData);
 
-    switch (cmd) {
+    switch(cmd) {
         case APP_CMD_SAVE_STATE:
             /** @todo Make use of this */
             break;
@@ -215,6 +228,16 @@ void AndroidApplication::commandEvent(android_app* state, int32_t cmd) {
         case APP_CMD_LOST_FOCUS:
             /** @todo Make use of these */
             break;
+
+        case APP_CMD_CONFIG_CHANGED: {
+            /* This says "the current device configuration has changed", which
+               is about as vague as it can get. It seems to be that this gets
+               emitted when screen orientation changes, for example. Fire the
+               viewport event in this case. */
+            ViewportEvent e{{ANativeWindow_getWidth(data.instance->_state->window),
+                             ANativeWindow_getHeight(data.instance->_state->window)}};
+            data.instance->viewportEvent(e);
+        } break;
     }
 }
 

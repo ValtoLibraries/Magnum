@@ -116,7 +116,7 @@ template<class T> class Frustum {
 
         /** @brief Frustum planes */
         constexpr Corrade::Containers::StaticArrayView<6, const Vector4<T>> planes() const {
-            /* GCC 4.7 needs explicit construction */
+            /* GCC 4.8 needs explicit construction */
             return Corrade::Containers::StaticArrayView<6, const Vector4<T>>{_data};
         }
 
@@ -180,6 +180,24 @@ template<class T> template<class U> constexpr Frustum<T>::Frustum(const Frustum<
     Vector4<T>{other[3]},
     Vector4<T>{other[4]},
     Vector4<T>{other[5]}} {}
+
+namespace Implementation {
+
+template<class T> struct StrictWeakOrdering<Frustum<T>> {
+    bool operator()(const Frustum<T>& a, const Frustum<T>& b) const {
+        StrictWeakOrdering<Vector<4, T>> o;
+        for(std::size_t i = 0; i < 6; ++i) {
+            if(o(a[i], b[i]))
+                return true;
+            if(o(b[i], a[i]))
+                return false;
+        }
+
+        return false; /* a and b are equivalent */
+    }
+};
+
+}
 
 }}
 

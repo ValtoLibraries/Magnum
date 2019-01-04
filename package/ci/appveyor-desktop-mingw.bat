@@ -11,6 +11,7 @@ cmake .. ^
     -DCMAKE_BUILD_TYPE=Debug ^
     -DCMAKE_INSTALL_PREFIX=%APPVEYOR_BUILD_FOLDER%/deps ^
     -DWITH_INTERCONNECT=OFF ^
+    -DUTILITY_USE_ANSI_COLORS=ON ^
     -G Ninja || exit /b
 cmake --build . || exit /b
 cmake --build . --target install || exit /b
@@ -24,6 +25,7 @@ cmake .. ^
     -DCMAKE_INSTALL_PREFIX=%APPVEYOR_BUILD_FOLDER%/deps ^
     -DCMAKE_PREFIX_PATH="%APPVEYOR_BUILD_FOLDER%/SDL;%APPVEYOR_BUILD_FOLDER%/openal" ^
     -DWITH_AUDIO=ON ^
+    -DWITH_SHAPES=ON ^
     -DWITH_SDL2APPLICATION=ON ^
     -DWITH_WINDOWLESSWGLAPPLICATION=ON ^
     -DWITH_WGLCONTEXT=ON ^
@@ -50,6 +52,7 @@ cmake --build . || exit /b
 cmake --build . --target install || exit /b
 
 rem Test
+set CORRADE_TEST_COLOR=ON
 ctest -V -E GLTest || exit /b
 
 rem Coverage upload

@@ -46,7 +46,10 @@
 #ifdef CORRADE_TARGET_WINDOWS /* Windows version of SDL2 redefines main(), we don't want that */
 #define SDL_MAIN_HANDLED
 #endif
-#include <SDL.h>
+/* SDL.h includes the world, adding 50k LOC. We don't want that either. */
+#include <SDL_keycode.h>
+#include <SDL_mouse.h>
+#include <SDL_video.h>
 #include <SDL_scancode.h>
 
 #ifdef CORRADE_TARGET_WINDOWS_RT
@@ -55,6 +58,10 @@
 #endif
 
 namespace Magnum { namespace Platform {
+
+namespace Implementation {
+    enum class Sdl2DpiScalingPolicy: UnsignedByte;
+}
 
 /** @nosubgrouping
 @brief SDL2 application
@@ -68,6 +75,14 @@ respective sections in @ref building-corrade-cross-emscripten "Corrade's" and
 @ref building-cross-emscripten "Magnum's" building documentation). It depends
 on the [SDL2](http://www.libsdl.org) library (Emscripten has it built in) and
 is built if `WITH_SDL2APPLICATION` is enabled in CMake.
+
+@m_class{m-block m-success}
+
+@thirdparty This plugin makes use of the [SDL2](https://www.libsdl.org/)
+    library, released under the @m_class{m-label m-success} **zlib license**
+    ([license text](http://www.gzip.org/zlib/zlib_license.html),
+    [choosealicense.com](https://choosealicense.com/licenses/zlib/)).
+    Attribution is appreciated but not required.
 
 @section Platform-Sdl2Application-bootstrap Bootstrap application
 
@@ -224,94 +239,154 @@ If no other application header is included, this class is also aliased to
 @cpp Platform::Application @ce and the macro is aliased to @cpp MAGNUM_APPLICATION_MAIN() @ce
 to simplify porting.
 
-@section Platform-Sdl2Application-usage-ios Usage with iOS
+@subsection Platform-Sdl2Application-usage-posix POSIX specifics
 
-A lot of options for iOS build (such as HiDPI/Retina support, supported display
-orientation, icons, splash screen...) is specified through the `*.plist` file.
-CMake uses its own template that can be configured using various `MACOSX_BUNDLE_*`
-variables, but many options are missing from there and you are much better off
-rolling your own template and passing **abosolute** path to it to CMake using
-the `MACOSX_BUNDLE_INFO_PLIST` property. Below are contents of the `*.plist`
-file used in the bootstrap application, requesting OpenGL ES 2.0 and
-advertising Retina support:
+On POSIX systems, SDL by default intercepts the `SIGTERM` signal and generates
+an exit event for it, instead of doing the usual application exit. This would
+mean that if the application fails to set @ref ExitEvent::setAccepted() in an
+@ref exitEvent() override for some reason, pressing
+@m_class{m-label m-warning} **Ctrl** @m_class{m-label m-default} **C** would
+not terminate it either and you'd have to forcibly kill it instead. When using
+SDL >= 2.0.4, @ref Sdl2Application turns this behavior off, making
+@ref exitEvent() behave consistently with other application implementations
+such as @ref GlfwApplication. You can turn this behavior back on by enabling
+the [corresponding SDL hint](https://wiki.libsdl.org/SDL_HINT_NO_SIGNAL_HANDLERS)
+through an environment variable:
 
-@code{.xml}
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleDevelopmentRegion</key>
-  <string>en-US</string>
-  <key>CFBundleExecutable</key>
-  <string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
-  <key>CFBundleIdentifier</key>
-  <string>cz.mosra.magnum.MyApplication</string>
-  <key>CFBundleInfoDictionaryVersion</key>
-  <string>6.0</string>
-  <key>CFBundleName</key>
-  <string>My Application</string>
-  <key>CFBundlePackageType</key>
-  <string>APPL</string>
-
-  <key>UIRequiredDeviceCapabilities</key>
-  <array>
-    <string>opengles-2</string>
-  </array>
-  <key>NSHighResolutionCapable</key>
-  <true/>
-</dict>
-</plist>
+@code{.sh}
+SDL_NO_SIGNAL_HANDLERS=1 ./your-app
 @endcode
 
-Some other options can be configured from runtime when creating the SDL2
-application window, see documentation of particular value for details:
+See also the [SDL Wiki](https://wiki.libsdl.org/SDL_EventType#SDL_QUIT) for
+details.
 
--   @ref Configuration::WindowFlag::AllowHighDpi allows creating HiDPI/Retina
-    drawable
+@subsection Platform-Sdl2Application-usage-linux Linux specifics
+
+SDL by default attempts to disable compositing, which may cause ugly flickering
+for non-fullscreen apps (KWin, among others, is known to respect this setting).
+When using SDL >= 2.0.8, @ref Sdl2Application turns this behavior off, keeping
+the compositor running to avoid the flicker. You can turn this behavior back on
+by enabling the [corresponding SDL hint](https://wiki.libsdl.org/CategoryHints)
+through an environment variable:
+
+@code{.sh}
+SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR=1 ./your-app
+@endcode
+
+If you're running an older version of SDL, you can disallow apps from bypassing
+the compositor in system-wide KWin settings.
+
+@subsection Platform-Sdl2Application-usage-ios iOS specifics
+
+Leaving a default (zero) window size in @ref Configuration will cause the app
+to autodetect it based on the actual device screen size. This also depends on
+@ref Platform-Sdl2Application-dpi "DPI awareness", see below for details.
+
+As noted in the @ref platforms-ios-bundle "iOS platform guide", a lot of
+options needs to be set via a `*.plist` file. Some options can be configured
+from runtime when creating the SDL2 application window, see documentation of
+a particular value for details:
+
 -   @ref Configuration::WindowFlag::Borderless hides the menu bar
 -   @ref Configuration::WindowFlag::Resizable makes the application respond to
     device orientation changes
 
-@section Platform-Sdl2Application-usage-winrt Usage with Windows RT
+@subsection Platform-Sdl2Application-usage-emscripten Emscripten specifics
 
-For Windows RT you need to provide logo images and splash screen, all
-referenced from the `*.appxmanifest` file. The file is slightly different for
-different targets, template for Windows Store and MSVC 2013 is below, others
-are in the bootstrap application.
+Leaving a default (zero) window size in @ref Configuration will cause the app
+to use a window size that corresponds to *CSS pixel size* of the
+@cb{.html} <canvas> @ce element. The size is then multiplied by DPI scaling
+value, see @ref Platform-Sdl2Application-dpi "DPI awareness" below for details.
 
-@code{.xml}
-<?xml version="1.0" encoding="utf-8"?>
-<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest" xmlns:m2="http://schemas.microsoft.com/appx/2013/manifest">
-  <Identity Name="MyApplication" Publisher="CN=A Publisher" Version="1.1.0.0" />
-  <Properties>
-    <DisplayName>My Application</DisplayName>
-    <PublisherDisplayName>A Publisher</PublisherDisplayName>
-    <Logo>assets/logo-store.png</Logo>
-  </Properties>
-  <Resources>
-    <Resource Language="x-generate" />
-  </Resources>
-  <Applications>
-    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="MyApplication.App">
-      <m2:VisualElements
-        DisplayName="Magnum Windows Store Application"
-        Description="My Application"
-        BackgroundColor="#202020"
-        ForegroundText="light"
-        Square150x150Logo="assets/logo.png"
-        Square30x30Logo="assets/logo-small.png">
-        <m2:SplashScreen Image="assets/splash.png" />
-      </m2:VisualElements>
-    </Application>
-  </Applications>
-</Package>
-@endcode
+If you enable @ref Configuration::WindowFlag::Resizable, the canvas will be
+resized when size of the canvas changes and you get @ref viewportEvent(). If
+the flag is not enabled, no canvas resizing is performed.
 
-The assets are referenced also from the main `CMakeLists.txt` file. You have to
-mark all non-source files (except for the `*.pfx` key) with `VS_DEPLOYMENT_CONTENT`
-property and optionally set their location with `VS_DEPLOYMENT_LOCATION`. If
-you are using `*.resw` files, these need to have the `VS_TOOL_OVERRIDE`
-property set to `PRIResource`.
+@section Platform-Sdl2Application-dpi DPI awareness
+
+On displays that match the platform default DPI (96 or 72),
+@ref Configuration::setSize() will create the window in exactly the requested
+size and the framebuffer pixels will match display pixels 1:1. On displays that
+have different DPI, there are three possible scenarios, listed below. It's
+possible to fine tune the behavior either using extra parameters passed to
+@ref Configuration::setSize() or via the `--magnum-dpi-scaling` command-line
+option (or the equivalent @cb{.sh} $MAGNUM_DPI_SCALING @ce environment
+variable).
+
+-   Framebuffer DPI scaling. The window is created with exactly the requested
+    size and all event coordinates are reported also relative to that size.
+    However, the window backing framebuffer has a different size. This is only
+    supported on macOS and iOS. See @ref platforms-macos-hidpi for details how
+    to enable it. Equivalent to passing
+    @ref Configuration::DpiScalingPolicy::Framebuffer to
+    @ref Configuration::setSize() or `framebuffer` via command line /
+    environment.
+-   Virtual DPI scaling. Scales the window based on DPI scaling setting in the
+    system. For example if a 800x600 window is requested and DPI scaling is set
+    to 200%, the resulting window will have 1600x1200 pixels. The backing
+    framebuffer will have the same size. This is supported on Linux and
+    Windows. Equivalent to passing @ref Configuration::DpiScalingPolicy::Virtual
+    to @ref Configuration::setSize() or `virtual` on command line.
+-   Physical DPI scaling. Takes the requested window size as a physical size
+    that a window would have on platform's default DPI and scales it to have
+    the same physical size on given display physical DPI. So, for example on a
+    display with 240 DPI the window size will be 2000x1500 in pixels, but it
+    will be 21 centimeters wide, the same as a 800x600 window would be on a 96
+    DPI display. On platforms that don't have a concept of a window (such
+    as mobile platforms or @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten"), it
+    causes the framebuffer to match display pixels 1:1 without any scaling.
+    This is supported on Linux, Windows, all mobile platforms except iOS and
+    Emscripten. Equivalent to passing
+    @ref Configuration::DpiScalingPolicy::Physical to
+    @ref Configuration::setSize() or `physical` via command line / environment.
+
+Besides the above, it's possible to supply a custom DPI scaling value to
+@ref Configuration::setSize() or the `--magnum-dpi-scaling` command-line
+option (or environment variable). Using `--magnum-dpi-scaling &lt;number&gt;`
+will make the scaling same in both directions, with
+`--magnum-dpi-scaling "<horizontal> <vertical>"` the scaling will be different
+in each direction. On desktop systems custom DPI scaling value will affect
+physical window size (with the content being scaled), on mobile and web it will
+affect sharpness of the contents.
+
+The default is depending on the platform:
+
+-   On macOS and iOS, the default and only supported option is
+    @ref Configuration::DpiScalingPolicy::Framebuffer. On this platform,
+    @ref windowSize() and @ref framebufferSize() will differ depending on
+    whether `NSHighResolutionCapable` is enabled in the `*.plist` file or not.
+    By default, @ref dpiScaling() is @cpp 1.0f @ce in both dimensions but it
+    can be overriden using custom DPI scaling.
+-   On Windows, the default is @ref Configuration::DpiScalingPolicy::Framebuffer.
+    The @ref windowSize() and @ref framebufferSize() is always the same.
+    Depending on whether the DPI awareness was enabled in the manifest file or
+    set by the `SetProcessDpiAwareness()` API, @ref dpiScaling() is either
+    @cpp 1.0f @ce in both dimensions, indicating a low-DPI screen or a
+    non-DPI-aware app, or some other value for HiDPI screens. In both cases the
+    value can be overriden using custom DPI scaling.
+-   On Linux, the default is @ref Configuration::DpiScalingPolicy::Virtual,
+    taken from the `Xft.dpi` property. If the property is not available, it
+    falls back to @ref Configuration::DpiScalingPolicy::Physical, querying the
+    monitor DPI value. The @ref windowSize() and @ref framebufferSize() is
+    always the same, @ref dpiScaling() contains the queried DPI scaling value.
+    The value can be overriden using custom DPI scaling.
+-   On @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten", the default is physical DPI
+    scaling, taken from [Window.getDevicePixelRatio()](https://developer.mozilla.org/en-US/docs/Web/API/Window/devicePixelRatio). The
+    @ref windowSize() and @ref framebufferSize() is always the same,
+    @ref dpiScaling() contains the queried DPI scaling value. The value can be
+    overriden using custom DPI scaling.
+
+If your application is saving and restoring window size, it's advisable to take
+@ref dpiScaling() into account:
+
+-   Either divide the window size by the DPI scaling value and use that to
+    restore the window next time --- but note this might accumulate slight
+    differences in window sizes over time, especially if fractional scaling is
+    involved.
+-   Or save the scaled size and use @ref Configuration::setSize(const Vector2i&, const Vector2&)
+    with @cpp 1.0f @ce as custom DPI scaling next time --- but this doesn't
+    properly handle cases where the window is opened on a display with
+    different DPI.
 */
 class Sdl2Application {
     public:
@@ -328,6 +403,8 @@ class Sdl2Application {
         #ifdef MAGNUM_TARGET_GL
         class GLConfiguration;
         #endif
+        class ExitEvent;
+        class ViewportEvent;
         class InputEvent;
         class KeyEvent;
         class MouseEvent;
@@ -388,14 +465,6 @@ class Sdl2Application {
          * with @ref create() or @ref tryCreate().
          */
         explicit Sdl2Application(const Arguments& arguments, NoCreateT);
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief @copybrief Sdl2Application(const Arguments&, NoCreateT)
-         * @deprecated Use @ref Sdl2Application(const Arguments&, NoCreateT) instead.
-         */
-        CORRADE_DEPRECATED("use Sdl2Application(const Arguments&, NoCreateT) instead") explicit Sdl2Application(const Arguments& arguments, std::nullptr_t): Sdl2Application{arguments, NoCreate} {}
-        #endif
 
         /** @brief Copying is not allowed */
         Sdl2Application(const Sdl2Application&) = delete;
@@ -548,14 +617,73 @@ class Sdl2Application {
 
         /** @{ @name Screen handling */
 
+    public:
         /**
          * @brief Window size
          *
          * Window size to which all input event coordinates can be related.
-         * Note that especially on HiDPI systems the reported window size might
-         * not be the same as framebuffer size.
+         * Note that, especially on HiDPI systems, it may be different from
+         * @ref framebufferSize(). Expects that a window is already created.
+         * See @ref Platform-Sdl2Application-dpi for more information.
+         * @see @ref dpiScaling()
          */
-        Vector2i windowSize();
+        Vector2i windowSize() const;
+
+        #if defined(MAGNUM_TARGET_GL) || defined(DOXYGEN_GENERATING_OUTPUT)
+        /**
+         * @brief Framebuffer size
+         *
+         * Size of the default framebuffer. Note that, especially on HiDPI
+         * systems, it may be different from @ref windowSize(). Expects that a
+         * window is already created. See @ref Platform-Sdl2Application-dpi for
+         * more information.
+         *
+         * @note This function is available only if Magnum is compiled with
+         *      @ref MAGNUM_TARGET_GL enabled (done by default). See
+         *      @ref building-features for more information.
+         *
+         * @see @ref dpiScaling()
+         */
+        Vector2i framebufferSize() const;
+        #endif
+
+        /**
+         * @brief DPI scaling
+         *
+         * How the content should be scaled relative to system defaults for
+         * given @ref windowSize(). If a window is not created yet, returns
+         * zero vector, use @ref dpiScaling(const Configuration&) const for
+         * calculating a value independently. See @ref Platform-Sdl2Application-dpi
+         * for more information.
+         * @see @ref framebufferSize()
+         */
+        Vector2 dpiScaling() const { return _dpiScaling; }
+
+        /**
+         * @brief DPI scaling for given configuration
+         *
+         * Calculates DPI scaling that would be used when creating a window
+         * with given @p configuration. Takes into account DPI scaling policy
+         * and custom scaling specified on the command-line. See
+         * @ref Platform-Sdl2Application-dpi for more information.
+         */
+        Vector2 dpiScaling(const Configuration& configuration) const;
+
+        #if defined(CORRADE_TARGET_EMSCRIPTEN) || defined(DOXYGEN_GENERATING_OUTPUT)
+        /**
+         * @brief Set container CSS class
+         *
+         * Assigns given CSS class to the @cb{.html} <div class="container"> @ce.
+         * Useful for example to change aspect ratio of the view or stretch it
+         * to cover the full page. See @ref platforms-html5-layout for more
+         * information about possible values. Note that this replaces any
+         * existing class, to set multiple classes separate them with
+         * whitespace.
+         *
+         * @note Only available on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+         */
+        void setContainerCssClass(const std::string& cssClass);
+        #endif
 
         /**
          * @brief Swap buffers
@@ -611,6 +739,21 @@ class Sdl2Application {
     private:
     #endif
         /**
+         * @brief Exit event
+         *
+         * If implemented, it allows the application to react to an application
+         * exit (for example to save its internal state) and suppress it as
+         * well (for example to show a exit confirmation dialog). The default
+         * implementation calls @ref ExitEvent::setAccepted() on @p event,
+         * which tells the application that it's safe to exit.
+         *
+         * SDL has special behavior on POSIX systems regarding `SIGINT` and
+         * `SIGTERM` handling, see @ref Platform-Sdl2Application-usage-posix
+         * for more information.
+         */
+        virtual void exitEvent(ExitEvent& event);
+
+        /**
          * @brief Tick event
          *
          * If implemented, this function is called periodically after
@@ -626,17 +769,34 @@ class Sdl2Application {
          *
          * Called when window size changes. The default implementation does
          * nothing. If you want to respond to size changes, you should pass the
-         * new size to @ref GL::DefaultFramebuffer::setViewport() (if using
-         * OpenGL) and possibly elsewhere (to
-         * @ref SceneGraph::Camera::setViewport(), other framebuffers...).
+         * new *framebuffer* size to @ref GL::DefaultFramebuffer::setViewport()
+         * (if using OpenGL) and possibly elsewhere (to
+         * @ref SceneGraph::Camera::setViewport(), other framebuffers...) and
+         * the new *window* size and DPI scaling to APIs that respond to user
+         * events or scale UI elements.
          *
          * Note that this function might not get called at all if the window
          * size doesn't change. You should configure the initial state of your
          * cameras, framebuffers etc. in application constructor rather than
-         * relying on this function to be called. Viewport of default
-         * framebuffer can be retrieved via @ref GL::DefaultFramebuffer::viewport().
+         * relying on this function to be called. Size of the window can be
+         * retrieved using @ref windowSize(), size of the backing framebuffer
+         * via @ref framebufferSize() and DPI scaling using @ref dpiScaling().
+         * See @ref Platform-Sdl2Application-dpi for detailed info about these
+         * values.
          */
-        virtual void viewportEvent(const Vector2i& size);
+        virtual void viewportEvent(ViewportEvent& event);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief viewportEvent(ViewportEvent&)
+         * @deprecated Use @ref viewportEvent(ViewportEvent&) instead.
+         *      To preserve backwards compatibility, this function is called
+         *      from @ref viewportEvent(ViewportEvent&) with
+         *      @ref ViewportEvent::framebufferSize() passed to @p size.
+         *      Overriding the new function will cause this function to not be
+         *      called anymore.
+         */
+        virtual CORRADE_DEPRECATED("use viewportEvent(ViewportEvent&) instead") void viewportEvent(const Vector2i& size);
+        #endif
 
         /**
          * @brief Draw event
@@ -808,23 +968,33 @@ class Sdl2Application {
             Exit = 1 << 3
             #endif
             #ifdef CORRADE_TARGET_EMSCRIPTEN
-            TextInputActive = 1 << 4
+            TextInputActive = 1 << 4,
+            Resizable = 1 << 5
             #endif
         };
 
         typedef Containers::EnumSet<Flag> Flags;
         CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 
+        /* These are saved from command-line arguments */
+        bool _verboseLog{};
+        Implementation::Sdl2DpiScalingPolicy _commandLineDpiScalingPolicy{};
+        Vector2 _commandLineDpiScaling;
+
+        Vector2 _dpiScaling;
+
         #ifndef CORRADE_TARGET_EMSCRIPTEN
-        SDL_Window* _window;
+        SDL_Window* _window{};
         UnsignedInt _minimalLoopPeriod;
+        #else
+        Vector2i _lastKnownCanvasSize;
         #endif
 
         #ifdef MAGNUM_TARGET_GL
         #ifndef CORRADE_TARGET_EMSCRIPTEN
         SDL_GLContext _glContext;
         #else
-        SDL_Surface* _glContext;
+        SDL_Surface* _glContext{};
         #endif
         std::unique_ptr<Platform::GLContext> _context;
         #endif
@@ -850,12 +1020,22 @@ class Sdl2Application::GLConfiguration {
         /**
          * @brief Context flag
          *
-         * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
          * @see @ref Flags, @ref setFlags(), @ref Context::Flag
-         * @todo re-enable when Emscripten has proper SDL2 support
+         * @requires_gles Context flags are not available in WebGL.
          */
         enum class Flag: int {
-            Debug = SDL_GL_CONTEXT_DEBUG_FLAG,  /**< Create debug context */
+            #ifndef MAGNUM_TARGET_GLES
+            /**
+             * Forward compatible context
+             *
+             * @requires_gl Core/compatibility profile distinction and forward
+             *      compatibility applies only to desktop GL.
+             */
+            ForwardCompatible = SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG,
+            #endif
+
+            /** Create debug context */
+            Debug = SDL_GL_CONTEXT_DEBUG_FLAG,
 
             /** Create context with robust access */
             RobustAccess = SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG,
@@ -867,12 +1047,16 @@ class Sdl2Application::GLConfiguration {
         /**
          * @brief Context flags
          *
-         * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
          * @see @ref setFlags(), @ref Context::Flags
+         * @requires_gles Context flags are not available in WebGL.
          */
         #ifndef DOXYGEN_GENERATING_OUTPUT
         typedef Containers::EnumSet<Flag, SDL_GL_CONTEXT_DEBUG_FLAG|
-            SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG|SDL_GL_CONTEXT_RESET_ISOLATION_FLAG> Flags;
+            SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG|SDL_GL_CONTEXT_RESET_ISOLATION_FLAG
+            #ifndef MAGNUM_TARGET_GLES
+            |SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
+            #endif
+            > Flags;
         #else
         typedef Containers::EnumSet<Flag> Flags;
         #endif
@@ -885,7 +1069,7 @@ class Sdl2Application::GLConfiguration {
         /**
          * @brief Context flags
          *
-         * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+         * @requires_gles Context flags are not available in WebGL.
          */
         Flags flags() const { return _flags; }
 
@@ -893,11 +1077,41 @@ class Sdl2Application::GLConfiguration {
          * @brief Set context flags
          * @return Reference to self (for method chaining)
          *
-         * Default is no flag. See also @ref GL::Context::flags().
-         * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+         * Default is @ref Flag::ForwardCompatible on desktop GL and no flags
+         * on OpenGL ES.
+         * @see @ref addFlags(), @ref clearFlags(), @ref GL::Context::flags()
+         * @requires_gles Context flags are not available in WebGL.
          */
         GLConfiguration& setFlags(Flags flags) {
             _flags = flags;
+            return *this;
+        }
+
+        /**
+         * @brief Add context flags
+         * @return Reference to self (for method chaining)
+         *
+         * Unlike @ref setFlags(), ORs the flags with existing instead of
+         * replacing them. Useful for preserving the defaults.
+         * @see @ref clearFlags()
+         * @requires_gles Context flags are not available in WebGL.
+         */
+        GLConfiguration& addFlags(Flags flags) {
+            _flags |= flags;
+            return *this;
+        }
+
+        /**
+         * @brief Clear context flags
+         * @return Reference to self (for method chaining)
+         *
+         * Unlike @ref setFlags(), ANDs the inverse of @p flags with existing
+         * instead of replacing them. Useful for removing default flags.
+         * @see @ref addFlags()
+         * @requires_gles Context flags are not available in WebGL.
+         */
+        GLConfiguration& clearFlags(Flags flags) {
+            _flags &= ~flags;
             return *this;
         }
 
@@ -993,20 +1207,36 @@ class Sdl2Application::GLConfiguration {
          *
          * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
          */
-        bool isSRGBCapable() const { return _sRGBCapable; }
+        bool isSrgbCapable() const { return _srgbCapable; }
 
         /**
          * @brief Set sRGB-capable default framebuffer
          * @return Reference to self (for method chaining)
          *
          * Default is @cpp false @ce. See also
-         * @ref GL::Renderer::Feature::FramebufferSRGB.
+         * @ref GL::Renderer::Feature::FramebufferSrgb.
          * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
          */
-        GLConfiguration& setSRGBCapable(bool enabled) {
-            _sRGBCapable = enabled;
+        GLConfiguration& setSrgbCapable(bool enabled) {
+            _srgbCapable = enabled;
             return *this;
         }
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /**
+         * @brief @copybrief isSrgbCapable()
+         * @deprecated Use @ref isSrgbCapable() instead.
+         */
+        CORRADE_DEPRECATED("use isSrgbCapable() instead") bool isSRGBCapable() const { return isSrgbCapable(); }
+
+        /**
+         * @brief @copybrief setSrgbCapable()
+         * @deprecated Use @ref setSrgbCapable() instead.
+         */
+        CORRADE_DEPRECATED("use setSrgbCapable() instead") GLConfiguration& setSRGBCapable(bool enabled) {
+            return setSrgbCapable(enabled);
+        }
+        #endif
         #endif
 
     private:
@@ -1016,7 +1246,7 @@ class Sdl2Application::GLConfiguration {
         #ifndef CORRADE_TARGET_EMSCRIPTEN
         GL::Version _version;
         Flags _flags;
-        bool _sRGBCapable;
+        bool _srgbCapable;
         #endif
 };
 
@@ -1024,6 +1254,33 @@ class Sdl2Application::GLConfiguration {
 CORRADE_ENUMSET_OPERATORS(Sdl2Application::GLConfiguration::Flags)
 #endif
 #endif
+
+namespace Implementation {
+    enum class Sdl2DpiScalingPolicy: UnsignedByte {
+        /* Using 0 for an "unset" value */
+
+        #ifdef CORRADE_TARGET_APPLE
+        Framebuffer = 1,
+        #endif
+
+        #ifndef CORRADE_TARGET_APPLE
+        #if !defined(CORRADE_TARGET_EMSCRIPTEN) && !defined(CORRADE_TARGET_ANDROID)
+        Virtual = 2,
+        #endif
+
+        Physical = 3,
+        #endif
+
+        Default
+            #ifdef CORRADE_TARGET_APPLE
+            = Framebuffer
+            #elif !defined(CORRADE_TARGET_EMSCRIPTEN) && !defined(CORRADE_TARGET_ANDROID)
+            = Virtual
+            #else
+            = Physical
+            #endif
+    };
+}
 
 /**
 @brief Configuration
@@ -1053,30 +1310,71 @@ class Sdl2Application::Configuration {
         enum class WindowFlag: Uint32 {
             /**
              * Resizable window. On iOS this allows the application to respond
-             * to display orientation changes. Implement @ref viewportEvent()
-             * to react to the resizing events.
+             * to display orientation changes, on
+             * @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten" this causes the
+             * framebuffer to be resized when the @cb{.html} <canvas> @ce size
+             * changes.
+             *
+             * Implement @ref viewportEvent() to react to the resizing events.
              */
             Resizable = SDL_WINDOW_RESIZABLE,
 
-            Fullscreen = SDL_WINDOW_FULLSCREEN,     /**< Fullscreen window */
+            #ifndef CORRADE_TARGET_EMSCRIPTEN
+            /**
+             * Fullscreen window
+             *
+             * @note Not available on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+             */
+            Fullscreen = SDL_WINDOW_FULLSCREEN,
 
-            /** No window decoration. On iOS this hides the menu bar. */
+            /**
+             * No window decoration. On iOS this hides the menu bar.
+             *
+             * @note Not available on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+             */
             Borderless = SDL_WINDOW_BORDERLESS,
+            #endif
+
+            #ifdef MAGNUM_BUILD_DEPRECATED
+            /**
+             * Allow high DPI.
+             *
+             * @deprecated Has no effect, as this flag is passed implicitly
+             *      on platforms where needed. See
+             *      @ref Platform-Sdl2Application-dpi for more information.
+             */
+            AllowHighDpi CORRADE_DEPRECATED_ENUM("has no effect, passed implicitly on platforms that need it") = 0,
+            #endif
 
             #ifndef CORRADE_TARGET_EMSCRIPTEN
             /**
-             * Allow high DPI. On iOS you also have to set the
-             * `NSHighResolutionCapable` entry in the `*.plist` file to make
-             * it working.
-             * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+             * Hidden window
+             *
+             * @note Not available on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
              */
-            AllowHighDpi = SDL_WINDOW_ALLOW_HIGHDPI,
-            #endif
+            Hidden = SDL_WINDOW_HIDDEN,
 
-            Hidden = SDL_WINDOW_HIDDEN,             /**< Hidden window */
-            Maximized = SDL_WINDOW_MAXIMIZED,       /**< Maximized window */
-            Minimized = SDL_WINDOW_MINIMIZED,       /**< Minimized window */
-            MouseLocked = SDL_WINDOW_INPUT_GRABBED, /**< Window with mouse locked */
+            /**
+             * Maximized window
+             *
+             * @note Not available on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+             */
+            Maximized = SDL_WINDOW_MAXIMIZED,
+
+            /**
+             * Minimized window
+             *
+             * @note Not available on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+             */
+            Minimized = SDL_WINDOW_MINIMIZED,
+
+            /**
+             * Window with mouse locked
+             *
+             * @note Not available on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
+             */
+            MouseLocked = SDL_WINDOW_INPUT_GRABBED,
+            #endif
 
             /**
              * Do not create any GPU context. Use together with
@@ -1095,10 +1393,70 @@ class Sdl2Application::Configuration {
          */
         #ifndef DOXYGEN_GENERATING_OUTPUT
         typedef Containers::EnumSet<WindowFlag, SDL_WINDOW_RESIZABLE|
-            SDL_WINDOW_FULLSCREEN|SDL_WINDOW_HIDDEN|SDL_WINDOW_MAXIMIZED|
-            SDL_WINDOW_MINIMIZED|SDL_WINDOW_INPUT_GRABBED> WindowFlags;
+            #ifndef CORRADE_TARGET_EMSCRIPTEN
+            SDL_WINDOW_FULLSCREEN|SDL_WINDOW_BORDERLESS|SDL_WINDOW_HIDDEN|
+            SDL_WINDOW_MAXIMIZED|SDL_WINDOW_MINIMIZED|SDL_WINDOW_INPUT_GRABBED|
+            #endif
+            Uint32(WindowFlag::Contextless)
+            > WindowFlags;
         #else
         typedef Containers::EnumSet<WindowFlag> WindowFlags;
+        #endif
+
+        /**
+         * @brief DPI scaling policy
+         *
+         * DPI scaling policy when requesting a particular window size. Can
+         * be overriden on command-line using `--magnum-dpi-scaling` or via
+         * the `MAGNUM_DPI_SCALING` environment variable.
+         * @see @ref setSize(), @ref Platform-Sdl2Application-dpi
+         */
+        #ifdef DOXYGEN_GENERATING_OUTPUT
+        enum class DpiScalingPolicy: UnsignedByte {
+            /**
+             * Framebuffer DPI scaling. The window will have the same size as
+             * requested, but the framebuffer size will be different. Supported
+             * only on macOS and iOS and is also the only supported value
+             * there.
+             */
+            Framebuffer,
+
+            /**
+             * Virtual DPI scaling. Scales the window based on UI scaling
+             * setting in the system. Falls back to
+             * @ref DpiScalingPolicy::Physical on platforms that don't support
+             * it. Supported only on desktop platforms (except macOS) and it's
+             * the default there.
+             *
+             * Equivalent to `--magnum-dpi-scaling virtual` passed on
+             * command-line.
+             */
+            Virtual,
+
+            /**
+             * Physical DPI scaling. Takes the requested window size as a
+             * physical size that a window would have on platform's default DPI
+             * and scales it to have the same size on given display physical
+             * DPI. On platforms that don't have a concept of a window it
+             * causes the framebuffer to match screen pixels 1:1 without any
+             * scaling. Supported on desktop platforms except macOS and on
+             * mobile and web. Default on mobile and web.
+             *
+             * Equivalent to `--magnum-dpi-scaling physical` passed on
+             * command-line.
+             */
+            Physical,
+
+            /**
+             * Default policy for current platform. Alias to one of
+             * @ref DpiScalingPolicy::Framebuffer, @ref DpiScalingPolicy::Virtual
+             * or @ref DpiScalingPolicy::Physical depending on platform. See
+             * @ref Platform-Sdl2Application-dpi for details.
+             */
+            Default
+        };
+        #else
+        typedef Implementation::Sdl2DpiScalingPolicy DpiScalingPolicy;
         #endif
 
         /*implicit*/ Configuration();
@@ -1137,17 +1495,58 @@ class Sdl2Application::Configuration {
         Vector2i size() const { return _size; }
 
         /**
+         * @brief DPI scaling policy
+         *
+         * If @ref dpiScaling() is non-zero, it has a priority over this value.
+         * The `--magnum-dpi-scaling` command-line option has a priority over
+         * any application-set value.
+         * @see @ref setSize(const Vector2i&, DpiScalingPolicy)
+         */
+        DpiScalingPolicy dpiScalingPolicy() const { return _dpiScalingPolicy; }
+
+        /**
+         * @brief Custom DPI scaling
+         *
+         * If zero, then @ref dpiScalingPolicy() has a priority over this
+         * value. The `--magnum-dpi-scaling` command-line option has a priority
+         * over any application-set value.
+         * @see @ref setSize(const Vector2i&, const Vector2&)
+         */
+        Vector2 dpiScaling() const { return _dpiScaling; }
+
+        /**
          * @brief Set window size
+         * @param size              Desired window size
+         * @param dpiScalingPolicy  Policy based on which DPI scaling will be set
          * @return Reference to self (for method chaining)
          *
-         * Default is @cpp {800, 600} @ce and @cpp {640, 480} @ce on
-         * Emscripten. On iOS it defaults to a "reasonable" size based on
-         * whether HiDPI support is enabled using @ref WindowFlag::AllowHighDpi,
-         * but not necessarily native display resolution (you have to set it
-         * explicitly).
+         * Default is @cpp {800, 600} @ce on desktop platforms. On
+         * @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten" and iOS the default is a
+         * zero vector, meaning a value that matches the display or canvas size
+         * is autodetected. See @ref Platform-Sdl2Application-dpi for more
+         * information.
+         * @see @ref setSize(const Vector2i&, const Vector2&)
          */
-        Configuration& setSize(const Vector2i& size) {
+        Configuration& setSize(const Vector2i& size, DpiScalingPolicy dpiScalingPolicy = DpiScalingPolicy::Default) {
             _size = size;
+            _dpiScalingPolicy = dpiScalingPolicy;
+            return *this;
+        }
+
+        /**
+         * @brief Set window size with custom DPI scaling
+         * @param size              Desired window size
+         * @param dpiScaling        Custom DPI scaling value
+         *
+         * Compared to @ref setSize(const Vector2i&, DpiScalingPolicy) which
+         * autodetects the DPI scaling value according to given policy, this
+         * function sets the DPI scaling directly. The resulting
+         * @ref Sdl2Application::windowSize() is @cpp size*dpiScaling @ce and
+         * @ref Sdl2Application::dpiScaling() is @p dpiScaling.
+         */
+        Configuration& setSize(const Vector2i& size, const Vector2& dpiScaling) {
+            _size = size;
+            _dpiScaling = dpiScaling;
             return *this;
         }
 
@@ -1212,16 +1611,16 @@ class Sdl2Application::Configuration {
         }
 
         #ifndef CORRADE_TARGET_EMSCRIPTEN
-        /** @brief @copybrief GLConfiguration::isSRGBCapable()
-         * @deprecated Use @ref GLConfiguration::isSRGBCapable() instead.
+        /** @brief @copybrief GLConfiguration::isSrgbCapable()
+         * @deprecated Use @ref GLConfiguration::isSrgbCapable() instead.
          */
-        CORRADE_DEPRECATED("use GLConfiguration::isSRGBCapable() instead") bool isSRGBCapable() const { return _sRGBCapable; }
+        CORRADE_DEPRECATED("use GLConfiguration::isSrgbCapable() instead") bool isSRGBCapable() const { return _srgbCapable; }
 
-        /** @brief @copybrief GLConfiguration::setSRGBCapable()
-         * @deprecated Use @ref GLConfiguration::setSRGBCapable() instead.
+        /** @brief @copybrief GLConfiguration::setSrgbCapable()
+         * @deprecated Use @ref GLConfiguration::setSrgbCapable() instead.
          */
-        CORRADE_DEPRECATED("use GLConfiguration::setSRGBCapable() instead") Configuration& setSRGBCapable(bool enabled) {
-            _sRGBCapable = enabled;
+        CORRADE_DEPRECATED("use GLConfiguration::setSrgbCapable() instead") Configuration& setSRGBCapable(bool enabled) {
+            _srgbCapable = enabled;
             return *this;
         }
         #endif
@@ -1232,15 +1631,103 @@ class Sdl2Application::Configuration {
         std::string _title;
         #endif
         Vector2i _size;
+        DpiScalingPolicy _dpiScalingPolicy;
         WindowFlags _windowFlags;
+        Vector2 _dpiScaling;
         #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
         Int _sampleCount;
         #ifndef CORRADE_TARGET_EMSCRIPTEN
         GL::Version _version;
         Flags _flags;
-        bool _sRGBCapable;
+        bool _srgbCapable;
         #endif
         #endif
+};
+
+/**
+@brief Exit event
+
+@see @ref exitEvent()
+*/
+class Sdl2Application::ExitEvent {
+    public:
+        /** @brief Copying is not allowed */
+        ExitEvent(const ExitEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ExitEvent(ExitEvent&&) = delete;
+
+        /** @brief Copying is not allowed */
+        ExitEvent& operator=(const ExitEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ExitEvent& operator=(ExitEvent&&) = delete;
+
+        /** @brief Whether the event is accepted */
+        bool isAccepted() const { return _accepted; }
+
+        /**
+         * @brief Set event as accepted
+         *
+         * If the event is ignored (i.e., not set as accepted) in
+         * @ref exitEvent(), the application won't exit. Default implementation
+         * of @ref exitEvent() accepts the event.
+         */
+        void setAccepted(bool accepted = true) { _accepted = accepted; }
+
+    private:
+        friend Sdl2Application;
+
+        explicit ExitEvent(): _accepted(false) {}
+
+        bool _accepted;
+};
+
+/**
+@brief Viewport event
+
+@see @ref viewportEvent()
+*/
+class Sdl2Application::ViewportEvent {
+    public:
+        /**
+         * @brief Window size
+         *
+         * On some platforms with HiDPI displays, window size can be different
+         * from @ref framebufferSize(). See @ref Platform-Sdl2Application-dpi
+         * for more information.
+         * @see @ref Sdl2Application::windowSize()
+         */
+        Vector2i windowSize() const { return _windowSize; }
+
+        /**
+         * @brief Framebuffer size
+         *
+         * On some platforms with HiDPI displays, framebuffer size can be
+         * different from @ref windowSize(). See
+         * @ref Platform-Sdl2Application-dpi for more information.
+         * @see @ref Sdl2Application::framebufferSize()
+         */
+        Vector2i framebufferSize() const { return _framebufferSize; }
+
+        /**
+         * @brief DPI scaling
+         *
+         * On some platforms moving an app between displays can result in DPI
+         * scaling value being changed in tandem with a window/framebuffer
+         * size. Simply resizing a window doesn't change the DPI scaling value.
+         * See @ref Platform-Sdl2Application-dpi for more information.
+         * @see @ref Sdl2Application::dpiScaling()
+         */
+        Vector2 dpiScaling() const { return _dpiScaling; }
+
+    private:
+        friend Sdl2Application;
+
+        explicit ViewportEvent(const Vector2i& windowSize, const Vector2i& framebufferSize, const Vector2& dpiScaling): _windowSize{windowSize}, _framebufferSize{framebufferSize}, _dpiScaling{dpiScaling} {}
+
+        Vector2i _windowSize, _framebufferSize;
+        Vector2 _dpiScaling;
 };
 
 /**
@@ -1319,7 +1806,7 @@ class Sdl2Application::InputEvent {
         InputEvent& operator=(InputEvent&&) = delete;
 
         /** @brief Whether the event is accepted */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
         /**
          * @brief Set event as accepted
@@ -1333,7 +1820,7 @@ class Sdl2Application::InputEvent {
 
     #ifndef DOXYGEN_GENERATING_OUTPUT
     protected:
-        constexpr explicit InputEvent(): _accepted(false) {}
+        explicit InputEvent(): _accepted(false) {}
 
         ~InputEvent() = default;
     #endif
@@ -1497,7 +1984,25 @@ class Sdl2Application::KeyEvent: public Sdl2Application::InputEvent {
             W = SDLK_w,                 /**< Letter W */
             X = SDLK_x,                 /**< Letter X */
             Y = SDLK_y,                 /**< Letter Y */
-            Z = SDLK_z                  /**< Letter Z */
+            Z = SDLK_z,                 /**< Letter Z */
+
+            NumZero = SDLK_KP_0,            /**< Numpad zero */
+            NumOne = SDLK_KP_1,             /**< Numpad one */
+            NumTwo = SDLK_KP_2,             /**< Numpad two */
+            NumThree = SDLK_KP_3,           /**< Numpad three */
+            NumFour = SDLK_KP_4,            /**< Numpad four */
+            NumFive = SDLK_KP_5,            /**< Numpad five */
+            NumSix = SDLK_KP_6,             /**< Numpad six */
+            NumSeven = SDLK_KP_7,           /**< Numpad seven */
+            NumEight = SDLK_KP_8,           /**< Numpad eight */
+            NumNine = SDLK_KP_9,            /**< Numpad nine */
+            NumDecimal = SDLK_KP_DECIMAL,   /**< Numpad decimal */
+            NumDivide = SDLK_KP_DIVIDE,     /**< Numpad divide */
+            NumMultiply = SDLK_KP_MULTIPLY, /**< Numpad multiply */
+            NumSubtract = SDLK_KP_MINUS,    /**< Numpad subtract */
+            NumAdd = SDLK_KP_PLUS,          /**< Numpad add */
+            NumEnter = SDLK_KP_ENTER,       /**< Numpad enter */
+            NumEqual = SDLK_KP_EQUALS       /**< Numpad equal */
         };
 
         /**
@@ -1515,7 +2020,7 @@ class Sdl2Application::KeyEvent: public Sdl2Application::InputEvent {
          *
          * @see @ref keyName()
          */
-        constexpr Key key() const { return _key; }
+        Key key() const { return _key; }
 
         /**
          * @brief Key name
@@ -1529,7 +2034,7 @@ class Sdl2Application::KeyEvent: public Sdl2Application::InputEvent {
         std::string keyName() const;
 
         /** @brief Modifiers */
-        constexpr Modifiers modifiers() const { return _modifiers; }
+        Modifiers modifiers() const { return _modifiers; }
 
         /**
          * @brief Whether the key press is repeated
@@ -1537,10 +2042,10 @@ class Sdl2Application::KeyEvent: public Sdl2Application::InputEvent {
          * Returns @cpp true @ce if the key press event is repeated,
          * @cpp false @ce if not or if this was key release event.
          */
-        constexpr bool isRepeated() const { return _repeated; }
+        bool isRepeated() const { return _repeated; }
 
     private:
-        constexpr KeyEvent(Key key, Modifiers modifiers, bool repeated): _key{key}, _modifiers{modifiers}, _repeated{repeated} {}
+        explicit KeyEvent(Key key, Modifiers modifiers, bool repeated): _key{key}, _modifiers{modifiers}, _repeated{repeated} {}
 
         const Key _key;
         const Modifiers _modifiers;
@@ -1572,27 +2077,13 @@ class Sdl2Application::MouseEvent: public Sdl2Application::InputEvent {
 
             /** Second extra button (e.g. wheel right) */
             X2 = SDL_BUTTON_X2,
-
-            #ifdef MAGNUM_BUILD_DEPRECATED
-            /**
-             * Wheel up
-             * @deprecated Use @ref MouseScrollEvent and @ref mouseScrollEvent() instead.
-             */
-            WheelUp CORRADE_DEPRECATED_ENUM("use mouseScrollEvent() and MouseScrollEvent instead") = SDL_BUTTON_X2 + 1,
-
-            /**
-             * Wheel down
-             * @deprecated Use @ref MouseScrollEvent and @ref mouseScrollEvent() instead.
-             */
-            WheelDown CORRADE_DEPRECATED_ENUM("use mouseScrollEvent() and MouseScrollEvent instead") = SDL_BUTTON_X2 + 2
-            #endif
         };
 
         /** @brief Button */
-        constexpr Button button() const { return _button; }
+        Button button() const { return _button; }
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
         #ifndef CORRADE_TARGET_EMSCRIPTEN
         /**
@@ -1600,7 +2091,7 @@ class Sdl2Application::MouseEvent: public Sdl2Application::InputEvent {
          *
          * @note Not available in @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
          */
-        constexpr Int clickCount() const { return _clickCount; }
+        Int clickCount() const { return _clickCount; }
         #endif
 
         /**
@@ -1611,7 +2102,7 @@ class Sdl2Application::MouseEvent: public Sdl2Application::InputEvent {
         Modifiers modifiers();
 
     private:
-        constexpr MouseEvent(Button button, const Vector2i& position
+        explicit MouseEvent(Button button, const Vector2i& position
             #ifndef CORRADE_TARGET_EMSCRIPTEN
             , Int clickCount
             #endif
@@ -1664,17 +2155,17 @@ class Sdl2Application::MouseMoveEvent: public Sdl2Application::InputEvent {
         typedef Containers::EnumSet<Button> Buttons;
 
         /** @brief Position */
-        constexpr Vector2i position() const { return _position; }
+        Vector2i position() const { return _position; }
 
         /**
          * @brief Relative position
          *
          * Position relative to previous event.
          */
-        constexpr Vector2i relativePosition() const { return _relativePosition; }
+        Vector2i relativePosition() const { return _relativePosition; }
 
         /** @brief Mouse buttons */
-        constexpr Buttons buttons() const { return _buttons; }
+        Buttons buttons() const { return _buttons; }
 
         /**
          * @brief Modifiers
@@ -1684,7 +2175,7 @@ class Sdl2Application::MouseMoveEvent: public Sdl2Application::InputEvent {
         Modifiers modifiers();
 
     private:
-        constexpr MouseMoveEvent(const Vector2i& position, const Vector2i& relativePosition, Buttons buttons): _position{position}, _relativePosition{relativePosition}, _buttons{buttons}, _modifiersLoaded{false} {}
+        explicit MouseMoveEvent(const Vector2i& position, const Vector2i& relativePosition, Buttons buttons): _position{position}, _relativePosition{relativePosition}, _buttons{buttons}, _modifiersLoaded{false} {}
 
         const Vector2i _position, _relativePosition;
         const Buttons _buttons;
@@ -1702,7 +2193,14 @@ class Sdl2Application::MouseScrollEvent: public Sdl2Application::InputEvent {
 
     public:
         /** @brief Scroll offset */
-        constexpr Vector2 offset() const { return _offset; }
+        Vector2 offset() const { return _offset; }
+
+        /**
+         * @brief Position
+         *
+         * Lazily populated on first request.
+         */
+        Vector2i position();
 
         /**
          * @brief Modifiers
@@ -1712,10 +2210,12 @@ class Sdl2Application::MouseScrollEvent: public Sdl2Application::InputEvent {
         Modifiers modifiers();
 
     private:
-        constexpr MouseScrollEvent(const Vector2& offset): _offset{offset}, _modifiersLoaded{false} {}
+        explicit MouseScrollEvent(const Vector2& offset): _offset{offset}, _positionLoaded{false}, _modifiersLoaded{false} {}
 
         const Vector2 _offset;
+        bool _positionLoaded;
         bool _modifiersLoaded;
+        Vector2i _position;
         Modifiers _modifiers;
 };
 
@@ -1742,7 +2242,7 @@ class Sdl2Application::MultiGestureEvent {
         MultiGestureEvent& operator=(MultiGestureEvent&&) = delete;
 
         /** @brief Whether the event is accepted */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
         /**
          * @brief Set event as accepted
@@ -1779,7 +2279,7 @@ class Sdl2Application::MultiGestureEvent {
         Int fingerCount() const { return _fingerCount; }
 
     private:
-        constexpr MultiGestureEvent(const Vector2& center, Float relativeRotation, Float relativeDistance, Int fingerCount): _center{center}, _relativeRotation{relativeRotation}, _relativeDistance{relativeDistance}, _fingerCount{fingerCount}, _accepted{false} {}
+        explicit MultiGestureEvent(const Vector2& center, Float relativeRotation, Float relativeDistance, Int fingerCount): _center{center}, _relativeRotation{relativeRotation}, _relativeDistance{relativeDistance}, _fingerCount{fingerCount}, _accepted{false} {}
 
         Vector2 _center;
         Float _relativeRotation,
@@ -1810,7 +2310,7 @@ class Sdl2Application::TextInputEvent {
         TextInputEvent& operator=(TextInputEvent&&) = delete;
 
         /** @brief Whether the event is accepted */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
         /**
          * @brief Set event as accepted
@@ -1823,10 +2323,10 @@ class Sdl2Application::TextInputEvent {
         void setAccepted(bool accepted = true) { _accepted = accepted; }
 
         /** @brief Input text in UTF-8 */
-        constexpr Containers::ArrayView<const char> text() const { return _text; }
+        Containers::ArrayView<const char> text() const { return _text; }
 
     private:
-        constexpr TextInputEvent(Containers::ArrayView<const char> text): _text{text}, _accepted{false} {}
+        explicit TextInputEvent(Containers::ArrayView<const char> text): _text{text}, _accepted{false} {}
 
         Containers::ArrayView<const char> _text;
         bool _accepted;
@@ -1854,7 +2354,7 @@ class Sdl2Application::TextEditingEvent {
         TextEditingEvent& operator=(TextEditingEvent&&) = delete;
 
         /** @brief Whether the event is accepted */
-        constexpr bool isAccepted() const { return _accepted; }
+        bool isAccepted() const { return _accepted; }
 
         /**
          * @brief Set event as accepted
@@ -1867,16 +2367,16 @@ class Sdl2Application::TextEditingEvent {
         void setAccepted(bool accepted = true) { _accepted = accepted; }
 
         /** @brief Input text in UTF-8 */
-        constexpr Containers::ArrayView<const char> text() const { return _text; }
+        Containers::ArrayView<const char> text() const { return _text; }
 
         /** @brief Location to begin editing from */
-        constexpr Int start() const { return _start; }
+        Int start() const { return _start; }
 
         /** @brief Number of characters to edit from the start point */
-        constexpr Int length() const { return _length; }
+        Int length() const { return _length; }
 
     private:
-        constexpr TextEditingEvent(Containers::ArrayView<const char> text, Int start, Int length): _text{text}, _start{start}, _length{length}, _accepted{false} {}
+        explicit TextEditingEvent(Containers::ArrayView<const char> text, Int start, Int length): _text{text}, _start{start}, _length{length}, _accepted{false} {}
 
         Containers::ArrayView<const char> _text;
         Int _start, _length;

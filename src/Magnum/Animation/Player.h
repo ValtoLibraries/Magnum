@@ -81,7 +81,13 @@ namespace Implementation {
 
 Provides a generic way for querying interpolated results from multiple
 animation tracks of distinct types from a single place, together with managing
-their running state.
+the animation running state.
+
+Similarly to @ref Track / @ref TrackView, the player is also partially statless
+--- in particular, it neither accesses any global timer or keeps any notion of
+"current time". Instead, all time-dependent functions take absolute time as a
+parameter. This both simplifies the internal state management and adds
+additional flexibility on user side.
 
 @section Animation-Player-setup Setting up
 
@@ -128,11 +134,6 @@ You can use @ref setDuration() to specify a custom duration:
 
 @section Animation-Player-playback Animation playback
 
-The @ref Player class doesn't access any global timer functionality, but
-instead requires you to call its APIs with explicit time values. That allows
-for greater flexibility and control over animation playback, among other
-things.
-
 By default, the player is in a @ref State::Stopped state. Call @ref play() with
 a time value denoting the moment at which the animation should start. After
 that, the @ref advance() function is meant to be called every frame with
@@ -159,7 +160,14 @@ Calling @ref pause() while the animation is running immediately transfers the
 animation state to @ref State::Paused and the next @ref advance() iteration
 will give out interpolated values corresponding to a time that was passed to
 the @ref pause() function. After that, no more updates are done until the
-animation is resumed again with @ref play() or stopped with @ref stop().
+animation is resumed again with @ref play(), stopped with @ref stop() or seeked
+using @ref seekBy() / @ref seekTo().
+
+Calling @ref seekBy() / @ref seekTo() while the animation is either playing or
+pause will cause it to jump to specified time -- the next call to @ref advance()
+will update the destination locations and/or fire user-defined callbacks with
+new values, behaving as if the animation was played / paused with the seek
+time.
 
 The callbacks are only ever fired from within the @ref advance() function,
 never from @ref pause(), @ref stop() or any other API.
@@ -250,6 +258,13 @@ template<class T, class K
          */
         typedef std::pair<UnsignedInt, K>(*Scaler)(T, K);
 
+        /**
+         * @brief Advance multiple players at the same time
+         *
+         * Equivalent to calling @ref advance(T) for each item in @p players.
+         */
+        static void advance(T time, std::initializer_list<std::reference_wrapper<Player<T, K>>> players);
+
         /** @brief Constructor */
         explicit Player();
 
@@ -286,6 +301,7 @@ template<class T, class K
          * If the duration was not set explicitly using @ref setDuration(),
          * returns value calculated implicitly from all added tracks. If no
          * tracks are added, returns default-constructed value.
+         * @see @ref elapsed()
          */
         Math::Range1D<K> duration() const { return _duration; }
 
@@ -405,13 +421,13 @@ template<class T, class K
          * @see @ref addRawCallback()
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R> Player<T, K>& addWithCallback(const TrackView<K, V, R>& track, void(*callback)(const K&, const R&, void*), void* userData = nullptr);
+        template<class V, class R> Player<T, K>& addWithCallback(const TrackView<K, V, R>& track, void(*callback)(K, const R&, void*), void* userData = nullptr);
         #else
         /* Otherwise the user would be forced to use the + operator to convert
            a lambda to a function pointer and (besides being weird and
            annoying) it's also not portable because it doesn't work on MSVC
            2015 and older versions of MSVC 2017. OTOH, putting this in the docs
-           wouldn say nothing about how the callback signature should look. */
+           would say nothing about how the callback signature should look. */
         template<class V, class R, class Callback> Player<T, K>& addWithCallback(const TrackView<K, V, R>& track, Callback callback, void* userData = nullptr);
         #endif
 
@@ -422,7 +438,7 @@ template<class T, class K
          * whole lifetime of the @ref Player instance.
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R> Player<T, K>& addWithCallback(const Track<K, V, R>& track, void(*callback)(const K&, const R&, void*), void* userData = nullptr);
+        template<class V, class R> Player<T, K>& addWithCallback(const Track<K, V, R>& track, void(*callback)(K, const R&, void*), void* userData = nullptr);
         #elif !defined(CORRADE_MSVC2017_COMPATIBILITY) /* See above why */
         template<class V, class R, class Callback> Player<T, K>& addWithCallback(const Track<K, V, R>& track, Callback callback, void* userData = nullptr) {
             return addWithCallback(TrackView<K, V, R>{track}, callback, userData);
@@ -443,7 +459,7 @@ template<class T, class K
          * @ref addRawCallback() for optimization possibilities.
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R, class U> Player<T, K>& addWithCallback(const TrackView<K, V, R>& track, void(*callback)(const K&, const R&, U&), U& userData);
+        template<class V, class R, class U> Player<T, K>& addWithCallback(const TrackView<K, V, R>& track, void(*callback)(K, const R&, U&), U& userData);
         #else /* See above why */
         template<class V, class R, class U, class Callback> Player<T, K>& addWithCallback(const TrackView<K, V, R>& track, Callback callback, U& userData);
         #endif
@@ -455,7 +471,7 @@ template<class T, class K
          * whole lifetime of the @ref Player instance.
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R, class U> Player<T, K>& addWithCallback(const Track<K, V, R>& track, void(*callback)(const K&, const R&, U&), U& userData);
+        template<class V, class R, class U> Player<T, K>& addWithCallback(const Track<K, V, R>& track, void(*callback)(K, const R&, U&), U& userData);
         #elif !defined(CORRADE_MSVC2017_COMPATIBILITY) /* See above why */
         template<class V, class R, class U, class Callback> Player<T, K>& addWithCallback(const Track<K, V, R>& track, Callback callback, U& userData) {
             return addWithCallback(TrackView<K, V, R>{track}, callback, userData);
@@ -482,7 +498,7 @@ template<class T, class K
          * @see @ref addRawCallback()
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R> Player<T, K>& addWithCallbackOnChange(const TrackView<K, V, R>& track, void(*callback)(const K&, const R&, void*), R& destination, void* userData = nullptr);
+        template<class V, class R> Player<T, K>& addWithCallbackOnChange(const TrackView<K, V, R>& track, void(*callback)(K, const R&, void*), R& destination, void* userData = nullptr);
         #else /* See above why */
         template<class V, class R, class Callback> Player<T, K>& addWithCallbackOnChange(const TrackView<K, V, R>& track, Callback callback, R& destination, void* userData = nullptr);
         #endif
@@ -494,7 +510,7 @@ template<class T, class K
          * whole lifetime of the @ref Player instance.
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R> Player<T, K>& addWithCallbackOnChange(const Track<K, V, R>& track, void(*callback)(const K&, const R&, void*), R& destination, void* userData = nullptr);
+        template<class V, class R> Player<T, K>& addWithCallbackOnChange(const Track<K, V, R>& track, void(*callback)(K, const R&, void*), R& destination, void* userData = nullptr);
         #elif !defined(CORRADE_MSVC2017_COMPATIBILITY) /* See above why */
         template<class V, class R, class Callback> Player<T, K>& addWithCallbackOnChange(const Track<K, V, R>& track, Callback callback, R& destination, void* userData = nullptr) {
             return addWithCallbackOnChange(TrackView<K, V, R>{track}, callback, destination, userData);
@@ -515,7 +531,7 @@ template<class T, class K
          * @ref addRawCallback() for optimization possibilities.
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R, class U> Player<T, K>& addWithCallbackOnChange(const TrackView<K, V, R>& track, void(*callback)(const K&, const R&, void*), R& destination, U& userData);
+        template<class V, class R, class U> Player<T, K>& addWithCallbackOnChange(const TrackView<K, V, R>& track, void(*callback)(K, const R&, void*), R& destination, U& userData);
         #else /* See above why */
         template<class V, class R, class U, class Callback> Player<T, K>& addWithCallbackOnChange(const TrackView<K, V, R>& track, Callback callback, R& destination, U& userData);
         #endif
@@ -527,7 +543,7 @@ template<class T, class K
          * whole lifetime of the @ref Player instance.
          */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        template<class V, class R, class U> Player<T, K>& addWithCallbackOnChange(const Track<K, V, R>& track, void(*callback)(const K&, const R&, void*), R& destination, U& userData);
+        template<class V, class R, class U> Player<T, K>& addWithCallbackOnChange(const Track<K, V, R>& track, void(*callback)(K, const R&, void*), R& destination, U& userData);
         #elif !defined(CORRADE_MSVC2017_COMPATIBILITY) /* See above why */
         template<class V, class R, class U, class Callback> Player<T, K>& addWithCallbackOnChange(const Track<K, V, R>& track, Callback callback, R& destination, U& userData) {
             return addWithCallbackOnChange(TrackView<K, V, R>{track}, callback, destination, userData);
@@ -593,11 +609,29 @@ template<class T, class K
         State state() const { return _state; }
 
         /**
+         * @brief Elapsed animation iteration and keyframe
+         *
+         * Returns repeat iteration index and elapsed animation keyframe in
+         * given iteration corresponding to @p time. If @ref state() is
+         * @ref State::Stopped and the player was stopped explicitly, the
+         * function returns a default-constructed value (usually
+         * @cpp {0, 0.0f} @ce). If @ref state() is @ref State::Stopped due to
+         * the animation running out, the function returns the iteration count
+         * and duration end keyframe. If @ref state() is @ref State::Paused,
+         * the function returns a time at which the animation was paused.
+         *
+         * Unlike @ref advance(), this function doesn't modify the animation
+         * state in any way, it's merely a query.
+         * @see @ref duration()
+         */
+        std::pair<UnsignedInt, K> elapsed(T time) const;
+
+        /**
          * @brief Play
          *
          * Starts playing all tracks added to the player at given @p startTime.
          * If @ref state() is already @ref State::Playing, the animation is
-         * restarted from the beginning at @p startTiime. If @ref state() is
+         * restarted from the beginning at @p startTime. If @ref state() is
          * @ref State::Paused, the animation continues from the time that was
          * passed to @ref pause().
          *
@@ -611,21 +645,66 @@ template<class T, class K
         Player<T, K>& play(T startTime);
 
         /**
+         * @brief Resume
+         *
+         * Behaves similarly to @ref play(), but doesn't restart the animation
+         * from the beginning when @ref state() is already @ref State::Playing.
+         */
+        Player<T, K>& resume(T startTime);
+
+        /**
          * @brief Pause
          *
          * Pauses the currently playing animation at given @p pauseTime. If
          * @ref state() is not @ref State::Playing, the function does nothing.
-         * See @ref advance() for a detailed description of behavior when the
-         * animation gets paused.
+         * If @p pauseTime is too far in the future, the animation will get
+         * paused at the end (i.e., not stopped). See @ref advance() for a
+         * detailed description of behavior when the animation gets paused.
          * @see @ref setState()
          */
         Player<T, K>& pause(T pauseTime);
 
         /**
+         * @brief Seek by given time delta
+         *
+         * Causes the animation to jump forward (if @p timeDelta is positive)
+         * or backward (if @p timeDelta is negative). If @ref state() is
+         * @ref State::Paused, seeking too far backward will make the animation
+         * paused at the beginning, while seeking too far forward will cause
+         * it paused at the end (i.e., not stopped). If @ref state() is already
+         * @ref State::Stopped, the function does nothing. See @ref advance()
+         * for a detailed description of seeking behavior.
+         *
+         * @note This function doesn't clamp the seek in any way --- so for
+         *      example seeking too far back will make the animation wait for
+         *      being played from the beginning in the future.
+         */
+        Player<T, K>& seekBy(T timeDelta);
+
+        /**
+         * @brief Seek to given absolute animation time
+         *
+         * Causes the animation to jump to @p animationTime at given
+         * @p seekTime. If @ref state() is @ref State::Playing, seeking too far
+         * backward will make the animation start from the beginning, while
+         * seeking too far forward will cause the animation to be stopped. If
+         * @ref state() is @ref State::Paused, seeking too far backward will
+         * make the animation paused at the beginning, while seeking too far
+         * forward will cause it paused at the end (i.e., not stopped). If
+         * @ref state() is @ref State::Stopped, the function does nothing. See
+         * @ref advance() for a detailed description of seeking behavior.
+         *
+         * @note This function doesn't clamp the seek in any way --- so for
+         *      example seeking too far back will make the animation wait for
+         *      being played from the beginning in the future.
+         */
+        Player<T, K>& seekTo(T seekTime, T animationTime);
+
+        /**
          * @brief Stop
          *
          * Stops the currently playing animation. If @ref state() is
-         * @ref State::Paused, discard the pause information. If @ref state()
+         * @ref State::Paused, discards the pause information. If @ref state()
          * is already @ref State::Stopped, the function does nothing. See
          * @ref advance() for a detailed description of behavior when the
          * animation gets stopped.
@@ -666,16 +745,26 @@ template<class T, class K
          * If @ref pause() was called right before a particular @ref advance()
          * iteration, the function will update destination locations and/or
          * fire user-defined callbacks with key and result values corresponding
-         * to the time passed to the @ref pause() call before to correctly
-         * "park" the animation. After that, no more updates are done until the
-         * animation is started again.
+         * to the time passed to the @ref pause() call before in order to
+         * correctly "park" the animation. After that, no more updates are done
+         * until the animation is started again or @ref seekBy() / @ref seekTo()
+         * is called.
          *
          * If @ref stop() was called right before a particular @ref advance()
          * iteration, the function will update destination locations and/or
          * fire user-defined callbacks with key and result values corresponding
-         * to the begin time of @ref duration() to correctly "park" the
-         * animation back to its initial state. After that, no more updates are
-         * done until the animation is started again.
+         * to the begin time of @ref duration() in order to correctly "park"
+         * the animation back to its initial state. After that, no more updates
+         * are done until the animation is started again.
+         *
+         * If @ref seekBy() or @ref seekTo() was called right before a
+         * particular @ref advance() iteration and @ref state() is
+         * @ref State::Paused, the function will update destination locations
+         * and/or fire user-defined callbacks with key and result values
+         * corresponding to the new pause time in order to correctly "park" the
+         * animation. After that, no more updates are done until the animation
+         * is started again or @ref seekBy() / @ref seekTo() is called.
+         * @see @ref elapsed()
          */
         Player<T, K>& advance(T time);
 
@@ -684,11 +773,13 @@ template<class T, class K
 
         Player<T, K>& addInternal(const TrackViewStorage<K>& track, void (*advancer)(const TrackViewStorage<K>&, K, std::size_t&, void*, void(*)(), void*), void* destination, void(*userCallback)(), void* userCallbackData);
 
+        Containers::Optional<std::pair<UnsignedInt, K>> elapsedInternal(T time, T& updatedStartTime, T& updatedPauseTime, State& updatedState) const;
+
         std::vector<Track> _tracks;
         Math::Range1D<K> _duration;
         UnsignedInt _playCount{1};
         State _state{State::Stopped};
-        T _startTime{}, _pauseTime{};
+        T _startTime{}, _stopPauseTime{};
         Scaler _scaler;
 };
 
@@ -701,43 +792,43 @@ template<class T, class K> template<class V, class R> Player<T, K>& Player<T, K>
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 template<class T, class K> template<class V, class R, class Callback> Player<T, K>& Player<T, K>::addWithCallback(const TrackView<K, V, R>& track, Callback callback, void* userData) {
-    auto callbackPtr = static_cast<void(*)(const K&, const R&, void*)>(callback);
+    auto callbackPtr = static_cast<void(*)(K, const R&, void*)>(callback);
     return addInternal(track,
         [](const TrackViewStorage<K>& track, K key, std::size_t& hint, void*, void(*callback)(), void* userData) {
             /** @todo try to use atStrict() if possible */
-            reinterpret_cast<void(*)(const K&, const R&, void*)>(callback)(key, static_cast<const TrackView<K, V, R>&>(track).at(key, hint), userData);
+            reinterpret_cast<void(*)(K, const R&, void*)>(callback)(key, static_cast<const TrackView<K, V, R>&>(track).at(key, hint), userData);
         }, nullptr, reinterpret_cast<void(*)()>(callbackPtr), userData);
 }
 
 template<class T, class K> template<class V, class R, class U, class Callback> Player<T, K>& Player<T, K>::addWithCallback(const TrackView<K, V, R>& track, Callback callback, U& userData) {
-    auto callbackPtr = static_cast<void(*)(const K&, const R&, U&)>(callback);
+    auto callbackPtr = static_cast<void(*)(K, const R&, U&)>(callback);
     return addInternal(track,
         [](const TrackViewStorage<K>& track, K key, std::size_t& hint, void*, void(*callback)(), void* userData) {
             /** @todo try to use atStrict() if possible */
-            reinterpret_cast<void(*)(const K&, const R&, U&)>(callback)(key, static_cast<const TrackView<K, V, R>&>(track).at(key, hint), *static_cast<U*>(userData));
+            reinterpret_cast<void(*)(K, const R&, U&)>(callback)(key, static_cast<const TrackView<K, V, R>&>(track).at(key, hint), *static_cast<U*>(userData));
         }, nullptr, reinterpret_cast<void(*)()>(callbackPtr), &userData);
 }
 
 template<class T, class K> template<class V, class R, class Callback> Player<T, K>& Player<T, K>::addWithCallbackOnChange(const TrackView<K, V, R>& track, Callback callback, R& destination, void* userData) {
-    auto callbackPtr = static_cast<void(*)(const K&, const R&, void*)>(callback);
+    auto callbackPtr = static_cast<void(*)(K, const R&, void*)>(callback);
     return addInternal(track,
         [](const TrackViewStorage<K>& track, K key, std::size_t& hint, void* destination, void(*callback)(), void* userData) {
             /** @todo try to use atStrict() if possible */
             R result = static_cast<const TrackView<K, V, R>&>(track).at(key, hint);
             if(result == *static_cast<R*>(destination)) return;
-            reinterpret_cast<void(*)(const K&, const R&, void*)>(callback)(key, result, userData);
+            reinterpret_cast<void(*)(K, const R&, void*)>(callback)(key, result, userData);
             *static_cast<R*>(destination) = result;
         }, &destination, reinterpret_cast<void(*)()>(callbackPtr), userData);
 }
 
 template<class T, class K> template<class V, class R, class U, class Callback> Player<T, K>& Player<T, K>::addWithCallbackOnChange(const TrackView<K, V, R>& track, Callback callback, R& destination, U& userData) {
-    auto callbackPtr = static_cast<void(*)(const K&, const R&, U&)>(callback);
+    auto callbackPtr = static_cast<void(*)(K, const R&, U&)>(callback);
     return addInternal(track,
         [](const TrackViewStorage<K>& track, K key, std::size_t& hint, void* destination, void(*callback)(), void* userData) {
             /** @todo try to use atStrict() if possible */
             R result = static_cast<const TrackView<K, V, R>&>(track).at(key, hint);
             if(result == *static_cast<R*>(destination)) return;
-            reinterpret_cast<void(*)(const K&, const R&, U&)>(callback)(key, result, *static_cast<U*>(userData));
+            reinterpret_cast<void(*)(K, const R&, U&)>(callback)(key, result, *static_cast<U*>(userData));
             *static_cast<R*>(destination) = result;
         }, &destination, reinterpret_cast<void(*)()>(callbackPtr), &userData);
 }

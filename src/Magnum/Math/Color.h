@@ -197,12 +197,26 @@ template<class T> inline Vector3<typename Color3<T>::FloatingPointType> toXyz(ty
 }
 
 /* Value for full channel (1.0f for floats, 255 for unsigned byte) */
+#if !defined(CORRADE_MSVC2017_COMPATIBILITY) || defined(CORRADE_MSVC2015_COMPATIBILITY)
+/* MSVC 2017 since 15.8 crashes with the following at a constructor line that
+   calls this function via a default parameter. This happens only when the
+   /permissive- (yes, there's a dash at the end) flag is specified, which is
+   projects created directly using VS (enabled by default since 15.5) but not
+   projects using CMake. Not using SFINAE in this case makes it work. Minimal
+   repro case here: https://twitter.com/czmosra/status/1039446378248896513 */
 template<class T> constexpr typename std::enable_if<std::is_floating_point<T>::value, T>::type fullChannel() {
     return T(1);
 }
 template<class T> constexpr typename std::enable_if<std::is_integral<T>::value, T>::type fullChannel() {
     return Implementation::bitMax<T>();
 }
+#else
+template<class T> constexpr T fullChannel() { return bitMax<T>(); }
+/** @todo half */
+template<> constexpr float fullChannel<float>() { return 1.0f; }
+template<> constexpr double fullChannel<double>() { return 1.0; }
+template<> constexpr long double fullChannel<long double>() { return 1.0l; }
+#endif
 
 }
 
@@ -216,7 +230,7 @@ linear RGB using @ref fromSrgb(), calculation done on the linear representation
 and then converted back to sRGB using @ref toSrgb().
 
 Note that constructor conversion between different types (like in @ref Vector
-classes) doesn't do any (de)normalization, you should use @ref pack) and
+classes) doesn't do any (de)normalization, you should use @ref pack() and
 @ref unpack() instead, for example:
 
 @snippet MagnumMath.cpp Color3-pack
@@ -314,13 +328,6 @@ template<class T> class Color3: public Vector3<T> {
          */
         typedef std::tuple<Deg<FloatingPointType>, FloatingPointType, FloatingPointType> Hsv;
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief Hsv
-         * @deprecated Use @ref Hsv instead.
-         */
-        typedef CORRADE_DEPRECATED("use Hsv instead") Hsv HSV;
-        #endif
-
         /**
          * @brief Create RGB color from HSV representation
          * @param hsv   Color in HSV color space
@@ -335,22 +342,6 @@ template<class T> class Color3: public Vector3<T> {
         static Color3<T> fromHsv(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value) {
             return fromHsv(std::make_tuple(hue, saturation, value));
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief fromHsv(const Hsv&)
-         * @deprecated Use @ref fromHsv(const Hsv&) instead.
-         */
-        CORRADE_DEPRECATED("use fromHsv() instead") static Color3<T> fromHSV(const Hsv& hsv) {
-            return fromHsv(hsv);
-        }
-        /** @brief @copybrief fromHsv(Deg<FloatingPointType>, FloatingPointType, FloatingPointType)
-         * @deprecated Use @ref fromHsv(Deg<FloatingPointType>, FloatingPointType, FloatingPointType)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use fromHsv() instead") static Color3<T> fromHSV(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value) {
-            return fromHsv(hue, saturation, value);
-        }
-        #endif
 
         /**
          * @brief Create linear RGB color from sRGB representation
@@ -501,13 +492,6 @@ template<class T> class Color3: public Vector3<T> {
             return Implementation::toHsv<T>(*this);
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief toHsv()
-         * @deprecated Use @ref toHsv() instead.
-         */
-        CORRADE_DEPRECATED("use toHsv() instead") Hsv toHSV() const { return toHsv(); }
-        #endif
-
         /**
          * @brief Hue
          * @return Hue in range @f$ [0.0, 360.0] @f$.
@@ -635,13 +619,6 @@ class Color4: public Vector4<T> {
         /** @copydoc Color3::Hsv */
         typedef typename Color3<T>::Hsv Hsv;
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief Hsv
-         * @deprecated Use @ref Hsv instead.
-         */
-        typedef CORRADE_DEPRECATED("use Hsv instead") Hsv HSV;
-        #endif
-
         /**
          * @brief Red color
          *
@@ -719,22 +696,6 @@ class Color4: public Vector4<T> {
         static Color4<T> fromHsv(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value, T alpha = Implementation::fullChannel<T>()) {
             return fromHsv(std::make_tuple(hue, saturation, value), alpha);
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief fromHsv(const Hsv&, T)
-         * @deprecated Use @ref fromHsv(const Hsv&, T) instead.
-         */
-        CORRADE_DEPRECATED("use fromHsv() instead") static Color4<T> fromHSV(const Hsv& hsv, T a = Implementation::fullChannel<T>()) {
-            return fromHsv(hsv, a);
-        }
-        /** @brief @copybrief fromHsv(Deg<FloatingPointType>, FloatingPointType, FloatingPointType, T)
-         * @deprecated Use @ref fromHsv(Deg<FloatingPointType>, FloatingPointType, FloatingPointType, T)
-         *      instead.
-         */
-        CORRADE_DEPRECATED("use fromHsv() instead") static Color4<T> fromHSV(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value, T a = Implementation::fullChannel<T>()) {
-            return fromHsv(hue, saturation, value, a);
-        }
-        #endif
 
         /**
          * @brief Create linear RGBA color from sRGB + alpha representation
@@ -947,13 +908,6 @@ class Color4: public Vector4<T> {
         Hsv toHsv() const {
             return Implementation::toHsv<T>(Vector4<T>::rgb());
         }
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief toHsv()
-         * @deprecated Use @ref toHsv() instead.
-         */
-        CORRADE_DEPRECATED("use toHsv() instead") Hsv toHSV() const { return toHsv(); }
-        #endif
 
         /** @copydoc Color3::hue() */
         Deg<FloatingPointType> hue() const {
@@ -1258,16 +1212,87 @@ namespace Implementation {
     template<class T> struct TypeForSize<3, Color4<T>> { typedef Color3<T> Type; };
     template<class T> struct TypeForSize<4, Color3<T>> { typedef Color4<T> Type; };
     template<class T> struct TypeForSize<4, Color4<T>> { typedef Color4<T> Type; };
+
+    template<class T> struct StrictWeakOrdering<Color3<T>>: StrictWeakOrdering<Vector<3, T>> {};
+    template<class T> struct StrictWeakOrdering<Color4<T>>: StrictWeakOrdering<Vector<4, T>> {};
 }
 
 }}
 
 namespace Corrade { namespace Utility {
-    /** @configurationvalue{Magnum::Color3} */
-    template<class T> struct ConfigurationValue<Magnum::Math::Color3<T>>: public ConfigurationValue<Magnum::Math::Vector<3, T>> {};
 
-    /** @configurationvalue{Magnum::Color4} */
-    template<class T> struct ConfigurationValue<Magnum::Math::Color4<T>>: public ConfigurationValue<Magnum::Math::Vector<4, T>> {};
+/** @configurationvalue{Magnum::Color3} */
+template<class T> struct ConfigurationValue<Magnum::Math::Color3<T>>: ConfigurationValue<Magnum::Math::Vector<3, T>> {};
+
+/** @configurationvalue{Magnum::Color4} */
+template<class T> struct ConfigurationValue<Magnum::Math::Color4<T>>: ConfigurationValue<Magnum::Math::Vector<4, T>> {};
+
+#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+/**
+@tweakableliteral{Magnum::Math::Color3}
+
+Parses the @link Magnum::Math::Literals::operator""_rgb @endlink and
+@link Magnum::Math::Literals::operator""_srgb @endlink literals.
+@experimental
+*/
+template<> struct MAGNUM_EXPORT TweakableParser<Magnum::Math::Color3<Magnum::UnsignedByte>> {
+    TweakableParser() = delete;
+
+    /** @brief Parse the value */
+    static std::pair<TweakableState, Magnum::Math::Color3<Magnum::UnsignedByte>> parse(Containers::ArrayView<const char> value);
+};
+
+#ifndef DOXYGEN_GENERATING_OUTPUT
+template<> struct MAGNUM_EXPORT TweakableParser<Magnum::Math::Vector3<Magnum::UnsignedByte>>: TweakableParser<Magnum::Math::Color3<Magnum::UnsignedByte>> {};
+#endif
+
+/**
+@tweakableliteral{Magnum::Math::Color4}
+
+Parses the @link Magnum::Math::Literals::operator""_rgba @endlink and
+@link Magnum::Math::Literals::operator""_srgba @endlink literals.
+@experimental
+*/
+template<> struct MAGNUM_EXPORT TweakableParser<Magnum::Math::Color4<Magnum::UnsignedByte>> {
+    TweakableParser() = delete;
+
+    /** @brief Parse the value */
+    static std::pair<TweakableState, Magnum::Math::Color4<Magnum::UnsignedByte>> parse(Containers::ArrayView<const char> value);
+};
+
+#ifndef DOXYGEN_GENERATING_OUTPUT
+template<> struct MAGNUM_EXPORT TweakableParser<Magnum::Math::Vector4<Magnum::UnsignedByte>>: TweakableParser<Magnum::Math::Color4<Magnum::UnsignedByte>> {};
+#endif
+
+/**
+@tweakableliteral{Magnum::Math::Color3}
+
+Parses the @link Magnum::Math::Literals::operator""_rgbf @endlink and
+@link Magnum::Math::Literals::operator""_srgbf @endlink literals.
+@experimental
+*/
+template<> struct MAGNUM_EXPORT TweakableParser<Magnum::Math::Color3<Magnum::Float>> {
+    TweakableParser() = delete;
+
+    /** @brief Parse the value */
+    static std::pair<TweakableState, Magnum::Math::Color3<Magnum::Float>> parse(Containers::ArrayView<const char> value);
+};
+
+/**
+@tweakableliteral{Magnum::Math::Color4}
+
+Parses the @link Magnum::Math::Literals::operator""_rgbaf @endlink and
+@link Magnum::Math::Literals::operator""_srgbaf @endlink literals.
+@experimental
+*/
+template<> struct MAGNUM_EXPORT TweakableParser<Magnum::Math::Color4<Magnum::Float>> {
+    TweakableParser() = delete;
+
+    /** @brief Parse the value */
+    static std::pair<TweakableState, Magnum::Math::Color4<Magnum::Float>> parse(Containers::ArrayView<const char> value);
+};
+#endif
+
 }}
 
 #endif

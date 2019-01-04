@@ -433,7 +433,7 @@ const std::vector<Extension>& Extension::extensions(Version version) {
 
 namespace {
     #ifdef MAGNUM_BUILD_MULTITHREADED
-    #if !defined(CORRADE_GCC47_COMPATIBILITY) && !defined(CORRADE_TARGET_APPLE)
+    #ifndef CORRADE_TARGET_APPLE
     thread_local
     #else
     __thread
@@ -455,7 +455,7 @@ Context::Context(NoCreateT, Utility::Arguments& args, Int argc, const char** arg
     /* Parse arguments */
     CORRADE_INTERNAL_ASSERT(args.prefix() == "magnum");
     args.addOption("disable-workarounds")
-        .setHelp("disable-workarounds", "driver workarounds to disable\n      (see http://doc.magnum.graphics/magnum/opengl-workarounds.html for detailed info)", "LIST")
+        .setHelp("disable-workarounds", "driver workarounds to disable\n      (see https://doc.magnum.graphics/magnum/opengl-workarounds.html for detailed info)", "LIST")
         .addOption("disable-extensions").setHelp("disable-extensions", "OpenGL extensions to disable", "LIST")
         .addOption("log", "default").setHelp("log", "console logging", "default|quiet|verbose")
         .setFromEnvironment("disable-workarounds")
@@ -860,6 +860,20 @@ void Context::resetState(const States states) {
         _state->framebuffer->reset();
     if(states & State::Meshes)
         _state->mesh->reset();
+
+    #ifndef MAGNUM_TARGET_GLES
+    /* Bind a scratch VAO for external GL code that is not VAO-aware and just
+       enables vertex attributes on the default VAO. Generate it on-demand as
+       we don't expect this case to be used very often. */
+    if(states & State::BindScratchVao) {
+        if(!_state->mesh->scratchVAO)
+            glGenVertexArrays(1, &_state->mesh->scratchVAO);
+
+        _state->mesh->bindVAOImplementation(_state->mesh->scratchVAO);
+
+    /* Otherwise just unbind the current VAO and leave the the default */
+    } else
+    #endif
     if(states & State::MeshVao)
         _state->mesh->bindVAOImplementation(0);
 
@@ -890,6 +904,9 @@ Debug& operator<<(Debug& debug, const Context::Flag value) {
         /* LCOV_EXCL_START */
         #define _c(value) case Context::Flag::value: return debug << "GL::Context::Flag::" #value;
         _c(Debug)
+        #ifndef MAGNUM_TARGET_GLES
+        _c(ForwardCompatible)
+        #endif
         _c(NoError)
         #ifndef MAGNUM_TARGET_GLES2
         _c(RobustAccess)
@@ -904,6 +921,9 @@ Debug& operator<<(Debug& debug, const Context::Flag value) {
 Debug& operator<<(Debug& debug, const Context::Flags value) {
     return Containers::enumSetDebugOutput(debug, value, "GL::Context::Flags{}", {
         Context::Flag::Debug,
+        #ifndef MAGNUM_TARGET_GLES
+        Context::Flag::ForwardCompatible,
+        #endif
         Context::Flag::NoError,
         #ifndef MAGNUM_TARGET_GLES2
         Context::Flag::RobustAccess

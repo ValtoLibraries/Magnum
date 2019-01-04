@@ -48,6 +48,7 @@
 #ifndef MAGNUM_TARGET_GLES
 #include "Magnum/GL/RectangleTexture.h"
 #endif
+#include "Magnum/GL/Renderer.h"
 #include "Magnum/GL/Renderbuffer.h"
 #include "Magnum/GL/Shader.h"
 #include "Magnum/GL/Texture.h"
@@ -84,8 +85,22 @@ namespace Magnum {
 @brief Displays information about Magnum engine OpenGL capabilities
 
 @m_footernavigation
+@m_keywords{magnum-gl-info gl-info}
 
-@m_div{m-button m-primary} <a href="http://magnum.graphics/showcase/magnum-info/">@m_div{m-big}Live web version @m_enddiv @m_div{m-small} uses WebAssembly & WebGL @m_enddiv </a> @m_enddiv
+@m_div{m-button m-primary} <a href="https://magnum.graphics/showcase/magnum-info/">@m_div{m-big}Live web version @m_enddiv @m_div{m-small} uses WebAssembly & WebGL @m_enddiv </a> @m_enddiv
+
+This utility is built if both `WITH_GL` and `WITH_GL_INFO` is enabled when
+building Magnum. To use this utility with CMake, you need to request the
+`gl-info` component of the `Magnum` package and use the `Magnum::gl-info`
+target for example in a custom command:
+
+@code{.cmake}
+find_package(Magnum REQUIRED gl-info)
+
+add_custom_command(OUTPUT ... COMMAND Magnum::gl-info ...)
+@endcode
+
+See @ref building, @ref cmake and the @ref GL namespace for more information.
 
 @section magnum-gl-info-usage Usage
 
@@ -216,9 +231,6 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
     #error no windowless application available on this platform
     #endif
     Debug() << "Compilation flags:";
-    #ifdef CORRADE_GCC47_COMPATIBILITY
-    Debug() << "    CORRADE_GCC47_COMPATIBILITY";
-    #endif
     #ifdef CORRADE_BUILD_DEPRECATED
     Debug() << "    CORRADE_BUILD_DEPRECATED";
     #endif
@@ -245,6 +257,15 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
     #endif
     #ifdef CORRADE_TARGET_ANDROID
     Debug() << "    CORRADE_TARGET_ANDROID";
+    #endif
+    #ifdef CORRADE_TARGET_X86
+    Debug() << "    CORRADE_TARGET_X86";
+    #endif
+    #ifdef CORRADE_TARGET_ARM
+    Debug() << "    CORRADE_TARGET_ARM";
+    #endif
+    #ifdef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
+    Debug() << "    CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT";
     #endif
     #ifdef CORRADE_TESTSUITE_TARGET_XCTEST
     Debug() << "    CORRADE_TESTSUITE_TARGET_XCTEST";
@@ -374,6 +395,7 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
     _l(GL::Mesh::maxElementsIndices())
     _l(GL::Mesh::maxElementsVertices())
     #endif
+    _lvec(GL::Renderer::lineWidthRange())
     _l(GL::Renderbuffer::maxSize())
     #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
     _l(GL::Renderbuffer::maxSamples())

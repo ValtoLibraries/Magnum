@@ -74,7 +74,7 @@ bool AbstractXApplication::tryCreate(const Configuration& configuration, const G
 
     CORRADE_ASSERT(_context->version() == GL::Version::None, "Platform::AbstractXApplication::tryCreate(): context already created", false);
 
-    _viewportSize = configuration.size();
+    _windowSize = configuration.size();
 
     /* Get default X display */
     _display = XOpenDisplay(nullptr);
@@ -154,9 +154,10 @@ int AbstractXApplication::exec() {
                 /* Window resizing */
                 case ConfigureNotify: {
                     Vector2i size(event.xconfigure.width, event.xconfigure.height);
-                    if(size != _viewportSize) {
-                        _viewportSize = size;
-                        viewportEvent(size);
+                    if(size != _windowSize) {
+                        _windowSize = size;
+                        ViewportEvent e{size};
+                        viewportEvent(e);
                         _flags |= Flag::Redraw;
                     }
                 } break;
@@ -190,7 +191,20 @@ int AbstractXApplication::exec() {
     return 0;
 }
 
+void AbstractXApplication::viewportEvent(ViewportEvent& event) {
+    #ifdef MAGNUM_BUILD_DEPRECATED
+    CORRADE_IGNORE_DEPRECATED_PUSH
+    viewportEvent(event.framebufferSize());
+    CORRADE_IGNORE_DEPRECATED_POP
+    #else
+    static_cast<void>(event);
+    #endif
+}
+
+#ifdef MAGNUM_BUILD_DEPRECATED
 void AbstractXApplication::viewportEvent(const Vector2i&) {}
+#endif
+
 void AbstractXApplication::keyPressEvent(KeyEvent&) {}
 void AbstractXApplication::keyReleaseEvent(KeyEvent&) {}
 void AbstractXApplication::mousePressEvent(MouseEvent&) {}

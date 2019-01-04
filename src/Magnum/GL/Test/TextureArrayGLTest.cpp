@@ -29,13 +29,16 @@
 #include "Magnum/GL/Context.h"
 #include "Magnum/GL/Extensions.h"
 #include "Magnum/GL/BufferImage.h"
-#include "Magnum/GL/ImageFormat.h"
 #include "Magnum/GL/OpenGLTester.h"
 #include "Magnum/GL/PixelFormat.h"
 #include "Magnum/GL/TextureArray.h"
 #include "Magnum/GL/TextureFormat.h"
 #include "Magnum/Math/Color.h"
 #include "Magnum/Math/Range.h"
+
+#ifndef MAGNUM_TARGET_WEBGL
+#include "Magnum/GL/ImageFormat.h"
+#endif
 
 namespace Magnum { namespace GL { namespace Test {
 
@@ -69,10 +72,12 @@ struct TextureArrayGLTest: OpenGLTester {
     #endif
     template<class T> void sampling2D();
 
+    #ifndef MAGNUM_TARGET_WEBGL
     #ifndef MAGNUM_TARGET_GLES
-    void samplingSRGBDecode1D();
+    void samplingSrgbDecode1D();
     #endif
-    void samplingSRGBDecode2D();
+    void samplingSrgbDecode2D();
+    #endif
 
     #ifndef MAGNUM_TARGET_GLES
     void samplingSwizzle1D();
@@ -88,8 +93,10 @@ struct TextureArrayGLTest: OpenGLTester {
     #ifndef MAGNUM_TARGET_GLES
     void samplingDepthStencilMode1D();
     #endif
+    #ifndef MAGNUM_TARGET_WEBGL
     void samplingDepthStencilMode2D();
-    #ifdef MAGNUM_TARGET_GLES
+    #endif
+    #if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_WEBGL)
     void samplingBorder2D();
     #endif
 
@@ -286,15 +293,19 @@ TextureArrayGLTest::TextureArrayGLTest() {
         &TextureArrayGLTest::sampling2D<GenericSampler>,
         &TextureArrayGLTest::sampling2D<GLSampler>,
 
+        #ifndef MAGNUM_TARGET_WEBGL
         #ifndef MAGNUM_TARGET_GLES
-        &TextureArrayGLTest::samplingSRGBDecode1D,
+        &TextureArrayGLTest::samplingSrgbDecode1D,
         #endif
-        &TextureArrayGLTest::samplingSRGBDecode2D,
+        &TextureArrayGLTest::samplingSrgbDecode2D,
+        #endif
 
         #ifndef MAGNUM_TARGET_GLES
         &TextureArrayGLTest::samplingSwizzle1D,
         #endif
+        #ifndef MAGNUM_TARGET_WEBGL
         &TextureArrayGLTest::samplingSwizzle2D,
+        #endif
 
         #ifndef MAGNUM_TARGET_GLES
         &TextureArrayGLTest::samplingBorderInteger1D,
@@ -305,8 +316,10 @@ TextureArrayGLTest::TextureArrayGLTest() {
         #ifndef MAGNUM_TARGET_GLES
         &TextureArrayGLTest::samplingDepthStencilMode1D,
         #endif
+        #ifndef MAGNUM_TARGET_WEBGL
         &TextureArrayGLTest::samplingDepthStencilMode2D,
-        #ifdef MAGNUM_TARGET_GLES
+        #endif
+        #if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_WEBGL)
         &TextureArrayGLTest::samplingBorder2D,
         #endif
 
@@ -578,14 +591,14 @@ template<class T> void TextureArrayGLTest::sampling1D() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void TextureArrayGLTest::samplingSRGBDecode1D() {
+void TextureArrayGLTest::samplingSrgbDecode1D() {
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_array>())
         CORRADE_SKIP(Extensions::EXT::texture_array::string() + std::string(" is not supported."));
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_sRGB_decode>())
         CORRADE_SKIP(Extensions::EXT::texture_sRGB_decode::string() + std::string(" is not supported."));
 
     Texture1DArray texture;
-    texture.setSRGBDecode(false);
+    texture.setSrgbDecode(false);
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
@@ -668,7 +681,8 @@ template<class T> void TextureArrayGLTest::sampling2D() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void TextureArrayGLTest::samplingSRGBDecode2D() {
+#ifndef MAGNUM_TARGET_WEBGL
+void TextureArrayGLTest::samplingSrgbDecode2D() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_array>())
         CORRADE_SKIP(Extensions::EXT::texture_array::string() + std::string(" is not supported."));
@@ -677,12 +691,13 @@ void TextureArrayGLTest::samplingSRGBDecode2D() {
         CORRADE_SKIP(Extensions::EXT::texture_sRGB_decode::string() + std::string(" is not supported."));
 
     Texture2DArray texture;
-    texture.setSRGBDecode(false);
+    texture.setSrgbDecode(false);
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
+#endif
 
-#ifndef MAGNUM_TARGET_GLES2
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureArrayGLTest::samplingSwizzle2D() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_array>())
@@ -696,7 +711,9 @@ void TextureArrayGLTest::samplingSwizzle2D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
-#else
+#endif
+
+#if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureArrayGLTest::samplingMaxLevel2D() {
     if(!Context::current().isExtensionSupported<Extensions::APPLE::texture_max_level>())
         CORRADE_SKIP(Extensions::APPLE::texture_max_level::string() + std::string(" is not supported."));
@@ -743,7 +760,7 @@ void TextureArrayGLTest::samplingBorderInteger2D() {
 }
 #endif
 
-#ifndef MAGNUM_TARGET_GLES2
+#ifndef MAGNUM_TARGET_WEBGL
 void TextureArrayGLTest::samplingDepthStencilMode2D() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_array>())
@@ -762,7 +779,7 @@ void TextureArrayGLTest::samplingDepthStencilMode2D() {
 }
 #endif
 
-#ifdef MAGNUM_TARGET_GLES
+#if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureArrayGLTest::samplingBorder2D() {
     if(!Context::current().isExtensionSupported<Extensions::NV::texture_border_clamp>() &&
        !Context::current().isExtensionSupported<Extensions::EXT::texture_border_clamp>())
@@ -808,7 +825,7 @@ void TextureArrayGLTest::storage2D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 
-    #ifndef MAGNUM_TARGET_GLES2
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     #ifdef MAGNUM_TARGET_GLES
     if(!Context::current().isVersionSupported(Version::GLES310))
         CORRADE_SKIP("OpenGL ES 3.1 not supported, skipping image size testing");

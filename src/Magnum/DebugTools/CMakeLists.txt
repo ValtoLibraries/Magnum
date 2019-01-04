@@ -72,6 +72,10 @@ if(TARGET_GL)
     endif()
 
     if(WITH_SHAPES)
+        if(NOT MAGNUM_BUILD_DEPRECATED)
+            message(FATAL_ERROR "Shapes are scheduled for removal and not available if BUILD_DEPRECATED is disabled. See the docs for alternatives.")
+        endif()
+
         list(APPEND MagnumDebugTools_SRCS
             ShapeRenderer.cpp
 
@@ -145,7 +149,9 @@ elseif(BUILD_STATIC_PIC)
 endif()
 target_link_libraries(MagnumDebugTools PUBLIC Magnum)
 if(Corrade_TestSuite_FOUND)
-    target_link_libraries(MagnumDebugTools PUBLIC Corrade::TestSuite)
+    target_link_libraries(MagnumDebugTools PUBLIC
+        Corrade::TestSuite
+        MagnumTrade)
 endif()
 if(TARGET_GL)
     target_link_libraries(MagnumDebugTools PUBLIC MagnumGL)
@@ -153,11 +159,12 @@ if(TARGET_GL)
         target_link_libraries(MagnumDebugTools PUBLIC MagnumSceneGraph)
     endif()
     if(WITH_SHAPES)
-        target_link_libraries(MagnumDebugTools PUBLIC MagnumShapes MagnumPrimitives)
+        target_link_libraries(MagnumDebugTools PUBLIC MagnumShapes)
     endif()
     if(WITH_SCENEGRAPH OR WITH_SHAPES)
         target_link_libraries(MagnumDebugTools PUBLIC
             MagnumMeshTools
+            MagnumPrimitives
             MagnumShaders)
     endif()
 endif()
@@ -183,7 +190,9 @@ if(BUILD_TESTS)
     endif()
     target_link_libraries(MagnumDebugToolsTestLib PUBLIC Magnum)
     if(Corrade_TestSuite_FOUND)
-        target_link_libraries(MagnumDebugToolsTestLib PUBLIC Corrade::TestSuite)
+        target_link_libraries(MagnumDebugToolsTestLib PUBLIC
+            Corrade::TestSuite
+            MagnumTrade)
     endif()
     if(TARGET_GL)
         target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumGL)
@@ -191,11 +200,12 @@ if(BUILD_TESTS)
             target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumSceneGraph)
         endif()
         if(WITH_SHAPES)
-            target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumShapes MagnumPrimitives)
+            target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumShapes)
         endif()
         if(WITH_SCENEGRAPH OR WITH_SHAPES)
             target_link_libraries(MagnumDebugToolsTestLib PUBLIC
                 MagnumMeshTools
+                MagnumPrimitives
                 MagnumShaders)
         endif()
     endif()

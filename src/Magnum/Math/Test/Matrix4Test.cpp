@@ -29,6 +29,7 @@
 #include <Corrade/Utility/Configuration.h>
 
 #include "Magnum/Math/Matrix4.h"
+#include "Magnum/Math/StrictWeakOrdering.h"
 
 struct Mat4 {
     float a[16];
@@ -68,6 +69,7 @@ struct Matrix4Test: Corrade::TestSuite::Tester {
     void constructNoInit();
     void constructOneValue();
     void constructConversion();
+    void constructFromDifferentSize();
     void constructCopy();
     void convert();
 
@@ -76,10 +78,12 @@ struct Matrix4Test: Corrade::TestSuite::Tester {
     void translation();
     void scaling();
     void rotation();
+    void rotationNotNormalized();
     void rotationX();
     void rotationY();
     void rotationZ();
     void reflection();
+    void reflectionNotNormalized();
     void reflectionIsScaling();
     void shearingXY();
     void shearingXZ();
@@ -103,8 +107,11 @@ struct Matrix4Test: Corrade::TestSuite::Tester {
     void uniformScalingPartNotUniform();
     void vectorParts();
     void invertedRigid();
+    void invertedRigidNotRigid();
     void transform();
     void transformProjection();
+
+    void strictWeakOrdering();
 
     void debug();
     void configuration();
@@ -112,9 +119,11 @@ struct Matrix4Test: Corrade::TestSuite::Tester {
 
 typedef Math::Deg<Float> Deg;
 typedef Math::Rad<Float> Rad;
+typedef Math::Matrix<2, Float> Matrix2x2;
+typedef Math::Matrix<3, Float> Matrix3x3;
 typedef Math::Matrix4<Float> Matrix4;
 typedef Math::Matrix4<Int> Matrix4i;
-typedef Math::Matrix<3, Float> Matrix3x3;
+typedef Math::Vector2<Float> Vector2;
 typedef Math::Vector3<Float> Vector3;
 typedef Math::Vector4<Float> Vector4;
 typedef Math::Constants<Float> Constants;
@@ -126,6 +135,7 @@ Matrix4Test::Matrix4Test() {
               &Matrix4Test::constructNoInit,
               &Matrix4Test::constructOneValue,
               &Matrix4Test::constructConversion,
+              &Matrix4Test::constructFromDifferentSize,
               &Matrix4Test::constructCopy,
               &Matrix4Test::convert,
 
@@ -134,10 +144,12 @@ Matrix4Test::Matrix4Test() {
               &Matrix4Test::translation,
               &Matrix4Test::scaling,
               &Matrix4Test::rotation,
+              &Matrix4Test::rotationNotNormalized,
               &Matrix4Test::rotationX,
               &Matrix4Test::rotationY,
               &Matrix4Test::rotationZ,
               &Matrix4Test::reflection,
+              &Matrix4Test::reflectionNotNormalized,
               &Matrix4Test::reflectionIsScaling,
               &Matrix4Test::shearingXY,
               &Matrix4Test::shearingXZ,
@@ -161,8 +173,11 @@ Matrix4Test::Matrix4Test() {
               &Matrix4Test::uniformScalingPartNotUniform,
               &Matrix4Test::vectorParts,
               &Matrix4Test::invertedRigid,
+              &Matrix4Test::invertedRigidNotRigid,
               &Matrix4Test::transform,
               &Matrix4Test::transformProjection,
+
+              &Matrix4Test::strictWeakOrdering,
 
               &Matrix4Test::debug,
               &Matrix4Test::configuration});
@@ -268,6 +283,27 @@ void Matrix4Test::constructConversion() {
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix4, Matrix4i>::value));
 }
 
+void Matrix4Test::constructFromDifferentSize() {
+    constexpr Matrix4 a{{3.0f,  5.0f, 8.0f, -3.0f},
+                        {4.5f,  4.0f, 7.0f,  2.0f},
+                        {1.0f,  2.0f, 3.0f, -1.0f},
+                        {7.9f, -1.0f, 8.0f, -1.5f}};
+    constexpr Matrix2x2 b{Vector2{3.0f,  5.0f},
+                          Vector2{4.5f,  4.0f}};
+    constexpr Matrix4 c{{3.0f, 5.0f, 0.0f, 0.0f},
+                        {4.5f, 4.0f, 0.0f, 0.0f},
+                        {0.0f, 0.0f, 1.0f, 0.0f},
+                        {0.0f, 0.0f, 0.0f, 1.0f}};
+
+    constexpr Matrix4 larger{b};
+    CORRADE_COMPARE(larger, c);
+    CORRADE_COMPARE(Matrix4{b}, c);
+
+    constexpr Matrix2x2 smaller{a};
+    CORRADE_COMPARE(smaller, b);
+    CORRADE_COMPARE(Matrix2x2{a}, b);
+}
+
 void Matrix4Test::constructCopy() {
     constexpr Matrix<4, Float> a(Vector<4, Float>(3.0f,  5.0f, 8.0f, -3.0f),
                                  Vector<4, Float>(4.5f,  4.0f, 7.0f,  2.0f),
@@ -343,17 +379,19 @@ void Matrix4Test::scaling() {
 }
 
 void Matrix4Test::rotation() {
-    std::ostringstream o;
-    Error redirectError{&o};
-
-    CORRADE_COMPARE(Matrix4::rotation(Deg(-74.0f), {-1.0f, 2.0f, 2.0f}), Matrix4());
-    CORRADE_COMPARE(o.str(), "Math::Matrix4::rotation(): axis must be normalized\n");
-
     Matrix4 matrix({ 0.35612202f, -0.80181062f, 0.47987163f, 0.0f},
                    { 0.47987163f,  0.59757626f,  0.6423596f, 0.0f},
                    {-0.80181062f,  0.00151846f, 0.59757626f, 0.0f},
                    {        0.0f,         0.0f,        0.0f, 1.0f});
     CORRADE_COMPARE(Matrix4::rotation(Deg(-74.0f), Vector3(-1.0f, 2.0f, 2.0f).normalized()), matrix);
+}
+
+void Matrix4Test::rotationNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Matrix4::rotation(Deg(-74.0f), {-1.0f, 2.0f, 2.0f});
+    CORRADE_COMPARE(out.str(), "Math::Matrix4::rotation(): axis Vector(-1, 2, 2) is not normalized\n");
 }
 
 void Matrix4Test::rotationX() {
@@ -384,14 +422,7 @@ void Matrix4Test::rotationZ() {
 }
 
 void Matrix4Test::reflection() {
-    std::ostringstream o;
-    Error redirectError{&o};
-
     Vector3 normal(-1.0f, 2.0f, 2.0f);
-
-    CORRADE_COMPARE(Matrix4::reflection(normal), Matrix4());
-    CORRADE_COMPARE(o.str(), "Math::Matrix4::reflection(): normal must be normalized\n");
-
     Matrix4 actual = Matrix4::reflection(normal.normalized());
     Matrix4 expected({0.777778f,  0.444444f,  0.444444f, 0.0f},
                      {0.444444f,  0.111111f, -0.888889f, 0.0f},
@@ -401,6 +432,14 @@ void Matrix4Test::reflection() {
     CORRADE_COMPARE(actual*actual, Matrix4());
     CORRADE_COMPARE(actual.transformVector(normal), -normal);
     CORRADE_COMPARE(actual, expected);
+}
+
+void Matrix4Test::reflectionNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    Matrix4::reflection({-1.0f, 2.0f, 2.0f});
+    CORRADE_COMPARE(out.str(), "Math::Matrix4::reflection(): normal Vector(-1, 2, 2) is not normalized\n");
 }
 
 void Matrix4Test::reflectionIsScaling() {
@@ -488,6 +527,30 @@ void Matrix4Test::perspectiveProjectionFovInfiniteFar() {
                      {      0.0f,      0.0f,  -1.0f, -1.0f},
                      {      0.0f,      0.0f, -64.0f,  0.0f});
     CORRADE_COMPARE(Matrix4::perspectiveProjection(Deg(27.0f), 2.35f, 32.0f, Constants::inf()), expected);
+}
+
+void Matrix4Test::lookAt() {
+    Vector3 translation{5.3f, -8.9f, -10.0f};
+    Vector3 target{19.0f, 29.3f, 0.0f};
+    Matrix4 a = Matrix4::lookAt(translation, target, Vector3::xAxis());
+
+    /* It's just a translation and rotation */
+    CORRADE_VERIFY(a.isRigidTransformation());
+
+    /* The matrix should translate to the position */
+    CORRADE_COMPARE(a.translation(), translation);
+
+    /* Forward vector should point in direction of the target */
+    CORRADE_COMPARE(dot(-a.backward(), (target - translation).normalized()), 1.0f);
+
+    /* Up vector should be in the same direction as X axis */
+    CORRADE_COMPARE_AS(dot(Vector3::xAxis(), a.up()), 0.0f, Corrade::TestSuite::Compare::Greater);
+
+    /* Just to be sure */
+    CORRADE_COMPARE(a, Matrix4({     0.0f,  0.253247f,  -0.967402f, 0.0f},
+                               {0.944754f, -0.317095f, -0.0830092f, 0.0f},
+                               {-0.32778f, -0.913957f,  -0.239256f, 0.0f},
+                               {     5.3f,      -8.9f,      -10.0f, 1.0f}));
 }
 
 void Matrix4Test::fromParts() {
@@ -583,9 +646,37 @@ void Matrix4Test::rotationPartNotOrthogonal() {
     Matrix4::shearingXY(1.5f, 0.0f).rotation();
     Matrix4::scaling(Vector3::yScale(0.0f)).rotation();
 
+    #if defined(CORRADE_TARGET_APPLE) || (defined(CORRADE_TARGET_WINDOWS) && defined(__MINGW32__)) || defined(CORRADE_TARGET_ANDROID)
     CORRADE_COMPARE(out.str(),
-        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal\n"
-        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal\n");
+        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal:\n"
+        "Matrix(1, 0, 0.83205,\n"
+        "       0, 1, 0,\n"
+        "       0, 0, 0.5547)\n"
+        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal:\n"
+        "Matrix(1, nan, 0,\n"
+        "       0, nan, 0,\n"
+        "       0, nan, 1)\n");
+    #elif defined(CORRADE_TARGET_WINDOWS) && defined(_MSC_VER)
+    CORRADE_COMPARE(out.str(),
+        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal:\n"
+        "Matrix(1, 0, 0.83205,\n"
+        "       0, 1, 0,\n"
+        "       0, 0, 0.5547)\n"
+        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal:\n"
+        "Matrix(1, -nan(ind), 0,\n"
+        "       0, -nan(ind), 0,\n"
+        "       0, -nan(ind), 1)\n");
+    #else
+    CORRADE_COMPARE(out.str(),
+        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal:\n"
+        "Matrix(1, 0, 0.83205,\n"
+        "       0, 1, 0,\n"
+        "       0, 0, 0.5547)\n"
+        "Math::Matrix4::rotation(): the normalized rotation part is not orthogonal:\n"
+        "Matrix(1, -nan, 0,\n"
+        "       0, -nan, 0,\n"
+        "       0, -nan, 1)\n");
+    #endif
 }
 
 void Matrix4Test::rotationNormalizedPart() {
@@ -608,7 +699,11 @@ void Matrix4Test::rotationNormalizedPartNotOrthogonal() {
               {0.0f, -1.0f, 0.1f, 0.0f},
               {9.0f,  4.0f, 5.0f, 9.0f});
     a.rotationNormalized();
-    CORRADE_COMPARE(out.str(), "Math::Matrix4::rotationNormalized(): the rotation part is not orthogonal\n");
+    CORRADE_COMPARE(out.str(),
+        "Math::Matrix4::rotationNormalized(): the rotation part is not orthogonal:\n"
+        "Matrix(0, 1, 0,\n"
+        "       0, 0, -1,\n"
+        "       1, 0, 0.1)\n");
 }
 
 void Matrix4Test::scalingPart() {
@@ -629,7 +724,10 @@ void Matrix4Test::uniformScalingPart() {
 void Matrix4Test::uniformScalingPartNotUniform() {
     std::ostringstream out;
     Error redirectError{&out}; Matrix4::scaling(Vector3::yScale(3.0f)).uniformScaling();
-    CORRADE_COMPARE(out.str(), "Math::Matrix4::uniformScaling(): the matrix doesn't have uniform scaling\n");
+    CORRADE_COMPARE(out.str(), "Math::Matrix4::uniformScaling(): the matrix doesn't have uniform scaling:\n"
+        "Matrix(1, 0, 0,\n"
+        "       0, 3, 0,\n"
+        "       0, 0, 1)\n");
 }
 
 void Matrix4Test::vectorParts() {
@@ -668,13 +766,22 @@ void Matrix4Test::invertedRigid() {
                        Matrix4::reflection(Vector3(0.5f, -2.0f, 2.0f).normalized())*
                        Matrix4::rotation(Deg(74.0f), Vector3(-1.0f, 0.5f, 2.0f).normalized());
 
-    std::ostringstream o;
-    Error redirectError{&o};
-    (2*actual).invertedRigid();
-    CORRADE_COMPARE(o.str(), "Math::Matrix4::invertedRigid(): the matrix doesn't represent rigid transformation\n");
 
     CORRADE_COMPARE(actual.invertedRigid(), expected);
     CORRADE_COMPARE(actual.invertedRigid(), actual.inverted());
+}
+
+void Matrix4Test::invertedRigidNotRigid() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    (Matrix4::rotationX(-60.0_degf)*2.0f).invertedRigid();
+    CORRADE_COMPARE(out.str(),
+        "Math::Matrix4::invertedRigid(): the matrix doesn't represent a rigid transformation:\n"
+        "Matrix(2, 0, 0, 0,\n"
+        "       0, 1, 1.73205, 0,\n"
+        "       0, -1.73205, 1, 0,\n"
+        "       0, 0, 0, 2)\n");
 }
 
 void Matrix4Test::transform() {
@@ -692,28 +799,20 @@ void Matrix4Test::transformProjection() {
     CORRADE_COMPARE(a.transformPoint(v), Vector3(0.0f, 0.0f, 1.0f));
 }
 
-void Matrix4Test::lookAt() {
-    Vector3 translation{5.3f, -8.9f, -10.0f};
-    Vector3 target{19.0f, 29.3f, 0.0f};
-    Matrix4 a = Matrix4::lookAt(translation, target, Vector3::xAxis());
+void Matrix4Test::strictWeakOrdering() {
+    StrictWeakOrdering o;
+    const Matrix4 a(Vector4{1.0f, 1.0f, 2.0f, 2.0f}, Vector4{5.0f, 5.0f, 6.0f, 5.0f}, Vector4{5.0f, 5.0f, 6.0f, 5.0f}, Vector4{3.0f, 1.0f, 2.0f, 4.0f});
+    const Matrix4 b(Vector4{2.0f, 1.0f, 2.0f, 3.0f}, Vector4{5.0f, 5.0f, 6.0f, 5.0f}, Vector4{5.0f, 5.0f, 6.0f, 5.0f}, Vector4{4.0f, 1.0f, 2.0f, 5.0f});
+    const Matrix4 c(Vector4{1.0f, 1.0f, 2.0f, 2.0f}, Vector4{5.0f, 5.0f, 6.0f, 5.0f}, Vector4{5.0f, 5.0f, 6.0f, 5.0f}, Vector4{3.0f, 1.0f, 2.0f, 5.0f});
 
-    /* It's just a translation and rotation */
-    CORRADE_VERIFY(a.isRigidTransformation());
+    CORRADE_VERIFY( o(a, b));
+    CORRADE_VERIFY(!o(b, a));
+    CORRADE_VERIFY( o(a, c));
+    CORRADE_VERIFY(!o(c, a));
+    CORRADE_VERIFY( o(c, b));
+    CORRADE_VERIFY(!o(b, c));
 
-    /* The matrix should translate to the position */
-    CORRADE_COMPARE(a.translation(), translation);
-
-    /* Forward vector should point in direction of the target */
-    CORRADE_COMPARE(dot(-a.backward(), (target - translation).normalized()), 1.0f);
-
-    /* Up vector should be in the same direction as X axis */
-    CORRADE_COMPARE_AS(dot(Vector3::xAxis(), a.up()), 0.0f, Corrade::TestSuite::Compare::Greater);
-
-    /* Just to be sure */
-    CORRADE_COMPARE(a, Matrix4({     0.0f,  0.253247f,  -0.967402f, 0.0f},
-                               {0.944754f, -0.317095f, -0.0830092f, 0.0f},
-                               {-0.32778f, -0.913957f,  -0.239256f, 0.0f},
-                               {     5.3f,      -8.9f,      -10.0f, 1.0f}));
+    CORRADE_VERIFY(!o(a, a));
 }
 
 void Matrix4Test::debug() {

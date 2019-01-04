@@ -150,11 +150,46 @@ inline Half operator "" _h(long double value) { return Half(Float(value)); }
 
 }
 
-/** @debugoperator{Half} */
-inline Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, Half value) {
-    return debug << Float(value);
+/**
+@debugoperator{Half}
+
+Prints the value with 4 significant digits.
+@see @ref Corrade::Utility::Debug::operator<<(float),
+    @ref Corrade::Utility::Debug::operator<<(double),
+    @ref Corrade::Utility::Debug::operator<<(long double value)
+@todoc remove `long double value` once doxygen can link to long double overloads properly
+*/
+MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, Half value);
+
+namespace Implementation {
+
+template<> struct StrictWeakOrdering<Half> {
+    bool operator()(Half a, Half b) const {
+        /* Not mathematically equivalent to <, but does order */
+        return a.data() < b.data();
+    }
+};
+
 }
 
 }}
+
+#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+namespace Corrade { namespace Utility {
+
+/**
+@tweakableliteral{Magnum::Math::Half}
+
+Parses the @link Magnum::Math::Literals::operator""_h @endlink literal.
+*/
+template<> struct MAGNUM_EXPORT TweakableParser<Magnum::Math::Half> {
+    TweakableParser() = delete;
+
+    /** @brief Parse the value */
+    static std::pair<TweakableState, Magnum::Math::Half> parse(Containers::ArrayView<const char> value);
+};
+
+}}
+#endif
 
 #endif

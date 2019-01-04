@@ -23,13 +23,19 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <map>
+#include <set>
+
 #include "Magnum/Magnum.h"
 #include "Magnum/Math/Color.h"
+#include "Magnum/Math/Bezier.h"
+#include "Magnum/Math/CubicHermite.h"
 #include "Magnum/Math/DualComplex.h"
 #include "Magnum/Math/DualQuaternion.h"
 #include "Magnum/Math/Half.h"
 #include "Magnum/Math/Range.h"
 #include "Magnum/Math/Algorithms/GramSchmidt.h"
+#include "Magnum/Math/StrictWeakOrdering.h"
 
 using namespace Magnum;
 using namespace Magnum::Math::Literals;
@@ -840,6 +846,18 @@ static_cast<void>(a);
 }
 
 {
+/* [CubicHermite-fromBezier] */
+CubicBezier2D segment;
+auto startPoint = CubicHermite2D::fromBezier(
+    {Vector2{}, Vector2{}, Vector2{}, segment[3]}, segment);
+auto endPoint = CubicHermite2D::fromBezier(segment,
+    {segment[0], Vector2{}, Vector2{}, Vector2{}});
+/* [CubicHermite-fromBezier] */
+static_cast<void>(startPoint);
+static_cast<void>(endPoint);
+}
+
+{
 /* [Half-usage] */
 using namespace Math::Literals;
 
@@ -860,11 +878,41 @@ Debug{} << Math::Vector3<UnsignedShort>{a};  // prints {16968, 48552, 15993}
 }
 
 {
+Range1D range, a, b;
+constexpr UnsignedInt dimensions = 1;
+typedef Float T;
+/* [Range-generic] */
+Math::Vector<dimensions, T> min = range.min(); // works for 1D, 2D and 3D
+
+T c = Math::max<dimensions, T>(a.size(), b.size()).product(); // vector max()
+/* [Range-generic] */
+static_cast<void>(min);
+static_cast<void>(c);
+}
+
+{
 /* [Range-construct-minmax] */
 Vector3 a, b, c;
 Range3D bounds{Math::minmax({a, b, c})};
 /* [Range-construct-minmax] */
 static_cast<void>(bounds);
+}
+
+{
+/* [Range-fromCenter-integer] */
+Vector2i center, filterRadius;
+auto filterArea = Range2Di::fromSize(center, Vector2i{1}).padded(filterRadius);
+/* [Range-fromCenter-integer] */
+static_cast<void>(filterArea);
+}
+
+{
+/* [StrictWeakOrdering] */
+std::set<Vector2, Math::StrictWeakOrdering> mySet;
+std::map<Vector4, Int, Math::StrictWeakOrdering> myMap;
+/* [StrictWeakOrdering] */
+static_cast<void>(myMap);
+static_cast<void>(mySet);
 }
 
 }

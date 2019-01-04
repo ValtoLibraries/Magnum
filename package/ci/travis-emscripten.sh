@@ -12,10 +12,10 @@ mkdir build && cd build
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$HOME/deps-native \
-    -DCMAKE_INSTALL_RPATH=$HOME/deps-native/lib \
     -DWITH_INTERCONNECT=OFF \
     -DWITH_PLUGINMANAGER=OFF \
     -DWITH_TESTSUITE=OFF \
+    -DWITH_UTILITY=OFF \
     -G Ninja
 ninja install
 cd ..
@@ -49,9 +49,10 @@ cmake .. \
     -DCMAKE_INSTALL_PREFIX=$HOME/deps \
     -DCMAKE_FIND_ROOT_PATH=$HOME/deps \
     -DWITH_AUDIO=ON \
+    -DWITH_SHAPES=ON \
     -DWITH_VK=OFF \
     -DWITH_SDL2APPLICATION=ON \
-    -WDITH_WINDOWLESSEGLAPPLICATION=ON \
+    -DWITH_WINDOWLESSEGLAPPLICATION=ON \
     -DWITH_ANYAUDIOIMPORTER=ON \
     -DWITH_ANYIMAGECONVERTER=ON \
     -DWITH_ANYIMAGEIMPORTER=ON \
@@ -65,10 +66,12 @@ cmake .. \
     -DWITH_GL_INFO=ON \
     -DWITH_AL_INFO=ON \
     -DBUILD_TESTS=ON \
+    -DBUILD_AL_TESTS=ON \
+    -DBUILD_GL_TESTS=ON \
     -DTARGET_GLES2=$TARGET_GLES2 \
     -G Ninja
 # Otherwise the job gets killed (probably because using too much memory)
 ninja -j4
 
 # Test
-CORRADE_TEST_COLOR=ON ctest -V -E ALTest
+CORRADE_TEST_COLOR=ON ctest -V -E "(GL|AL)Test"

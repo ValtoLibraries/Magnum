@@ -96,6 +96,8 @@ required to follow them to the point.
     -   if the library is combined from an `OBJECT` library, add its name to
         the above @cpp #ifdef @ce as well (and then explicitly add
         @cmake target_compile_definitions(MagnumLibraryNameObjects PRIVATE "MagnumLibraryNameObjects_EXPORTS") @ce to `CMakeLists.txt` in case `BUILD_STATIC` is not set)
+    -   the macro *does not* contain the full namespace path but rather mirrors
+        the library *file* name
 9.  Mention the directory and namespace in `doc/namespaces.dox`, basically
     copy-pasting the following from existing documentation:
     -   directory-level doc block referencing the namespace
@@ -365,7 +367,11 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
     -   Add a compatibility @cpp typedef @ce / @cpp using @ce for a renamed
         symbol, marking it with @ref CORRADE_DEPRECATED() / @ref CORRADE_DEPRECATED_ALIAS()
     -   Add a compatibility header for a renamed include, including the
-        original file from it and marking it with @ref CORRADE_DEPRECATED_FILE()
+        original file from it and marking it with @ref CORRADE_DEPRECATED_FILE().
+        Ensure the file is not included from anywhere else anymore, since that
+        would mean the user then gets spammed with more than just one warning
+        per included file. This macro also can't easily be disabled on most
+        platforms.
     -   Add a compatibility inline function for a function that got renamed or
         its arguments changed, mark it with @ref CORRADE_DEPRECATED()
     -   Add a compatibility enum value for a value that got renamed or deleted,
@@ -405,6 +411,60 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
     non-deprecated build)
 14. Update dependent projects
 
+@section developers-deprecation-library Checklist for deprecating a whole library
+
+1.  If there's no compatible replacement (for example when removing support for
+    an outdated toolkit), think about possible alternatives, external libraries
+    or other ways to reach the same goal.
+2.  Add deprecation notes, listing alternatives
+    -   to docs of the whole namespace and all its members
+    -   to docs of the directory and all files inside
+    -   to all feature overview pages
+    -   to each symbol using one of the @ref CORRADE_DEPRECATED() macros, with
+        a shorter note mentioning alternatives
+    -   ensure each public headers (transitively) contains exactly one
+        @ref CORRADE_DEPRECATED_FILE() macro to warn the user *exactly once*
+        about including a deprecated header --- in particular, putting it in
+        every file would spam the user way too much
+    -   since the files are still compiled and included by the library, wrap it
+        in @cpp #ifndef _MAGNUM_DO_NOT_WARN_DEPRECATED_LIBRARYNAME @ce and
+        @cpp #define @ce this macro in all `*.cpp` files and tests to avoid
+        spamming the compiler log
+    -   an @cpp #error @ce to each header file in case @ref MAGNUM_BUILD_DEPRECATED
+        is not enabled
+    -   wrap contents of every header, source and test file in
+        @ref CORRADE_IGNORE_DEPRECATED_PUSH and @ref CORRADE_IGNORE_DEPRECATED_POP
+        to avoid warnings when compiling the library itself (no, this doesn't
+        disable warnings for library *users*)
+    -   a @cmake message(FATAL_ERROR) @ce to corresponding `CMakeLists.txt` in
+        case @ref MAGNUM_BUILD_DEPRECATED is not enabled
+    -   a @m_class{m-label m-danger} **deprecated** label next to the `WITH_*`
+        CMake option in the corresponding `doc/building.dox` page and next to
+        the CMake component name in the corresponding `doc/cmake.dox` page
+        (and similar files in other repos), possibly also to all pages that
+        list it (if any)
+3.  If the library was enabled by default, make it disabled by default. Update
+    relevant sections in `doc/building.dox` and `doc/cmake.dox`.
+4.  Include the library component in the corresponding `Find` module component
+    list only if @ref MAGNUM_BUILD_DEPRECATED is enabled.
+5.  Remove the deprecated library from all packages except developer `PKGBUILD`s
+    and CIs, remove also its no-longer-needed dependencies from these packages
+6.  Verify no other libraries, projects or examples depend on given library
+    anymore. If they do:
+    -   rework examples to not use the deprecated functionality anymore
+    -   if there are dependencies in other libraries or projects, make the
+        related features deprecated in the same manner, building them only
+        if @ref MAGNUM_BUILD_DEPRECATED is enabled
+    -   update corresponding `Find` modules to require dependency on this
+        library only if @ref MAGNUM_BUILD_DEPRECATED is enabled
+7.  Verify no CIs in dependent projects have this library enabled. If they do,
+    it should be only if @ref MAGNUM_BUILD_DEPRECATED is enabled and only if
+    there is a (deprecated) feature depending on this library.
+8.  Mention the deprecated library in the deprecation section of `doc/changelog.dox`
+    (and similar files in other repos), note the alternatives and note that
+    it's no longer built by default or included in any packages (in case it was
+    before)
+
 @section developers-removing Checklist for removing a feature
 
 1.  Check that it was in deprecated state for more than a year with at least
@@ -426,7 +486,7 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
 
 @section developers-gl-extensions Checklist for adding / removing GL versions and extensions
 
-1.  Install [flextGL](https://github.com/ginkgo/flextGL)
+1.  Install [flextGL](https://github.com/mosra/flextgl)
 2.  Go to `src/MagnumExternal/OpenGL/GL/`:
     -   Update `extensions.txt` (bump a version or add/remove extensions)
     -   Run @cb{.sh} .../flextGLgen.py -D . -t . extensions.txt @ce to generate
@@ -467,7 +527,7 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
 8.  Add a table listing the new version and all new extensions in it to
     `doc/opengl-support.dox` (take a list of them from the changelog in the
     official spec PDF). Some extensions might be already present in the general
-    extension list, move them out of there
+    extension list, move them out of there.
 9.  Add a new `requires-glXY`, `requires-glesXY` or `requires-webglXY` page
     with @c \@m_footernavigation to `doc/opengl-support.dox`, mention it as a
     @c \@subpage at a correct position in the list
@@ -480,7 +540,7 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
     -   to @ref GL::Extension::extensions() in `src/Magnum/GL/Context.cpp`
     -   to @cpp GL::Context::tryCreate() @ce in `src/Magnum/GL/Context.cpp`
     -   to specify GLSL version in `src/Magnum/GL/Shader.cpp`
-    -   to the list in `src/Magnum/Platform/magnum-gl-info.cpp`
+    -   to the list in `src/Magnum/Platform/gl-info.cpp`
     -   to the test in `src/Magnum/GL/Test/ContextTest.cpp`
 12. Add new extensions to `src/Magnum/GL/Extensions.h`
     -   order them by extension ID that is mentioned in every extension spec
@@ -627,6 +687,9 @@ unless it doesn't affect public API at all.
 
 1.  Verify that there are no important clients stuck on the old version with no
     easy way to upgrade
+    -   Corrade's root `CMakeLists.txt` (and `UseCorrade.cmake`) contains
+        checks for minimal CMake and compiler version, together with a comment
+        explaining which distribution / system has the minimal version.
 2.  In case of CMake:
     -   it's usually possible to jump more than one version, check what's the
         version on the oldest supported system
@@ -769,23 +832,34 @@ inverse.
     add a mention to the changelog), @m_span{m-label m-danger m-flat} scrapped @m_endspan
     or @m_span{m-label m-dim m-flat} no action needed @m_endspan label to wrap
     them up
-6.  Update changelog for the next release:
+    -   Don't forget about the bootstrap repository and toolchains as well
+6.  Go through merged PRs (and the *most important* issues) and add new people
+    to `CREDITS.md` and https://magnum.graphics/about/, if they are not there
+    yet
+7.  Update changelog for the next release:
     -   change section names for the latest release from `latest` to `20XY-ab`
     -   change the title from `Changes since 20XY.aa` to `20XY.ab`
     -   add a paragraph stating date of release and referencing the to-be-added
         tag on GitHub
-7.  Bump `MAGNUM_LIBRARY_VERSION` and `MAGNUM_LIBRARY_SOVERSION` in all
+    -   add a temporary <tt>\@<b></b>anchor changelog-latest</tt> (and
+        equivalent in other repos) on top so the links from main page work
+        properly
+8.  Bump `MAGNUM_LIBRARY_VERSION` and `MAGNUM_LIBRARY_SOVERSION` in all
     projects, if needed --- ensure all projects have the exact same version
-8.  Rebuild all projects with the new shared library version numbers, verify
+9.  Rebuild all projects with the new shared library version numbers, verify
     all tools and examples still behave properly
-9.  Build and upload public docs (see @ref developers-documentation), verify
+10. Build and upload public docs (see @ref developers-documentation), verify
     that there are no new warnings and the changelog looks correct
-10. Push all new changes to a temporary branch (e.g., `next`)
-11. Wait for the CIs to get green
-12. Tag a new version using @cb{.sh} git tag -a v20XY.ab @ce, say just
+11. Push all new changes to a temporary branch (e.g., `next`), don't forget the
+    `ports` branch in examples
+12. Wait for the CIs to get green
+13. Tag a new version using @cb{.sh} git tag -a v20XY.ab @ce, say just
     `Version 20XY.ab` as a message
-13. Push the tag, verify that the CIs are still green
-14. Write a release announcement for the blog
+14. Push the tag, verify that the CIs are still green
+    -   to GitLab as well
+15. Update the Corrade and Magnum tagfiles on the website using the
+    freshly-built *public* docs
+16. Write a release announcement for the blog
     -   highlight the most prominent features, mention detailed blog posts
         about them, if any
     -   reference detailed changelogs for all projects at the end
@@ -793,22 +867,25 @@ inverse.
     -   create some fancy eye-catchy cover image featuring nice screenshots of
         new functionality
     -   add release annoucement link under the button on front page
-15. Publish the release announcement, verify it looks correct
-16. Advertise the release announcement, preferrably Monday 5 PM, never Friday
+17. Publish the release announcement, verify it looks correct
+18. Advertise the release announcement, preferrably Monday 5 PM, never Friday
     or weekends
     -   come up with some 100-character-long extended title
     -   Twitter (extended title + url and some hashtags), first dry-run the
         link on https://cards-dev.twitter.com/validator to ensure the cover
         image gets displayed
-    -   Reddit `r/cpp`, `r/gamedev`; Hacker News (extended title + url)
+    -   GitHub Release Radar (releaseradar@github.com)
+    -   Reddit `r/cpp`, `r/gamedev`, `r/webassembly`, `r/vulkan`, `r/webgl`,
+        `r/gltf`; Hacker News (extended title + url)
     -   summarize the release to mailing list
     -   summarize the release highlighting GL- and Vulkan-related functionality
-        and submit that to Khronos
-    -   Add a message to the Gitter chat (title as heading, cover image,
-        summary in a blockquote and "read more" link)
-17. Reference Twitter, Reddit, Hacker News and mailing list in a "Discussion"
+        and submit that to Khronos, with a 500x500 downsized cover image
+    -   send an e-mail to companies and universities on the private list
+    -   add a message to the Gitter chat (title as heading, cover image,
+        summary in a blockquote and "read more" link, `@` contributors)
+19. Reference Twitter, Reddit, Hacker News and mailing list in a "Discussion"
     note at the end of the article, reupload that change
-18. Update versions of ArchLinux AUR packages:
+20. Update versions of ArchLinux AUR packages:
     -   run `makepkg` in `package/archlinux/magnum*-git`, verify it builds and
         says correct version, ideally with `r0` at the ennd
     -   copy the updated `PKGBUILD` to the AUR package repo, run
@@ -816,14 +893,15 @@ inverse.
     -   commit the updated `PKGBUILD` and `.SRCINFO`, push
     -   after pushing all, verify that the version is updated in the AUR web
         interface as well
-19. Update Debian package changelog in `package/debian/changelog`, copypasting
+21. Update Debian package changelog in `package/debian/changelog`, copypasting
     the last entry, updating it and using the Git tag date+time for it (note
     that the date format is slightly different)
-20. Update Homebrew package versions
-21. Ask someone to update Vcpkg packages
-22. Close the 20XY.ab GitHub milestone
-23. Add link to the release notes to the tag on GitHub
-24. Have a drink and take two days off
+22. Update Homebrew package versions
+23. Ask someone to update the Ubuntu PPA
+24. Ask someone to update Vcpkg packages
+25. Close the 20XY.ab GitHub milestone
+26. Add link to the release notes to the tag on GitHub
+27. Have a drink and take two days off
 
 */
 }

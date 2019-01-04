@@ -23,7 +23,8 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1)
+
 project(MagnumDocumentationImageGenerator)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/../../modules/")
@@ -45,6 +46,10 @@ elseif(CORRADE_TARGET_WINDOWS)
 else()
     message(FATAL_ERROR "No windowless application available on this platform")
 endif()
+
+add_executable(easings easings.cpp)
+target_link_libraries(easings
+    Magnum::Magnum)
 
 add_executable(shaders shaders.cpp)
 target_link_libraries(shaders

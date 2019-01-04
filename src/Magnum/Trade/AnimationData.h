@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Class @ref Magnum::Trade::AnimationTrackData, @ref Magnum::Trade::AnimationData, enum @ref Magnum::Trade::AnimationTrackType, @ref Magnum::Trade::AnimationTrackTarget, function @ref Magnum::Trade::animationInterpolatorFor()
+ * @brief Class @ref Magnum::Trade::AnimationTrackData, @ref Magnum::Trade::AnimationData, enum @ref Magnum::Trade::AnimationTrackType, @ref Magnum::Trade::AnimationTrackTargetType, function @ref Magnum::Trade::animationInterpolatorFor()
  */
 
 #include "Magnum/Magnum.h"
@@ -54,8 +54,8 @@ enum class AnimationTrackType: UnsignedByte {
 
     /**
      * @ref Magnum::Vector2 "Vector2". Usually used for
-     * @ref AnimationTrackTarget::Translation2D and
-     * @ref AnimationTrackTarget::Scaling2D.
+     * @ref AnimationTrackTargetType::Translation2D and
+     * @ref AnimationTrackTargetType::Scaling2D.
      */
     Vector2,
 
@@ -76,12 +76,45 @@ enum class AnimationTrackType: UnsignedByte {
     Vector4i,           /**< @ref Magnum::Vector4i "Vector4i" */
 
     /**
+     * @ref Magnum::Complex "Complex". Usually used for
+     * @ref AnimationTrackTargetType::Rotation2D.
+     */
+    Complex,
+
+    /**
      * @ref Magnum::Quaternion "Quaternion". Usually used for
-     * @ref AnimationTrackTarget::Rotation3D.
+     * @ref AnimationTrackTargetType::Rotation3D.
      */
     Quaternion,
 
-    DualQuaternion      /**< @ref Magnum::DualQuaternion "DualQuaternion" */
+    DualQuaternion,     /**< @ref Magnum::DualQuaternion "DualQuaternion" */
+    CubicHermite1D,     /**< @ref Magnum::CubicHermite1D "CubicHermite1D" */
+
+    /**
+     * @ref Magnum::CubicHermite2D "CubicHermite2D". Usually used for
+     * spline-interpolated @ref AnimationTrackTargetType::Translation2D and
+     * @ref AnimationTrackTargetType::Scaling2D.
+     */
+    CubicHermite2D,
+
+    /**
+     * @ref Magnum::CubicHermite3D "CubicHermite3D". Usually used for
+     * spline-interpolated @ref AnimationTrackTargetType::Translation3D and
+     * @ref AnimationTrackTargetType::Scaling3D.
+     */
+    CubicHermite3D,
+
+    /**
+     * @ref Magnum::CubicHermiteComplex "CubicHermiteComplex". Usually used for
+     * spline-interpolated @ref AnimationTrackTargetType::Rotation2D.
+     */
+    CubicHermiteComplex,
+
+    /**
+     * @ref Magnum::CubicHermiteQuaternion "CubicHermiteQuaternion". Usually
+     * used for spline-interpolated @ref AnimationTrackTargetType::Rotation3D.
+     */
+    CubicHermiteQuaternion
 };
 
 /** @debugoperatorenum{AnimationTrackType} */
@@ -93,66 +126,90 @@ MAGNUM_TRADE_EXPORT Debug& operator<<(Debug& debug, AnimationTrackType value);
 @see @ref AnimationData
 @experimental
 */
-enum class AnimationTrackTarget: UnsignedByte {
+enum class AnimationTrackTargetType: UnsignedByte {
     /**
      * Modifies 2D object translation. Type is usually
-     * @ref Magnum::Vector2 "Vector2".
+     * @ref Magnum::Vector2 "Vector2" or
+     * @ref Magnum::CubicHermite2D "CubicHermite2D" for spline-interpolated
+     * data.
      *
-     * @see @ref AnimationTrackType::Vector2, @ref ObjectData2D::translation()
+     * @see @ref AnimationTrackType::Vector2,
+     *      @ref AnimationTrackType::CubicHermite2D,
+     *      @ref ObjectData2D::translation()
      */
     Translation2D,
 
     /**
      * Modifies 3D object translation. Type is usually
-     * @ref Magnum::Vector3 "Vector3".
+     * @ref Magnum::Vector3 "Vector3" or
+     * @ref Magnum::CubicHermite3D "CubicHermite3D" for spline-interpolated
+     * data.
      *
-     * @see @ref AnimationTrackType::Vector3, @ref ObjectData3D::translation()
+     * @see @ref AnimationTrackType::Vector3,
+     *      @ref AnimationTrackType::CubicHermite3D,
+     *      @ref ObjectData3D::translation()
      */
     Translation3D,
 
     /**
      * Modifies 2D object rotation. Type is usually
-     * @ref Magnum::Complex "Complex".
+     * @ref Magnum::Complex "Complex" or
+     * @ref Magnum::CubicHermiteComplex "CubicHermiteComplex" for
+     * spline-interpolated data.
      *
-     * @see @ref ObjectData2D::rotation()
+     * @see @ref AnimationTrackType::Complex,
+     *      @ref AnimationTrackType::CubicHermiteComplex,
+     *      @ref ObjectData2D::rotation()
      */
     Rotation2D,
 
     /**
      * Modifies 3D object rotation. Type is usually
-     * @ref Magnum::Quaternion "Quaternion".
+     * @ref Magnum::Quaternion "Quaternion" or
+     * @ref Magnum::CubicHermiteQuaternion "CubicHermiteQuaternion" for
+     * spline-interpolated data.
      *
-     * @see @ref AnimationTrackType::Quaternion, @ref ObjectData3D::rotation()
+     * @see @ref AnimationTrackType::Quaternion,
+     *      @ref AnimationTrackType::CubicHermiteQuaternion,
+     *      @ref ObjectData3D::rotation()
      */
     Rotation3D,
 
     /**
      * Modifies 2D object scaling. Type is usually
-     * @ref Magnum::Vector2 "Vector2".
+     * @ref Magnum::Vector2 "Vector2" or
+     * @ref Magnum::CubicHermite2D "CubicHermite2D" for spline-interpolated
+     * data.
      *
-     * @see @ref AnimationTrackType::Vector2, @ref ObjectData2D::scaling()
+     * @see @ref AnimationTrackType::Vector2,
+     *      @ref AnimationTrackType::CubicHermite2D,
+     *      @ref ObjectData2D::scaling()
      */
     Scaling2D,
 
     /**
      * Modifies 3D object scaling. Type is usually
-     * @ref Magnum::Vector3 "Vector3".
+     * @ref Magnum::Vector3 "Vector3" or
+     * @ref Magnum::CubicHermite3D "CubicHermite3D" for spline-interpolated
+     * data.
      *
-     * @see @ref AnimationTrackType::Vector3, @ref ObjectData3D::scaling()
+     * @see @ref AnimationTrackType::Vector3,
+     *      @ref AnimationTrackType::CubicHermite3D,
+     *      @ref ObjectData3D::scaling()
      */
     Scaling3D,
 
     /**
      * This and all higher values are for importer-specific targets. Can be of
-     * any type, @ref AnimationData::trackTargetId() might or might not point
-     * to an existing object. See documentation of particular importer for
+     * any type, @ref AnimationData::trackTarget() might or might not point to
+     * an existing object. See documentation of particular importer for
      * details.
      */
     Custom = 128
 };
 
-/** @debugoperatorenum{AnimationTrackTarget} */
-MAGNUM_TRADE_EXPORT Debug& operator<<(Debug& debug, AnimationTrackTarget value);
+/** @debugoperatorenum{AnimationTrackTargetType} */
+MAGNUM_TRADE_EXPORT Debug& operator<<(Debug& debug, AnimationTrackTargetType value);
 
 /**
 @brief Animation track data
@@ -170,31 +227,31 @@ class AnimationTrackData {
          * initialization of @ref AnimationData structure, expected to be
          * replaced with concrete values later.
          */
-        /*implicit*/ AnimationTrackData() noexcept: _type{}, _resultType{}, _target{}, _targetId{}, _view{} {}
+        /*implicit*/ AnimationTrackData() noexcept: _type{}, _resultType{}, _targetType{}, _target{}, _view{} {}
 
         /**
          * @brief Constructor
          * @param type          Value type
          * @param resultType    Result type
+         * @param targetType    Track target type
          * @param target        Track target
-         * @param targetId      Track target ID
          * @param view          Type-erased @ref Animation::TrackView instance
          */
-        /*implicit*/ AnimationTrackData(AnimationTrackType type, AnimationTrackType resultType, AnimationTrackTarget target, UnsignedInt targetId, Animation::TrackViewStorage<Float> view) noexcept: _type{type}, _resultType{resultType}, _target{target}, _targetId{targetId}, _view{view} {}
+        /*implicit*/ AnimationTrackData(AnimationTrackType type, AnimationTrackType resultType, AnimationTrackTargetType targetType, UnsignedInt target, Animation::TrackViewStorage<Float> view) noexcept: _type{type}, _resultType{resultType}, _targetType{targetType}, _target{target}, _view{view} {}
 
         /** @overload
          *
          * Equivalent to the above with @p type used as both value type and
          * result type.
          */
-        /*implicit*/ AnimationTrackData(AnimationTrackType type, AnimationTrackTarget target, UnsignedInt targetId, Animation::TrackViewStorage<Float> view) noexcept: _type{type}, _resultType{type}, _target{target}, _targetId{targetId}, _view{view} {}
+        /*implicit*/ AnimationTrackData(AnimationTrackType type, AnimationTrackTargetType targetType, UnsignedInt target, Animation::TrackViewStorage<Float> view) noexcept: _type{type}, _resultType{type}, _targetType{targetType}, _target{target}, _view{view} {}
 
     private:
         friend AnimationData;
 
         AnimationTrackType _type, _resultType;
-        AnimationTrackTarget _target;
-        UnsignedInt _targetId;
+        AnimationTrackTargetType _targetType;
+        UnsignedInt _target;
         Animation::TrackViewStorage<Float> _view;
 };
 
@@ -271,24 +328,12 @@ class MAGNUM_TRADE_EXPORT AnimationData {
          * Contains data for all tracks contained in this clip.
          * @see @ref release()
          */
-        Containers::ArrayView<char> data()
-            #ifndef CORRADE_GCC47_COMPATIBILITY
-            &
-            #endif
-            { return _data; }
-        #ifndef CORRADE_GCC47_COMPATIBILITY
+        Containers::ArrayView<char> data() & { return _data; }
         Containers::ArrayView<char> data() && = delete; /**< @overload */
-        #endif
 
         /** @overload */
-        Containers::ArrayView<const char> data() const
-            #ifndef CORRADE_GCC47_COMPATIBILITY
-            &
-            #endif
-            { return _data; }
-        #ifndef CORRADE_GCC47_COMPATIBILITY
+        Containers::ArrayView<const char> data() const & { return _data; }
         Containers::ArrayView<const char> data() const && = delete; /**< @overload */
-        #endif
 
         /** @brief Duration */
         Range1D duration() const { return _duration; }
@@ -300,8 +345,9 @@ class MAGNUM_TRADE_EXPORT AnimationData {
          * @brief Track value type
          * @param id        Track index
          *
-         * Data types are usually closely related to @ref trackTarget(), see
-         * @ref AnimationTrackTarget documentation for more information.
+         * Data types are usually closely related to @ref trackTargetType(),
+         * see @ref AnimationTrackTargetType documentation for more
+         * information.
          * @see @ref trackCount()
          */
         AnimationTrackType trackType(UnsignedInt id) const;
@@ -312,38 +358,39 @@ class MAGNUM_TRADE_EXPORT AnimationData {
          *
          * In case track values are packed, track result type is different from
          * @ref trackType(). Data types are usually closely related to
-         * @ref trackTarget(), see @ref AnimationTrackTarget documentation for
-         * more information.
+         * @ref trackTargetType(), see @ref AnimationTrackTargetType
+         * documentation for more information.
          * @see @ref trackCount()
          */
         AnimationTrackType trackResultType(UnsignedInt id) const;
 
         /**
-         * @brief Track target
+         * @brief Track target type
          * @param id        Track index
          *
          * Particular animation targets usually correspond to a common
-         * @ref trackType(), see @ref AnimationTrackTarget documentation for
-         * more information.
+         * @ref trackType(), see @ref AnimationTrackTargetType documentation
+         * for more information.
          * @see @ref trackCount()
          */
-        AnimationTrackTarget trackTarget(UnsignedInt id) const;
+        AnimationTrackTargetType trackTargetType(UnsignedInt id) const;
 
         /**
-         * @brief Track target index
+         * @brief Track target
          * @param id        Track index
          *
-         * For @ref trackTarget() with @ref AnimationTrackTarget::Translation2D,
-         * @ref AnimationTrackTarget::Translation3D,
-         * @ref AnimationTrackTarget::Rotation2D,
-         * @ref AnimationTrackTarget::Rotation3D,
-         * @ref AnimationTrackTarget::Scaling2D,
-         * @ref AnimationTrackTarget::Scaling3D specifies object which property
-         * is modified.
+         * For @ref trackTargetType() with
+         * @ref AnimationTrackTargetType::Translation2D,
+         * @ref AnimationTrackTargetType::Translation3D,
+         * @ref AnimationTrackTargetType::Rotation2D,
+         * @ref AnimationTrackTargetType::Rotation3D,
+         * @ref AnimationTrackTargetType::Scaling2D,
+         * @ref AnimationTrackTargetType::Scaling3D specifies object which
+         * property is modified.
          * @see @ref trackCount(), @ref AbstractImporter::object2D(),
          *      @ref AbstractImporter::object3D()
          */
-        UnsignedInt trackTargetId(UnsignedInt id) const;
+        UnsignedInt trackTarget(UnsignedInt id) const;
 
         /**
          * @brief Track data storage
@@ -395,10 +442,9 @@ class MAGNUM_TRADE_EXPORT AnimationData {
 /** @relatesalso AnimationData
 @brief Animation interpolator function for given interpolation behavior
 
-To be used from importer plugins --- unlike @ref Animation::interpolatorFor()
-guarantees that the returned function pointer is not instantiated inside plugin
-binary to avoid dangling function pointers on plugin unload. See
-@ref Animation::interpolatorFor() for more information.
+To be used from importer plugins --- wrapper around @ref Animation::interpolatorFor(),
+guaranteeing that the returned function pointer is not instantiated inside the
+plugin binary to avoid dangling function pointers on plugin unload.
 @see @ref AnimationData
 @experimental
 */
@@ -441,8 +487,15 @@ namespace Implementation {
     template<> constexpr AnimationTrackType animationTypeFor<Math::Vector<3, Int>>() { return AnimationTrackType::Vector3i; }
     template<> constexpr AnimationTrackType animationTypeFor<Math::Vector<4, Int>>() { return AnimationTrackType::Vector4i; }
 
+    template<> constexpr AnimationTrackType animationTypeFor<Complex>() { return AnimationTrackType::Complex; }
     template<> constexpr AnimationTrackType animationTypeFor<Quaternion>() { return AnimationTrackType::Quaternion; }
     template<> constexpr AnimationTrackType animationTypeFor<DualQuaternion>() { return AnimationTrackType::DualQuaternion; }
+
+    template<> constexpr AnimationTrackType animationTypeFor<CubicHermite1D>() { return AnimationTrackType::CubicHermite1D; }
+    template<> constexpr AnimationTrackType animationTypeFor<CubicHermite2D>() { return AnimationTrackType::CubicHermite2D; }
+    template<> constexpr AnimationTrackType animationTypeFor<CubicHermite3D>() { return AnimationTrackType::CubicHermite3D; }
+    template<> constexpr AnimationTrackType animationTypeFor<CubicHermiteComplex>() { return AnimationTrackType::CubicHermiteComplex; }
+    template<> constexpr AnimationTrackType animationTypeFor<CubicHermiteQuaternion>() { return AnimationTrackType::CubicHermiteQuaternion; }
     /* LCOV_EXCL_STOP */
 }
 #endif

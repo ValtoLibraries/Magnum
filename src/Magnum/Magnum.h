@@ -26,7 +26,7 @@
 */
 
 /** @file
- * @brief Forward declarations for the @ref Magnum namespace
+ * @brief Forward declarations and basic types for the @ref Magnum namespace
  */
 
 #include <Corrade/Utility/Utility.h>
@@ -35,29 +35,14 @@
 #include "Magnum/Math/Math.h"
 
 #ifdef MAGNUM_BUILD_DEPRECATED
+#include <Corrade/Utility/Macros.h>
+
+#ifdef MAGNUM_TARGET_GL
 #include "Magnum/GL/GL.h"
 #endif
-
-#ifndef DOXYGEN_GENERATING_OUTPUT
-typedef unsigned int GLenum; /* Needed for *Format and *Type enums */
 #endif
 
 namespace Magnum {
-
-namespace Math {
-    #ifndef DOXYGEN_GENERATING_OUTPUT
-    template<class> struct Constants;
-
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    namespace Literals {
-        constexpr Rad<Double> operator "" _rad(long double);
-        constexpr Deg<Double> operator "" _deg(long double);
-        constexpr Rad<Float> operator "" _radf(long double);
-        constexpr Deg<Float> operator "" _degf(long double);
-    }
-    #endif
-    #endif
-}
 
 /* Bring whole Corrade namespace */
 using namespace Corrade;
@@ -456,6 +441,21 @@ typedef Math::CubicBezier2D<Float> CubicBezier2D;
 /** @brief Float three-dimensional cubic Bézier curve */
 typedef Math::CubicBezier3D<Float> CubicBezier3D;
 
+/** @brief Float scalar cubic Hermite spline point */
+typedef Math::CubicHermite1D<Float> CubicHermite1D;
+
+/** @brief Float two-dimensional cubic Hermite spline point */
+typedef Math::CubicHermite2D<Float> CubicHermite2D;
+
+/** @brief Float three-dimensional cubic Hermite spline point */
+typedef Math::CubicHermite3D<Float> CubicHermite3D;
+
+/** @brief Float cubic Hermite spline complex number */
+typedef Math::CubicHermiteComplex<Float> CubicHermiteComplex;
+
+/** @brief Float cubic Hermite spline quaternion */
+typedef Math::CubicHermiteQuaternion<Float> CubicHermiteQuaternion;
+
 /** @brief Float complex number */
 typedef Math::Complex<Float> Complex;
 
@@ -641,6 +641,21 @@ typedef Math::CubicBezier2D<Float> CubicBezier2Dd;
 /** @brief Double three-dimensional cubic Bézier curve */
 typedef Math::CubicBezier3D<Float> CubicBezier3Dd;
 
+/** @brief Double scalar cubic Hermite spline point */
+typedef Math::CubicHermite1D<Double> CubicHermite1Dd;
+
+/** @brief Double two-dimensional cubic Hermite spline point */
+typedef Math::CubicHermite2D<Double> CubicHermite2Dd;
+
+/** @brief Double three-dimensional cubic Hermite spline point */
+typedef Math::CubicHermite3D<Double> CubicHermite3Dd;
+
+/** @brief Double cubic Hermite spline complex number */
+typedef Math::CubicHermiteComplex<Double> CubicHermiteComplexd;
+
+/** @brief Double cubic Hermite spline quaternion */
+typedef Math::CubicHermiteQuaternion<Double> CubicHermiteQuaterniond;
+
 /** @brief Double complex number */
 typedef Math::Complex<Double> Complexd;
 
@@ -675,13 +690,6 @@ typedef Math::Range3D<Double> Range3Dd;
 typedef Math::Frustum<Double> Frustumd;
 
 /*@}*/
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-using Math::Literals::operator "" _deg;
-using Math::Literals::operator "" _rad;
-using Math::Literals::operator "" _degf;
-using Math::Literals::operator "" _radf;
-#endif
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 template<UnsignedInt, class T> class Array;
@@ -731,7 +739,7 @@ enum class SamplerWrapping: UnsignedInt;
 
 class Timeline;
 
-#ifdef MAGNUM_BUILD_DEPRECATED
+#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
 typedef CORRADE_DEPRECATED("use GL::AbstractFramebuffer instead") GL::AbstractFramebuffer AbstractFramebuffer;
 
 #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))

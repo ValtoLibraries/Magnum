@@ -30,8 +30,8 @@
  */
 
 #include <memory>
-#include <Magnum/Audio/AbstractImporter.h>
 
+#include "Magnum/Audio/AbstractImporter.h"
 #include "MagnumPlugins/AnyAudioImporter/configure.h"
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
@@ -54,6 +54,8 @@ namespace Magnum { namespace Audio {
 
 /**
 @brief Any audio importer plugin
+
+@m_keywords{AnyAudioImporter}
 
 Detects file type based on file extension, loads corresponding plugin and then
 tries to open the file with it.

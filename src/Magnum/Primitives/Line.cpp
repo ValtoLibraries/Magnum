@@ -32,16 +32,20 @@
 
 namespace Magnum { namespace Primitives {
 
+Trade::MeshData2D line2D(const Vector2& a, const Vector2& b) {
+    return Trade::MeshData2D{MeshPrimitive::Lines, {}, {{a, b}}, {}, {}, nullptr};
+}
+
+Trade::MeshData3D line3D(const Vector3& a, const Vector3& b) {
+    return Trade::MeshData3D{MeshPrimitive::Lines, {}, {{a, b}}, {}, {}, {}, nullptr};
+}
+
 Trade::MeshData2D line2D() {
-    return Trade::MeshData2D{MeshPrimitive::Lines, {}, {{
-        {0.0f, 0.0f}, {1.0f, 0.0f}
-    }}, {}, {}, nullptr};
+   return line2D({0.0f, 0.0f}, {1.0f, 0.0f});
 }
 
 Trade::MeshData3D line3D() {
-    return Trade::MeshData3D{MeshPrimitive::Lines, {}, {{
-        {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f},
-    }}, {}, {}, {}, nullptr};
+    return line3D({0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f});
 }
 
 #ifdef MAGNUM_BUILD_DEPRECATED

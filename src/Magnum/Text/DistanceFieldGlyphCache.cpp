@@ -42,11 +42,11 @@ DistanceFieldGlyphCache::DistanceFieldGlyphCache(const Vector2i& originalSize, c
     #elif !defined(MAGNUM_TARGET_WEBGL)
     /* Luminance is not renderable in most cases */
     GlyphCache(GL::Context::current().isExtensionSupported<GL::Extensions::EXT::texture_rg>() ?
-        GL::TextureFormat::Red : GL::TextureFormat::RGB, originalSize, size, Vector2i(radius)),
+        GL::TextureFormat::R8 : GL::TextureFormat::RGB8, originalSize, size, Vector2i(radius)),
     #else
     GlyphCache(GL::TextureFormat::RGB, originalSize, size, Vector2i(radius)),
     #endif
-    scale(Vector2(size)/Vector2(originalSize)), radius(radius)
+    _scale{Vector2(size)/Vector2(originalSize)}, _distanceField{radius}
 {
     #ifndef MAGNUM_TARGET_GLES
     MAGNUM_ASSERT_GL_EXTENSION_SUPPORTED(GL::Extensions::ARB::texture_rg);
@@ -89,7 +89,7 @@ void DistanceFieldGlyphCache::setImage(const Vector2i& offset, const ImageView2D
     #endif
 
     /* Create distance field from input texture */
-    TextureTools::distanceField(input, texture(), Range2Di::fromSize(offset*scale, image.size()*scale), radius, image.size());
+    _distanceField(input, texture(), Range2Di::fromSize(offset*_scale, image.size()*_scale), image.size());
 }
 
 void DistanceFieldGlyphCache::setDistanceFieldImage(const Vector2i& offset, const ImageView2D& image) {

@@ -25,16 +25,19 @@
 
 namespace Magnum {
 /** @page cmake Usage with CMake
-@brief Guide how to find and use Magnum with CMake build system
+@brief Guide how to find and use Magnum with the CMake buildsystem.
 
 @m_keywords{CMake}
 
 @tableofcontents
 @m_footernavigation
 
-Magnum uses CMake build system for both building and integration into your
-projects. The logic is in module `FindMagnum.cmake` distributed with the engine
-in `modules/` directory, you are encouraged to copy it along with
+Magnum uses CMake as a primary build system for both building and integration
+into your projects. The following guide explains how to use it. If you wish to
+use a different buildsystem, see @ref custom-buildsystems instead.
+
+The main logic is in the `FindMagnum.cmake` module distributed with the engine
+in the `modules/` directory, you are encouraged to copy it along with
 `FindCorrade.cmake` into your project and add path to the files to
 `CMAKE_MODULE_PATH`. Otherwise, if CMake won't be able to find this file in
 predefined locations, it will error out even if Magnum might be installed on
@@ -90,6 +93,16 @@ This module tries to find base Magnum library and then defines:
 -   `MAGNUM_PLUGINS_AUDIOIMPORTER[|_DEBUG|_RELEASE]_DIR` --- Directory with
     dynamic audio importer plugins
 
+If Magnum is built for @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten", the
+following variables contain paths to various support files --- see
+@ref platforms-html5 for more information about each file:
+
+-   `MAGNUM_EMSCRIPTENAPPLICATION_JS` --- Path to the `EmscriptenApplication.js`
+    file
+-   `MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS` --- Path to the
+    `WindowlessEmscriptenApplication.js` file
+-   `MAGNUM_WEBAPPLICATION_CSS` --- Path to the `WebApplication.css` file
+
 However, this command will try to find only the base library, not the optional
 components. The base library depends on @ref corrade-cmake Corrade and OpenGL
 libraries (or OpenGL ES libraries). Additional dependencies are specified by
@@ -102,7 +115,7 @@ the components. The optional components are:
 -   `Primitives` --- @ref Primitives library
 -   `SceneGraph` --- @ref SceneGraph library
 -   `Shaders` --- @ref Shaders library
--   `Shapes` --- @ref Shapes library
+-   `Shapes` @m_class{m-label m-danger} **deprecated** --- @ref Shapes library
 -   `Text` --- @ref Text library
 -   `TextureTools` --- @ref TextureTools library
 -   `Trade` --- @ref Trade library
@@ -111,7 +124,8 @@ the components. The optional components are:
 Platform namespace is split into more components:
 
 -   `GlfwApplication` --- @ref Platform::GlfwApplication "GlfwApplication"
--   `GlutApplication` --- @ref Platform::GlutApplication "GlutApplication"
+-   `GlutApplication` @m_class{m-label m-danger} **deprecated** ---
+    @ref Platform::GlutApplication "GlutApplication"
 -   `GlxApplication` --- @ref Platform::GlxApplication "GlxApplication"
 -   `Sdl2Application` --- @ref Platform::Sdl2Application "Sdl2Application"
 -   `XEglApplication` --- @ref Platform::XEglApplication "XEglApplication"
@@ -164,11 +178,14 @@ dependencies, you need to find the dependency and then link to it.
 
 Lastly, a few utility executables are available:
 
--   `distancefieldconverter` --- @ref magnum-distancefieldconverter executable
--   `fontconverter` --- @ref magnum-fontconverter executable
--   `imageconverter` --- @ref magnum-imageconverter executable
--   `gl-info` --- @ref magnum-gl-info executable
--   `al-info` --- @ref magnum-al-info executable
+-   `distancefieldconverter` --- @ref magnum-distancefieldconverter "magnum-distancefieldconverter"
+    executable
+-   `fontconverter` --- @ref magnum-fontconverter "magnum-fontconverter"
+    executable
+-   `imageconverter` --- @ref magnum-imageconverter "magnum-imageconverter"
+    executable
+-   `gl-info` --- @ref magnum-gl-info "magnum-gl-info" executable
+-   `al-info` --- @ref magnum-al-info "magnum-al-info" executable
 
 Note that [each namespace](namespaces.html), all @ref Platform libraries and
 each plugin class contain more detailed information about dependencies,
@@ -224,21 +241,6 @@ are also available as preprocessor variables if including
     @ref MAGNUM_TARGET_HEADLESS documentation for more information.
 -   `MAGNUM_TARGET_VK` --- Defined if compiled with Vulkan interoperability
     enabled
-
-Workflows without imported targets are deprecated and the following variables
-are included just for backwards compatibility and only if
-@ref MAGNUM_BUILD_DEPRECATED is enabled:
-
--   `MAGNUM_LIBRARIES` --- Expands to `Magnum::Magnum` target. Use `Magnum::Magnum`
-    target directly instead.
--   `MAGNUM_*_LIBRARIES` --- Expands to `Magnum::*` target. Use `Magnum::*`
-    target directly instead.
--   `MAGNUM_APPLICATION_LIBRARIES` / `MAGNUM_WINDOWLESSAPPLICATION_LIBRARIES`
-    --- Expands to `Magnum::Application` / `Magnum::WindowlessApplication`
-    target. Use `Magnum::Application` / `Magnum::WindowlessApplication` target
-    directly instead.
--   `MAGNUM_CONTEXT_LIBRARIES` --- Expands to `Magnum::Context` target. Use
-    `Magnum::Context` target directly instead.
 
 Corrade library provides also its own set of CMake macros and variables, see
 @ref corrade-cmake "its documentation" for more information.

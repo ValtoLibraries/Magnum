@@ -411,7 +411,9 @@ void Mesh::drawInternal(Int count, Int baseVertex, Int instanceCount, GLintptr i
 
         /* Indexed mesh */
         } else {
-            /** @todo re-enable for WebGL 2.0 when glDrawRangeElements() no longer crashes Firefox */
+            /** @todo re-enable once https://github.com/kripken/emscripten/pull/7112
+                is merged and Emscripten versions with this change are
+                widespread enough */
             #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
             /* Indexed mesh with specified range */
             if(indexEnd) {

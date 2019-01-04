@@ -27,6 +27,9 @@ if(WITH_ANDROIDAPPLICATION)
     add_library(PlatformAndroidApplicationTest SHARED AndroidApplicationTest.cpp)
     target_link_libraries(PlatformAndroidApplicationTest PRIVATE MagnumAndroidApplication)
     set_target_properties(PlatformAndroidApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
+    if(CMAKE_ANDROID_NDK)
+        android_create_apk(PlatformAndroidApplicationTest AndroidManifest.xml)
+    endif()
 endif()
 
 if(WITH_GLFWAPPLICATION)
@@ -51,8 +54,17 @@ if(WITH_SDL2APPLICATION)
     add_executable(PlatformSdl2ApplicationTest Sdl2ApplicationTest.cpp)
     target_link_libraries(PlatformSdl2ApplicationTest PRIVATE MagnumSdl2Application)
     set_target_properties(PlatformSdl2ApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
-    if(CORRADE_TARGET_IOS)
+    if(CORRADE_TARGET_EMSCRIPTEN)
+        # So we can spin up a webserver in the build dir for easy testing
+        file(COPY
+            ../EmscriptenApplication.js
+            ../WebApplication.css
+            Sdl2ApplicationTest.html
+            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    elseif(CORRADE_TARGET_IOS OR CORRADE_TARGET_APPLE)
+        # The plist is needed in order to mark the app as DPI-aware
         set_target_properties(PlatformSdl2ApplicationTest PROPERTIES
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Sdl2ApplicationTest.plist
             MACOSX_BUNDLE ON
             XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "YES")
     endif()
@@ -74,6 +86,14 @@ if(WITH_WINDOWLESSEGLAPPLICATION)
     add_executable(PlatformWindowlessEglApplicationTest WindowlessEglApplicationTest.cpp)
     target_link_libraries(PlatformWindowlessEglApplicationTest PRIVATE MagnumWindowlessEglApplication)
     set_target_properties(PlatformWindowlessEglApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
+    if(CORRADE_TARGET_EMSCRIPTEN)
+        # So we can spin up a webserver in the build dir for easy testing
+        file(COPY
+            ../WindowlessEmscriptenApplication.js
+            ../WebApplication.css
+            WindowlessEglApplicationTest.html
+            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
 endif()
 
 if(WITH_WINDOWLESSGLXAPPLICATION)

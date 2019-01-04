@@ -91,7 +91,7 @@ UnsignedInt MAGNUM_EXPORT log2(UnsignedInt number);
 Returns natural (base @f$ e @f$) logarithm of given number.
 @see @ref Constants::e(), @ref log(UnsignedInt, UnsignedInt), @ref log2()
 */
-template<class T> T log(T number) { return std::log(number); }
+template<class T> inline T log(T number) { return std::log(number); }
 
 /**
 @brief Natural exponential
@@ -99,7 +99,7 @@ template<class T> T log(T number) { return std::log(number); }
 Returns @f$ e^x @f$.
 @see @ref Constants::e(), @ref pow(T, T)
 */
-template<class T> T exp(T exponent) { return std::exp(exponent); }
+template<class T> inline T exp(T exponent) { return std::exp(exponent); }
 
 /**
 @brief Integer division with remainder
@@ -118,7 +118,7 @@ Int quotient = 57/6;
 Int remainder = 57%6;
 @endcode
 */
-template<class Integral> std::pair<Integral, Integral> div(Integral x, Integral y) {
+template<class Integral> inline std::pair<Integral, Integral> div(Integral x, Integral y) {
     static_assert(std::is_integral<Integral>{}, "Math::div(): not an integral type");
     const auto result = std::div(x, y);
     return {result.quot, result.rem};
@@ -129,15 +129,35 @@ template<class Integral> std::pair<Integral, Integral> div(Integral x, Integral 
 
 @see @ref isNan(), @ref Constants::inf()
 */
-template<class T> bool isInf(T value) { return std::isinf(value); }
+template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type isInf(T value) {
+    return std::isinf(value);
+}
+
+/** @overload */
+template<std::size_t size, class T> inline BoolVector<size> isInf(const Vector<size, T>& value) {
+    BoolVector<size> out;
+    for(std::size_t i = 0; i != size; ++i)
+        out.set(i, std::isinf(value[i]));
+    return out;
+}
 
 /**
-@brief If given number is NaN
+@brief If given number is a NaN
 
 Equivalent to @cpp value != value @ce.
 @see @ref isInf(), @ref Constants::nan()
 */
-template<class T> bool isNan(T value) { return std::isnan(value); }
+template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type isNan(T value) {
+    return std::isnan(value);
+}
+
+/** @overload */
+template<std::size_t size, class T> inline BoolVector<size> isNan(const Vector<size, T>& value) {
+    BoolVector<size> out;
+    for(std::size_t i = 0; i != size; ++i)
+        out.set(i, std::isnan(value[i]));
+    return out;
+}
 
 /** @todo Can't trigonometric functions be done with only one overload? */
 
@@ -220,7 +240,7 @@ template<UnsignedInt exponent, class T> constexpr T pow(T base);
 template<UnsignedInt exponent, class T> constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type pow(T base) {
     return Implementation::Pow<exponent>::pow(base);
 }
-template<UnsignedInt exponent, std::size_t size, class T> Vector<size, T> pow(const Vector<size, T>& base) {
+template<UnsignedInt exponent, std::size_t size, class T> inline Vector<size, T> pow(const Vector<size, T>& base) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = Implementation::Pow<exponent>::pow(base[i]);
@@ -237,7 +257,7 @@ Returns power of @p base to the @p exponent.
 #ifdef DOXYGEN_GENERATING_OUTPUT
 template<class T> T pow(T base, T exponent);
 #else
-template<class T> typename std::enable_if<std::is_arithmetic<T>::value, T>::type pow(T base, T exponent) {
+template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type pow(T base, T exponent) {
     return std::pow(base, exponent);
 }
 template<std::size_t size, class T> inline Vector<size, T> pow(const Vector<size, T>& base, T exponent) {
@@ -281,7 +301,7 @@ template<std::size_t size, class T> inline Vector<size, T> min(const Vector<size
 
 If the range is empty, returns default-constructed value.
 */
-template<class T> T min(Corrade::Containers::ArrayView<const T> range) {
+template<class T> inline T min(Corrade::Containers::ArrayView<const T> range) {
     if(range.empty()) return {};
 
     T out(range[0]);
@@ -293,6 +313,11 @@ template<class T> T min(Corrade::Containers::ArrayView<const T> range) {
 /** @overload */
 template<class T> inline T min(std::initializer_list<T> list) {
     return min(Corrade::Containers::ArrayView<const T>{list.begin(), list.size()});
+}
+
+/** @overload */
+template<class T, std::size_t size> inline T min(const T(&array)[size]) {
+    return min(Corrade::Containers::arrayView(array));
 }
 
 /**
@@ -316,7 +341,7 @@ template<std::size_t size, class T> Vector<size, T> max(const Vector<size, T>& v
 #endif
 
 /** @overload */
-template<std::size_t size, class T> Vector<size, T> max(const Vector<size, T>& value, T max) {
+template<std::size_t size, class T> inline Vector<size, T> max(const Vector<size, T>& value, T max) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = std::max(value[i], max);
@@ -328,7 +353,7 @@ template<std::size_t size, class T> Vector<size, T> max(const Vector<size, T>& v
 
 If the range is empty, returns default-constructed value.
 */
-template<class T> T max(Corrade::Containers::ArrayView<const T> range) {
+template<class T> inline T max(Corrade::Containers::ArrayView<const T> range) {
     if(range.empty()) return {};
 
     T out(range[0]);
@@ -340,6 +365,11 @@ template<class T> T max(Corrade::Containers::ArrayView<const T> range) {
 /** @overload */
 template<class T> inline T max(std::initializer_list<T> list) {
     return max(Corrade::Containers::ArrayView<const T>{list.begin(), list.size()});
+}
+
+/** @overload */
+template<class T, std::size_t size> inline T max(const T(&array)[size]) {
+    return max(Corrade::Containers::arrayView(array));
 }
 
 /**
@@ -354,7 +384,7 @@ template<class T> inline std::pair<T, T> minmax(const T& a, const T& b);
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, std::pair<T, T>>::type minmax(T a, T b) {
     return a < b ? std::make_pair(a, b) : std::make_pair(b, a);
 }
-template<std::size_t size, class T> std::pair<Vector<size, T>, Vector<size, T>> minmax(const Vector<size, T>& a, const Vector<size, T>& b) {
+template<std::size_t size, class T> inline std::pair<Vector<size, T>, Vector<size, T>> minmax(const Vector<size, T>& a, const Vector<size, T>& b) {
     using std::swap;
     std::pair<Vector<size, T>, Vector<size, T>> out{a, b};
     for(std::size_t i = 0; i != size; ++i)
@@ -382,7 +412,7 @@ namespace Implementation {
 If the range is empty, returns default-constructed values.
 @see @ref Range::Range(const std::pair<VectorType, VectorType>&)
 */
-template<class T> std::pair<T, T> minmax(Corrade::Containers::ArrayView<const T> range) {
+template<class T> inline std::pair<T, T> minmax(Corrade::Containers::ArrayView<const T> range) {
     if(range.empty()) return {};
 
     T min{range[0]}, max{range[0]};
@@ -395,6 +425,11 @@ template<class T> std::pair<T, T> minmax(Corrade::Containers::ArrayView<const T>
 /** @overload */
 template<class T> inline std::pair<T, T> minmax(std::initializer_list<T> list) {
     return minmax(Corrade::Containers::ArrayView<const T>{list.begin(), list.size()});
+}
+
+/** @overload */
+template<class T, std::size_t size> inline std::pair<T, T> minmax(const T(&array)[size]) {
+    return minmax(Corrade::Containers::arrayView(array));
 }
 
 /**
@@ -416,7 +451,7 @@ template<class T, class U> inline T clamp(const T& value, const T& min, const T&
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type clamp(T value, T min, T max) {
     return std::min(std::max(value, min), max);
 }
-template<std::size_t size, class T> Vector<size, T> clamp(const Vector<size, T>& value, const Vector<size, T>& min, const Vector<size, T>& max) {
+template<std::size_t size, class T> inline Vector<size, T> clamp(const Vector<size, T>& value, const Vector<size, T>& min, const Vector<size, T>& max) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = clamp(value[i], min[i], max[i]);
@@ -425,7 +460,7 @@ template<std::size_t size, class T> Vector<size, T> clamp(const Vector<size, T>&
 #endif
 
 /** @overload */
-template<std::size_t size, class T> Vector<size, T> clamp(const Vector<size, T>& value, T min, T max) {
+template<std::size_t size, class T> inline Vector<size, T> clamp(const Vector<size, T>& value, T min, T max) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = clamp(value[i], min, max);
@@ -445,7 +480,7 @@ template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T
     if(scalar < T(0)) return T(-1);
     return T(0);
 }
-template<std::size_t size, class T> Vector<size, T> sign(const Vector<size, T>& a) {
+template<std::size_t size, class T> inline Vector<size, T> sign(const Vector<size, T>& a) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = sign(a[i]);
@@ -460,7 +495,7 @@ template<class T> inline T abs(const T& a);
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type abs(T a) {
     return std::abs(a);
 }
-template<std::size_t size, class T> Vector<size, T> abs(const Vector<size, T>& a) {
+template<std::size_t size, class T> inline Vector<size, T> abs(const Vector<size, T>& a) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = std::abs(a[i]);
@@ -475,7 +510,7 @@ template<class T> inline T floor(const T& a);
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type floor(T a) {
     return std::floor(a);
 }
-template<std::size_t size, class T> Vector<size, T> floor(const Vector<size, T>& a) {
+template<std::size_t size, class T> inline Vector<size, T> floor(const Vector<size, T>& a) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = std::floor(a[i]);
@@ -490,7 +525,7 @@ template<class T> inline T round(const T& a);
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type round(T a) {
     return std::round(a);
 }
-template<std::size_t size, class T> Vector<size, T> round(const Vector<size, T>& a) {
+template<std::size_t size, class T> inline Vector<size, T> round(const Vector<size, T>& a) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = std::round(a[i]);
@@ -505,7 +540,7 @@ template<class T> inline T ceil(const T& a);
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type ceil(T a) {
     return std::ceil(a);
 }
-template<std::size_t size, class T> Vector<size, T> ceil(const Vector<size, T>& a) {
+template<std::size_t size, class T> inline Vector<size, T> ceil(const Vector<size, T>& a) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = std::ceil(a[i]);
@@ -524,7 +559,7 @@ template<class T> inline T sqrt(const T& a);
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type sqrt(T a) {
     return T(std::sqrt(a));
 }
-template<std::size_t size, class T> Vector<size, T> sqrt(const Vector<size, T>& a) {
+template<std::size_t size, class T> inline Vector<size, T> sqrt(const Vector<size, T>& a) {
     Vector<size, T> out{NoInit};
     for(std::size_t i = 0; i != size; ++i)
         out[i] = T(std::sqrt(a[i]));
@@ -544,7 +579,7 @@ template<class T> inline T sqrtInverted(const T& a);
 template<class T> inline typename std::enable_if<std::is_arithmetic<T>::value, T>::type sqrtInverted(T a) {
     return T(1)/std::sqrt(a);
 }
-template<std::size_t size, class T> Vector<size, T> sqrtInverted(const Vector<size, T>& a) {
+template<std::size_t size, class T> inline Vector<size, T> sqrtInverted(const Vector<size, T>& a) {
     return Vector<size, T>(T(1))/sqrt(a);
 }
 #endif
@@ -559,8 +594,13 @@ The interpolation for vectors is done as in following, similarly for scalars: @f
     \boldsymbol{v_{LERP}} = (1 - t) \boldsymbol{v_A} + t \boldsymbol{v_B}
 @f]
 
-See @ref select() for constant interpolation using the same API.
-@see @ref lerpInverted(), @ref lerp(const Quaternion<T>&, const Quaternion<T>&, T)
+See @ref select() for constant interpolation using the same API and
+@ref splerp() for spline interpolation.
+@see @ref lerpInverted(), @ref lerp(const Complex<T>&, const Complex<T>&, T),
+    @ref lerp(const Quaternion<T>&, const Quaternion<T>&, T),
+    @ref lerp(const CubicHermite<T>&, const CubicHermite<T>&, U),
+    @ref lerp(const CubicHermiteComplex<T>&, const CubicHermiteComplex<T>&, T),
+    @ref lerp(const CubicHermiteQuaternion<T>&, const CubicHermiteQuaternion<T>&, T)
 @m_keyword{mix(),GLSL mix(),}
 */
 template<class T, class U> inline
@@ -671,12 +711,5 @@ template<std::size_t size, class T> inline Vector<size, T> fma(const Vector<size
 /*@}*/
 
 }}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* In order to make the deprecated normalize() / denormalize() functions
-   available in the original header. The Packing.h header depends on this file
-   so it needs to be included after it. */
-#include "Magnum/Math/Packing.h"
-#endif
 
 #endif

@@ -24,6 +24,7 @@
 */
 
 namespace Magnum {
+
 /** @page features Feature guide
 @brief Fundamental principles and design goals.
 
@@ -34,11 +35,15 @@ necessary to read through everything, pick only what you need.
 -   @subpage types --- @copybrief types
 -   @subpage matrix-vector --- @copybrief matrix-vector
 -   @subpage transformations --- @copybrief transformations
+-   @subpage animation --- @copybrief animation
 -   @subpage plugins --- @copybrief plugins
 -   @subpage opengl-wrapping --- @copybrief opengl-wrapping
 -   @subpage shaders --- @copybrief shaders
 -   @subpage scenegraph --- @copybrief scenegraph
--   @subpage shapes --- @copybrief shapes
+-   @subpage shapes @m_class{m-label m-danger} **deprecated** ---
+    @copybrief shapes
 -   @subpage debug-tools --- @copybrief debug-tools
+-   @subpage ui --- @copybrief ui
 */
+
 }

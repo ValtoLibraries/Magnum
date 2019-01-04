@@ -23,6 +23,8 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#define _MAGNUM_DO_NOT_WARN_DEPRECATED_SHAPES
+
 #include "Point.h"
 
 #include "Magnum/Math/Matrix3.h"
@@ -30,11 +32,15 @@
 
 namespace Magnum { namespace Shapes {
 
+CORRADE_IGNORE_DEPRECATED_PUSH
 template<UnsignedInt dimensions> Point<dimensions> Point<dimensions>::transformed(const MatrixTypeFor<dimensions, Float>& matrix) const {
     return Point<dimensions>(matrix.transformPoint(_position));
 }
 
-template class Point<2>;
-template class Point<3>;
+#ifndef DOXYGEN_GENERATING_OUTPUT
+template class MAGNUM_SHAPES_EXPORT Point<2>;
+template class MAGNUM_SHAPES_EXPORT Point<3>;
+#endif
+CORRADE_IGNORE_DEPRECATED_POP
 
 }}

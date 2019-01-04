@@ -72,7 +72,7 @@ namespace Implementation {
 Returns `0` when two vectors are perpendicular, `> 0` when two vectors are in
 the same general direction, `1` when two *normalized* vectors are parallel,
 `< 0` when two vectors are in opposite general direction and `-1` when two
-*normalized* vectors are antiparallel. @f[
+* *normalized* vectors are antiparallel. @f[
     \boldsymbol a \cdot \boldsymbol b = \sum_{i=0}^{n-1} \boldsymbol a_i \boldsymbol b_i
 @f]
 @see @ref Vector::dot() const, @ref Vector::operator-(), @ref Vector2::perpendicular()
@@ -86,7 +86,7 @@ template<std::size_t size, class T> inline T dot(const Vector<size, T>& a, const
 
 Expects that both vectors are normalized. Enabled only for floating-point
 types. @f[
-    \theta = acos \left( \frac{\boldsymbol a \cdot \boldsymbol b}{|\boldsymbol a| |\boldsymbol b|} \right) = acos (\boldsymbol a \cdot \boldsymbol b)
+    \theta = \arccos \left( \frac{\boldsymbol a \cdot \boldsymbol b}{|\boldsymbol a| |\boldsymbol b|} \right) = \arccos (\boldsymbol a \cdot \boldsymbol b)
 @f]
 @see @ref Vector::isNormalized(),
     @ref angle(const Complex<T>&, const Complex<T>&),
@@ -100,7 +100,7 @@ typename std::enable_if<std::is_floating_point<FloatingPoint>::value, Rad<Floati
 #endif
 angle(const Vector<size, FloatingPoint>& normalizedA, const Vector<size, FloatingPoint>& normalizedB) {
     CORRADE_ASSERT(normalizedA.isNormalized() && normalizedB.isNormalized(),
-        "Math::angle(): vectors must be normalized", {});
+        "Math::angle(): vectors" << normalizedA << "and" << normalizedB << "are not normalized", {});
     return Rad<FloatingPoint>(std::acos(dot(normalizedA, normalizedB)));
 }
 
@@ -1359,7 +1359,8 @@ inline Vector<size, T>
 template<class U> inline typename std::enable_if<std::is_floating_point<U>::value, Vector<size, T>>::type
 #endif
 Vector<size, T>::projectedOntoNormalized(const Vector<size, T>& line) const {
-    CORRADE_ASSERT(line.isNormalized(), "Math::Vector::projectedOntoNormalized(): line must be normalized", {});
+    CORRADE_ASSERT(line.isNormalized(),
+        "Math::Vector::projectedOntoNormalized(): line" << line << "is not normalized", {});
     return line*Math::dot(*this, line);
 }
 
@@ -1410,6 +1411,23 @@ template<std::size_t size, class T> inline std::pair<T, T> Vector<size, T>::minm
     }
 
     return {min, max};
+}
+
+namespace Implementation {
+
+template<std::size_t size, class T> struct StrictWeakOrdering<Vector<size, T>> {
+    bool operator()(const Vector<size, T>& a, const Vector<size, T>& b) const {
+        for(std::size_t i = 0; i < size; ++i) {
+            if(a[i] < b[i])
+                return true;
+            if(a[i] > b[i])
+                return false;
+        }
+
+        return false; /* a and b are equivalent */
+    }
+};
+
 }
 
 }}

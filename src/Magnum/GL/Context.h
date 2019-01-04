@@ -164,6 +164,16 @@ class MAGNUM_GL_EXPORT Context {
             Debug = GL_CONTEXT_FLAG_DEBUG_BIT_KHR,
             #endif
 
+            #ifndef MAGNUM_TARGET_GLES
+            /**
+             * Forward compatible context
+             * @see @ref isCoreProfile()
+             * @requires_gl Core/compatibility profile distinction and forward
+             *      compatibility applies only to desktop GL.
+             */
+            ForwardCompatible = GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT,
+            #endif
+
             /**
              * Context without error reporting
              * @requires_gl46 Extension @gl_extension{KHR,no_error}
@@ -227,21 +237,34 @@ class MAGNUM_GL_EXPORT Context {
              */
             MeshVao = 1 << 3,
 
+            /**
+             * Bind a "scratch" VAO on core profile.
+             *
+             * Use if external code is not VAO-aware and would otherwise try to
+             * enable vertex attributes on the default (zero) VAO, causing GL
+             * errors. Meant to be used together with @ref State::MeshVao (or
+             * @ref State::EnterExternal).
+             *
+             * Does nothing on compatibility profile and ES / WebGL platforms,
+             * as using the default VAO is allowed there.
+             */
+            BindScratchVao = 1 << 4,
+
             /** Reset tracked pixel storage-related state */
-            PixelStorage = 1 << 4,
+            PixelStorage = 1 << 5,
 
             /** Reset tracked renderer-related state */
-            Renderer = 1 << 5,
+            Renderer = 1 << 6,
 
             /** Reset tracked shader-related bindings */
-            Shaders = 1 << 6,
+            Shaders = 1 << 7,
 
             /** Reset tracked texture-related bindings and state */
-            Textures = 1 << 7,
+            Textures = 1 << 8,
 
             #ifndef MAGNUM_TARGET_GLES2
             /** Reset tracked transform feedback-related bindings */
-            TransformFeedback = 1 << 8,
+            TransformFeedback = 1 << 9,
             #endif
 
             /**
@@ -249,6 +272,8 @@ class MAGNUM_GL_EXPORT Context {
              *
              * Resets all state that could cause external code to accidentally
              * modify Magnum objects. This includes only @ref State::MeshVao.
+             * In some pathological cases you may want to enable
+             * @ref State::BindScratchVao as well.
              */
             EnterExternal = MeshVao,
 
@@ -489,8 +514,10 @@ class MAGNUM_GL_EXPORT Context {
          *
          * The result is cached, repeated queries don't result in repeated
          * OpenGL calls.
-         * @see @fn_gl{Get} with @def_gl_keyword{CORE_PROFILE_MASK}
-         * @requires_gl Not available on OpenGL ES or WebGL.
+         * @see @fn_gl{Get} with @def_gl_keyword{CORE_PROFILE_MASK},
+         *      @ref Flag::ForwardCompatible
+         * @requires_gl Core/compatibility profile distinction and forward
+         *      compatibility applies only to desktop GL.
          */
         bool isCoreProfile();
         #endif
@@ -656,7 +683,7 @@ class MAGNUM_GL_EXPORT Context {
         MAGNUM_GL_LOCAL bool isCoreProfileImplementationNV();
         #endif
 
-        void(*_functionLoader)();
+        void(*_functionLoader)(){};
         Version _version;
         #ifndef MAGNUM_TARGET_WEBGL
         Flags _flags;
@@ -680,6 +707,7 @@ class MAGNUM_GL_EXPORT Context {
 CORRADE_ENUMSET_OPERATORS(Context::Flags)
 #endif
 CORRADE_ENUMSET_OPERATORS(Context::DetectedDrivers)
+CORRADE_ENUMSET_OPERATORS(Context::States)
 
 #ifndef MAGNUM_TARGET_WEBGL
 /** @debugoperatorclassenum{Context,Context::Flag} */

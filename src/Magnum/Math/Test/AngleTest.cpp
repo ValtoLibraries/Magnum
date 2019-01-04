@@ -23,9 +23,15 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <cstring>
 #include <sstream>
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/Format.h>
+#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+#include <Corrade/Utility/TweakableParser.h>
+#endif
 
 #include "Magnum/Math/Angle.h"
 
@@ -47,12 +53,70 @@ struct AngleTest: Corrade::TestSuite::Tester {
     void debugRad();
     void configurationDeg();
     void configurationRad();
+    #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+    template<class T> void tweakable();
+    template<class T> void tweakableError();
+    #endif
 };
 
 typedef Math::Deg<Float> Deg;
 typedef Math::Rad<Float> Rad;
 typedef Math::Deg<Double> Degd;
 typedef Math::Rad<Double> Radd;
+
+using namespace Literals;
+
+#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+namespace {
+
+constexpr struct {
+    const char* name;
+    const char* data;
+    float result;
+} TweakableData[] {
+    {"fixed", "35.0_{}", 35.0f},
+    {"no zero before", ".5_{}",  0.5f},
+    {"no zero after", "35._{}", 35.0f},
+    {"positive", "+35.0_{}", 35.0f},
+    {"negative", "-35.0_{}", -35.0}
+};
+
+constexpr struct {
+    const char* name;
+    const char* data;
+    Corrade::Utility::TweakableState state;
+    const char* error;
+} TweakableErrorData[] {
+    {"empty", "", Corrade::Utility::TweakableState::Recompile,
+        "Utility::TweakableParser:  is not an angle literal\n"},
+    {"integral", "42_{}", Corrade::Utility::TweakableState::Recompile,
+        "Utility::TweakableParser: 42_{} is not an angle literal\n"},
+    {"garbage after", "42.b_{}", Corrade::Utility::TweakableState::Recompile,
+        "Utility::TweakableParser: unexpected characters b_{} after an angle literal\n"},
+    {"different suffix", "42.0u", Corrade::Utility::TweakableState::Recompile, /* not for double */
+        "Utility::TweakableParser: 42.0u has an unexpected suffix, expected _{}\n"}
+};
+
+template<class> struct TweakableTraits;
+template<> struct TweakableTraits<Deg> {
+    static const char* name() { return "Deg"; }
+    static const char* literal() { return "degf"; }
+};
+template<> struct TweakableTraits<Degd> {
+    static const char* name() { return "Degd"; }
+    static const char* literal() { return "deg"; }
+};
+template<> struct TweakableTraits<Rad> {
+    static const char* name() { return "Rad"; }
+    static const char* literal() { return "radf"; }
+};
+template<> struct TweakableTraits<Radd> {
+    static const char* name() { return "Radd"; }
+    static const char* literal() { return "rad"; }
+};
+
+}
+#endif
 
 AngleTest::AngleTest() {
     addTests({&AngleTest::construct,
@@ -68,6 +132,22 @@ AngleTest::AngleTest() {
               &AngleTest::debugRad,
               &AngleTest::configurationDeg,
               &AngleTest::configurationRad});
+
+    #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+    addInstancedTests<AngleTest>({
+        &AngleTest::tweakable<Deg>,
+        &AngleTest::tweakable<Degd>,
+        &AngleTest::tweakable<Rad>,
+        &AngleTest::tweakable<Radd>},
+        Corrade::Containers::arraySize(TweakableData));
+
+    addInstancedTests<AngleTest>({
+        &AngleTest::tweakableError<Deg>,
+        &AngleTest::tweakableError<Degd>,
+        &AngleTest::tweakableError<Rad>,
+        &AngleTest::tweakableError<Radd>},
+        Corrade::Containers::arraySize(TweakableErrorData));
+    #endif
 }
 
 void AngleTest::construct() {
@@ -162,8 +242,6 @@ void AngleTest::constructCopy() {
 }
 
 void AngleTest::literals() {
-    using namespace Literals;
-
     constexpr auto a = 25.0_deg;
     CORRADE_VERIFY((std::is_same<decltype(a), const Degd>::value));
     CORRADE_COMPARE(Double(a), 25.0);
@@ -233,6 +311,34 @@ void AngleTest::configurationRad() {
     CORRADE_COMPARE(c.value("angle"), value);
     CORRADE_COMPARE(c.value<Rad>("angle"), angle);
 }
+
+#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+template<class T> void AngleTest::tweakable() {
+    auto&& data = TweakableData[testCaseInstanceId()];
+    setTestCaseName(Corrade::Utility::formatString("tweakable<{}>", TweakableTraits<T>::name()));
+    setTestCaseDescription(data.name);
+    std::string input = Corrade::Utility::formatString(data.data, TweakableTraits<T>::literal());
+    Corrade::Utility::TweakableState state;
+    T result;
+    std::tie(state, result) = Corrade::Utility::TweakableParser<T>::parse({input.data(), input.size()});
+    CORRADE_COMPARE(state, Corrade::Utility::TweakableState::Success);
+    CORRADE_COMPARE(result, T(typename T::Type(data.result)));
+}
+
+template<class T> void AngleTest::tweakableError() {
+    auto&& data = TweakableErrorData[testCaseInstanceId()];
+    setTestCaseName(Corrade::Utility::formatString("tweakableError<{}>", TweakableTraits<T>::name()));
+    setTestCaseDescription(data.name);
+    std::string input = Corrade::Utility::formatString(data.data, TweakableTraits<T>::literal());
+
+    std::ostringstream out;
+    Warning redirectWarning{&out};
+    Error redirectError{&out};
+    Corrade::Utility::TweakableState state = Corrade::Utility::TweakableParser<T>::parse({input.data(), input.size()}).first;
+    CORRADE_COMPARE(out.str(), Corrade::Utility::formatString(data.error, TweakableTraits<T>::literal()));
+    CORRADE_COMPARE(state, data.state);
+}
+#endif
 
 }}}
 

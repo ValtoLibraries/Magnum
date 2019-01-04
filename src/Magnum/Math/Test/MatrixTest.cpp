@@ -28,6 +28,7 @@
 #include <Corrade/Utility/Configuration.h>
 
 #include "Magnum/Math/Matrix.h"
+#include "Magnum/Math/StrictWeakOrdering.h"
 
 struct Mat3 {
     float a[9];
@@ -66,6 +67,7 @@ struct MatrixTest: Corrade::TestSuite::Tester {
     void constructOneValue();
     void constructOneComponent();
     void constructConversion();
+    void constructFromDifferentSize();
     void constructCopy();
     void convert();
 
@@ -76,6 +78,9 @@ struct MatrixTest: Corrade::TestSuite::Tester {
     void determinant();
     void inverted();
     void invertedOrthogonal();
+    void invertedOrthogonalNotOrthogonal();
+
+    void strictWeakOrdering();
 
     void subclassTypes();
     void subclass();
@@ -84,12 +89,14 @@ struct MatrixTest: Corrade::TestSuite::Tester {
     void configuration();
 };
 
+typedef Matrix<2, Float> Matrix2x2;
+typedef Matrix<3, Float> Matrix3x3;
 typedef Matrix<4, Float> Matrix4x4;
 typedef Matrix<4, Int> Matrix4x4i;
-typedef Matrix<3, Float> Matrix3x3;
+typedef Vector<2, Float> Vector2;
+typedef Vector<3, Float> Vector3;
 typedef Vector<4, Float> Vector4;
 typedef Vector<4, Int> Vector4i;
-typedef Vector<3, Float> Vector3;
 typedef Math::Constants<Float> Constants;
 
 MatrixTest::MatrixTest() {
@@ -100,6 +107,7 @@ MatrixTest::MatrixTest() {
               &MatrixTest::constructOneValue,
               &MatrixTest::constructOneComponent,
               &MatrixTest::constructConversion,
+              &MatrixTest::constructFromDifferentSize,
               &MatrixTest::constructCopy,
               &MatrixTest::convert,
 
@@ -110,6 +118,9 @@ MatrixTest::MatrixTest() {
               &MatrixTest::determinant,
               &MatrixTest::inverted,
               &MatrixTest::invertedOrthogonal,
+              &MatrixTest::invertedOrthogonalNotOrthogonal,
+
+              &MatrixTest::strictWeakOrdering,
 
               &MatrixTest::subclassTypes,
               &MatrixTest::subclass,
@@ -230,6 +241,27 @@ void MatrixTest::constructConversion() {
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix4x4, Matrix4x4i>::value));
 }
 
+void MatrixTest::constructFromDifferentSize() {
+    constexpr Matrix4x4 a{Vector4{3.0f,  5.0f, 8.0f, -3.0f},
+                          Vector4{4.5f,  4.0f, 7.0f,  2.0f},
+                          Vector4{1.0f,  2.0f, 3.0f, -1.0f},
+                          Vector4{7.9f, -1.0f, 8.0f, -1.5f}};
+    constexpr Matrix2x2 b{Vector2{3.0f,  5.0f},
+                          Vector2{4.5f,  4.0f}};
+    constexpr Matrix4x4 c{Vector4{3.0f, 5.0f, 0.0f, 0.0f},
+                          Vector4{4.5f, 4.0f, 0.0f, 0.0f},
+                          Vector4{0.0f, 0.0f, 1.0f, 0.0f},
+                          Vector4{0.0f, 0.0f, 0.0f, 1.0f}};
+
+    constexpr Matrix4x4 larger{b};
+    CORRADE_COMPARE(larger, c);
+    CORRADE_COMPARE(Matrix4x4{b}, c);
+
+    constexpr Matrix2x2 smaller{a};
+    CORRADE_COMPARE(smaller, b);
+    CORRADE_COMPARE(Matrix2x2{a}, b);
+}
+
 void MatrixTest::constructCopy() {
     constexpr RectangularMatrix<4, 4, Float> a(Vector4(3.0f,  5.0f, 8.0f, -3.0f),
                                                Vector4(4.5f,  4.0f, 7.0f,  2.0f),
@@ -335,6 +367,15 @@ void MatrixTest::inverted() {
 }
 
 void MatrixTest::invertedOrthogonal() {
+    Matrix3x3 a(Vector3(Constants::sqrt3()/2.0f, 0.5f, 0.0f),
+                Vector3(-0.5f, Constants::sqrt3()/2.0f, 0.0f),
+                Vector3(0.0f, 0.0f, 1.0f));
+
+    CORRADE_COMPARE(a.invertedOrthogonal()*a, Matrix3x3());
+    CORRADE_COMPARE(a.invertedOrthogonal(), a.inverted());
+}
+
+void MatrixTest::invertedOrthogonalNotOrthogonal() {
     std::ostringstream o;
     Error redirectError{&o};
 
@@ -342,10 +383,27 @@ void MatrixTest::invertedOrthogonal() {
                 Vector3(-0.5f, Constants::sqrt3()/2.0f, 0.0f),
                 Vector3(0.0f, 0.0f, 1.0f));
     (a*2).invertedOrthogonal();
-    CORRADE_COMPARE(o.str(), "Math::Matrix::invertedOrthogonal(): the matrix is not orthogonal\n");
+    CORRADE_COMPARE(o.str(),
+        "Math::Matrix::invertedOrthogonal(): the matrix is not orthogonal:\n"
+        "Matrix(1.73205, -1, 0,\n"
+        "       1, 1.73205, 0,\n"
+        "       0, 0, 2)\n");
+}
 
-    CORRADE_COMPARE(a.invertedOrthogonal()*a, Matrix3x3());
-    CORRADE_COMPARE(a.invertedOrthogonal(), a.inverted());
+void MatrixTest::strictWeakOrdering() {
+    StrictWeakOrdering o;
+    const Matrix2x2 a{Vector2{1.0f, 2.0f}, Vector2{3.0f, 4.0f}};
+    const Matrix2x2 b{Vector2{2.0f, 3.0f}, Vector2{4.0f, 5.0f}};
+    const Matrix2x2 c{Vector2{1.0f, 2.0f}, Vector2{3.0f, 5.0f}};
+
+    CORRADE_VERIFY( o(a, b));
+    CORRADE_VERIFY(!o(b, a));
+    CORRADE_VERIFY( o(a, c));
+    CORRADE_VERIFY(!o(c, a));
+    CORRADE_VERIFY( o(c, b));
+    CORRADE_VERIFY(!o(b, c));
+
+    CORRADE_VERIFY(!o(a, a));
 }
 
 template<class T> class BasicVec2: public Math::Vector<2, T> {

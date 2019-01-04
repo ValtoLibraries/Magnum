@@ -59,16 +59,16 @@ Returns intersection point positions @f$ t @f$, @f$ u @f$ on both lines:
     2D lines are parallel)
 
 The two lines intersect if @f$ t @f$ and @f$ u @f$ exist such that: @f[
-     \boldsymbol p + t \boldsymbol r = \boldsymbol q + u \boldsymbol s
+     \boldsymbol{p} + t \boldsymbol{r} = \boldsymbol{q} + u \boldsymbol{s}
 @f]
 Crossing both sides with @f$ \boldsymbol{s} @f$, distributing the cross product
-and eliminating @f$ \boldsymbol s \times \boldsymbol s = 0 @f$, then solving
+and eliminating @f$ \boldsymbol{s} \times \boldsymbol{s} = 0 @f$, then solving
 for @f$ t @f$ and similarly for @f$ u @f$: @f[
      \begin{array}{rcl}
-         (\boldsymbol p + t \boldsymbol r) \times s & = & (\boldsymbol q + u \boldsymbol s) \times s \\
-         t (\boldsymbol r \times s) & = & (\boldsymbol q - \boldsymbol p) \times s \\
-         t & = & \cfrac{(\boldsymbol q - \boldsymbol p) \times s}{\boldsymbol r \times \boldsymbol s} \\
-         u & = & \cfrac{(\boldsymbol q - \boldsymbol p) \times r}{\boldsymbol r \times \boldsymbol s}
+         (\boldsymbol{p} + t \boldsymbol{r}) \times \boldsymbol{s} & = & (\boldsymbol{q} + u \boldsymbol{s}) \times \boldsymbol{s} \\
+         t (\boldsymbol{r} \times \boldsymbol{s}) & = & (\boldsymbol{q} - \boldsymbol{p}) \times \boldsymbol{s} \\
+         t & = & \cfrac{(\boldsymbol{q} - \boldsymbol{p}) \times \boldsymbol{s}}{\boldsymbol{r} \times \boldsymbol{s}} \\
+         u & = & \cfrac{(\boldsymbol{q} - \boldsymbol{p}) \times \boldsymbol{r}}{\boldsymbol{r} \times \boldsymbol{s}}
      \end{array}
 @f]
 
@@ -517,7 +517,8 @@ template<class T> bool sphereConeView(const Vector3<T>& sphereCenter, const T sp
 }
 
 template<class T> bool sphereConeView(const Vector3<T>& sphereCenter, const T sphereRadius, const Matrix4<T>& coneView, const T sinAngle, const T tanAngle) {
-    CORRADE_ASSERT(coneView.isRigidTransformation(), "Math::Geometry::Intersection::sphereConeView(): coneView does not represent a rigid transformation", false);
+    CORRADE_ASSERT(coneView.isRigidTransformation(),
+        "Math::Intersection::sphereConeView(): coneView does not represent a rigid transformation:" << Corrade::Utility::Debug::newline << coneView, false);
 
     /* Transform the sphere so that we can test against Z axis aligned origin
        cone instead */

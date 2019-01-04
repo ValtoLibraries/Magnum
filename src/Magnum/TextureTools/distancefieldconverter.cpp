@@ -66,6 +66,22 @@ namespace Magnum {
 @brief Converts red channel of an image to distance field representation
 
 @m_footernavigation
+@m_keywords{magnum-distancefieldconverter distancefieldconverter}
+
+This utility is built if both `WITH_TEXTURETOOLS` and
+`WITH_DISTANCEFIELDCONVERTER` is enabled when building Magnum. To use this
+utility with CMake, you need to request the `distancefieldconverter` component
+of the `Magnum` package and use the `Magnum::distancefieldconverter` target for
+example in a custom command:
+
+@code{.cmake}
+find_package(Magnum REQUIRED distancefieldconverter)
+
+add_custom_command(OUTPUT ... COMMAND Magnum::distancefieldconverter ...)
+@endcode
+
+See @ref building, @ref cmake and the @ref TextureTools namespace for more
+information.
 
 @section magnum-distancefieldconverter-usage Usage
 
@@ -187,7 +203,7 @@ int DistanceFieldConverter::exec() {
 
     /* Do it */
     Debug() << "Converting image of size" << image->size() << "to distance field...";
-    TextureTools::distanceField(input, output, {{}, args.value<Vector2i>("output-size")}, args.value<Int>("radius"), image->size());
+    TextureTools::DistanceField{args.value<UnsignedInt>("radius")}(input, output, {{}, args.value<Vector2i>("output-size")}, image->size());
 
     /* Save image */
     Image2D result{PixelFormat::R8Unorm};

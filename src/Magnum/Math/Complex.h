@@ -63,7 +63,7 @@ template<class T> inline T dot(const Complex<T>& a, const Complex<T>& b) {
 @brief Angle between normalized complex numbers
 
 Expects that both complex numbers are normalized. @f[
-    \theta = acos \left( \frac{Re(c_0 \cdot c_1))}{|c_0| |c_1|} \right) = acos (a_0 a_1 + b_0 b_1)
+    \theta = \arccos \left( \frac{Re(c_0 \cdot c_1))}{|c_0| |c_1|} \right) = \arccos (a_0 a_1 + b_0 b_1)
 @f]
 @see @ref Complex::isNormalized(),
     @ref angle(const Quaternion<T>&, const Quaternion<T>&),
@@ -71,20 +71,24 @@ Expects that both complex numbers are normalized. @f[
 */
 template<class T> inline Rad<T> angle(const Complex<T>& normalizedA, const Complex<T>& normalizedB) {
     CORRADE_ASSERT(normalizedA.isNormalized() && normalizedB.isNormalized(),
-                   "Math::angle(): complex numbers must be normalized", {});
-    return Rad<T>(std::acos(normalizedA.real()*normalizedB.real() + normalizedA.imaginary()*normalizedB.imaginary()));
+        "Math::angle(): complex numbers" << normalizedA << "and" << normalizedB << "are not normalized", {});
+    return Rad<T>(std::acos(dot(normalizedA, normalizedB)));
 }
 
 /**
 @brief Complex number
 @tparam T   Data type
 
-Represents 2D rotation. See @ref transformations for brief introduction.
+Represents 2D rotation. Usually denoted as the following in equations, with
+@f$ a_0 @f$ being the @ref real() part and @f$ a_i @f$ the @ref imaginary()
+part: @f[
+    c = a_0 + i a_i
+@f]
+
+See @ref transformations for brief introduction.
 @see @ref Magnum::Complex, @ref Magnum::Complexd, @ref Matrix3
 */
 template<class T> class Complex {
-    template<class> friend class Complex;
-
     public:
         typedef T Type; /**< @brief Underlying data type */
 
@@ -93,7 +97,7 @@ template<class T> class Complex {
          * @param angle             Rotation angle (counterclockwise)
          *
          * @f[
-         *      c = cos \theta + i sin \theta
+         *      c = \cos(\theta) + i \sin(\theta)
          * @f]
          * @see @ref angle(), @ref Matrix3::rotation(),
          *      @ref Quaternion::rotation()
@@ -111,7 +115,7 @@ template<class T> class Complex {
          */
         static Complex<T> fromMatrix(const Matrix2x2<T>& matrix) {
             CORRADE_ASSERT(matrix.isOrthogonal(),
-                "Math::Complex::fromMatrix(): the matrix is not orthogonal", {});
+                "Math::Complex::fromMatrix(): the matrix is not orthogonal:" << Corrade::Utility::Debug::newline << matrix, {});
             return Implementation::complexFromMatrix(matrix);
         }
 
@@ -131,7 +135,7 @@ template<class T> class Complex {
         explicit Complex(NoInitT) noexcept {}
 
         /**
-         * @brief Construct complex number from real and imaginary part
+         * @brief Construct a complex number from real and imaginary part
          *
          * @f[
          *      c = a + ib
@@ -140,7 +144,7 @@ template<class T> class Complex {
         constexpr /*implicit*/ Complex(T real, T imaginary) noexcept: _real(real), _imaginary(imaginary) {}
 
         /**
-         * @brief Construct complex number from vector
+         * @brief Construct a complex number from a vector
          *
          * To be used in transformations later. @f[
          *      c = v_x + iv_y
@@ -150,23 +154,32 @@ template<class T> class Complex {
         constexpr explicit Complex(const Vector2<T>& vector) noexcept: _real(vector.x()), _imaginary(vector.y()) {}
 
         /**
-         * @brief Construct complex number from another of different type
+         * @brief Construct a complex number from another of different type
          *
          * Performs only default casting on the values, no rounding or anything
          * else.
          */
         template<class U> constexpr explicit Complex(const Complex<U>& other) noexcept: _real{T(other._real)}, _imaginary{T(other._imaginary)} {}
 
-        /** @brief Construct complex number from external representation */
+        /** @brief Construct a complex number from external representation */
         template<class U, class V = decltype(Implementation::ComplexConverter<T, U>::from(std::declval<U>()))> constexpr explicit Complex(const U& other): Complex{Implementation::ComplexConverter<T, U>::from(other)} {}
 
         /** @brief Copy constructor */
         constexpr /*implicit*/ Complex(const Complex<T>&) noexcept = default;
 
-        /** @brief Convert complex number to external representation */
+        /** @brief Convert a complex number to external representation */
         template<class U, class V = decltype(Implementation::ComplexConverter<T, U>::to(std::declval<Complex<T>>()))> constexpr explicit operator U() const {
             return Implementation::ComplexConverter<T, U>::to(*this);
         }
+
+        /**
+         * @brief Raw data
+         * @return One-dimensional array of two elements
+         *
+         * @see @ref real(), @ref imaginary()
+         */
+        T* data() { return &_real; }
+        constexpr const T* data() const { return &_real; } /**< @overload */
 
         /** @brief Equality comparison */
         bool operator==(const Complex<T>& other) const {
@@ -191,28 +204,39 @@ template<class T> class Complex {
             return Implementation::isNormalizedSquared(dot());
         }
 
-        /** @brief Real part */
-        constexpr T real() const { return _real; }
-
-        /** @brief Imaginary part */
-        constexpr T imaginary() const { return _imaginary; }
+        /**
+         * @brief Real part (@f$ a_0 @f$)
+         *
+         * @see @ref data()
+         */
+        T& real() { return _real; }
+        constexpr T real() const { return _real; } /**< @overload */
 
         /**
-         * @brief Convert complex number to vector
+         * @brief Imaginary part (@f$ a_i @f$)
+         *
+         * @see @ref data()
+         */
+        T& imaginary() { return _imaginary; }
+        constexpr T imaginary() const { return _imaginary; } /**< @overload */
+
+        /**
+         * @brief Convert a complex number to vector
          *
          * @f[
          *      \boldsymbol v = \begin{pmatrix} a \\ b \end{pmatrix}
          * @f]
+         * @see @ref Complex(const Vector2<T>&)
          */
         constexpr explicit operator Vector2<T>() const {
             return {_real, _imaginary};
         }
 
         /**
-         * @brief Rotation angle of complex number
+         * @brief Rotation angle of a complex number
          *
          * @f[
-         *      \theta = atan2(b, a)
+         *      \theta = \operatorname{atan2}(b, a)
          * @f]
          * @see @ref rotation()
          */
@@ -221,7 +245,7 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Convert complex number to rotation matrix
+         * @brief Convert a complex number to a rotation matrix
          *
          * @f[
          *      M = \begin{pmatrix}
@@ -238,7 +262,7 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Add complex number and assign
+         * @brief Add a complex number and assign
          *
          * The computation is done in-place. @f[
          *      c_0 + c_1 = (a_0 + a_1) + i(b_0 + b_1)
@@ -251,7 +275,7 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Add complex number
+         * @brief Add a complex number
          *
          * @see @ref operator+=(const Complex<T>&)
          */
@@ -271,7 +295,7 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Subtract complex number and assign
+         * @brief Subtract a complex number and assign
          *
          * The computation is done in-place. @f[
          *      c_0 - c_1 = (a_0 - a_1) + i(b_0 - b_1)
@@ -284,7 +308,7 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Subtract complex number
+         * @brief Subtract a complex number
          *
          * @see @ref operator-=(const Complex<T>&)
          */
@@ -293,11 +317,12 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Multiply with scalar and assign
+         * @brief Multiply with a scalar and assign
          *
          * The computation is done in-place. @f[
-         *      c \cdot t = ta + itb
+         *      c t = a t + i b t
          * @f]
+         * @see @ref operator*=(const Vector2<T>&)
          */
         Complex<T>& operator*=(T scalar) {
             _real *= scalar;
@@ -306,20 +331,45 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Multiply with scalar
+         * @brief Multiply with a vector and assign
          *
+         * The computation is done in-place. @f[
+         *      c \boldsymbol{v} = a v_x + i b v_y
+         * @f]
          * @see @ref operator*=(T)
+         */
+        Complex<T>& operator*=(const Vector2<T>& vector) {
+             _real *= vector.x();
+             _imaginary *= vector.y();
+             return *this;
+        }
+
+        /**
+         * @brief Multiply with a scalar
+         *
+         * @see @ref operator*=(T), @ref operator*(const Vector2<T>&) const,
+         *      @ref operator*(const Complex<T>&) const
          */
         Complex<T> operator*(T scalar) const {
             return Complex<T>(*this) *= scalar;
         }
 
         /**
-         * @brief Divide with scalar and assign
+         * @brief Multiply with a vector
+         *
+         * @see @ref operator*=(const Vector2<T>&)
+         */
+        Complex<T> operator*(const Vector2<T>& vector) const {
+            return Complex<T>(*this) *= vector;
+        }
+
+        /**
+         * @brief Divide with a scalar and assign
          *
          * The computation is done in-place. @f[
-         *      \frac c t = \frac a t + i \frac b t
+         *      \frac{c}{t} = \frac{a}{t} + i \frac{b}{t}
          * @f]
+         * @see @ref operator/=(const Vector2<T>&)
          */
         Complex<T>& operator/=(T scalar) {
             _real /= scalar;
@@ -328,20 +378,44 @@ template<class T> class Complex {
         }
 
         /**
-         * @brief Divide with scalar
+         * @brief Divide with a vector and assign
          *
+         * The computation is done in-place. @f[
+         *      c \boldsymbol{v} = \frac{a}{v_x} + i \frac{b}{v_y}
+         * @f]
          * @see @ref operator/=(T)
+         */
+        Complex<T>& operator/=(const Vector2<T>& vector) {
+             _real /= vector.x();
+             _imaginary /= vector.y();
+             return *this;
+        }
+
+        /**
+         * @brief Divide with a scalar
+         *
+         * @see @ref operator/=(T), @ref operator/(const Vector2<T>&) const
          */
         Complex<T> operator/(T scalar) const {
             return Complex<T>(*this) /= scalar;
         }
 
         /**
-         * @brief Multiply with complex number
+         * @brief Divide with a vector
+         *
+         * @see @ref operator/=(const Vector2<T>&), @ref operator/(T) const
+         */
+        Complex<T> operator/(const Vector2<T>& vector) const {
+            return Complex<T>(*this) /= vector;
+        }
+
+        /**
+         * @brief Multiply with a complex number
          *
          * @f[
          *      c_0 c_1 = (a_0 + ib_0)(a_1 + ib_1) = (a_0 a_1 - b_0 b_1) + i(a_1 b_0 + a_0 b_1)
          * @f]
+         * @see @ref operator*(const Vector2<T>& other) const
          */
         Complex<T> operator*(const Complex<T>& other) const {
             return {_real*other._real - _imaginary*other._imaginary,
@@ -414,12 +488,12 @@ template<class T> class Complex {
          */
         Complex<T> invertedNormalized() const {
             CORRADE_ASSERT(isNormalized(),
-                           "Math::Complex::invertedNormalized(): complex number must be normalized", {});
+                "Math::Complex::invertedNormalized():" << *this << "is not normalized", {});
             return conjugated();
         }
 
         /**
-         * @brief Rotate vector with complex number
+         * @brief Rotate a vector with the complex number
          *
          * @f[
          *      v' = c v = c (v_x + iv_y)
@@ -432,11 +506,16 @@ template<class T> class Complex {
         }
 
     private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT
+        /* Doxygen copies the description from Magnum::Complex here. Ugh. */
+        template<class> friend class Complex;
+        #endif
+
         T _real, _imaginary;
 };
 
 /** @relates Complex
-@brief Multiply scalar with complex
+@brief Multiply a scalar with a complex number
 
 Same as @ref Complex::operator*(T) const.
 */
@@ -444,16 +523,88 @@ template<class T> inline Complex<T> operator*(T scalar, const Complex<T>& comple
     return complex*scalar;
 }
 
+/** @relatesalso Complex
+@brief Multiply a vector with a complex number
+
+Same as @ref Complex::operator*(const Vector2<T>&) const.
+*/
+template<class T> inline Complex<T> operator*(const Vector2<T>& vector, const Complex<T>& complex) {
+    return complex*vector;
+}
+
 /** @relates Complex
-@brief Divide complex with number and invert
+@brief Divide a complex number with a scalar and invert
 
 @f[
-    \frac t c = \frac t a + i \frac t b
+    \frac{t}{c} = \frac{t}{a} + i \frac{t}{b}
 @f]
 @see @ref Complex::operator/()
 */
 template<class T> inline Complex<T> operator/(T scalar, const Complex<T>& complex) {
     return {scalar/complex.real(), scalar/complex.imaginary()};
+}
+
+/** @relates Complex
+@brief Divide a complex number with a vector and invert
+
+@f[
+    \frac{\boldsymbol{v}}{c} = \frac{v_x}{a} + i \frac{v_y}{b}
+@f]
+@see @ref Complex::operator/()
+*/
+template<class T> inline Complex<T> operator/(const Vector2<T>& vector, const Complex<T>& complex) {
+    return {vector.x()/complex.real(), vector.y()/complex.imaginary()};
+}
+
+/** @relatesalso Complex
+@brief Linear interpolation of two complex numbers
+@param normalizedA  First complex number
+@param normalizedB  Second complex number
+@param t            Interpolation phase (from range @f$ [0; 1] @f$)
+
+Expects that both complex numbers are normalized. @f[
+    c_{LERP} = \frac{(1 - t) c_A + t c_B}{|(1 - t) c_A + t c_B|}
+@f]
+@see @ref Complex::isNormalized(), @ref slerp(const Complex<T>&, const Complex<T>&, T),
+    @ref lerp(const Quaternion<T>&, const Quaternion<T>&, T),
+    @ref lerp(const T&, const T&, U),
+    @ref lerp(const CubicHermite<T>&, const CubicHermite<T>&, U),
+    @ref lerp(const CubicHermiteComplex<T>&, const CubicHermiteComplex<T>&, T),
+    @ref lerp(const CubicHermiteQuaternion<T>&, const CubicHermiteQuaternion<T>&, T)
+*/
+template<class T> inline Complex<T> lerp(const Complex<T>& normalizedA, const Complex<T>& normalizedB, T t) {
+    CORRADE_ASSERT(normalizedA.isNormalized() && normalizedB.isNormalized(),
+        "Math::lerp(): complex numbers" << normalizedA << "and" << normalizedB << "are not normalized", {});
+    return ((T(1) - t)*normalizedA + t*normalizedB).normalized();
+}
+
+/** @relatesalso Complex
+@brief Spherical linear interpolation of two complex numbers
+@param normalizedA  First complex number
+@param normalizedB  Second complex number
+@param t            Interpolation phase (from range @f$ [0; 1] @f$)
+
+Expects that both complex numbers are normalized. If the complex numbers are
+the same, returns the first argument. @f[
+    \begin{array}{rcl}
+        \theta & = & \arccos \left( \frac{c_A \cdot c_B}{|c_A| |c_B|} \right) = \arccos(c_A \cdot c_B) \\[6pt]
+        c_{SLERP} & = & \cfrac{\sin((1 - t) \theta) c_A + \sin(t \theta) c_B}{\sin(\theta)}
+    \end{array}
+@f]
+@see @ref Complex::isNormalized(), @ref lerp(const Complex<T>&, const Complex<T>&, T),
+    @ref slerp(const Quaternion<T>&, const Quaternion<T>&, T)
+ */
+template<class T> inline Complex<T> slerp(const Complex<T>& normalizedA, const Complex<T>& normalizedB, T t) {
+    CORRADE_ASSERT(normalizedA.isNormalized() && normalizedB.isNormalized(),
+        "Math::slerp(): complex numbers" << normalizedA << "and" << normalizedB << "are not normalized", {});
+    const T cosAngle = dot(normalizedA, normalizedB);
+
+    /* Avoid division by zero */
+    if(std::abs(cosAngle) >= T(1)) return Complex<T>{normalizedA};
+
+    /** @todo couldn't this be done somewhat simpler? */
+    const T a = std::acos(cosAngle);
+    return (std::sin((T(1) - t)*a)*normalizedA + std::sin(t*a)*normalizedB)/std::sin(a);
 }
 
 /** @debugoperator{Complex} */
@@ -468,6 +619,43 @@ template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& d
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Complex<Float>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Complex<Double>&);
 #endif
+
+namespace Implementation {
+
+template<class T> struct StrictWeakOrdering<Complex<T>> {
+    bool operator()(const Complex<T>& a, const Complex<T>& b) const {
+        if(a.real() < b.real())
+            return true;
+        if(a.real() > b.real())
+            return false;
+
+        return a.imaginary() < b.imaginary();
+    }
+};
+
+}
+
+}}
+
+namespace Corrade { namespace Utility {
+
+/** @configurationvalue{Magnum::Math::Complex} */
+template<class T> struct ConfigurationValue<Magnum::Math::Complex<T>> {
+    ConfigurationValue() = delete;
+
+    /** @brief Writes elements separated with spaces */
+    static std::string toString(const Magnum::Math::Complex<T>& value, ConfigurationValueFlags flags) {
+        return ConfigurationValue<Magnum::Math::Vector<2, T>>::toString(reinterpret_cast<const Magnum::Math::Vector<2, T>&>(value), flags);
+    }
+
+    /** @brief Reads elements separated with whitespace */
+    static Magnum::Math::Complex<T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
+        const Magnum::Math::Vector<2, T> value = ConfigurationValue<Magnum::Math::Vector<2, T>>::fromString(stringValue, flags);
+        return reinterpret_cast<const Magnum::Math::Complex<T>&>(value);
+    }
+};
+
+/* No explicit instantiation needed, as Vector<2, T> is instantiated already */
 
 }}
 

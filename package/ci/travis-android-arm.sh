@@ -9,11 +9,11 @@ cd corrade
 mkdir build && cd build
 cmake .. \
     -DCMAKE_INSTALL_PREFIX=$HOME/deps-native \
-    -DCMAKE_INSTALL_RPATH=$HOME/deps-native/lib \
     -DCMAKE_BUILD_TYPE=Release \
     -DWITH_INTERCONNECT=OFF \
     -DWITH_PLUGINMANAGER=OFF \
     -DWITH_TESTSUITE=OFF \
+    -DWITH_UTILITY=OFF \
     -G Ninja
 ninja install
 cd ..
@@ -37,9 +37,13 @@ cd ..
 
 cd ..
 
+# Generate debug keystore for APK signing
+keytool -genkeypair -keystore $HOME/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -validity 10000 -dname CN=,OU=,O=,L=,S=,C=
+
 # Crosscompile
 mkdir build-android-arm && cd build-android-arm
 cmake .. \
+    -DANDROID_SDK=/usr/local/android-sdk \
     -DCMAKE_ANDROID_NDK=$TRAVIS_BUILD_DIR/android-ndk-r16b \
     -DCMAKE_SYSTEM_NAME=Android \
     -DCMAKE_SYSTEM_VERSION=22 \
@@ -52,6 +56,7 @@ cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DTARGET_GLES2=$TARGET_GLES2 \
     -DWITH_AUDIO=OFF \
+    -DWITH_SHAPES=ON \
     -DWITH_VK=OFF \
     -DWITH_ANDROIDAPPLICATION=ON \
     -DWITH_EGLCONTEXT=ON \

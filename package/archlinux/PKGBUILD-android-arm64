@@ -4,7 +4,7 @@ pkgver=dev
 pkgrel=1
 pkgdesc="C++11/C++14 graphics middleware for games and data visualization (Android ARM64)"
 arch=('any')
-url="http://magnum.graphics"
+url="https://magnum.graphics"
 license=('MIT')
 depends=('android-arm64-corrade')
 makedepends=('cmake' 'ninja' 'android-ndk' 'corrade')
@@ -32,6 +32,7 @@ build() {
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/opt/android-ndk/platforms/android-22/arch-arm64/usr \
         -DMAGNUM_INCLUDE_INSTALL_PREFIX=/opt/android-ndk/sysroot/usr \
+        -DWITH_SHAPES=ON \
         -DWITH_ANYAUDIOIMPORTER=OFF \
         -DWITH_ANYIMAGECONVERTER=ON \
         -DWITH_ANYIMAGEIMPORTER=ON \

@@ -88,19 +88,22 @@ struct TextureGLTest: OpenGLTester {
 
     #ifndef MAGNUM_TARGET_WEBGL
     #ifndef MAGNUM_TARGET_GLES
-    void samplingSRGBDecode1D();
+    void samplingSrgbDecode1D();
     #endif
-    void samplingSRGBDecode2D();
-    void samplingSRGBDecode3D();
+    void samplingSrgbDecode2D();
+    void samplingSrgbDecode3D();
     #endif
 
     #ifndef MAGNUM_TARGET_GLES2
     #ifndef MAGNUM_TARGET_GLES
     void samplingSwizzle1D();
     #endif
+    #ifndef MAGNUM_TARGET_WEBGL
     void samplingSwizzle2D();
     void samplingSwizzle3D();
-    #elif !defined(MAGNUM_TARGET_WEBGL)
+    #endif
+    #endif
+    #if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     void samplingMaxLevel2D();
     void samplingMaxLevel3D();
     void samplingCompare2D();
@@ -116,7 +119,7 @@ struct TextureGLTest: OpenGLTester {
     #ifndef MAGNUM_TARGET_GLES
     void samplingDepthStencilMode1D();
     #endif
-    #ifndef MAGNUM_TARGET_GLES2
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     void samplingDepthStencilMode2D();
     void samplingDepthStencilMode3D();
     #endif
@@ -475,19 +478,22 @@ TextureGLTest::TextureGLTest() {
 
         #ifndef MAGNUM_TARGET_WEBGL
         #ifndef MAGNUM_TARGET_GLES
-        &TextureGLTest::samplingSRGBDecode1D,
+        &TextureGLTest::samplingSrgbDecode1D,
         #endif
-        &TextureGLTest::samplingSRGBDecode2D,
-        &TextureGLTest::samplingSRGBDecode3D,
+        &TextureGLTest::samplingSrgbDecode2D,
+        &TextureGLTest::samplingSrgbDecode3D,
         #endif
 
         #ifndef MAGNUM_TARGET_GLES2
         #ifndef MAGNUM_TARGET_GLES
         &TextureGLTest::samplingSwizzle1D,
         #endif
+        #ifndef MAGNUM_TARGET_WEBGL
         &TextureGLTest::samplingSwizzle2D,
         &TextureGLTest::samplingSwizzle3D,
-        #elif !defined(MAGNUM_TARGET_WEBGL)
+        #endif
+        #endif
+        #if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
         &TextureGLTest::samplingMaxLevel2D,
         &TextureGLTest::samplingMaxLevel3D,
         &TextureGLTest::samplingCompare2D,
@@ -503,7 +509,7 @@ TextureGLTest::TextureGLTest() {
         #ifndef MAGNUM_TARGET_GLES
         &TextureGLTest::samplingDepthStencilMode1D,
         #endif
-        #ifndef MAGNUM_TARGET_GLES2
+        #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
         &TextureGLTest::samplingDepthStencilMode2D,
         &TextureGLTest::samplingDepthStencilMode3D,
         #endif
@@ -904,12 +910,12 @@ template<class T> void TextureGLTest::sampling1D() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void TextureGLTest::samplingSRGBDecode1D() {
+void TextureGLTest::samplingSrgbDecode1D() {
     if(!Context::current().isExtensionSupported<Extensions::EXT::texture_sRGB_decode>())
         CORRADE_SKIP(Extensions::EXT::texture_sRGB_decode::string() + std::string(" is not supported."));
 
     Texture1D texture;
-    texture.setSRGBDecode(false);
+    texture.setSrgbDecode(false);
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
@@ -982,7 +988,7 @@ template<class T> void TextureGLTest::sampling2D() {
 }
 
 #ifndef MAGNUM_TARGET_WEBGL
-void TextureGLTest::samplingSRGBDecode2D() {
+void TextureGLTest::samplingSrgbDecode2D() {
     #ifdef MAGNUM_TARGET_GLES2
     if(!Context::current().isExtensionSupported<Extensions::EXT::sRGB>())
         CORRADE_SKIP(Extensions::EXT::sRGB::string() + std::string(" is not supported."));
@@ -991,13 +997,13 @@ void TextureGLTest::samplingSRGBDecode2D() {
         CORRADE_SKIP(Extensions::EXT::texture_sRGB_decode::string() + std::string(" is not supported."));
 
     Texture2D texture;
-    texture.setSRGBDecode(false);
+    texture.setSrgbDecode(false);
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 #endif
 
-#ifndef MAGNUM_TARGET_GLES2
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureGLTest::samplingSwizzle2D() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::texture_swizzle>())
@@ -1009,7 +1015,9 @@ void TextureGLTest::samplingSwizzle2D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
-#elif !defined(MAGNUM_TARGET_WEBGL)
+#endif
+
+#if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureGLTest::samplingMaxLevel2D() {
     if(!Context::current().isExtensionSupported<Extensions::APPLE::texture_max_level>())
         CORRADE_SKIP(Extensions::APPLE::texture_max_level::string() + std::string(" is not supported."));
@@ -1051,9 +1059,7 @@ void TextureGLTest::samplingBorderInteger2D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
-#endif
 
-#ifndef MAGNUM_TARGET_GLES2
 void TextureGLTest::samplingDepthStencilMode2D() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::stencil_texturing>())
@@ -1117,7 +1123,8 @@ template<class T> void TextureGLTest::sampling3D() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-void TextureGLTest::samplingSRGBDecode3D() {
+#ifndef MAGNUM_TARGET_WEBGL
+void TextureGLTest::samplingSrgbDecode3D() {
     #ifdef MAGNUM_TARGET_GLES2
     if(!Context::current().isExtensionSupported<Extensions::OES::texture_3D>())
         CORRADE_SKIP(Extensions::OES::texture_3D::string() + std::string(" is not supported."));
@@ -1128,12 +1135,13 @@ void TextureGLTest::samplingSRGBDecode3D() {
         CORRADE_SKIP(Extensions::EXT::texture_sRGB_decode::string() + std::string(" is not supported."));
 
     Texture3D texture;
-    texture.setSRGBDecode(false);
+    texture.setSrgbDecode(false);
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
+#endif
 
-#ifndef MAGNUM_TARGET_GLES2
+#if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureGLTest::samplingSwizzle3D() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::texture_swizzle>())
@@ -1145,7 +1153,9 @@ void TextureGLTest::samplingSwizzle3D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
-#else
+#endif
+
+#if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureGLTest::samplingMaxLevel3D() {
     if(!Context::current().isExtensionSupported<Extensions::OES::texture_3D>())
         CORRADE_SKIP(Extensions::OES::texture_3D::string() + std::string(" is not supported."));
@@ -1178,9 +1188,7 @@ void TextureGLTest::samplingBorderInteger3D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
-#endif
 
-#ifndef MAGNUM_TARGET_GLES2
 void TextureGLTest::samplingDepthStencilMode3D() {
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::stencil_texturing>())
@@ -1197,7 +1205,7 @@ void TextureGLTest::samplingDepthStencilMode3D() {
 }
 #endif
 
-#ifdef MAGNUM_TARGET_GLES
+#if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_WEBGL)
 void TextureGLTest::samplingBorder3D() {
     #ifdef MAGNUM_TARGET_GLES2
     if(!Context::current().isExtensionSupported<Extensions::OES::texture_3D>())
@@ -1247,7 +1255,7 @@ void TextureGLTest::storage2D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 
-    #ifndef MAGNUM_TARGET_GLES2
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     #ifdef MAGNUM_TARGET_GLES
     if(!Context::current().isVersionSupported(Version::GLES310))
         CORRADE_SKIP("OpenGL ES 3.1 not supported, skipping image size testing.");
@@ -1276,7 +1284,7 @@ void TextureGLTest::storage3D() {
 
     MAGNUM_VERIFY_NO_GL_ERROR();
 
-    #ifndef MAGNUM_TARGET_GLES2
+    #if !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     #ifdef MAGNUM_TARGET_GLES
     if(!Context::current().isVersionSupported(Version::GLES310))
         CORRADE_SKIP("OpenGL ES 3.1 not supported, skipping image size testing.");

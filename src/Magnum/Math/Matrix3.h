@@ -117,7 +117,7 @@ template<class T> class Matrix3: public Matrix3x3<T> {
          */
         static Matrix3<T> reflection(const Vector2<T>& normal) {
             CORRADE_ASSERT(normal.isNormalized(),
-                           "Math::Matrix3::reflection(): normal must be normalized", {});
+                "Math::Matrix3::reflection(): normal" << normal << "is not normalized", {});
             return from(Matrix2x2<T>() - T(2)*normal*RectangularMatrix<1, 2, T>(normal).transposed(), {});
         }
 
@@ -240,6 +240,15 @@ template<class T> class Matrix3: public Matrix3x3<T> {
 
         /** @brief Construct matrix from external representation */
         template<class U, class V = decltype(Implementation::RectangularMatrixConverter<3, 3, T, U>::from(std::declval<U>()))> constexpr explicit Matrix3(const U& other) noexcept: Matrix3x3<T>(Implementation::RectangularMatrixConverter<3, 3, T, U>::from(other)) {}
+
+        /**
+         * @brief Construct matrix by slicing or expanding another of a different size
+         *
+         * If the other matrix is larger, takes only the first @cpp size @ce
+         * columns and rows from it; if the other matrix is smaller, it's
+         * expanded to an identity (ones on diagonal, zeros elsewhere).
+         */
+        template<std::size_t otherSize> constexpr explicit Matrix3(const RectangularMatrix<otherSize, otherSize, T>& other) noexcept: Matrix3x3<T>{other} {}
 
         /** @brief Copy constructor */
         constexpr /*implicit*/ Matrix3(const RectangularMatrix<3, 3, T>& other) noexcept: Matrix3x3<T>(other) {}
@@ -656,7 +665,7 @@ template<class T> Matrix2x2<T> Matrix3<T>::rotation() const {
     Matrix2x2<T> rotation{(*this)[0].xy().normalized(),
                           (*this)[1].xy().normalized()};
     CORRADE_ASSERT(rotation.isOrthogonal(),
-        "Math::Matrix3::rotation(): the normalized rotation part is not orthogonal", {});
+        "Math::Matrix3::rotation(): the normalized rotation part is not orthogonal:" << Corrade::Utility::Debug::newline << rotation, {});
     return rotation;
 }
 
@@ -664,23 +673,27 @@ template<class T> Matrix2x2<T> Matrix3<T>::rotationNormalized() const {
     Matrix2x2<T> rotation{(*this)[0].xy(),
                           (*this)[1].xy()};
     CORRADE_ASSERT(rotation.isOrthogonal(),
-        "Math::Matrix3::rotationNormalized(): the rotation part is not orthogonal", {});
+        "Math::Matrix3::rotationNormalized(): the rotation part is not orthogonal:" << Corrade::Utility::Debug::newline << rotation, {});
     return rotation;
 }
 
 template<class T> T Matrix3<T>::uniformScalingSquared() const {
     const T scalingSquared = (*this)[0].xy().dot();
     CORRADE_ASSERT(TypeTraits<T>::equals((*this)[1].xy().dot(), scalingSquared),
-        "Math::Matrix3::uniformScaling(): the matrix doesn't have uniform scaling", {});
+        "Math::Matrix3::uniformScaling(): the matrix doesn't have uniform scaling:" << Corrade::Utility::Debug::newline << rotationScaling(), {});
     return scalingSquared;
 }
 
 template<class T> inline Matrix3<T> Matrix3<T>::invertedRigid() const {
     CORRADE_ASSERT(isRigidTransformation(),
-        "Math::Matrix3::invertedRigid(): the matrix doesn't represent rigid transformation", {});
+        "Math::Matrix3::invertedRigid(): the matrix doesn't represent a rigid transformation:" << Corrade::Utility::Debug::newline << *this, {});
 
     Matrix2x2<T> inverseRotation = rotationScaling().transposed();
     return from(inverseRotation, inverseRotation*-translation());
+}
+
+namespace Implementation {
+    template<class T> struct StrictWeakOrdering<Matrix3<T>>: StrictWeakOrdering<RectangularMatrix<3, 3, T>> {};
 }
 
 }}

@@ -25,9 +25,11 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/Configuration.h>
 
 #include "Magnum/Math/DualComplex.h"
 #include "Magnum/Math/DualQuaternion.h"
+#include "Magnum/Math/StrictWeakOrdering.h"
 
 struct DualCmpl {
     float re, im, x, y;
@@ -63,6 +65,8 @@ struct DualComplexTest: Corrade::TestSuite::Tester {
     void constructCopy();
     void convert();
 
+    void data();
+
     void isNormalized();
     template<class T> void isNormalizedEpsilonRotation();
     template<class T> void isNormalizedEpsilonTranslation();
@@ -79,15 +83,22 @@ struct DualComplexTest: Corrade::TestSuite::Tester {
     void conjugated();
     void inverted();
     void invertedNormalized();
+    void invertedNormalizedNotNormalized();
 
     void rotation();
     void translation();
     void combinedTransformParts();
     void matrix();
+    void matrixNotOrthogonal();
     void transformPoint();
 
+    void strictWeakOrdering();
+
     void debug();
+    void configuration();
 };
+
+using namespace Math::Literals;
 
 typedef Math::Deg<Float> Deg;
 typedef Math::Rad<Float> Rad;
@@ -106,6 +117,8 @@ DualComplexTest::DualComplexTest() {
               &DualComplexTest::constructConversion,
               &DualComplexTest::constructCopy,
               &DualComplexTest::convert,
+
+              &DualComplexTest::data,
 
               &DualComplexTest::isNormalized,
               &DualComplexTest::isNormalizedEpsilonRotation<Float>,
@@ -128,27 +141,29 @@ DualComplexTest::DualComplexTest() {
               &DualComplexTest::conjugated,
               &DualComplexTest::inverted,
               &DualComplexTest::invertedNormalized,
+              &DualComplexTest::invertedNormalizedNotNormalized,
 
               &DualComplexTest::rotation,
               &DualComplexTest::translation,
               &DualComplexTest::combinedTransformParts,
               &DualComplexTest::matrix,
+              &DualComplexTest::matrixNotOrthogonal,
               &DualComplexTest::transformPoint,
 
-              &DualComplexTest::debug});
+              &DualComplexTest::strictWeakOrdering,
+
+              &DualComplexTest::debug,
+              &DualComplexTest::configuration});
 }
 
 void DualComplexTest::construct() {
     constexpr DualComplex a = {{-1.0f, 2.5f}, {3.0f, -7.5f}};
     CORRADE_COMPARE(a, DualComplex({-1.0f, 2.5f}, {3.0f, -7.5f}));
+    CORRADE_COMPARE(a.real(), Complex(-1.0f, 2.5f));
+    CORRADE_COMPARE(a.dual(), Complex(3.0f, -7.5f));
 
-    constexpr Complex b = a.real();
-    constexpr Complex c = a.dual();
-    CORRADE_COMPARE(b, Complex(-1.0f, 2.5f));
-    CORRADE_COMPARE(c, Complex(3.0f, -7.5f));
-
-    constexpr DualComplex d(Complex(-1.0f, 2.5f));
-    CORRADE_COMPARE(d, DualComplex({-1.0f, 2.5f}, {0.0f, 0.0f}));
+    constexpr DualComplex b(Complex(-1.0f, 2.5f));
+    CORRADE_COMPARE(b, DualComplex({-1.0f, 2.5f}, {0.0f, 0.0f}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<DualComplex, Complex, Complex>::value));
 }
@@ -242,6 +257,22 @@ void DualComplexTest::convert() {
     /* Implicit conversion is not allowed */
     CORRADE_VERIFY(!(std::is_convertible<DualCmpl, DualComplex>::value));
     CORRADE_VERIFY(!(std::is_convertible<DualComplex, DualCmpl>::value));
+}
+
+void DualComplexTest::data() {
+    constexpr DualComplex ca{{-1.0f, 2.5f}, {3.0f, -7.5f}};
+
+    constexpr Complex b = ca.real();
+    constexpr Complex c = ca.dual();
+    CORRADE_COMPARE(b, Complex(-1.0f, 2.5f));
+    CORRADE_COMPARE(c, Complex(3.0f, -7.5f));
+
+    DualComplex a{{-1.0f, 2.5f}, {3.0f, -7.5f}};
+
+    constexpr Float d = *ca.data();
+    Float e = a.data()[3];
+    CORRADE_COMPARE(d, -1.0f);
+    CORRADE_COMPARE(e, -7.5f);
 }
 
 void DualComplexTest::isNormalized() {
@@ -338,15 +369,18 @@ void DualComplexTest::invertedNormalized() {
     DualComplex a({-0.316228f,  0.9486831f}, {     3.0f,    -2.5f});
     DualComplex b({-0.316228f, -0.9486831f}, {3.320391f, 2.05548f});
 
-    std::ostringstream o;
-    Error redirectError{&o};
-    DualComplex({-1.0f, -2.5f}, {}).invertedNormalized();
-    CORRADE_COMPARE(o.str(), "Math::Complex::invertedNormalized(): complex number must be normalized\n");
-
     DualComplex inverted = a.invertedNormalized();
     CORRADE_COMPARE(a*inverted, DualComplex());
     CORRADE_COMPARE(inverted*a, DualComplex());
     CORRADE_COMPARE(inverted, b);
+}
+
+void DualComplexTest::invertedNormalizedNotNormalized() {
+    std::ostringstream out;
+    Error redirectError{&out};
+
+    DualComplex({-1.0f, -2.5f}, {}).invertedNormalized();
+    CORRADE_COMPARE(out.str(), "Math::Complex::invertedNormalized(): Complex(-1, -2.5) is not normalized\n");
 }
 
 void DualComplexTest::rotation() {
@@ -385,14 +419,19 @@ void DualComplexTest::matrix() {
     Matrix3 m = Matrix3::rotation(Deg(23.0f))*Matrix3::translation({2.0f, 3.0f});
 
     CORRADE_COMPARE(a.toMatrix(), m);
+    CORRADE_COMPARE(DualComplex::fromMatrix(m), a);
+}
 
+void DualComplexTest::matrixNotOrthogonal() {
     std::ostringstream o;
     Error redirectError{&o};
-    DualComplex::fromMatrix(m*2);
-    CORRADE_COMPARE(o.str(), "Math::DualComplex::fromMatrix(): the matrix doesn't represent rigid transformation\n");
 
-    DualComplex b = DualComplex::fromMatrix(m);
-    CORRADE_COMPARE(b, a);
+    DualComplex::fromMatrix(Matrix3::rotation(23.0_degf)*Matrix3::translation({2.0f, 3.0f})*2);
+    CORRADE_COMPARE(o.str(),
+        "Math::DualComplex::fromMatrix(): the matrix doesn't represent rigid transformation:\n"
+        "Matrix(1.84101, -0.781462, 1.33763,\n"
+        "       0.781462, 1.84101, 7.08595,\n"
+        "       0, 0, 2)\n");
 }
 
 void DualComplexTest::transformPoint() {
@@ -411,11 +450,45 @@ void DualComplexTest::transformPoint() {
     CORRADE_COMPARE(transformedB, Vector2(-2.918512f, 2.780698f));
 }
 
+void DualComplexTest::strictWeakOrdering() {
+    StrictWeakOrdering o;
+    const DualComplex a{{1.0f, 0.0f}, {1.0f, 3.0f}};
+    const DualComplex b{{1.0f, 2.0f}, {3.0f, 4.0f}};
+    const DualComplex c{{1.0f, 0.0f}, {1.0f, 4.0f}};
+
+    CORRADE_VERIFY( o(a, b));
+    CORRADE_VERIFY(!o(b, a));
+    CORRADE_VERIFY( o(a, c));
+    CORRADE_VERIFY(!o(c, a));
+    CORRADE_VERIFY( o(c, b));
+    CORRADE_VERIFY(!o(b, c));
+    CORRADE_VERIFY(!o(a, a));
+}
+
 void DualComplexTest::debug() {
     std::ostringstream o;
 
     Debug(&o) << DualComplex({-1.0f, -2.5f}, {-3.0f, -7.5f});
     CORRADE_COMPARE(o.str(), "DualComplex({-1, -2.5}, {-3, -7.5})\n");
+}
+
+void DualComplexTest::configuration() {
+    Corrade::Utility::Configuration c;
+
+    DualComplex a{{3.0f, 3.125f}, {9.0f, 9.55f}};
+    std::string value("3 3.125 9 9.55");
+
+    c.setValue("dualcomplex", a);
+    CORRADE_COMPARE(c.value("dualcomplex"), value);
+    CORRADE_COMPARE(c.value<DualComplex>("dualcomplex"), a);
+
+    /* Underflow */
+    c.setValue("underflow", "2.1 8.9");
+    CORRADE_COMPARE(c.value<DualComplex>("underflow"), (DualComplex{{2.1f, 8.9f}, {0.0f, 0.0f}}));
+
+    /* Overflow */
+    c.setValue("overflow", "2 1 8 9 16 33");
+    CORRADE_COMPARE(c.value<DualComplex>("overflow"), (DualComplex{{2.0f, 1.0f}, {8.0f, 9.0f}}));
 }
 
 }}}

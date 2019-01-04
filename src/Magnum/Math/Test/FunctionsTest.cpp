@@ -68,7 +68,9 @@ struct FunctionsTest: Corrade::TestSuite::Tester {
     void exp();
     void div();
     void isInf();
+    void isInfVector();
     void isNan();
+    void isNanfVector();
     void trigonometric();
     void trigonometricWithBase();
 };
@@ -118,7 +120,9 @@ FunctionsTest::FunctionsTest() {
               &FunctionsTest::exp,
               &FunctionsTest::div,
               &FunctionsTest::isInf,
+              &FunctionsTest::isInfVector,
               &FunctionsTest::isNan,
+              &FunctionsTest::isNanfVector,
               &FunctionsTest::trigonometric,
               &FunctionsTest::trigonometricWithBase});
 }
@@ -153,6 +157,9 @@ void FunctionsTest::minList() {
                                Vector3i(9, -5, 18)}), Vector3i(-2, -5, 2));
 
     CORRADE_COMPARE(Math::min(std::initializer_list<Vector3i>{}), Vector3i{});
+
+    const Int array[]{5, -2, 9};
+    CORRADE_COMPARE(Math::min(array), -2);
 }
 
 void FunctionsTest::max() {
@@ -168,6 +175,9 @@ void FunctionsTest::maxList() {
                                Vector3i(9, -5, 18)}), Vector3i(9, 14, 18));
 
     CORRADE_COMPARE(Math::max(std::initializer_list<Vector3i>{}), Vector3i{});
+
+    const Int array[]{5, -2, 9};
+    CORRADE_COMPARE(Math::max(array), 9);
 }
 
 void FunctionsTest::minmax() {
@@ -198,6 +208,9 @@ void FunctionsTest::minmaxList() {
     CORRADE_COMPARE(Math::minmax({Vector2{2.0f, 1.0f}, Vector2{-3.0f, -2.0f}, Vector2{-1.0f, 3.0f}}), expectedVec);
     CORRADE_COMPARE(Math::minmax({Vector2{-3.0f, 3.0f}, Vector2{2.0f, -2.0f}, Vector2{-1.0f, 1.0f}}), expectedVec);
     CORRADE_COMPARE(Math::minmax({Vector2{-3.0f, -2.0f}, Vector2{-1.0f, 3.0f}, Vector2{2.0f, 1.0f}}), expectedVec);
+
+    const Float array[]{-1.0f, 2.0f, -3.0f};
+    CORRADE_COMPARE(Math::minmax(array), expected);
 }
 
 void FunctionsTest::clamp() {
@@ -376,11 +389,21 @@ void FunctionsTest::isInf() {
     CORRADE_VERIFY(!Math::isInf(5.3f));
 }
 
+void FunctionsTest::isInfVector() {
+    CORRADE_COMPARE(Math::isInf(Vector3{0.3f, -Constants::inf(), 1.0f}), Math::BoolVector<3>{0x02});
+    CORRADE_COMPARE(Math::isInf(Vector3{0.3f, 1.0f, -Constants::nan()}), Math::BoolVector<3>{0x00});
+}
+
 void FunctionsTest::isNan() {
     CORRADE_VERIFY(!Math::isNan(Constants::inf()));
     CORRADE_VERIFY(!Math::isNan(-Constants::inf()));
     CORRADE_VERIFY(Math::isNan(Constants::nan()));
     CORRADE_VERIFY(!Math::isNan(5.3f));
+}
+
+void FunctionsTest::isNanfVector() {
+    CORRADE_COMPARE(Math::isNan(Vector3{0.3f, 1.0f, -Constants::nan()}), Math::BoolVector<3>{0x04});
+    CORRADE_COMPARE(Math::isNan(Vector3{0.3f, -Constants::inf(), 1.0f}), Math::BoolVector<3>{0x00});
 }
 
 void FunctionsTest::trigonometric() {

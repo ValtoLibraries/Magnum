@@ -28,8 +28,30 @@
 namespace Magnum { namespace Platform { namespace Test {
 
 struct Sdl2ApplicationTest: Platform::Application {
-    explicit Sdl2ApplicationTest(const Arguments& arguments): Platform::Application{arguments} {}
+    /* For testing resize events */
+    explicit Sdl2ApplicationTest(const Arguments& arguments): Platform::Application{arguments, Configuration{}.setWindowFlags(Configuration::WindowFlag::Resizable)} {}
+
+    void exitEvent(ExitEvent& event) override {
+        Debug{} << "application exiting";
+        event.setAccepted(); /* Comment-out to test app exit suppression */
+    }
+
     void drawEvent() override {}
+
+    /* For testing HiDPI resize events */
+    void viewportEvent(ViewportEvent& event) override {
+        Debug{} << "viewport event" << event.windowSize() << event.framebufferSize() << event.dpiScaling();
+    }
+
+    /* For testing event coordinates */
+    void mousePressEvent(MouseEvent& event) override {
+        Debug{} << event.position();
+    }
+
+    /* For testing keyboard capture */
+    void keyPressEvent(KeyEvent& event) override {
+        Debug{} << event.keyName();
+    }
 };
 
 }}}

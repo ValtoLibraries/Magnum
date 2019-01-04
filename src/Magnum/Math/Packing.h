@@ -84,14 +84,14 @@ Float b = Math::unpack<Float, 14>(8191);                // 1.0f
 */
 template<class FloatingPoint, class Integral, UnsignedInt bits> inline FloatingPoint unpack(const Integral& value);
 #else
-template<class FloatingPoint, class Integral, UnsignedInt bits = sizeof(Integral)*8> inline typename std::enable_if<std::is_arithmetic<Integral>::value && std::is_unsigned<Integral>::value, FloatingPoint>::type unpack(Integral value) {
+template<class FloatingPoint, class Integral, UnsignedInt bits = sizeof(Integral)*8> inline typename std::enable_if<std::is_arithmetic<Integral>::value && std::is_unsigned<Integral>::value, FloatingPoint>::type unpack(const Integral& value) {
     static_assert(std::is_floating_point<FloatingPoint>::value && std::is_integral<Integral>::value,
         "unpacking must be done from integral to floating-point type");
     static_assert(bits <= sizeof(Integral)*8,
         "bit count larger than size of the integral type");
     return value/FloatingPoint(Implementation::bitMax<Integral, bits>());
 }
-template<class FloatingPoint, class Integral, UnsignedInt bits = sizeof(Integral)*8> inline typename std::enable_if<std::is_arithmetic<Integral>::value && std::is_signed<Integral>::value, FloatingPoint>::type unpack(Integral value) {
+template<class FloatingPoint, class Integral, UnsignedInt bits = sizeof(Integral)*8> inline typename std::enable_if<std::is_arithmetic<Integral>::value && std::is_signed<Integral>::value, FloatingPoint>::type unpack(const Integral& value) {
     static_assert(std::is_floating_point<FloatingPoint>::value && std::is_integral<Integral>::value,
         "unpacking must be done from integral to floating-point type");
     static_assert(bits <= sizeof(Integral)*8,
@@ -118,15 +118,6 @@ template<class FloatingPoint, UnsignedInt bits, class Integral> inline typename 
 }
 template<class FloatingPoint, UnsignedInt bits, std::size_t size, class Integral> inline FloatingPoint unpack(const Vector<size, Integral>& value) {
     return unpack<FloatingPoint, size, Integral, bits>(value);
-}
-#endif
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/** @brief @copybrief unpack()
- * @deprecated Use @ref unpack() instead.
- */
-template<class FloatingPoint, class Integral> CORRADE_DEPRECATED("use unpack() instead") inline FloatingPoint normalize(const Integral& value) {
-    return unpack<FloatingPoint, Integral>(value);
 }
 #endif
 
@@ -186,15 +177,6 @@ template<class Integral, UnsignedInt bits, class FloatingPoint> inline typename 
 }
 template<class Integral, UnsignedInt bits, std::size_t size, class FloatingPoint> inline Integral pack(const Vector<size, FloatingPoint>& value) {
     return pack<Integral, size, FloatingPoint, bits>(value);
-}
-#endif
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/** @brief @copybrief pack()
- * @deprecated Use @ref pack() instead.
- */
-template<class Integral, class FloatingPoint> CORRADE_DEPRECATED("use pack() instead") inline Integral denormalize(const FloatingPoint& value) {
-    return pack<Integral, FloatingPoint>(value);
 }
 #endif
 

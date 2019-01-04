@@ -12,10 +12,10 @@ mkdir build && cd build
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$HOME/deps-native \
-    -DCMAKE_INSTALL_RPATH=$HOME/deps-native/lib \
     -DWITH_INTERCONNECT=OFF \
     -DWITH_PLUGINMANAGER=OFF \
     -DWITH_TESTSUITE=OFF \
+    -DWITH_UTILITY=OFF \
     -G Ninja
 ninja install
 cd ..
@@ -45,6 +45,7 @@ cmake .. \
     -DCMAKE_PREFIX_PATH="$HOME/deps;$TRAVIS_BUILD_DIR/sdl2" \
     -DTARGET_GLES2=$TARGET_GLES2 \
     -DWITH_AUDIO=ON \
+    -DWITH_SHAPES=ON \
     -DWITH_VK=OFF \
     -DWITH_SDL2APPLICATION=ON \
     -DWITH_WINDOWLESSIOSAPPLICATION=ON \
