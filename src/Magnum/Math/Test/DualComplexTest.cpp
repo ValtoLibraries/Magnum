@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/DualComplex.h"
 #include "Magnum/Math/DualQuaternion.h"
@@ -51,7 +51,7 @@ template<> struct DualComplexConverter<Float, DualCmpl> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct DualComplexTest: Corrade::TestSuite::Tester {
     explicit DualComplexTest();
@@ -95,7 +95,6 @@ struct DualComplexTest: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
 using namespace Math::Literals;
@@ -152,8 +151,7 @@ DualComplexTest::DualComplexTest() {
 
               &DualComplexTest::strictWeakOrdering,
 
-              &DualComplexTest::debug,
-              &DualComplexTest::configuration});
+              &DualComplexTest::debug});
 }
 
 void DualComplexTest::construct() {
@@ -178,6 +176,9 @@ void DualComplexTest::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<DualComplex>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<DualComplex, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, DualComplex>::value));
 }
 
 void DualComplexTest::constructZero() {
@@ -185,6 +186,9 @@ void DualComplexTest::constructZero() {
     CORRADE_COMPARE(a, DualComplex({0.0f, 0.0f}, {0.0f, 0.0f}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<DualComplex, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, DualComplex>::value));
 }
 
 void DualComplexTest::constructNoInit() {
@@ -318,15 +322,13 @@ void DualComplexTest::normalized() {
     CORRADE_COMPARE(a.normalized(), b);
 }
 
-namespace {
-    template<class> struct NormalizedIterativeData;
-    template<> struct NormalizedIterativeData<Float> {
-        static Math::Vector2<Float> translation() { return {10000.0f, -50.0f}; }
-    };
-    template<> struct NormalizedIterativeData<Double> {
-        static Math::Vector2<Double> translation() { return {10000000.0, -500.0}; }
-    };
-}
+template<class> struct NormalizedIterativeData;
+template<> struct NormalizedIterativeData<Float> {
+    static Math::Vector2<Float> translation() { return {10000.0f, -50.0f}; }
+};
+template<> struct NormalizedIterativeData<Double> {
+    static Math::Vector2<Double> translation() { return {10000000.0, -500.0}; }
+};
 
 template<class T> void DualComplexTest::normalizedIterative() {
     setTestCaseName(std::string{"normalizedIterative<"} + TypeTraits<T>::name() + ">");
@@ -472,25 +474,6 @@ void DualComplexTest::debug() {
     CORRADE_COMPARE(o.str(), "DualComplex({-1, -2.5}, {-3, -7.5})\n");
 }
 
-void DualComplexTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    DualComplex a{{3.0f, 3.125f}, {9.0f, 9.55f}};
-    std::string value("3 3.125 9 9.55");
-
-    c.setValue("dualcomplex", a);
-    CORRADE_COMPARE(c.value("dualcomplex"), value);
-    CORRADE_COMPARE(c.value<DualComplex>("dualcomplex"), a);
-
-    /* Underflow */
-    c.setValue("underflow", "2.1 8.9");
-    CORRADE_COMPARE(c.value<DualComplex>("underflow"), (DualComplex{{2.1f, 8.9f}, {0.0f, 0.0f}}));
-
-    /* Overflow */
-    c.setValue("overflow", "2 1 8 9 16 33");
-    CORRADE_COMPARE(c.value<DualComplex>("overflow"), (DualComplex{{2.0f, 1.0f}, {8.0f, 9.0f}}));
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::DualComplexTest)

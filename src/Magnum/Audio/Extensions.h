@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -39,7 +39,7 @@ namespace Magnum { namespace Audio {
 
 Each extension is a @cpp struct @ce named hierarchically by prefix, vendor and
 extension name taken from list at @ref openal-support, for example
-@cpp ALC::SOFTX::HRTF @ce.
+@cpp Audio::Extensions::ALC::SOFTX::HRTF @ce.
 
 Each struct has the same public methods as @ref Extension class (currently just
 @ref Extension::string() "string()"), but these structs are better suited for
@@ -59,7 +59,6 @@ target_link_libraries(your-app Magnum::Audio)
 
 See @ref building and @ref cmake for more information.
 @see @ref MAGNUM_ASSERT_AUDIO_EXTENSION_SUPPORTED()
-@todo Manual indices for extensions, this has gaps
 */
 namespace Extensions {
 
@@ -85,15 +84,18 @@ namespace AL {
         _extension(4,AL,EXT,MULAW) // #???
         _extension(5,AL,EXT,MCFORMATS) // #???
     }
+    namespace SOFT {
+        _extension(6,AL,SOFT,loop_points) // #???
+    }
 } namespace ALC {
     namespace EXT {
-        _extension_rev(6,ALC,EXT,ENUMERATION) // #???
+        _extension_rev(7,ALC,EXT,ENUMERATION) // #???
     }
     namespace SOFTX {
-        _extension(7,ALC,SOFTX,HRTF) // #???
+        _extension(8,ALC,SOFTX,HRTF) // #???
     }
     namespace SOFT {
-        _extension(8,ALC,SOFT,HRTF) // #???
+        _extension(9,ALC,SOFT,HRTF) // #???
     }
 }
 #undef _extension

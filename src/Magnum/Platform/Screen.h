@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,7 +60,7 @@ The following specialization are explicitly compiled into each particular
 @ref ScreenedApplication.hpp implementation file to avoid linker errors. See
 @ref compilation-speedup-hpp for more information.
 
--   @ref GlutApplication "BasicScreen<GlutApplication>"
+-   @ref GlfwApplication "BasicScreen<GlfwApplication>"
 -   @ref GlxApplication "BasicScreen<GlxApplication>"
 -   @ref Sdl2Application "BasicScreen<Sdl2Application>"
 -   @ref XEglApplication "BasicScreen<XEglApplication>"

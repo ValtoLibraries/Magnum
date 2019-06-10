@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,12 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/Optional.h>
+#include <Corrade/PluginManager/Manager.h>
+#include <Corrade/Utility/Directory.h>
+
+#include "Magnum/FileCallback.h"
 #include "Magnum/Shaders/Vector.h"
 #include "Magnum/Text/AbstractFont.h"
 #include "Magnum/Text/DistanceFieldGlyphCache.h"
@@ -34,8 +40,89 @@ using namespace Magnum::Math::Literals;
 int main() {
 
 {
+/* [AbstractFont-usage] */
+PluginManager::Manager<Text::AbstractFont> manager;
+Containers::Pointer<Text::AbstractFont> font =
+    manager.loadAndInstantiate("StbTrueTypeFont");
+if(!font || !font->openFile("font.ttf", 16.0f))
+    Fatal{} << "Can't open font.ttf with StbTrueTypeFont";
+
+Text::GlyphCache cache{Vector2i{512}};
+font->fillGlyphCache(cache, "abcdefghijklmnopqrstuvwxyz"
+                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                            "0123456789?!:;,. ");
+/* [AbstractFont-usage] */
+}
+
+#if defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT))
+{
+Containers::Pointer<Text::AbstractFont> font;
+/* [AbstractFont-usage-callbacks] */
+struct Data {
+    std::unordered_map<std::string,
+        Containers::Array<const char, Utility::Directory::MapDeleter>> files;
+} data;
+
+font->setFileCallback([](const std::string& filename,
+    InputFileCallbackPolicy policy, Data& data)
+        -> Containers::Optional<Containers::ArrayView<const char>>
+    {
+        auto found = data.files.find(filename);
+
+        /* Discard the memory mapping, if not needed anymore */
+        if(policy == InputFileCallbackPolicy::Close) {
+            if(found != data.files.end()) data.files.erase(found);
+            return {};
+        }
+
+        /* Load if not there yet */
+        if(found == data.files.end()) found = data.files.emplace(
+            filename, Utility::Directory::mapRead(filename)).first;
+
+        return Containers::arrayView(found->second);
+    }, data);
+
+font->openFile("magnum-font.conf", 13.0f);
+/* [AbstractFont-usage-callbacks] */
+}
+#endif
+
+{
+Containers::Pointer<Text::AbstractFont> font;
+/* [AbstractFont-setFileCallback] */
+font->setFileCallback([](const std::string& filename,
+    InputFileCallbackPolicy, void*) {
+        Utility::Resource rs("data");
+        return Containers::optional(rs.getRaw(filename));
+    });
+/* [AbstractFont-setFileCallback] */
+}
+
+{
+Containers::Pointer<Text::AbstractFont> font;
+/* [AbstractFont-setFileCallback-template] */
+struct Data {
+    std::unordered_map<std::string, Containers::Array<char>> files;
+} data;
+
+font->setFileCallback([](const std::string& filename,
+    InputFileCallbackPolicy, Data& data)
+        -> Containers::Optional<Containers::ArrayView<const char>>
+    {
+        auto found = data.files.find(filename);
+        if(found == data.files.end()) {
+            if(!Utility::Directory::exists(filename))
+                return Containers::NullOpt;
+            found = data.files.emplace(filename, Utility::Directory::read(filename)).first;
+        }
+        return Containers::ArrayView<const char>{found->second};
+    }, data);
+/* [AbstractFont-setFileCallback-template] */
+}
+
+{
 /* [DistanceFieldGlyphCache-usage] */
-std::unique_ptr<Text::AbstractFont> font;
+Containers::Pointer<Text::AbstractFont> font;
 Text::DistanceFieldGlyphCache cache{Vector2i{2048}, Vector2i{384}, 16};
 font->fillGlyphCache(cache, "abcdefghijklmnopqrstuvwxyz"
                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -45,7 +132,7 @@ font->fillGlyphCache(cache, "abcdefghijklmnopqrstuvwxyz"
 
 {
 /* [GlyphCache-usage] */
-std::unique_ptr<Text::AbstractFont> font;
+Containers::Pointer<Text::AbstractFont> font;
 Text::GlyphCache cache{Vector2i{512}};
 font->fillGlyphCache(cache, "abcdefghijklmnopqrstuvwxyz"
                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -57,7 +144,7 @@ font->fillGlyphCache(cache, "abcdefghijklmnopqrstuvwxyz"
 Matrix3 projectionMatrix;
 /* [Renderer-usage1] */
 /* Font instance, received from a plugin manager */
-std::unique_ptr<Text::AbstractFont> font;
+Containers::Pointer<Text::AbstractFont> font;
 
 /* Configured glyph cache */
 Text::GlyphCache cache{Vector2i{512}};

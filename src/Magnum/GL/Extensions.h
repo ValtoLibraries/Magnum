@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,10 +46,12 @@ namespace Magnum { namespace GL {
 
 Each extension is a @cpp struct @ce named hierarchically by prefix, vendor and
 extension name taken from list at @ref opengl-support, for example
-`GL::Extensions::ARB::texture_storage`. Note that desktop extensions are
-available only on desktop build, OpenGL ES 2.0 extensions which are part of ES
-3.0 are available only on @ref MAGNUM_TARGET_GLES2 "OpenGL ES 2.0 build",
-vendor OpenGL ES extensions are available only on
+`GL::Extensions::ARB::texture_storage`. Note that, unless said otherwise,
+desktop extensions are available only on desktop build, OpenGL ES 2.0
+extensions which are part of ES 3.0 are available only on
+@ref MAGNUM_TARGET_GLES2 "OpenGL ES 2.0 builds", WebGL 1.0 extensions which are
+part of WebGL 2.0 are available only on @ref MAGNUM_TARGET_GLES2 "WebGL 1.0"
+builds, OpenGL ES extensions are available only on
 @ref MAGNUM_TARGET_GLES "OpenGL ES builds" and WebGL extensions are available
 only on @ref MAGNUM_TARGET_WEBGL "WebGL builds".
 
@@ -230,12 +232,11 @@ namespace AMD {
     _extension(148,EXT,draw_buffers2,                   GL210, GL300) // #340
     _extension(149,EXT,texture_integer,                 GL210, GL300) // #343
     _extension(150,EXT,transform_feedback,              GL210, GL300) // #352
-    _extension(151,EXT,direct_state_access,             GL210,  None) // #353
-    _extension(152,EXT,texture_snorm,                   GL300, GL310) // #365
-    _extension(153,EXT,texture_sRGB_decode,             GL210,  None) // #402
-    _extension(154,EXT,shader_integer_mix,              GL300,  None) // #437
-    _extension(155,EXT,debug_label,                     GL210,  None) // #439
-    _extension(156,EXT,debug_marker,                    GL210,  None) // #440
+    _extension(151,EXT,texture_snorm,                   GL300, GL310) // #365
+    _extension(152,EXT,texture_sRGB_decode,             GL210,  None) // #402
+    _extension(153,EXT,shader_integer_mix,              GL300,  None) // #437
+    _extension(154,EXT,debug_label,                     GL210,  None) // #439
+    _extension(155,EXT,debug_marker,                    GL210,  None) // #440
 } namespace GREMEDY {
     _extension(157,GREMEDY,string_marker,               GL210,  None) // #311
 } namespace KHR {
@@ -253,8 +254,9 @@ namespace AMD {
     _extension(170,NV,depth_buffer_float,               GL210, GL300) // #334
     _extension(171,NV,conditional_render,               GL210, GL300) // #346
     /* NV_draw_texture not supported */                               // #430
+} namespace MAGNUM {
+    _extension(180,MAGNUM,shader_vertex_id,             GL300, GL300)
 }
-/* IMPORTANT: if this line is > 329 (73 + size), don't forget to update array size in Context.h */
 #elif defined(MAGNUM_TARGET_WEBGL)
 namespace ANGLE {
     #ifdef MAGNUM_TARGET_GLES2
@@ -294,6 +296,8 @@ namespace ANGLE {
     _extension(19,WEBGL,color_buffer_float,         GLES200,    None) // #14
     _extension(20,WEBGL,draw_buffers,               GLES200, GLES300) // #18
     #endif
+} namespace MAGNUM {
+    _extension(30,MAGNUM,shader_vertex_id,          GLES300, GLES300)
 }
 #else
 namespace ANDROID {
@@ -464,6 +468,8 @@ namespace ANDROID {
     #ifndef MAGNUM_TARGET_GLES2
     _extension(126,OES,texture_storage_multisample_2d_array, GLES310, GLES320) // #174
     #endif
+} namespace MAGNUM {
+    _extension(130,MAGNUM,shader_vertex_id,         GLES300, GLES300)
 }
 #endif
 #undef _extension
@@ -471,17 +477,6 @@ namespace ANDROID {
 
 }
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/** @brief @copybrief GL::Extensions
- * @deprecated Use @ref GL::Extensions instead.
- */
-namespace CORRADE_DEPRECATED_NAMESPACE("use GL::Extensions instead") Extensions {
-    namespace GL = Magnum::GL::Extensions;
-}
-#endif
-
-}
+}}
 
 #endif

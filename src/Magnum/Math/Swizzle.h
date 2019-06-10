@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,16 +62,11 @@ namespace Implementation {
 }
 
 /**
-@brief Swizzle Vector components
+@brief Swizzle @ref Vector components
 
 Creates new vector from given components. Example:
 
-@code{.cpp}
-Vector4i original(-1, 2, 3, 4);
-
-auto vec = swizzle<'w', '1', '0', 'x', 'y', 'z'>(original);
-// vec == { 4, 1, 0, -1, 2, 3 }
-@endcode
+@snippet MagnumMath.cpp swizzle
 
 You can use letters @cpp 'x' @ce, @cpp 'y' @ce, @cpp 'z' @ce, @cpp 'w' @ce and
 @cpp 'r' @ce, @cpp 'g' @ce, @cpp 'b' @ce, @cpp 'a' @ce for addressing

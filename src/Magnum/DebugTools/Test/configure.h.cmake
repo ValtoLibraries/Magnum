@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,5 +24,8 @@
 */
 
 #cmakedefine ANYIMAGEIMPORTER_PLUGIN_FILENAME "${ANYIMAGEIMPORTER_PLUGIN_FILENAME}"
+#cmakedefine ANYIMAGECONVERTER_PLUGIN_FILENAME "${ANYIMAGECONVERTER_PLUGIN_FILENAME}"
+#cmakedefine TGAIMAGECONVERTER_PLUGIN_FILENAME "${TGAIMAGECONVERTER_PLUGIN_FILENAME}"
 #cmakedefine TGAIMPORTER_PLUGIN_FILENAME "${TGAIMPORTER_PLUGIN_FILENAME}"
 #define DEBUGTOOLS_TEST_DIR "${DEBUGTOOLS_TEST_DIR}"
+#define SCREENSHOT_TEST_DIR "${SCREENSHOT_TEST_DIR}"

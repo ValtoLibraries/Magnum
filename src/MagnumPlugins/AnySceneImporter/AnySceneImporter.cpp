@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,9 +25,12 @@
 
 #include "AnySceneImporter.h"
 
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/String.h>
+
 #include "Magnum/Trade/AbstractMaterialData.h"
 #include "Magnum/Trade/AnimationData.h"
 #include "Magnum/Trade/CameraData.h"
@@ -59,63 +62,66 @@ void AnySceneImporter::doClose() {
 void AnySceneImporter::doOpenFile(const std::string& filename) {
     CORRADE_INTERNAL_ASSERT(manager());
 
+    /** @todo lowercase only the extension, once Directory::split() is done */
+    const std::string normalized = Utility::String::lowercase(filename);
+
     /* Detect type from extension */
     std::string plugin;
-    if(Utility::String::endsWith(filename, ".3ds") ||
-       Utility::String::endsWith(filename, ".ase"))
+    if(Utility::String::endsWith(normalized, ".3ds") ||
+       Utility::String::endsWith(normalized, ".ase"))
         plugin = "3dsImporter";
-    else if(Utility::String::endsWith(filename, ".ac"))
+    else if(Utility::String::endsWith(normalized, ".ac"))
         plugin = "Ac3dImporter";
-    else if(Utility::String::endsWith(filename, ".blend"))
+    else if(Utility::String::endsWith(normalized, ".blend"))
         plugin = "BlenderImporter";
-    else if(Utility::String::endsWith(filename, ".bvh"))
+    else if(Utility::String::endsWith(normalized, ".bvh"))
         plugin = "BvhImporter";
-    else if(Utility::String::endsWith(filename, ".csm"))
+    else if(Utility::String::endsWith(normalized, ".csm"))
         plugin = "CsmImporter";
-    else if(Utility::String::endsWith(filename, ".dae"))
+    else if(Utility::String::endsWith(normalized, ".dae"))
         plugin = "ColladaImporter";
-    else if(Utility::String::endsWith(filename, ".x"))
+    else if(Utility::String::endsWith(normalized, ".x"))
         plugin = "DirectXImporter";
-    else if(Utility::String::endsWith(filename, ".dxf"))
+    else if(Utility::String::endsWith(normalized, ".dxf"))
         plugin = "DxfImporter";
-    else if(Utility::String::endsWith(filename, ".fbx"))
+    else if(Utility::String::endsWith(normalized, ".fbx"))
         plugin = "FbxImporter";
-    else if(Utility::String::endsWith(filename, ".gltf"))
+    else if(Utility::String::endsWith(normalized, ".gltf"))
         plugin = "GltfImporter";
-    else if(Utility::String::endsWith(filename, ".glb"))
+    else if(Utility::String::endsWith(normalized, ".glb"))
         plugin = "GlbImporter";
-    else if(Utility::String::endsWith(filename, ".ifc"))
+    else if(Utility::String::endsWith(normalized, ".ifc"))
         plugin = "IfcImporter";
-    else if(Utility::String::endsWith(filename, ".irrmesh") ||
-            Utility::String::endsWith(filename, ".irr"))
+    else if(Utility::String::endsWith(normalized, ".irrmesh") ||
+            Utility::String::endsWith(normalized, ".irr"))
         plugin = "IrrlichtImporter";
-    else if(Utility::String::endsWith(filename, ".lwo") ||
-            Utility::String::endsWith(filename, ".lws"))
+    else if(Utility::String::endsWith(normalized, ".lwo") ||
+            Utility::String::endsWith(normalized, ".lws"))
         plugin = "LightWaveImporter";
-    else if(Utility::String::endsWith(filename, ".lxo"))
+    else if(Utility::String::endsWith(normalized, ".lxo"))
         plugin = "ModoImporter";
-    else if(Utility::String::endsWith(filename, ".ms3d"))
+    else if(Utility::String::endsWith(normalized, ".ms3d"))
         plugin = "MilkshapeImporter";
-    else if(Utility::String::endsWith(filename, ".obj"))
+    else if(Utility::String::endsWith(normalized, ".obj"))
         plugin = "ObjImporter";
-    else if(Utility::String::endsWith(filename, ".xml"))
+    else if(Utility::String::endsWith(normalized, ".xml"))
         plugin = "OgreImporter";
-    else if(Utility::String::endsWith(filename, ".ogex"))
+    else if(Utility::String::endsWith(normalized, ".ogex"))
         plugin = "OpenGexImporter";
-    else if(Utility::String::endsWith(filename, ".ply"))
+    else if(Utility::String::endsWith(normalized, ".ply"))
         plugin = "StanfordImporter";
-    else if(Utility::String::endsWith(filename, ".stl"))
+    else if(Utility::String::endsWith(normalized, ".stl"))
         plugin = "StlImporter";
-    else if(Utility::String::endsWith(filename, ".cob") ||
-            Utility::String::endsWith(filename, ".scn"))
+    else if(Utility::String::endsWith(normalized, ".cob") ||
+            Utility::String::endsWith(normalized, ".scn"))
         plugin = "TrueSpaceImporter";
-    else if(Utility::String::endsWith(filename, ".3d"))
+    else if(Utility::String::endsWith(normalized, ".3d"))
         plugin = "UnrealImporter";
-    else if(Utility::String::endsWith(filename, ".smd") ||
-            Utility::String::endsWith(filename, ".vta"))
+    else if(Utility::String::endsWith(normalized, ".smd") ||
+            Utility::String::endsWith(normalized, ".vta"))
         plugin = "ValveImporter";
-    else if(Utility::String::endsWith(filename, ".xgl") ||
-            Utility::String::endsWith(filename, ".zgl"))
+    else if(Utility::String::endsWith(normalized, ".xgl") ||
+            Utility::String::endsWith(normalized, ".zgl"))
         plugin = "XglImporter";
     else {
         Error() << "Trade::AnySceneImporter::openFile(): cannot determine type of file" << filename;
@@ -130,7 +136,7 @@ void AnySceneImporter::doOpenFile(const std::string& filename) {
 
     /* Try to open the file (error output should be printed by the plugin
        itself) */
-    std::unique_ptr<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
+    Containers::Pointer<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
     if(!importer->openFile(filename)) return;
 
     /* Success, save the instance */
@@ -162,12 +168,12 @@ Containers::Optional<CameraData> AnySceneImporter::doCamera(const UnsignedInt id
 UnsignedInt AnySceneImporter::doObject2DCount() const { return _in->object2DCount(); }
 Int AnySceneImporter::doObject2DForName(const std::string& name) { return _in->object2DForName(name); }
 std::string AnySceneImporter::doObject2DName(const UnsignedInt id) { return _in->object2DName(id); }
-std::unique_ptr<ObjectData2D> AnySceneImporter::doObject2D(const UnsignedInt id) { return _in->object2D(id); }
+Containers::Pointer<ObjectData2D> AnySceneImporter::doObject2D(const UnsignedInt id) { return _in->object2D(id); }
 
 UnsignedInt AnySceneImporter::doObject3DCount() const { return _in->object3DCount(); }
 Int AnySceneImporter::doObject3DForName(const std::string& name) { return _in->object3DForName(name); }
 std::string AnySceneImporter::doObject3DName(const UnsignedInt id) { return _in->object3DName(id); }
-std::unique_ptr<ObjectData3D> AnySceneImporter::doObject3D(const UnsignedInt id) { return _in->object3D(id); }
+Containers::Pointer<ObjectData3D> AnySceneImporter::doObject3D(const UnsignedInt id) { return _in->object3D(id); }
 
 UnsignedInt AnySceneImporter::doMesh2DCount() const { return _in->mesh2DCount(); }
 Int AnySceneImporter::doMesh2DForName(const std::string& name) { return _in->mesh2DForName(name); }
@@ -182,7 +188,7 @@ Containers::Optional<MeshData3D> AnySceneImporter::doMesh3D(const UnsignedInt id
 UnsignedInt AnySceneImporter::doMaterialCount() const { return _in->materialCount(); }
 Int AnySceneImporter::doMaterialForName(const std::string& name) { return _in->materialForName(name); }
 std::string AnySceneImporter::doMaterialName(const UnsignedInt id) { return _in->materialName(id); }
-std::unique_ptr<AbstractMaterialData> AnySceneImporter::doMaterial(const UnsignedInt id) { return _in->material(id); }
+Containers::Pointer<AbstractMaterialData> AnySceneImporter::doMaterial(const UnsignedInt id) { return _in->material(id); }
 
 UnsignedInt AnySceneImporter::doTextureCount() const { return _in->textureCount(); }
 Int AnySceneImporter::doTextureForName(const std::string& name) { return _in->textureForName(name); }

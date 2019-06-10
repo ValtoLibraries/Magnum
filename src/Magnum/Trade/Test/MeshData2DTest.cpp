@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
 #include "Magnum/Math/Color.h"
 #include "Magnum/Trade/MeshData2D.h"
 
-namespace Magnum { namespace Trade { namespace Test {
+namespace Magnum { namespace Trade { namespace Test { namespace {
 
 struct MeshData2DTest: TestSuite::Tester {
     explicit MeshData2DTest();
@@ -168,6 +168,6 @@ void MeshData2DTest::constructMove() {
     CORRADE_COMPARE(d.importerState(), &a);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Trade::Test::MeshData2DTest)

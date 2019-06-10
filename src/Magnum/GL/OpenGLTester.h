@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,9 @@
  * @brief Class @ref Magnum::GL::OpenGLTester, macro @ref MAGNUM_VERIFY_NO_GL_ERROR()
  */
 
+#include "Magnum/configure.h"
+
+#ifdef MAGNUM_TARGET_GL
 #include <Corrade/TestSuite/Tester.h>
 
 #include "Magnum/GL/Renderer.h"
@@ -125,11 +128,19 @@ upon encountering a GL error --- this should be done explicitly with
 @ref MAGNUM_VERIFY_NO_GL_ERROR() instead, as the debug output is not available
 on all platforms and not all GL errors are fatal.
 
+@note This overrides the `--magnum-gpu-validation`
+    @ref GL-Context-command-line "command line option", making it always
+    enabled.
+
 @section GL-OpenGLTester-benchmarks GPU time benchmarks
 
 This class adds @ref BenchmarkType::GpuTime to the benchmark type enum,
 allowing you to measure time spent on GPU as opposed to CPU or wall clock time.
 @requires_gles GPU time benchmarking is not available on WebGL.
+
+@note This class is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 class OpenGLTester: public TestSuite::Tester {
     public:
@@ -274,24 +285,9 @@ Equivalent to
 */
 #define MAGNUM_VERIFY_NO_GL_ERROR() CORRADE_COMPARE(Magnum::GL::Renderer::error(), Magnum::GL::Renderer::Error::NoError)
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::OpenGLTester
- * @deprecated Use @ref GL::OpenGLTester instead.
- */
-typedef CORRADE_DEPRECATED("use GL::OpenGLTester instead") Magnum::GL::OpenGLTester OpenGLTester;
-
-/** @brief @copybrief MAGNUM_VERIFY_NO_GL_ERROR()
- * @deprecated Use @ref MAGNUM_VERIFY_NO_GL_ERROR() instead.
-*/
-#define MAGNUM_VERIFY_NO_ERROR() \
-    CORRADE_DEPRECATED_MACRO(MAGNUM_VERIFY_NO_ERROR(),"use MAGNUM_VERIFY_NO_GL_ERROR() instead") \
-    MAGNUM_VERIFY_NO_GL_ERROR()
+}}
+#else
+#error this header is available only in the OpenGL build
 #endif
-
-}
 
 #endif

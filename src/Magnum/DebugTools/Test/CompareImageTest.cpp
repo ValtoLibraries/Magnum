@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,9 +25,11 @@
 
 #include <sstream>
 #include <numeric>
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
@@ -40,7 +42,7 @@
 
 #include "configure.h"
 
-namespace Magnum { namespace DebugTools { namespace Test {
+namespace Magnum { namespace DebugTools { namespace Test { namespace {
 
 struct CompareImageTest: TestSuite::Tester {
     explicit CompareImageTest();
@@ -48,9 +50,6 @@ struct CompareImageTest: TestSuite::Tester {
     void formatUnknown();
     void formatHalf();
     void formatImplementationSpecific();
-    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-    void formatDeprecated();
-    #endif
 
     void calculateDelta();
     void calculateDeltaStorage();
@@ -76,8 +75,6 @@ struct CompareImageTest: TestSuite::Tester {
     void imageError();
     void imageFile();
     void imageFileError();
-    void imageFileExternalPluginManager();
-    void imageFileExternalPluginManagerError();
     void imageFilePluginLoadFailed();
     void imageFileActualLoadFailed();
     void imageFileExpectedLoadFailed();
@@ -85,15 +82,11 @@ struct CompareImageTest: TestSuite::Tester {
     void imageFileExpectedIsCompressed();
     void imageToFile();
     void imageToFileError();
-    void imageToFileExternalPluginManager();
-    void imageToFileExternalPluginManagerError();
     void imageToFilePluginLoadFailed();
     void imageToFileExpectedLoadFailed();
     void imageToFileExpectedIsCompressed();
     void fileToImage();
     void fileToImageError();
-    void fileToImageExternalPluginManager();
-    void fileToImageExternalPluginManagerError();
     void fileToImagePluginLoadFailed();
     void fileToImageActualLoadFailed();
     void fileToImageActualIsCompressed();
@@ -106,9 +99,6 @@ CompareImageTest::CompareImageTest() {
     addTests({&CompareImageTest::formatUnknown,
               &CompareImageTest::formatHalf,
               &CompareImageTest::formatImplementationSpecific,
-              #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-              &CompareImageTest::formatDeprecated,
-              #endif
 
               &CompareImageTest::calculateDelta,
               &CompareImageTest::calculateDeltaStorage,
@@ -128,65 +118,70 @@ CompareImageTest::CompareImageTest() {
               &CompareImageTest::compareAboveMeanThreshold,
 
               &CompareImageTest::image,
-              &CompareImageTest::imageError,
-              &CompareImageTest::imageFile,
-              &CompareImageTest::imageFileError});
+              &CompareImageTest::imageError});
 
-    addTests({&CompareImageTest::imageFileExternalPluginManager,
-              &CompareImageTest::imageFileExternalPluginManagerError},
+    addTests({&CompareImageTest::imageFile,
+              &CompareImageTest::imageFileError},
         &CompareImageTest::setupExternalPluginManager,
         &CompareImageTest::teardownExternalPluginManager);
 
-    addTests({&CompareImageTest::imageFilePluginLoadFailed,
-              &CompareImageTest::imageFileActualLoadFailed,
-              &CompareImageTest::imageFileExpectedLoadFailed,
-              &CompareImageTest::imageFileActualIsCompressed,
-              &CompareImageTest::imageFileExpectedIsCompressed,
-              &CompareImageTest::imageToFile,
-              &CompareImageTest::imageToFileError});
+    addTests({&CompareImageTest::imageFilePluginLoadFailed});
 
-    addTests({&CompareImageTest::imageToFileExternalPluginManager,
-              &CompareImageTest::imageToFileExternalPluginManagerError},
+    addTests({&CompareImageTest::imageFileActualLoadFailed,
+              &CompareImageTest::imageFileExpectedLoadFailed},
         &CompareImageTest::setupExternalPluginManager,
         &CompareImageTest::teardownExternalPluginManager);
 
-    addTests({&CompareImageTest::imageToFilePluginLoadFailed,
-              &CompareImageTest::imageToFileExpectedLoadFailed,
-              &CompareImageTest::imageToFileExpectedIsCompressed,
-              &CompareImageTest::fileToImage,
-              &CompareImageTest::fileToImageError});
+    addTests({&CompareImageTest::imageFileActualIsCompressed,
+              &CompareImageTest::imageFileExpectedIsCompressed});
 
-    addTests({&CompareImageTest::fileToImageExternalPluginManager,
-              &CompareImageTest::fileToImageExternalPluginManagerError},
+    addTests({&CompareImageTest::imageToFile,
+              &CompareImageTest::imageToFileError},
         &CompareImageTest::setupExternalPluginManager,
         &CompareImageTest::teardownExternalPluginManager);
 
-    addTests({&CompareImageTest::fileToImagePluginLoadFailed,
-              &CompareImageTest::fileToImageActualLoadFailed,
-              &CompareImageTest::fileToImageActualIsCompressed});
+    addTests({&CompareImageTest::imageToFilePluginLoadFailed});
+
+    addTests({&CompareImageTest::imageToFileExpectedLoadFailed},
+        &CompareImageTest::setupExternalPluginManager,
+        &CompareImageTest::teardownExternalPluginManager);
+
+    addTests({&CompareImageTest::imageToFileExpectedIsCompressed});
+
+    addTests({&CompareImageTest::fileToImage,
+              &CompareImageTest::fileToImageError},
+        &CompareImageTest::setupExternalPluginManager,
+        &CompareImageTest::teardownExternalPluginManager);
+
+    addTests({&CompareImageTest::fileToImagePluginLoadFailed});
+
+    addTests({&CompareImageTest::fileToImageActualLoadFailed},
+        &CompareImageTest::setupExternalPluginManager,
+        &CompareImageTest::teardownExternalPluginManager);
+
+    addTests({&CompareImageTest::fileToImageActualIsCompressed});
 }
 
-namespace {
-    const Float ActualRedData[] = {
-         0.3f, 1.0f, 0.9f,
-         0.9f, 0.6f, 0.2f,
-        -0.1f, 1.0f, 0.0f
-    };
+const Float ActualRedData[] = {
+        0.3f, 1.0f, 0.9f,
+        0.9f, 0.6f, 0.2f,
+    -0.1f, 1.0f, 0.0f
+};
 
-    const Float ExpectedRedData[] = {
-        0.65f, 1.0f, 0.6f,
-        0.91f, 0.6f, 0.1f,
-        0.02f, 0.0f, 0.0f
-    };
+const Float ExpectedRedData[] = {
+    0.65f, 1.0f, 0.6f,
+    0.91f, 0.6f, 0.1f,
+    0.02f, 0.0f, 0.0f
+};
 
-    const std::vector<Float> DeltaRed{
-        0.35f, 0.0f, 0.3f,
-        0.01f, 0.0f, 0.1f,
-        0.12f, 1.0f, 0.0f};
+const Float DeltaRed[]{
+    0.35f, 0.0f, 0.3f,
+    0.01f, 0.0f, 0.1f,
+    0.12f, 1.0f, 0.0f
+};
 
-    const ImageView2D ActualRed{PixelFormat::R32F, {3, 3}, ActualRedData};
-    const ImageView2D ExpectedRed{PixelFormat::R32F, {3, 3}, ExpectedRedData};
-}
+const ImageView2D ActualRed{PixelFormat::R32F, {3, 3}, ActualRedData};
+const ImageView2D ExpectedRed{PixelFormat::R32F, {3, 3}, ExpectedRedData};
 
 void CompareImageTest::formatUnknown() {
     std::ostringstream out;
@@ -218,59 +213,43 @@ void CompareImageTest::formatImplementationSpecific() {
     CORRADE_COMPARE(out.str(), "DebugTools::CompareImage: can't compare implementation-specific pixel formats\n");
 }
 
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-void CompareImageTest::formatDeprecated() {
-    std::ostringstream out;
-    Error redirectError{&out};
-
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    ImageView2D image{PixelFormat::RGB, PixelType::UnsignedByte, {}};
-    CORRADE_IGNORE_DEPRECATED_POP
-    Implementation::calculateImageDelta(image, image);
-
-    CORRADE_COMPARE(out.str(), "DebugTools::CompareImage: deprecated GL-specific formats are not supported\n");
-}
-#endif
-
 void CompareImageTest::calculateDelta() {
-    std::vector<Float> delta;
+    Containers::Array<Float> delta;
     Float max, mean;
     std::tie(delta, max, mean) = Implementation::calculateImageDelta(ActualRed, ExpectedRed);
 
-    CORRADE_COMPARE_AS(delta, DeltaRed, TestSuite::Compare::Container);
+    CORRADE_COMPARE_AS(delta, Containers::arrayView(DeltaRed), TestSuite::Compare::Container);
     CORRADE_COMPARE(max, 1.0f);
     CORRADE_COMPARE(mean, 0.208889f);
 }
 
-namespace {
-    /* Different storage for each */
-    const UnsignedByte ActualRgbData[] = {
-           0,    0,    0,    0,    0,    0,    0,    0,
-        0x56, 0xf8, 0x3a, 0x56, 0x47, 0xec,    0,    0,
-        0x23, 0x57, 0x10, 0xab, 0xcd, 0x85,    0,    0
-    };
+/* Different storage for each */
+const UnsignedByte ActualRgbData[] = {
+       0,    0,    0,    0,    0,    0,    0,    0,
+    0x56, 0xf8, 0x3a, 0x56, 0x47, 0xec,    0,    0,
+    0x23, 0x57, 0x10, 0xab, 0xcd, 0x85,    0,    0
+};
 
-    const UnsignedByte ExpectedRgbData[] = {
-        0, 0, 0, 0x55, 0xf8, 0x3a, 0x56, 0x10, 0xed, 0, 0, 0,
-        0, 0, 0, 0x23, 0x27, 0x10, 0xab, 0xcd, 0xfa, 0, 0, 0
-    };
+const UnsignedByte ExpectedRgbData[] = {
+    0, 0, 0, 0x55, 0xf8, 0x3a, 0x56, 0x10, 0xed, 0, 0, 0,
+    0, 0, 0, 0x23, 0x27, 0x10, 0xab, 0xcd, 0xfa, 0, 0, 0
+};
 
-    const ImageView2D ActualRgb{PixelStorage{}.setSkip({0, 1, 0}),
-        PixelFormat::RGB8Unorm, {2, 2}, ActualRgbData};
-    const ImageView2D ExpectedRgb{
-        PixelStorage{}.setSkip({1, 0, 0}).setRowLength(3),
-        PixelFormat::RGB8Unorm, {2, 2}, ExpectedRgbData};
-}
+const ImageView2D ActualRgb{PixelStorage{}.setSkip({0, 1, 0}),
+    PixelFormat::RGB8Unorm, {2, 2}, ActualRgbData};
+const ImageView2D ExpectedRgb{
+    PixelStorage{}.setSkip({1, 0, 0}).setRowLength(3),
+    PixelFormat::RGB8Unorm, {2, 2}, ExpectedRgbData};
 
 void CompareImageTest::calculateDeltaStorage() {
-    std::vector<Float> delta;
+    Containers::Array<Float> delta;
     Float max, mean;
     std::tie(delta, max, mean) = Implementation::calculateImageDelta(ActualRgb, ExpectedRgb);
 
-    CORRADE_COMPARE_AS(delta, (std::vector<Float>{
+    CORRADE_COMPARE_AS(delta, (Containers::Array<Float>{Containers::InPlaceInit, {
         1.0f/3.0f, (55.0f + 1.0f)/3.0f,
         48.0f/3.0f, 117.0f/3.0f
-        }), TestSuite::Compare::Container);
+    }}), TestSuite::Compare::Container);
     CORRADE_COMPARE(max, 117.0f/3.0f);
     CORRADE_COMPARE(mean, 18.5f);
 }
@@ -279,7 +258,7 @@ void CompareImageTest::deltaImage() {
     std::ostringstream out;
     Debug d{&out, Debug::Flag::DisableColors};
 
-    std::vector<Float> delta(32*32);
+    Containers::Array<Float> delta{32*32};
 
     for(std::int_fast32_t x = 0; x != 32; ++x)
         for(std::int_fast32_t y = 0; y != 32; ++y)
@@ -309,7 +288,7 @@ void CompareImageTest::deltaImageScaling() {
     std::ostringstream out;
     Debug d{&out, Debug::Flag::DisableColors};
 
-    std::vector<Float> delta(65*40);
+    Containers::Array<Float> delta{65*40};
     for(std::int_fast32_t x = 0; x != 65; ++x)
         for(std::int_fast32_t y = 0; y != 40; ++y)
             delta[y*65 + x] = Vector2{Float(x), Float(y)}.length()/Vector2{65.0f, 40.0f}.length();
@@ -476,7 +455,7 @@ void CompareImageTest::compareAboveMeanThreshold() {
 }
 
 void CompareImageTest::setupExternalPluginManager() {
-    _manager.emplace();
+    _manager.emplace("nonexistent");
     /* Load the plugin directly from the build tree. Otherwise it's either
        static and already loaded or not present in the build tree */
     #if defined(ANYIMAGEIMPORTER_PLUGIN_FILENAME) && defined(TGAIMPORTER_PLUGIN_FILENAME)
@@ -489,15 +468,13 @@ void CompareImageTest::teardownExternalPluginManager() {
     _manager = Containers::NullOpt;
 }
 
-namespace {
-    constexpr const char* ImageCompareError =
-        "Images a and b have both max and mean delta above threshold, actual 39/18.5 but at most 20/10 expected. Delta image:\n"
-        "          |?M|\n"
-        "        Pixels above max/mean threshold:\n"
-        "          [1,1] #abcd85, expected #abcdfa (Δ = 39)\n"
-        "          [1,0] #5647ec, expected #5610ed (Δ = 18.6667)\n"
-        "          [0,1] #235710, expected #232710 (Δ = 16)\n";
-}
+constexpr const char* ImageCompareError =
+    "Images a and b have both max and mean delta above threshold, actual 39/18.5 but at most 20/10 expected. Delta image:\n"
+    "          |?M|\n"
+    "        Pixels above max/mean threshold:\n"
+    "          [1,1] #abcd85, expected #abcdfa (Δ = 39)\n"
+    "          [1,0] #5647ec, expected #5610ed (Δ = 18.6667)\n"
+    "          [0,1] #235710, expected #232710 (Δ = 16)\n";
 
 void CompareImageTest::image() {
     CORRADE_COMPARE_WITH(ActualRgb, ExpectedRgb, (CompareImage{40.0f, 20.0f}));
@@ -517,42 +494,6 @@ void CompareImageTest::imageError() {
 }
 
 void CompareImageTest::imageFile() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
-
-    CORRADE_COMPARE_WITH(
-        Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageActual.tga"),
-        Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageExpected.tga"),
-        (CompareImageFile{40.0f, 20.0f}));
-}
-
-void CompareImageTest::imageFileError() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
-
-    std::stringstream out;
-
-    {
-        TestSuite::Comparator<CompareImageFile> compare{nullptr, 20.0f, 10.0f};
-        CORRADE_VERIFY(!compare(
-            Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageActual.tga"),
-            Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageExpected.tga")));
-        Debug d{&out, Debug::Flag::DisableColors};
-        compare.printErrorMessage(d, "a", "b");
-    }
-
-    CORRADE_COMPARE(out.str(), ImageCompareError);
-}
-
-void CompareImageTest::imageFileExternalPluginManager() {
     if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
        _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
         CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
@@ -563,7 +504,7 @@ void CompareImageTest::imageFileExternalPluginManager() {
         (CompareImageFile{*_manager, 40.0f, 20.0f}));
 }
 
-void CompareImageTest::imageFileExternalPluginManagerError() {
+void CompareImageTest::imageFileError() {
     if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
        _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
         CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
@@ -602,17 +543,14 @@ void CompareImageTest::imageFilePluginLoadFailed() {
 }
 
 void CompareImageTest::imageFileActualLoadFailed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
+    if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
+       _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
+        CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareImageFile> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareImageFile> compare{&*_manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare("nonexistent.tga",
             Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageExpected.tga")));
         Debug d{&out, Debug::Flag::DisableColors};
@@ -623,17 +561,14 @@ void CompareImageTest::imageFileActualLoadFailed() {
 }
 
 void CompareImageTest::imageFileExpectedLoadFailed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
+    if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
+       _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
+        CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareImageFile> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareImageFile> compare{&*_manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare(
             Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageActual.tga"),
             "nonexistent.tga"));
@@ -645,17 +580,15 @@ void CompareImageTest::imageFileExpectedLoadFailed() {
 }
 
 void CompareImageTest::imageFileActualIsCompressed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("DdsImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or DdsImporter plugins not found.");
-    }
+    PluginManager::Manager<Trade::AbstractImporter> manager;
+    if(manager.load("AnyImageImporter") < PluginManager::LoadState::Loaded ||
+       manager.load("DdsImporter") < PluginManager::LoadState::Loaded)
+        CORRADE_SKIP("AnyImageImporter or DdsImporter plugins can't be loaded.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareImageFile> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareImageFile> compare{&manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare(
             Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageCompressed.dds"),
             Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageExpected.tga")));
@@ -667,17 +600,15 @@ void CompareImageTest::imageFileActualIsCompressed() {
 }
 
 void CompareImageTest::imageFileExpectedIsCompressed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("DdsImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or DdsImporter plugins not found.");
-    }
+    PluginManager::Manager<Trade::AbstractImporter> manager;
+    if(manager.load("AnyImageImporter") < PluginManager::LoadState::Loaded ||
+       manager.load("DdsImporter") < PluginManager::LoadState::Loaded)
+        CORRADE_SKIP("AnyImageImporter or DdsImporter plugins can't be loaded.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareImageFile> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareImageFile> compare{&manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare(
             Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageActual.tga"),
             Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageCompressed.dds")));
@@ -690,40 +621,6 @@ void CompareImageTest::imageFileExpectedIsCompressed() {
 }
 
 void CompareImageTest::imageToFile() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
-
-    CORRADE_COMPARE_WITH(ActualRgb,
-        Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageExpected.tga"),
-        (CompareImageToFile{40.0f, 20.0f}));
-}
-
-void CompareImageTest::imageToFileError() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
-
-    std::stringstream out;
-
-    {
-        TestSuite::Comparator<CompareImageToFile> compare{nullptr, 20.0f, 10.0f};
-        CORRADE_VERIFY(!compare(ActualRgb,
-            Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageExpected.tga")));
-        Debug d{&out, Debug::Flag::DisableColors};
-        compare.printErrorMessage(d, "a", "b");
-    }
-
-    CORRADE_COMPARE(out.str(), ImageCompareError);
-}
-
-void CompareImageTest::imageToFileExternalPluginManager() {
     if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
        _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
         CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
@@ -733,7 +630,7 @@ void CompareImageTest::imageToFileExternalPluginManager() {
         (CompareImageToFile{*_manager, 40.0f, 20.0f}));
 }
 
-void CompareImageTest::imageToFileExternalPluginManagerError() {
+void CompareImageTest::imageToFileError() {
     if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
        _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
         CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
@@ -770,17 +667,14 @@ void CompareImageTest::imageToFilePluginLoadFailed() {
 }
 
 void CompareImageTest::imageToFileExpectedLoadFailed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
+    if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
+       _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
+        CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareImageToFile> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareImageToFile> compare{&*_manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare(ActualRgb, "nonexistent.tga"));
         Debug d{&out, Debug::Flag::DisableColors};
         compare.printErrorMessage(d, "a", "b");
@@ -790,17 +684,15 @@ void CompareImageTest::imageToFileExpectedLoadFailed() {
 }
 
 void CompareImageTest::imageToFileExpectedIsCompressed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("DdsImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or DdsImporter plugins not found.");
-    }
+    PluginManager::Manager<Trade::AbstractImporter> manager;
+    if(manager.load("AnyImageImporter") < PluginManager::LoadState::Loaded ||
+       manager.load("DdsImporter") < PluginManager::LoadState::Loaded)
+            CORRADE_SKIP("AnyImageImporter or DdsImporter plugins can't be loaded.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareImageToFile> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareImageToFile> compare{&manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare(ActualRgb, Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageCompressed.dds")));
         Debug d{&out, Debug::Flag::DisableColors};
         compare.printErrorMessage(d, "a", "b");
@@ -811,42 +703,6 @@ void CompareImageTest::imageToFileExpectedIsCompressed() {
 }
 
 void CompareImageTest::fileToImage() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
-
-    CORRADE_COMPARE_WITH(
-        Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageActual.tga"),
-        ExpectedRgb,
-        (CompareFileToImage{40.0f, 20.0f}));
-}
-
-void CompareImageTest::fileToImageError() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
-
-    std::stringstream out;
-
-    {
-        TestSuite::Comparator<CompareFileToImage> compare{nullptr, 20.0f, 10.0f};
-        CORRADE_VERIFY(!compare(
-            Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageActual.tga"),
-            ExpectedRgb));
-        Debug d{&out, Debug::Flag::DisableColors};
-        compare.printErrorMessage(d, "a", "b");
-    }
-
-    CORRADE_COMPARE(out.str(), ImageCompareError);
-}
-
-void CompareImageTest::fileToImageExternalPluginManager() {
     if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
        _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
         CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
@@ -857,7 +713,7 @@ void CompareImageTest::fileToImageExternalPluginManager() {
         (CompareFileToImage{*_manager, 40.0f, 20.0f}));
 }
 
-void CompareImageTest::fileToImageExternalPluginManagerError() {
+void CompareImageTest::fileToImageError() {
     if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
        _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
         CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
@@ -896,17 +752,14 @@ void CompareImageTest::fileToImagePluginLoadFailed() {
 }
 
 void CompareImageTest::fileToImageActualLoadFailed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("TgaImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
-    }
+    if(_manager->loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
+       _manager->loadState("TgaImporter") == PluginManager::LoadState::NotFound)
+        CORRADE_SKIP("AnyImageImporter or TgaImporter plugins not found.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareFileToImage> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareFileToImage> compare{&*_manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare("nonexistent.tga", ExpectedRgb));
         Debug d{&out, Debug::Flag::DisableColors};
         compare.printErrorMessage(d, "a", "b");
@@ -916,17 +769,15 @@ void CompareImageTest::fileToImageActualLoadFailed() {
 }
 
 void CompareImageTest::fileToImageActualIsCompressed() {
-    {
-        PluginManager::Manager<Trade::AbstractImporter> manager;
-        if(manager.loadState("AnyImageImporter") == PluginManager::LoadState::NotFound ||
-           manager.loadState("DdsImporter") == PluginManager::LoadState::NotFound)
-            CORRADE_SKIP("AnyImageImporter or DdsImporter plugins not found.");
-    }
+    PluginManager::Manager<Trade::AbstractImporter> manager;
+    if(manager.load("AnyImageImporter") < PluginManager::LoadState::Loaded ||
+       manager.load("DdsImporter") < PluginManager::LoadState::Loaded)
+            CORRADE_SKIP("AnyImageImporter or DdsImporter plugins can't be loaded.");
 
     std::stringstream out;
 
     {
-        TestSuite::Comparator<CompareFileToImage> compare{nullptr, 20.0f, 10.0f};
+        TestSuite::Comparator<CompareFileToImage> compare{&manager, 20.0f, 10.0f};
         CORRADE_VERIFY(!compare(Utility::Directory::join(DEBUGTOOLS_TEST_DIR, "CompareImageCompressed.dds"), ExpectedRgb));
         Debug d{&out, Debug::Flag::DisableColors};
         compare.printErrorMessage(d, "a", "b");
@@ -936,6 +787,6 @@ void CompareImageTest::fileToImageActualIsCompressed() {
         "Actual image a (.../CompareImageCompressed.dds) is compressed, comparison not possible.\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::DebugTools::Test::CompareImageTest)

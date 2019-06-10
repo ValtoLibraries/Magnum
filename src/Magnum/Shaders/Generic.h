@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,6 +45,8 @@ See @ref shaders-generic for more information.
 template<UnsignedInt> struct Generic;
 #else
 template<UnsignedInt dimensions> struct Generic {
+    /* Keep consistent with generic.glsl and the real definitions below */
+
     /**
      * @brief Vertex position
      *
@@ -66,6 +68,13 @@ template<UnsignedInt dimensions> struct Generic {
      * @ref Magnum::Vector3 "Vector3", defined only in 3D.
      */
     typedef GL::Attribute<2, Vector3> Normal;
+
+    /**
+     * @brief Vertex tangent
+     *
+     * @ref Magnum::Vector3 "Vector3", defined only in 3D.
+     */
+    typedef GL::Attribute<4, Vector3> Tangent;
 
     /**
      * @brief Three-component vertex color.
@@ -134,6 +143,7 @@ template<> struct Generic<2>: BaseGeneric {
 template<> struct Generic<3>: BaseGeneric {
     typedef GL::Attribute<0, Vector3> Position;
     typedef GL::Attribute<2, Vector3> Normal;
+    typedef GL::Attribute<4, Vector3> Tangent;
 };
 #endif
 

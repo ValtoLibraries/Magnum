@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,10 +25,11 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Audio/BufferFormat.h"
 
-namespace Magnum { namespace Audio { namespace Test {
+namespace Magnum { namespace Audio { namespace Test { namespace {
 
 struct BufferFormatTest: TestSuite::Tester {
     explicit BufferFormatTest();
@@ -46,6 +47,6 @@ void BufferFormatTest::debugFormat() {
     CORRADE_COMPARE(out.str(), "Audio::BufferFormat::Stereo16 Audio::BufferFormat(0xdead)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Audio::Test::BufferFormatTest)

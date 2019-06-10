@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,15 +25,17 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/GL/Context.h"
 #include "Magnum/GL/Version.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct ContextTest: TestSuite::Tester {
     explicit ContextTest();
 
+    void constructNoCreate();
     void constructCopyMove();
 
     void extensions();
@@ -46,7 +48,8 @@ struct ContextTest: TestSuite::Tester {
 };
 
 ContextTest::ContextTest() {
-    addTests({&ContextTest::constructCopyMove,
+    addTests({&ContextTest::constructNoCreate,
+              &ContextTest::constructCopyMove,
 
               &ContextTest::extensions,
 
@@ -55,6 +58,20 @@ ContextTest::ContextTest() {
 
               &ContextTest::debugDetectedDriver,
               &ContextTest::debugDetectedDrivers});
+}
+
+void ContextTest::constructNoCreate() {
+    {
+        /* Shouldn't crash during construction, shouldn't attempt to access GL,
+           shouldn't crash when destructing */
+        struct MyContext: Context {
+            explicit MyContext(): Context{NoCreate, 0, nullptr, nullptr} {}
+        } context;
+
+        CORRADE_VERIFY(!Context::hasCurrent());
+    }
+
+    CORRADE_VERIFY(!Context::hasCurrent());
 }
 
 void ContextTest::constructCopyMove() {
@@ -154,6 +171,6 @@ void ContextTest::debugDetectedDrivers() {
     #endif
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::ContextTest)

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,8 +23,10 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 
 #include "Magnum/PixelFormat.h"
@@ -93,21 +95,21 @@ int main(int argc, char** argv) {
         .addOption("importer", "AnyImageImporter").setHelp("importer", "image importer plugin")
         .addOption("converter", "AnyImageConverter").setHelp("converter", "image converter plugin")
         .addOption("plugin-dir").setHelp("plugin-dir", "override base plugin dir", "DIR")
-        .setHelp("Converts images of different formats.")
+        .setGlobalHelp("Converts images of different formats.")
         .parse(argc, argv);
 
     /* Load importer plugin */
     PluginManager::Manager<Trade::AbstractImporter> importerManager{
         args.value("plugin-dir").empty() ? std::string{} :
         Utility::Directory::join(args.value("plugin-dir"), Trade::AbstractImporter::pluginSearchPaths()[0])};
-    std::unique_ptr<Trade::AbstractImporter> importer = importerManager.loadAndInstantiate(args.value("importer"));
+    Containers::Pointer<Trade::AbstractImporter> importer = importerManager.loadAndInstantiate(args.value("importer"));
     if(!importer) return 1;
 
     /* Load converter plugin */
     PluginManager::Manager<Trade::AbstractImageConverter> converterManager{
         args.value("plugin-dir").empty() ? std::string{} :
         Utility::Directory::join(args.value("plugin-dir"), Trade::AbstractImageConverter::pluginSearchPaths()[0])};
-    std::unique_ptr<Trade::AbstractImageConverter> converter = converterManager.loadAndInstantiate(args.value("converter"));
+    Containers::Pointer<Trade::AbstractImageConverter> converter = converterManager.loadAndInstantiate(args.value("converter"));
     if(!converter) return 2;
 
     /* Open input file */

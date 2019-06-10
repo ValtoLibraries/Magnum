@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,7 @@
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 #ifndef MAGNUM_BUILD_STATIC
-    #ifdef MagnumText_EXPORTS
+    #if defined(MagnumText_EXPORTS) || defined(MagnumTextObjects_EXPORTS)
         #define MAGNUM_TEXT_EXPORT CORRADE_VISIBILITY_EXPORT
     #else
         #define MAGNUM_TEXT_EXPORT CORRADE_VISIBILITY_IMPORT

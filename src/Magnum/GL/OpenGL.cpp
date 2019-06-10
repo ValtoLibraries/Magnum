@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,11 +30,15 @@
 
 namespace Magnum { namespace GL {
 
-/* Verify types */
+/* Verify types. GLbyte, GLushort, and GLshort are used only by desktop GL for
+   single-value vertex attributes and nowhere else and those functions are no
+   on ES. */
 static_assert(std::is_same<GLubyte, UnsignedByte>::value, "GLubyte is not the same as UnsignedByte");
+#ifndef MAGNUM_TARGET_GLES
 static_assert(std::is_same<GLbyte, Byte>::value, "GLbyte is not the same as Byte");
 static_assert(std::is_same<GLushort, UnsignedShort>::value, "GLushort is not the same as UnsignedShort");
 static_assert(std::is_same<GLshort, Short>::value, "GLshort is not the same as Short");
+#endif
 static_assert(std::is_same<GLuint, UnsignedInt>::value, "GLuint is not the same as UnsignedInt");
 static_assert(std::is_same<GLint, Int>::value, "GLint is not the same as Int");
 static_assert(std::is_same<GLsizei, Int>::value, "GLsizei is not the same as Int");

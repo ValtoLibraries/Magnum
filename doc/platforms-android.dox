@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -741,6 +741,25 @@ gradle build
 @endcode
 
 @section platforms-android-troubleshooting Troubleshooting
+
+@subsection platforms-android-troubleshooting-multiple-devices ADB fails when more devices are connected
+
+If any `adb` command fails with
+
+@code{.shell-session}
+error: more than one device/emulator
+@endcode
+
+@m_class{m-noindent}
+
+you can pass the device ID via the `-s` parameter to each command. That is,
+however, verbose and doesn't work for example in case of running
+@ref Corrade::TestSuite tests via `ctest`. Instead, it's possible to supply
+the device ID via an environment variable, for example:
+
+@code{.sh}
+export ANDROID_SERIAL="bla"
+@endcode
 
 @subsection platforms-android-troubleshooting-signing-failed Signing the APK using CMake fails
 

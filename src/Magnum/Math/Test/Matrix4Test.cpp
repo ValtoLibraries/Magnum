@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Matrix4.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -58,7 +58,7 @@ template<> struct RectangularMatrixConverter<4, 4, float, Mat4> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct Matrix4Test: Corrade::TestSuite::Tester {
     explicit Matrix4Test();
@@ -114,7 +114,6 @@ struct Matrix4Test: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
 typedef Math::Deg<Float> Deg;
@@ -179,8 +178,7 @@ Matrix4Test::Matrix4Test() {
 
               &Matrix4Test::strictWeakOrdering,
 
-              &Matrix4Test::debug,
-              &Matrix4Test::configuration});
+              &Matrix4Test::debug});
 }
 
 using namespace Literals;
@@ -219,6 +217,9 @@ void Matrix4Test::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Matrix4>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix4, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, Matrix4>::value));
 }
 
 void Matrix4Test::constructZero() {
@@ -229,6 +230,9 @@ void Matrix4Test::constructZero() {
                                {0.0f, 0.0f, 0.0f, 0.0f}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix4, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Matrix4>::value));
 }
 
 void Matrix4Test::constructNoInit() {
@@ -713,6 +717,7 @@ void Matrix4Test::scalingPart() {
         Matrix4::scaling({0.5f, 3.5f, 1.2f});
 
     CORRADE_COMPARE(translationRotationScaling.scaling(), (Vector3{0.5f, 3.5f, 1.2f}));
+    CORRADE_COMPARE(translationRotationScaling.scalingSquared(), (Vector3{0.25f, 12.25f, 1.44f}));
 }
 
 void Matrix4Test::uniformScalingPart() {
@@ -829,20 +834,6 @@ void Matrix4Test::debug() {
                              "       4, 3, 0, 9)\n");
 }
 
-void Matrix4Test::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Matrix4 m({3.0f,  5.0f, 8.0f,   4.0f},
-              {4.0f,  4.0f, 7.0f, 3.125f},
-              {7.0f, -1.0f, 8.0f,   0.0f},
-              {9.0f,  4.0f, 5.0f,  9.55f});
-    std::string value("3 4 7 9 5 4 -1 4 8 7 8 5 4 3.125 0 9.55");
-
-    c.setValue("matrix", m);
-    CORRADE_COMPARE(c.value("matrix"), value);
-    CORRADE_COMPARE(c.value<Matrix4>("matrix"), m);
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::Matrix4Test)

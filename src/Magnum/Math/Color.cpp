@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 
 #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
 #include <cstring>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/String.h>
 #include <Corrade/Utility/Tweakable.h>
 #endif
@@ -38,27 +39,106 @@ namespace {
 }
 
 Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Color3<UnsignedByte>& value) {
-    char out[] = "#______";
-    out[1] = Hex[(value.r() >> 4) & 0xf];
-    out[2] = Hex[(value.r() >> 0) & 0xf];
-    out[3] = Hex[(value.g() >> 4) & 0xf];
-    out[4] = Hex[(value.g() >> 0) & 0xf];
-    out[5] = Hex[(value.b() >> 4) & 0xf];
-    out[6] = Hex[(value.b() >> 0) & 0xf];
-    return debug << out;
+    /* Print an actual colored square if requested */
+    if(debug.immediateFlags() & Corrade::Utility::Debug::Flag::Color) {
+        /* Pick a shade based on calculated lightness */
+        const Float valueValue = value.value();
+        const char* shade;
+        if(valueValue <= 0.2f)      shade = "  ";
+        else if(valueValue <= 0.4f) shade = "░░";
+        else if(valueValue <= 0.6f) shade = "▒▒";
+        else if(valueValue <= 0.8f) shade = "▓▓";
+        else                        shade = "██";
+
+        /* If ANSI colors are disabled, use just the shade */
+        if(debug.immediateFlags() & Corrade::Utility::Debug::Flag::DisableColors)
+            return debug << shade;
+        else {
+            debug << "\033[38;2;";
+
+            /* Disable space between values for everything after the initial
+               value */
+            const Corrade::Utility::Debug::Flags previousFlags = debug.flags();
+            debug.setFlags(previousFlags|Corrade::Utility::Debug::Flag::NoSpace);
+
+            /* Set both background and foreground, reset back after */
+            debug << int(value.r()) << ";" << int(value.g()) << ";"
+                << int(value.b()) << "m\033[48;2;" << int(value.r()) << ";" <<
+                int(value.g()) << ";" << int(value.b()) << "m" << shade << "\033[0m";
+
+            /* Reset original flags */
+            debug.setFlags(previousFlags);
+            return debug;
+        }
+
+    /* Otherwise print a CSS color */
+    } else {
+        char out[] = "#______";
+        out[1] = Hex[(value.r() >> 4) & 0xf];
+        out[2] = Hex[(value.r() >> 0) & 0xf];
+        out[3] = Hex[(value.g() >> 4) & 0xf];
+        out[4] = Hex[(value.g() >> 0) & 0xf];
+        out[5] = Hex[(value.b() >> 4) & 0xf];
+        out[6] = Hex[(value.b() >> 0) & 0xf];
+        return debug << out;
+    }
 }
 
 Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Color4<UnsignedByte>& value) {
-    char out[] = "#________";
-    out[1] = Hex[(value.r() >> 4) & 0xf];
-    out[2] = Hex[(value.r() >> 0) & 0xf];
-    out[3] = Hex[(value.g() >> 4) & 0xf];
-    out[4] = Hex[(value.g() >> 0) & 0xf];
-    out[5] = Hex[(value.b() >> 4) & 0xf];
-    out[6] = Hex[(value.b() >> 0) & 0xf];
-    out[7] = Hex[(value.a() >> 4) & 0xf];
-    out[8] = Hex[(value.a() >> 0) & 0xf];
-    return debug << out;
+    /* Print an actual colored square if requested */
+    if(debug.immediateFlags() & Corrade::Utility::Debug::Flag::Color) {
+        /* Pick a shade based on calculated lightness */
+        const Float valueValue = value.value();
+        const Float alpha = Math::unpack<Float>(value.a());
+        const Float valueAlpha = valueValue*alpha;
+        const char* shade;
+        if(valueAlpha <= 0.2f)      shade = "  ";
+        else if(valueAlpha <= 0.4f) shade = "░░";
+        else if(valueAlpha <= 0.6f) shade = "▒▒";
+        else if(valueAlpha <= 0.8f) shade = "▓▓";
+        else                        shade = "██";
+
+        /* If ANSI colors are disabled, use just the shade */
+        if(debug.immediateFlags() & Corrade::Utility::Debug::Flag::DisableColors)
+            return debug << shade;
+        else {
+            debug << "\033[38;2;";
+
+            /* Disable space between values for everything after the initial
+               value */
+            const Corrade::Utility::Debug::Flags previousFlags = debug.flags();
+            debug.setFlags(previousFlags|Corrade::Utility::Debug::Flag::NoSpace);
+
+            /* Print foreground color */
+            debug << int(value.r()) << ";" << int(value.g()) << ";"
+                << int(value.b()) << "m";
+
+            /* If alpha is larger than perceived value, set also background */
+            if(alpha > valueValue)
+                debug << "\033[48;2;" << int(value.r()) << ";" <<
+                int(value.g()) << ";" << int(value.b()) << "m";
+
+            /* Print the shade and reset color back */
+            debug << shade << "\033[0m";
+
+            /* Reset original flags */
+            debug.setFlags(previousFlags);
+            return debug;
+        }
+
+    /* Otherwise print a CSS color */
+    } else {
+        char out[] = "#________";
+        out[1] = Hex[(value.r() >> 4) & 0xf];
+        out[2] = Hex[(value.r() >> 0) & 0xf];
+        out[3] = Hex[(value.g() >> 4) & 0xf];
+        out[4] = Hex[(value.g() >> 0) & 0xf];
+        out[5] = Hex[(value.b() >> 4) & 0xf];
+        out[6] = Hex[(value.b() >> 0) & 0xf];
+        out[7] = Hex[(value.a() >> 4) & 0xf];
+        out[8] = Hex[(value.a() >> 0) & 0xf];
+        return debug << out;
+    }
 }
 
 }}

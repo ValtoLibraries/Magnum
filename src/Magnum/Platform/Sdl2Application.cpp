@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,11 +31,14 @@
 #include <tuple>
 #else
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 #endif
+#include <Corrade/Utility/Arguments.h>
 
+#include "Magnum/Math/ConfigurationValue.h"
 #include "Magnum/Math/Range.h"
 #include "Magnum/Platform/ScreenedApplication.hpp"
-#include "Magnum/Platform/Implementation/dpiScaling.hpp"
+#include "Magnum/Platform/Implementation/DpiScaling.h"
 
 #ifdef MAGNUM_TARGET_GL
 #include "Magnum/GL/Version.h"
@@ -96,6 +99,12 @@ Sdl2Application::Sdl2Application(const Arguments& arguments, NoCreateT):
        event.setAccepted(). */
     #ifdef SDL_HINT_NO_SIGNAL_HANDLERS
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+    #endif
+    /* Available since 2.0.6, uses dedicated OpenGL ES drivers by default and a
+       desktop GLES context only if MAGNUM_TARGET_DESKTOP_GLES is defined as
+       well. */
+    #if !defined(MAGNUM_TARGET_DESKTOP_GLES) && defined(SDL_HINT_OPENGL_ES_DRIVER)
+    SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
     #endif
     /* Available since 2.0.8, disables compositor bypass on X11, which causes
        flickering on KWin as the compositor gets shut down on every startup */
@@ -191,6 +200,26 @@ Vector2 Sdl2Application::dpiScaling(const Configuration& configuration) const {
             return dpiScaling;
         }
 
+        /* Check for DPI awareness on (non-RT) Windows and then ask for DPI.
+           SDL_GetDisplayDPI() is querying GetDpiForMonitor() --
+           https://github.com/spurious/SDL-mirror/blob/17af4584cb28cdb3c2feba17e7d989a806007d9f/src/video/windows/SDL_windowsmodes.c#L266
+           and GetDpiForMonitor() returns 96 if the application is DPI unaware.
+           So we instead check for DPI awareness first (and tell the user if
+           not), and only if the app is, then we use SDL_GetDisplayDPI(). If
+           it's for some reason desired to get the DPI value unconditionally,
+           the user should use physical DPI scaling instead. */
+        #elif defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)
+        if(!Implementation::isWindowsAppDpiAware()) {
+            Warning{verbose} << "Platform::Sdl2Application: your application is not set as DPI-aware, DPI scaling won't be used";
+            return Vector2{1.0f};
+        }
+        Vector2 dpi;
+        if(SDL_GetDisplayDPI(0, nullptr, &dpi.x(), &dpi.y()) == 0) {
+            const Vector2 dpiScaling{dpi/96.0f};
+            Debug{verbose} << "Platform::Sdl2Application: virtual DPI scaling" << dpiScaling;
+            return dpiScaling;
+        }
+
         /* Otherwise ¯\_(ツ)_/¯ */
         #else
         Debug{verbose} << "Platform::Sdl2Application: sorry, virtual DPI scaling not implemented on this platform yet, falling back to physical DPI scaling";
@@ -212,9 +241,11 @@ Vector2 Sdl2Application::dpiScaling(const Configuration& configuration) const {
     Debug{verbose} << "Platform::Sdl2Application: physical DPI scaling" << dpiScaling.x();
     return dpiScaling;
 
-    /* Take display DPI elsewhere. Enable only on Linux for now, I need to
-       test this properly on Windows first. Also only since SDL 2.0.4. */
-    #elif defined(CORRADE_TARGET_UNIX) && SDL_VERSION_ATLEAST(2, 0, 4)
+    /* Take display DPI elsewhere. Enable only on Linux (where it gets the
+       usually very-off value from X11) and on non-RT Windows (where it takes
+       the UI scale value like with virtual DPI scaling, but without checking
+       for DPI awareness first). Also only since SDL 2.0.4. */
+    #elif (defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT))) && SDL_VERSION_ATLEAST(2, 0, 4)
     Vector2 dpi;
     if(SDL_GetDisplayDPI(0, nullptr, &dpi.x(), &dpi.y()) == 0) {
         const Vector2 dpiScaling{dpi/96.0f};
@@ -270,36 +301,7 @@ bool Sdl2Application::tryCreate(const Configuration& configuration) {
 }
 
 #ifdef MAGNUM_TARGET_GL
-bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConfiguration&
-    #ifndef MAGNUM_BUILD_DEPRECATED
-    glConfiguration
-    #else
-    _glConfiguration
-    #endif
-) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    GLConfiguration glConfiguration{_glConfiguration};
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    #ifndef CORRADE_TARGET_EMSCRIPTEN
-    #ifndef MAGNUM_TARGET_GLES
-    if(configuration.flags() && glConfiguration.flags() == GLConfiguration::Flag::ForwardCompatible)
-        glConfiguration.setFlags(configuration.flags()|GLConfiguration::Flag::ForwardCompatible);
-    #else
-    if(configuration.flags() && !glConfiguration.flags())
-        glConfiguration.setFlags(configuration.flags());
-    #endif
-    if(configuration.version() != GL::Version::None && glConfiguration.version() == GL::Version::None)
-        glConfiguration.setVersion(configuration.version());
-    #endif
-    if(configuration.sampleCount() && !glConfiguration.sampleCount())
-        glConfiguration.setSampleCount(configuration.sampleCount());
-    #ifndef CORRADE_TARGET_EMSCRIPTEN
-    if(configuration.isSRGBCapable() && !glConfiguration.isSRGBCapable())
-        glConfiguration.setSRGBCapable(configuration.isSRGBCapable());
-    #endif
-    CORRADE_IGNORE_DEPRECATED_POP
-    #endif
-
+bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConfiguration& glConfiguration) {
     CORRADE_ASSERT(_context->version() == GL::Version::None, "Platform::Sdl2Application::tryCreate(): context already created", false);
 
     /* Enable double buffering, set up buffer sizes */
@@ -471,10 +473,17 @@ bool Sdl2Application::tryCreate(const Configuration& configuration, const GLConf
     /* Get CSS canvas size. This is used later to detect canvas resizes and
        fire viewport events, because Emscripten doesn't do that. Related info:
        https://github.com/kripken/emscripten/issues/1731 */
-    /** @todo don't hardcode "module" here, make it configurable from outside */
+    /** @todo don't hardcode "#canvas" here, make it configurable from outside */
     {
         Vector2d canvasSize;
-        emscripten_get_element_css_size("module", &canvasSize.x(), &canvasSize.y());
+        /* Emscripten 1.38.27 changed to generic CSS selectors from element
+           IDs depending on -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
+           being set (which we can't detect at compile time). Fortunately,
+           using #canvas works the same way both in the previous versions and
+           the current one. Unfortunately, this is also the only value that
+           works the same way for both. Further details at
+           https://github.com/emscripten-core/emscripten/pull/7977 */
+        emscripten_get_element_css_size("#canvas", &canvasSize.x(), &canvasSize.y());
         _lastKnownCanvasSize = Vector2i{canvasSize};
     }
 
@@ -536,11 +545,24 @@ Vector2i Sdl2Application::windowSize() const {
     SDL_GetWindowSize(_window, &size.x(), &size.y());
     #else
     CORRADE_ASSERT(_glContext, "Platform::Sdl2Application::windowSize(): no window opened", {});
-    emscripten_get_canvas_element_size(nullptr, &size.x(), &size.y());
+    emscripten_get_canvas_element_size("#canvas", &size.x(), &size.y());
     #endif
     return size;
 }
 
+#ifndef CORRADE_TARGET_EMSCRIPTEN
+void Sdl2Application::setMinWindowSize(const Vector2i& size) {
+    CORRADE_ASSERT(_window, "Platform::Sdl2Application::setMinWindowSize(): no window opened", );
+    SDL_SetWindowMinimumSize(_window, size.x(), size.y());
+}
+
+void Sdl2Application::setMaxWindowSize(const Vector2i& size) {
+    CORRADE_ASSERT(_window, "Platform::Sdl2Application::setMaxWindowSize(): no window opened", );
+    SDL_SetWindowMaximumSize(_window, size.x(), size.y());
+}
+#endif
+
+#ifdef MAGNUM_TARGET_GL
 Vector2i Sdl2Application::framebufferSize() const {
     Vector2i size;
     #ifndef CORRADE_TARGET_EMSCRIPTEN
@@ -548,16 +570,17 @@ Vector2i Sdl2Application::framebufferSize() const {
     SDL_GL_GetDrawableSize(_window, &size.x(), &size.y());
     #else
     CORRADE_ASSERT(_glContext, "Platform::Sdl2Application::framebufferSize(): no window opened", {});
-    emscripten_get_canvas_element_size(nullptr, &size.x(), &size.y());
+    emscripten_get_canvas_element_size("#canvas", &size.x(), &size.y());
     #endif
     return size;
 }
+#endif
 
 #ifdef CORRADE_TARGET_EMSCRIPTEN
 void Sdl2Application::setContainerCssClass(const std::string& cssClass) {
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wdollar-in-identifier-extension"
-    EM_ASM_({document.getElementById('container').className = Pointer_stringify($0, $1);}, cssClass.data(), cssClass.size());
+    EM_ASM_({document.getElementById('container').className = AsciiToString($0);}, cssClass.data());
     #pragma GCC diagnostic pop
 }
 #endif
@@ -616,15 +639,16 @@ int Sdl2Application::exec() {
         static_cast<Sdl2Application*>(arg)->mainLoopIteration();
     }, this, 0, true);
     #endif
-    return 0;
+    return _exitCode;
 }
 
-void Sdl2Application::exit() {
+void Sdl2Application::exit(int exitCode) {
     #ifndef CORRADE_TARGET_EMSCRIPTEN
     _flags |= Flag::Exit;
     #else
     emscripten_cancel_main_loop();
     #endif
+    _exitCode = exitCode;
 }
 
 void Sdl2Application::mainLoopIteration() {
@@ -638,14 +662,18 @@ void Sdl2Application::mainLoopIteration() {
        avoid resizing the canvas when the user doesn't want that. Related
        issue: https://github.com/kripken/emscripten/issues/1731 */
     if(_flags & Flag::Resizable) {
-        /** @todo don't hardcode "module" here, make it configurable from outside */
         Vector2d canvasSize;
-        emscripten_get_element_css_size("module", &canvasSize.x(), &canvasSize.y());
+        /* Emscripten 1.38.27 changed to generic CSS selectors from element
+           IDs depending on -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1
+           being set (which we can't detect at compile time). See above for the
+           reason why we hardcode #canvas here. */
+        emscripten_get_element_css_size("#canvas", &canvasSize.x(), &canvasSize.y());
+
         const Vector2i canvasSizei{canvasSize};
         if(canvasSizei != _lastKnownCanvasSize) {
             _lastKnownCanvasSize = canvasSizei;
             const Vector2i size = _dpiScaling*canvasSizei;
-            emscripten_set_canvas_element_size(nullptr, size.x(), size.y());
+            emscripten_set_canvas_element_size("#canvas", size.x(), size.y());
             ViewportEvent e{size, size, _dpiScaling};
             viewportEvent(e);
             _flags |= Flag::Redraw;
@@ -665,62 +693,76 @@ void Sdl2Application::mainLoopIteration() {
                            https://github.com/kripken/emscripten/issues/1731 */
                         CORRADE_ASSERT_UNREACHABLE();
                         #else
-                        ViewportEvent e{{event.window.data1, event.window.data2}, framebufferSize(), _dpiScaling};
+                        /* {event.window.data1, event.window.data2} seems to be
+                           framebuffer size and not window size on macOS, which
+                           is weird. Query the values directly instead to be
+                           really sure. */
+                        ViewportEvent e{event, windowSize(),
+                            #ifdef MAGNUM_TARGET_GL
+                            framebufferSize(),
+                            #endif
+                            _dpiScaling};
                         /** @todo handle also WM_DPICHANGED events when a window is moved between displays with different DPI */
                         viewportEvent(e);
                         _flags |= Flag::Redraw;
                         #endif
                     } break;
+                    /* Direct everything that wasn't exposed via a callback to
+                       anyEvent(), so users can implement event handling for
+                       things not present in the Application APIs */
                     case SDL_WINDOWEVENT_EXPOSED:
                         _flags |= Flag::Redraw;
+                        if(!(_flags & Flag::NoAnyEvent)) anyEvent(event);
                         break;
+                    default:
+                        if(!(_flags & Flag::NoAnyEvent)) anyEvent(event);
                 } break;
 
             case SDL_KEYDOWN:
             case SDL_KEYUP: {
-                KeyEvent e(static_cast<KeyEvent::Key>(event.key.keysym.sym), fixedModifiers(event.key.keysym.mod), event.key.repeat != 0);
+                KeyEvent e{event, static_cast<KeyEvent::Key>(event.key.keysym.sym), fixedModifiers(event.key.keysym.mod), event.key.repeat != 0};
                 event.type == SDL_KEYDOWN ? keyPressEvent(e) : keyReleaseEvent(e);
             } break;
 
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP: {
-                MouseEvent e(static_cast<MouseEvent::Button>(event.button.button), {event.button.x, event.button.y}
+                MouseEvent e{event, static_cast<MouseEvent::Button>(event.button.button), {event.button.x, event.button.y}
                     #ifndef CORRADE_TARGET_EMSCRIPTEN
                     , event.button.clicks
                     #endif
-                    );
+                    };
                 event.type == SDL_MOUSEBUTTONDOWN ? mousePressEvent(e) : mouseReleaseEvent(e);
             } break;
 
             case SDL_MOUSEWHEEL: {
-                MouseScrollEvent e{{Float(event.wheel.x), Float(event.wheel.y)}};
+                MouseScrollEvent e{event, {Float(event.wheel.x), Float(event.wheel.y)}};
                 mouseScrollEvent(e);
             } break;
 
             case SDL_MOUSEMOTION: {
-                MouseMoveEvent e({event.motion.x, event.motion.y}, {event.motion.xrel, event.motion.yrel}, static_cast<MouseMoveEvent::Button>(event.motion.state));
+                MouseMoveEvent e{event, {event.motion.x, event.motion.y}, {event.motion.xrel, event.motion.yrel}, static_cast<MouseMoveEvent::Button>(event.motion.state)};
                 mouseMoveEvent(e);
                 break;
             }
 
             case SDL_MULTIGESTURE: {
-                MultiGestureEvent e({event.mgesture.x, event.mgesture.y}, event.mgesture.dTheta, event.mgesture.dDist, event.mgesture.numFingers);
+                MultiGestureEvent e{event, {event.mgesture.x, event.mgesture.y}, event.mgesture.dTheta, event.mgesture.dDist, event.mgesture.numFingers};
                 multiGestureEvent(e);
                 break;
             }
 
             case SDL_TEXTINPUT: {
-                TextInputEvent e{{event.text.text, std::strlen(event.text.text)}};
+                TextInputEvent e{event, {event.text.text, std::strlen(event.text.text)}};
                 textInputEvent(e);
             } break;
 
             case SDL_TEXTEDITING: {
-                TextEditingEvent e{{event.edit.text, std::strlen(event.text.text)}, event.edit.start, event.edit.length};
+                TextEditingEvent e{event, {event.edit.text, std::strlen(event.text.text)}, event.edit.start, event.edit.length};
                 textEditingEvent(e);
             } break;
 
             case SDL_QUIT: {
-                ExitEvent e;
+                ExitEvent e{event};
                 exitEvent(e);
                 if(e.isAccepted()) {
                     #ifndef CORRADE_TARGET_EMSCRIPTEN
@@ -731,6 +773,10 @@ void Sdl2Application::mainLoopIteration() {
                     return;
                 }
             } break;
+
+            /* Direct everything else to anyEvent(), so users can implement
+               event handling for things not present in the Application APIs */
+            default: if(!(_flags & Flag::NoAnyEvent)) anyEvent(event);
         }
     }
 
@@ -816,10 +862,22 @@ void Sdl2Application::tickEvent() {
     _flags |= Flag::NoTickEvent;
 }
 
+void Sdl2Application::anyEvent(SDL_Event&) {
+    /* If this got called, the any event is not implemented by user and thus
+       we don't need to call it ever again */
+    _flags |= Flag::NoAnyEvent;
+}
+
 void Sdl2Application::viewportEvent(ViewportEvent& event) {
     #ifdef MAGNUM_BUILD_DEPRECATED
     CORRADE_IGNORE_DEPRECATED_PUSH
-    viewportEvent(event.framebufferSize());
+    viewportEvent(
+        #ifdef MAGNUM_TARGET_GL
+        event.framebufferSize()
+        #else
+        event.windowSize()
+        #endif
+    );
     CORRADE_IGNORE_DEPRECATED_POP
     #else
     static_cast<void>(event);
@@ -867,17 +925,7 @@ Sdl2Application::Configuration::Configuration():
     #else
     _size{}, /* SDL2 detects someting for us */
     #endif
-    _dpiScalingPolicy{DpiScalingPolicy::Default}
-    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-    , _sampleCount(0)
-    #ifndef CORRADE_TARGET_EMSCRIPTEN
-    /* Deliberately not setting _flags to ForwardCompatible to avoid them
-       having higher priority over GLConfiguration flags, appending that flag
-       later */
-    , _version(GL::Version::None), _srgbCapable{false}
-    #endif
-    #endif
-    {}
+    _dpiScalingPolicy{DpiScalingPolicy::Default} {}
 
 Sdl2Application::Configuration::~Configuration() = default;
 

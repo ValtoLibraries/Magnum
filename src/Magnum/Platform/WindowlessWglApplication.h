@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,13 +29,16 @@
  * @brief Class @ref Magnum::Platform::WindowlessWglApplication, @ref Magnum::Platform::WindowlessWglContext, macro @ref MAGNUM_WINDOWLESSWGLAPPLICATION_MAIN()
  */
 
-#include <memory>
+#include "Magnum/configure.h"
+
+#ifdef MAGNUM_TARGET_GL
 #ifndef DOXYGEN_GENERATING_OUTPUT
 #define WIN32_LEAN_AND_MEAN 1
 #define VC_EXTRALEAN
 #endif
 #include <windows.h>
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Containers/Pointer.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Tags.h"
@@ -61,6 +64,10 @@ Meant to be used when there is a need to manage (multiple) GL contexts
 manually. See @ref platform-windowless-contexts for more information. If no
 other application header is included, this class is also aliased to
 @cpp Platform::WindowlessGLContext @ce.
+
+@note This class is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 class WindowlessWglContext {
     public:
@@ -287,6 +294,10 @@ MAGNUM_WINDOWLESSWGLAPPLICATION_MAIN(MyApplication)
 If no other application header is included, this class is also aliased to
 @cpp Platform::WindowlessApplication @ce and the macro is aliased to
 @cpp MAGNUM_WINDOWLESSAPPLICATION_MAIN() @ce to simplify porting.
+
+@note This class is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 class WindowlessWglApplication {
     public:
@@ -388,7 +399,7 @@ class WindowlessWglApplication {
 
     private:
         WindowlessWglContext _glContext;
-        std::unique_ptr<Platform::GLContext> _context;
+        Containers::Pointer<Platform::GLContext> _context;
 };
 
 /** @hideinitializer
@@ -427,5 +438,8 @@ typedef WindowlessWglContext WindowlessGLContext;
 #endif
 
 }}
+#else
+#error this header is available only in the OpenGL build
+#endif
 
 #endif

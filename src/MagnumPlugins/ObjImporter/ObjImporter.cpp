@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,8 @@
 #include <sstream>
 #include <unordered_map>
 #include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/Optional.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/String.h>
 
 #include "Magnum/Mesh.h"
@@ -44,7 +46,7 @@ struct ObjImporter::File {
     std::unordered_map<std::string, UnsignedInt> meshesForName;
     std::vector<std::string> meshNames;
     std::vector<std::tuple<std::streampos, std::streampos, UnsignedInt, UnsignedInt, UnsignedInt>> meshes;
-    std::unique_ptr<std::istream> in;
+    Containers::Pointer<std::istream> in;
 };
 
 namespace {
@@ -101,7 +103,7 @@ void ObjImporter::doClose() { _file.reset(); }
 bool ObjImporter::doIsOpened() const { return !!_file; }
 
 void ObjImporter::doOpenFile(const std::string& filename) {
-    std::unique_ptr<std::istream> in{new std::ifstream{filename, std::ios::binary}};
+    Containers::Pointer<std::istream> in{new std::ifstream{filename, std::ios::binary}};
     if(!in->good()) {
         Error() << "Trade::ObjImporter::openFile(): cannot open file" << filename;
         return;

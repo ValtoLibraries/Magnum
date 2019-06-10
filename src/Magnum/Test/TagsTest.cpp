@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "Magnum/Magnum.h"
 #include "Magnum/Tags.h"
 
-namespace Magnum { namespace Test {
+namespace Magnum { namespace Test { namespace {
 
 struct TagsTest: TestSuite::Tester {
     explicit TagsTest();
@@ -44,6 +44,6 @@ void TagsTest::noDefaultConstructor() {
     CORRADE_VERIFY(!std::is_default_constructible<NoCreateT>::value);
 }
 
-}}
+}}}
 
 CORRADE_TEST_MAIN(Magnum::Test::TagsTest)

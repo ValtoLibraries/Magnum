@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@ namespace Magnum {
 
 @tableofcontents
 @m_footernavigation
+@m_keywords{Plugins}
 
 The base Magnum libraries contain math support, scene graph implementation and
 are able to interact with graphics and audio hardware. However, they don't
@@ -134,12 +135,12 @@ but there is no need to change the above code, as it will work for both dynamic
 and static case.
 
 The static plugin needs to be explicitly registered so the plugin manager is
-aware it's there. If you use CMake 3.1 and newer it's done automatically.
-Otherwise, you can achieve the same if you explicitly @cpp #include @ce the
-static plugin import file (named `importStaticPlugin.cpp`, residing in plugin's
-include directory) in a source file that gets compiled into your main
-application. The static import file contains just a simple call to
-@ref CORRADE_PLUGIN_IMPORT(), see its documentation for further information.
+aware it's there. If you use CMake, it's done automatically. Otherwise, you can
+achieve the same if you explicitly @cpp #include @ce the static plugin import
+file (named `importStaticPlugin.cpp`, residing in plugin's include directory)
+in a source file that gets compiled into your main application. The static
+import file contains just a simple call to @ref CORRADE_PLUGIN_IMPORT(), see
+its documentation for further information.
 
 @snippet plugins.cpp static-import
 

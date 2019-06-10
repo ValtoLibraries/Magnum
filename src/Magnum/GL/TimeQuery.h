@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,7 +47,8 @@ usage of both methods:
 
 @snippet MagnumGL.cpp TimeQuery-usage2
 
-Using the latter results in fewer OpenGL calls when doing more measures.
+Using the latter results in fewer OpenGL calls when doing more measures. All
+times are reported in nanoseconds.
 
 @requires_gl33 Extension @gl_extension{ARB,timer_query}
 @requires_es_extension Extension @gl_extension{EXT,disjoint_timer_query}
@@ -66,8 +67,8 @@ class TimeQuery: public AbstractQuery {
          */
         enum class Target: GLenum {
             /**
-             * Elapsed time. Use @ref result<UnsignedLong>() or @ref result<Long>()
-             * to retrieve the result.
+             * Elapsed time, in nanoseconds. Use @ref result<UnsignedLong>() or
+             * @ref result<Long>() to retrieve the result.
              * @see @ref timestamp()
              */
             #ifndef MAGNUM_TARGET_GLES
@@ -77,9 +78,9 @@ class TimeQuery: public AbstractQuery {
             #endif
 
             /**
-             * Timestamp. For use with @ref timestamp() only, use
-             * @ref result<UnsignedLong>() or @ref result<Long>() to retrieve
-             * the result.
+             * Timestamp, in nanoseconds. For use with @ref timestamp() only,
+             * use @ref result<UnsignedLong>() or @ref result<Long>() to
+             * retrieve the result.
              */
             #ifndef MAGNUM_TARGET_GLES
             Timestamp = GL_TIMESTAMP
@@ -173,18 +174,7 @@ class TimeQuery: public AbstractQuery {
         explicit TimeQuery(GLuint id, Target target, ObjectFlags flags) noexcept: AbstractQuery{id, GLenum(target), flags} {}
 };
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::TimeQuery
- * @deprecated Use @ref GL::TimeQuery instead.
- */
-typedef CORRADE_DEPRECATED("use GL::TimeQuery instead") Magnum::GL::TimeQuery TimeQuery;
-#endif
-
-}
+}}
 #else
 #error this header is not available in WebGL build
 #endif

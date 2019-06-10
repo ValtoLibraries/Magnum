@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,12 +23,13 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <new>
 #include <Corrade/TestSuite/Tester.h>
 
 #include "Magnum/Math/Constants.h"
 #include "Magnum/Math/Unit.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct UnitTest: Corrade::TestSuite::Tester {
     explicit UnitTest();
@@ -86,6 +87,9 @@ void UnitTest::constructDefault() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Sec>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Sec, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Sec>::value));
 }
 
 void UnitTest::constructNoInit() {
@@ -198,6 +202,6 @@ void UnitTest::multiplyDivide() {
     CORRADE_COMPARE(h, a);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::UnitTest)

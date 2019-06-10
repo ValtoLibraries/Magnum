@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,14 +67,11 @@ See @ref matrix-vector for brief introduction.
 template<class T> class Vector3: public Vector<3, T> {
     public:
         /**
-         * @brief Vector in direction of X axis (right)
+         * @brief Vector in a direction of X axis (right)
          *
          * Usable for translation or rotation along given axis, for example:
          *
-         * @code{.cpp}
-         * Matrix4::translation(Vector3::xAxis(5.0f)); // same as Matrix4::translation({5.0f, 0.0f, 0.0f});
-         * Matrix4::rotation(30.0_degf, Vector3::xAxis()); // same as Matrix::rotation(30.0_degf, {1.0f, 0.0f, 0.0f});
-         * @endcode
+         * @snippet MagnumMath.cpp Vector3-xAxis
          *
          * @see @ref yAxis(), @ref zAxis(), @ref xScale(), @ref Color3::red(),
          *      @ref Matrix4::right()
@@ -82,7 +79,7 @@ template<class T> class Vector3: public Vector<3, T> {
         constexpr static Vector3<T> xAxis(T length = T(1)) { return {length, T(0), T(0)}; }
 
         /**
-         * @brief Vector in direction of Y axis (up)
+         * @brief Vector in a direction of Y axis (up)
          *
          * See @ref xAxis() for more information.
          * @see @ref yScale(), @ref Color3::green(), @ref Matrix4::up()
@@ -90,7 +87,7 @@ template<class T> class Vector3: public Vector<3, T> {
         constexpr static Vector3<T> yAxis(T length = T(1)) { return {T(0), length, T(0)}; }
 
         /**
-         * @brief Vector in direction of Z axis (backward)
+         * @brief Vector in a direction of Z axis (backward)
          *
          * See @ref xAxis() for more information.
          * @see @ref zScale(), @ref Color3::blue(), @ref Matrix4::backward()
@@ -98,20 +95,18 @@ template<class T> class Vector3: public Vector<3, T> {
         constexpr static Vector3<T> zAxis(T length = T(1)) { return {T(0), T(0), length}; }
 
         /**
-         * @brief Scaling vector in direction of X axis (width)
+         * @brief Scaling vector in a direction of X axis (width)
          *
          * Usable for scaling along given direction, for example:
          *
-         * @code{.cpp}
-         * Matrix4::scaling(Vector3::xScale(-2.0f)); // same as Matrix4::scaling({-2.0f, 1.0f, 1.0f});
-         * @endcode
+         * @snippet MagnumMath.cpp Vector3-xScale
          *
          * @see @ref yScale(), @ref zScale(), @ref Color3::cyan(), @ref xAxis()
          */
         constexpr static Vector3<T> xScale(T scale) { return {scale, T(1), T(1)}; }
 
         /**
-         * @brief Scaling vector in direction of Y axis (height)
+         * @brief Scaling vector in a direction of Y axis (height)
          *
          * See @ref xScale() for more information.
          * @see @ref yAxis(), @ref Color3::magenta()
@@ -119,28 +114,25 @@ template<class T> class Vector3: public Vector<3, T> {
         constexpr static Vector3<T> yScale(T scale) { return {T(1), scale, T(1)}; }
 
         /**
-         * @brief Scaling vector in direction of Z axis (depth)
+         * @brief Scaling vector in a direction of Z axis (depth)
          *
          * See @ref xScale() for more information.
          * @see @ref zAxis(), @ref Color3::yellow()
          */
         constexpr static Vector3<T> zScale(T scale) { return {T(1), T(1), scale}; }
 
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Vector3(ZeroInitT).
+         */
+        constexpr /*implicit*/ Vector3() noexcept: Vector<3, T>{ZeroInit} {}
+
         /** @copydoc Vector::Vector(ZeroInitT) */
-        constexpr /*implicit*/ Vector3(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector<3, T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Vector3(ZeroInitT) noexcept: Vector<3, T>{ZeroInit} {}
 
         /** @copydoc Vector::Vector(NoInitT) */
-        explicit Vector3(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector<3, T>{NoInit}
-            #endif
-            {}
+        explicit Vector3(NoInitT) noexcept: Vector<3, T>{NoInit} {}
 
         /** @copydoc Vector::Vector(T) */
         constexpr explicit Vector3(T value) noexcept: Vector<3, T>(value) {}
@@ -184,48 +176,48 @@ template<class T> class Vector3: public Vector<3, T> {
          *
          * @see @ref r()
          */
-        T& x() { return (*this)[0]; }
-        constexpr T x() const { return (*this)[0]; }    /**< @overload */
+        T& x() { return Vector<3, T>::_data[0]; }
+        constexpr T x() const { return Vector<3, T>::_data[0]; } /**< @overload */
 
         /**
          * @brief Y component
          *
          * @see @ref g()
          */
-        T& y() { return (*this)[1]; }
-        constexpr T y() const { return (*this)[1]; }    /**< @overload */
+        T& y() { return Vector<3, T>::_data[1]; }
+        constexpr T y() const { return Vector<3, T>::_data[1]; } /**< @overload */
 
         /**
          * @brief Z component
          *
          * @see @ref b()
          */
-        T& z() { return (*this)[2]; }
-        constexpr T z() const { return (*this)[2]; }    /**< @overload */
+        T& z() { return Vector<3, T>::_data[2]; }
+        constexpr T z() const { return Vector<3, T>::_data[2]; } /**< @overload */
 
         /**
          * @brief R component
          *
          * Equivalent to @ref x().
          */
-        T& r() { return x(); }
-        constexpr T r() const { return x(); }           /**< @overload */
+        T& r() { return Vector<3, T>::_data[0]; }
+        constexpr T r() const { return Vector<3, T>::_data[0]; } /**< @overload */
 
         /**
          * @brief G component
          *
          * Equivalent to @ref y().
          */
-        T& g() { return y(); }
-        constexpr T g() const { return y(); }           /**< @overload */
+        T& g() { return Vector<3, T>::_data[1]; }
+        constexpr T g() const { return Vector<3, T>::_data[1]; } /**< @overload */
 
         /**
          * @brief B component
          *
          * Equivalent to @ref z().
          */
-        T& b() { return z(); }
-        constexpr T b() const { return z(); }           /**< @overload */
+        T& b() { return Vector<3, T>::_data[2]; }
+        constexpr T b() const { return Vector<3, T>::_data[2]; } /**< @overload */
 
         /**
          * @brief XY part of the vector
@@ -234,7 +226,9 @@ template<class T> class Vector3: public Vector<3, T> {
          * @see @ref swizzle()
          */
         Vector2<T>& xy() { return Vector2<T>::from(Vector<3, T>::data()); }
-        constexpr const Vector2<T> xy() const { return {x(), y()}; } /**< @overload */
+        constexpr const Vector2<T> xy() const {
+            return {Vector<3, T>::_data[0], Vector<3, T>::_data[1]};
+        } /**< @overload */
 
         MAGNUM_VECTOR_SUBCLASS_IMPLEMENTATION(3, Vector3)
 };
@@ -249,11 +243,6 @@ namespace Implementation {
     template<class T> struct StrictWeakOrdering<Vector3<T>>: StrictWeakOrdering<Vector<3, T>> {};
 }
 
-}}
-
-namespace Corrade { namespace Utility {
-    /** @configurationvalue{Magnum::Math::Vector3} */
-    template<class T> struct ConfigurationValue<Magnum::Math::Vector3<T>>: public ConfigurationValue<Magnum::Math::Vector<3, T>> {};
 }}
 
 #endif

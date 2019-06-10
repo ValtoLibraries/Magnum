@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,23 +24,24 @@
 */
 
 #include <sstream>
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
-#include <Corrade/Utility/Format.h>
+#include <Corrade/Utility/DebugStl.h>
+#include <Corrade/Utility/FormatStl.h>
 
 #include "Magnum/Trade/AbstractImporter.h"
 #include "Magnum/Trade/ImageData.h"
 
 #include "configure.h"
 
-namespace Magnum { namespace Trade { namespace Test {
+namespace Magnum { namespace Trade { namespace Test { namespace {
 
 struct AnyImageImporterTest: TestSuite::Tester {
     explicit AnyImageImporterTest();
 
     void load();
-
     void detect();
 
     void unknownExtension();
@@ -51,9 +52,7 @@ struct AnyImageImporterTest: TestSuite::Tester {
     PluginManager::Manager<AbstractImporter> _manager{"nonexistent"};
 };
 
-namespace {
-
-Containers::Optional<Containers::ArrayView<const char>> fileCallback(const std::string& filename, Trade::ImporterFileCallbackPolicy, Containers::Array<char>& storage) {
+Containers::Optional<Containers::ArrayView<const char>> fileCallback(const std::string& filename, InputFileCallbackPolicy, Containers::Array<char>& storage) {
     storage = Utility::Directory::read(filename);
     return Containers::ArrayView<const char>{storage};
 }
@@ -61,7 +60,7 @@ Containers::Optional<Containers::ArrayView<const char>> fileCallback(const std::
 constexpr struct {
     const char* name;
     const char* filename;
-    Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, Trade::ImporterFileCallbackPolicy, Containers::Array<char>&);
+    Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, InputFileCallbackPolicy, Containers::Array<char>&);
 } LoadData[]{
     {"TGA", TGA_FILE, nullptr},
     {"TGA data", TGA_FILE, fileCallback}
@@ -70,13 +69,14 @@ constexpr struct {
 constexpr struct {
     const char* name;
     const char* filename;
-    Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, Trade::ImporterFileCallbackPolicy, Containers::Array<char>&);
+    Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, InputFileCallbackPolicy, Containers::Array<char>&);
     const char* plugin;
 } DetectData[]{
     {"PNG", "rgb.png", nullptr, "PngImporter"},
     {"PNG data", "rgb.png", fileCallback, "PngImporter"},
     {"JPEG", "gray.jpg", nullptr, "JpegImporter"},
     {"JPEG data", "gray.jpg", fileCallback, "JpegImporter"},
+    {"JPEG uppercase", "uppercase.JPG", nullptr, "JpegImporter"},
     {"JPEG2000", "image.jp2", nullptr, "Jpeg2000Importer"},
     {"EXR", "image.exr", nullptr, "OpenExrImporter"},
     {"EXR data", "image.exr", fileCallback, "OpenExrImporter"},
@@ -90,8 +90,6 @@ constexpr struct {
     {"TIFF", "image.tiff", nullptr, "TiffImporter"}
     /* Not testing everything, just the most important ones */
 };
-
-}
 
 AnyImageImporterTest::AnyImageImporterTest() {
     addInstancedTests({&AnyImageImporterTest::load},
@@ -122,7 +120,7 @@ void AnyImageImporterTest::load() {
     if(!(_manager.loadState("TgaImporter") & PluginManager::LoadState::Loaded))
         CORRADE_SKIP("TgaImporter plugin not enabled, cannot test");
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
 
     Containers::Array<char> storage;
     importer->setFileCallback(data.callback, storage);
@@ -142,7 +140,7 @@ void AnyImageImporterTest::detect() {
     auto&& data = DetectData[testCaseInstanceId()];
     setTestCaseDescription(data.name);
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
 
     Containers::Array<char> storage;
     importer->setFileCallback(data.callback, storage);
@@ -164,7 +162,7 @@ void AnyImageImporterTest::unknownExtension() {
     std::ostringstream output;
     Error redirectError{&output};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
     CORRADE_VERIFY(!importer->openFile("image.xcf"));
 
     CORRADE_COMPARE(output.str(), "Trade::AnyImageImporter::openFile(): cannot determine type of file image.xcf\n");
@@ -176,7 +174,7 @@ void AnyImageImporterTest::unknownSignature() {
 
     constexpr const char data[]{ 0x25, 0x3a };
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
     CORRADE_VERIFY(!importer->openData(data));
 
     CORRADE_COMPARE(output.str(), "Trade::AnyImageImporter::openData(): cannot determine type from signature 0x253a0000\n");
@@ -186,12 +184,12 @@ void AnyImageImporterTest::emptyData() {
     std::ostringstream output;
     Error redirectError{&output};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("AnyImageImporter");
     CORRADE_VERIFY(!importer->openData(nullptr));
 
     CORRADE_COMPARE(output.str(), "Trade::AnyImageImporter::openData(): file is empty\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Trade::Test::AnyImageImporterTest)

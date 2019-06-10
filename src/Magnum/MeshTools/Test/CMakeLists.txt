@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,16 +27,18 @@ corrade_add_test(MeshToolsCombineIndexedArraysTest CombineIndexedArraysTest.cpp 
 corrade_add_test(MeshToolsCompressIndicesTest CompressIndicesTest.cpp LIBRARIES MagnumMeshToolsTestLib)
 corrade_add_test(MeshToolsDuplicateTest DuplicateTest.cpp LIBRARIES Magnum)
 corrade_add_test(MeshToolsFlipNormalsTest FlipNormalsTest.cpp LIBRARIES MagnumMeshToolsTestLib)
-corrade_add_test(MeshToolsGenerateFlatNormalsTest GenerateFlatNormalsTest.cpp LIBRARIES MagnumMeshToolsTestLib)
+corrade_add_test(MeshToolsGenerateNormalsTest GenerateNormalsTest.cpp LIBRARIES MagnumMeshToolsTestLib MagnumPrimitives)
 corrade_add_test(MeshToolsInterleaveTest InterleaveTest.cpp LIBRARIES Magnum)
 corrade_add_test(MeshToolsRemoveDuplicatesTest RemoveDuplicatesTest.cpp LIBRARIES Magnum)
 corrade_add_test(MeshToolsSubdivideTest SubdivideTest.cpp LIBRARIES Magnum)
 corrade_add_test(MeshToolsTipsifyTest TipsifyTest.cpp LIBRARIES MagnumMeshTools)
 corrade_add_test(MeshToolsTransformTest TransformTest.cpp LIBRARIES MagnumMeshTools)
+corrade_add_test(MeshToolsSubdivideRemov___Benchmark SubdivideRemoveDuplicatesBenchmark.cpp LIBRARIES MagnumPrimitives)
 
 # Graceful assert for testing
 set_property(TARGET
     MeshToolsCombineIndexedArraysTest
+    MeshToolsDuplicateTest
     MeshToolsInterleaveTest
     MeshToolsSubdivideTest
     APPEND PROPERTY COMPILE_DEFINITIONS "CORRADE_GRACEFUL_ASSERT")
@@ -46,16 +48,81 @@ set_target_properties(
     MeshToolsCompressIndicesTest
     MeshToolsDuplicateTest
     MeshToolsFlipNormalsTest
-    MeshToolsGenerateFlatNormalsTest
+    MeshToolsGenerateNormalsTest
     MeshToolsInterleaveTest
     MeshToolsRemoveDuplicatesTest
     MeshToolsSubdivideTest
     MeshToolsTipsifyTest
     MeshToolsTransformTest
+    MeshToolsSubdivideRemov___Benchmark
     PROPERTIES FOLDER "Magnum/MeshTools/Test")
 
-if(WITH_PRIMITIVES)
-    corrade_add_test(MeshToolsSubdivideRemov___Benchmark SubdivideRemoveDuplicatesBenchmark.cpp LIBRARIES MagnumPrimitives)
+if(BUILD_GL_TESTS)
+    # Otherwise CMake complains that Corrade::PluginManager is not found
+    find_package(Corrade REQUIRED PluginManager)
 
-    set_target_properties(MeshToolsSubdivideRemov___Benchmark PROPERTIES FOLDER "Magnum/MeshTools/Test")
+    corrade_add_resource(FullScreenTriangleGLTest_RESOURCES resources.conf)
+    set_target_properties(FullScreenTriangleGLTest_RESOURCES-dependencies PROPERTIES FOLDER "Magnum/MeshTools/Test")
+
+    corrade_add_test(MeshToolsFullScreenTriangleGLTest
+        FullScreenTriangleGLTest.cpp ${FullScreenTriangleGLTest_RESOURCES}
+        LIBRARIES MagnumMeshTools MagnumGL MagnumOpenGLTester)
+
+    if(CORRADE_TARGET_EMSCRIPTEN OR CORRADE_TARGET_ANDROID)
+        set(COMPILEGLTEST_TEST_DIR ".")
+    else()
+        set(COMPILEGLTEST_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/CompileTestFiles)
+    endif()
+
+    # CMake before 3.8 has broken $<TARGET_FILE*> expressions for iOS (see
+    # https://gitlab.kitware.com/cmake/cmake/merge_requests/404) and since
+    # Corrade doesn't support dynamic plugins on iOS, this sorta works around
+    # that. Should be revisited when updating Travis to newer Xcode (current
+    # has CMake 3.6).
+    if(NOT BUILD_PLUGINS_STATIC)
+        if(WITH_ANYIMAGEIMPORTER)
+            set(ANYIMAGEIMPORTER_PLUGIN_FILENAME $<TARGET_FILE:AnyImageImporter>)
+        endif()
+        if(WITH_TGAIMPORTER)
+            set(TGAIMPORTER_PLUGIN_FILENAME $<TARGET_FILE:TgaImporter>)
+        endif()
+
+        # First replace ${} variables, then $<> generator expressions
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                       ${CMAKE_CURRENT_BINARY_DIR}/configure.h.in)
+        file(GENERATE OUTPUT $<TARGET_FILE_DIR:MeshToolsCompileGLTest>/configure.h
+            INPUT ${CMAKE_CURRENT_BINARY_DIR}/configure.h.in)
+    else()
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                       ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+    endif()
+
+    corrade_add_test(MeshToolsCompileGLTest CompileGLTest.cpp
+        LIBRARIES
+            MagnumDebugTools
+            MagnumGL
+            MagnumOpenGLTester
+            MagnumMeshTools
+            MagnumShaders
+        FILES
+            CompileTestFiles/color2D.tga
+            CompileTestFiles/color3D.tga
+            CompileTestFiles/flat2D.tga
+            CompileTestFiles/flat3D.tga
+            CompileTestFiles/phong.tga
+            CompileTestFiles/phong-flat.tga
+            CompileTestFiles/textured2D.tga
+            CompileTestFiles/textured3D.tga)
+    set_target_properties(MeshToolsCompileGLTest PROPERTIES FOLDER "Magnum/MeshTools/Test")
+    if(NOT BUILD_PLUGINS_STATIC)
+        target_include_directories(MeshToolsCompileGLTest PRIVATE $<TARGET_FILE_DIR:MeshToolsCompileGLTest>)
+    else()
+        target_include_directories(MeshToolsCompileGLTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+        if(WITH_ANYIMAGEIMPORTER)
+            target_link_libraries(MeshToolsCompileGLTest PRIVATE AnyImageImporter)
+        endif()
+        if(WITH_TGAIMPORTER)
+            target_link_libraries(MeshToolsCompileGLTest PRIVATE TgaImporter)
+        endif()
+    endif()
 endif()

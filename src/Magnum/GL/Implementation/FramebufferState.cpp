@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,18 +65,12 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
 
         checkStatusImplementation = &AbstractFramebuffer::checkStatusImplementationDSA;
 
-        clearIImplementation = &AbstractFramebuffer::clearImplementationDSA;
-        clearUIImplementation = &AbstractFramebuffer::clearImplementationDSA;
-        clearFImplementation = &AbstractFramebuffer::clearImplementationDSA;
-        clearFIImplementation = &AbstractFramebuffer::clearImplementationDSA;
-
         drawBuffersImplementation = &AbstractFramebuffer::drawBuffersImplementationDSA;
         drawBufferImplementation = &AbstractFramebuffer::drawBufferImplementationDSA;
         readBufferImplementation = &AbstractFramebuffer::readBufferImplementationDSA;
 
         copySub1DImplementation = &AbstractFramebuffer::copySub1DImplementationDSA;
         copySub2DImplementation = &AbstractFramebuffer::copySub2DImplementationDSA;
-        copySubCubeMapImplementation = &AbstractFramebuffer::copySubCubeMapImplementationDSA;
         copySub3DImplementation = &AbstractFramebuffer::copySub3DImplementationDSA;
 
         renderbufferImplementation = &Framebuffer::renderbufferImplementationDSA;
@@ -86,51 +80,14 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
            function to specify cube map face */
         texture2DImplementation = &Framebuffer::texture2DImplementationDSA;
         textureImplementation = &Framebuffer::textureImplementationDSA;
-        textureCubeMapImplementation = &Framebuffer::textureCubeMapImplementationDSA;
         textureLayerImplementation = &Framebuffer::textureLayerImplementationDSA;
 
         renderbufferStorageImplementation = &Renderbuffer::storageImplementationDSA;
 
-    } else if(context.isExtensionSupported<Extensions::EXT::direct_state_access>()) {
-        extensions.emplace_back(Extensions::EXT::direct_state_access::string());
-
-        checkStatusImplementation = &AbstractFramebuffer::checkStatusImplementationDSAEXT;
-
-        /* I don't bother with EXT_DSA anymore */
-        clearIImplementation = &AbstractFramebuffer::clearImplementationDefault;
-        clearUIImplementation = &AbstractFramebuffer::clearImplementationDefault;
-        clearFImplementation = &AbstractFramebuffer::clearImplementationDefault;
-        clearFIImplementation = &AbstractFramebuffer::clearImplementationDefault;
-
-        drawBuffersImplementation = &AbstractFramebuffer::drawBuffersImplementationDSAEXT;
-        drawBufferImplementation = &AbstractFramebuffer::drawBufferImplementationDSAEXT;
-        readBufferImplementation = &AbstractFramebuffer::readBufferImplementationDSAEXT;
-
-        copySub1DImplementation = &AbstractFramebuffer::copySub1DImplementationDSAEXT;
-        copySub2DImplementation = &AbstractFramebuffer::copySub2DImplementationDSAEXT;
-        copySubCubeMapImplementation = &AbstractFramebuffer::copySub2DImplementationDSAEXT;
-        copySub3DImplementation = &AbstractFramebuffer::copySub3DImplementationDSAEXT;
-
-        renderbufferImplementation = &Framebuffer::renderbufferImplementationDSAEXT;
-        texture1DImplementation = &Framebuffer::texture1DImplementationDSAEXT;
-        /* The EXT_DSA implementation is the same for both 2D and cube map textures */
-        texture2DImplementation = &Framebuffer::texture2DImplementationDSAEXT;
-        textureImplementation = &Framebuffer::textureImplementationDSAEXT;
-        textureCubeMapImplementation = &Framebuffer::texture2DImplementationDSAEXT;
-        textureLayerImplementation = &Framebuffer::textureLayerImplementationDSAEXT;
-
-        renderbufferStorageImplementation = &Renderbuffer::storageImplementationDSAEXT;
     } else
     #endif
     {
         checkStatusImplementation = &AbstractFramebuffer::checkStatusImplementationDefault;
-
-        #ifndef MAGNUM_TARGET_GLES2
-        clearIImplementation = &AbstractFramebuffer::clearImplementationDefault;
-        clearUIImplementation = &AbstractFramebuffer::clearImplementationDefault;
-        clearFImplementation = &AbstractFramebuffer::clearImplementationDefault;
-        clearFIImplementation = &AbstractFramebuffer::clearImplementationDefault;
-        #endif
 
         #ifndef MAGNUM_TARGET_GLES2
         drawBuffersImplementation = &AbstractFramebuffer::drawBuffersImplementationDefault;
@@ -146,7 +103,6 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
         copySub1DImplementation = &AbstractFramebuffer::copySub1DImplementationDefault;
         #endif
         copySub2DImplementation = &AbstractFramebuffer::copySub2DImplementationDefault;
-        copySubCubeMapImplementation = &AbstractFramebuffer::copySub2DImplementationDefault;
         #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
         copySub3DImplementation = &AbstractFramebuffer::copySub3DImplementationDefault;
         #endif
@@ -160,12 +116,77 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
         #ifndef MAGNUM_TARGET_GLES
         textureImplementation = &Framebuffer::textureImplementationDefault;
         #endif
-        textureCubeMapImplementation = &Framebuffer::texture2DImplementationDefault;
         #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
         textureLayerImplementation = &Framebuffer::textureLayerImplementationDefault;
         #endif
 
         renderbufferStorageImplementation = &Renderbuffer::storageImplementationDefault;
+    }
+
+    /* DSA/non-DSA implementation for cubemaps, because Intel Windows drivers
+       have to be broken in a special way */
+    #ifndef MAGNUM_TARGET_GLES
+    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>()
+        #ifdef CORRADE_TARGET_WINDOWS
+        && (!(context.detectedDriver() & Context::DetectedDriver::IntelWindows) ||
+            context.isDriverWorkaroundDisabled("intel-windows-broken-dsa-for-cubemaps"))
+        #endif
+    ) {
+        /* Extension name added above */
+
+        copySubCubeMapImplementation = &AbstractFramebuffer::copySubCubeMapImplementationDSA;
+        textureCubeMapImplementation = &Framebuffer::textureCubeMapImplementationDSA;
+    } else
+    #endif
+    {
+        copySubCubeMapImplementation = &AbstractFramebuffer::copySub2DImplementationDefault;
+        textureCubeMapImplementation = &Framebuffer::texture2DImplementationDefault;
+    }
+
+    #if !defined(MAGNUM_TARGET_WEBGL) && !defined(MAGNUM_TARGET_GLES2)
+    /* DSA/non-DSA implementation for attaching layered cubemap arrays, because
+       ... well, guess why. */
+    #ifndef MAGNUM_TARGET_GLES
+    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>()
+        #ifdef CORRADE_TARGET_WINDOWS
+        && (!(context.detectedDriver() & Context::DetectedDriver::IntelWindows) ||
+            context.isDriverWorkaroundDisabled("intel-windows-broken-dsa-layered-cubemap-array-framebuffer-attachment"))
+        #endif
+    ) {
+        /* Extension name added above */
+
+        layeredTextureCubeMapArrayImplementation = &Framebuffer::textureImplementationDSA;
+    } else
+    #endif
+    {
+        layeredTextureCubeMapArrayImplementation = &Framebuffer::textureImplementationDefault;
+    }
+    #endif
+
+    /* DSA/non-DSA implementation for framebuffer clearing. Yes, it's because
+       Intel Windows drivers are shit. */
+    #ifndef MAGNUM_TARGET_GLES
+    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>()
+        #ifdef CORRADE_TARGET_WINDOWS
+        && (!(context.detectedDriver() & Context::DetectedDriver::IntelWindows) ||
+            context.isDriverWorkaroundDisabled("intel-windows-broken-dsa-framebuffer-clear"))
+        #endif
+    ) {
+        /* Extension name added above */
+
+        clearIImplementation = &AbstractFramebuffer::clearImplementationDSA;
+        clearUIImplementation = &AbstractFramebuffer::clearImplementationDSA;
+        clearFImplementation = &AbstractFramebuffer::clearImplementationDSA;
+        clearFIImplementation = &AbstractFramebuffer::clearImplementationDSA;
+    } else
+    #endif
+    {
+        #ifndef MAGNUM_TARGET_GLES2
+        clearIImplementation = &AbstractFramebuffer::clearImplementationDefault;
+        clearUIImplementation = &AbstractFramebuffer::clearImplementationDefault;
+        clearFImplementation = &AbstractFramebuffer::clearImplementationDefault;
+        clearFIImplementation = &AbstractFramebuffer::clearImplementationDefault;
+        #endif
     }
 
     /* Framebuffer texture attachment on ES3 */
@@ -233,6 +254,50 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
     #endif
     #endif
 
+    /* Implementation-specific color read format/type implementation */
+    #ifndef MAGNUM_TARGET_GLES
+    /* Get(Named)FramebufferParameteriv() supports querying
+       GL_IMPLEMENTATION_COLOR_READ_{FORMAT,TYPE} since GL 4.5. No
+       corresponding extension enabling this, only a mention of Bug 12360
+       that's supposed to have more information about this. But the Khronos
+       bugzilla is lost to internet history now and everything gets redirected
+       to the mostly-empty GitHub issue tracker (and it doesn't even have the
+       old bugs imported), so this is all I got. The whole thing is a
+       clusterfuck:
+        -   ES3.1 adds GetFramebufferParameteriv() but it *doesn't* allow
+            GL_IMPLEMENTATION_COLOR_READ_FORMAT to be used with it. ES3.2
+            doesn't fix that omission either. Funnily enough, most drivers
+            (including NV, Mesa and SwiftShader) support such a query, the only
+            driver which doesn't (and thus matches the spec) is on my Huawei
+            P10. What.
+        -   Intel implementation on Windows, even though supporting 4.5 and
+            DSA, returns absolute garbage on everything except the most basic
+            GetInteger query
+        -   NVidia returns broken values when calling the DSA code path
+        -   Mesa needs the framebuffer to be bound even for DSA queries */
+    if(context.isVersionSupported(Version::GL450)
+        #ifdef CORRADE_TARGET_WINDOWS
+        && !((context.detectedDriver() & Context::DetectedDriver::IntelWindows) &&
+        !context.isDriverWorkaroundDisabled("intel-windows-implementation-color-read-format-completely-broken"))
+        #endif
+    ) {
+        if(context.isExtensionSupported<Extensions::ARB::direct_state_access>()
+            && !((context.detectedDriver() & Context::DetectedDriver::NVidia) && !context.isDriverWorkaroundDisabled("nv-implementation-color-read-format-dsa-broken"))
+        ) {
+            /* DSA extension added above */
+
+            if((context.detectedDriver() & Context::DetectedDriver::Mesa) && !context.isDriverWorkaroundDisabled("mesa-implementation-color-read-format-dsa-explicit-binding"))
+                implementationColorReadFormatTypeImplementation = &AbstractFramebuffer::implementationColorReadFormatTypeImplementationFramebufferDSAMesa;
+            else implementationColorReadFormatTypeImplementation = &AbstractFramebuffer::implementationColorReadFormatTypeImplementationFramebufferDSA;
+        } else {
+            implementationColorReadFormatTypeImplementation = &AbstractFramebuffer::implementationColorReadFormatTypeImplementationFramebuffer;
+        }
+    } else
+    #endif
+    {
+        implementationColorReadFormatTypeImplementation = &AbstractFramebuffer::implementationColorReadFormatTypeImplementationGlobal;
+    }
+
     /* Framebuffer reading implementation in desktop/ES */
     #ifndef MAGNUM_TARGET_WEBGL
     #ifndef MAGNUM_TARGET_GLES
@@ -262,10 +327,6 @@ FramebufferState::FramebufferState(Context& context, std::vector<std::string>& e
 
         renderbufferStorageMultisampleImplementation = &Renderbuffer::storageMultisampleImplementationDSA;
 
-    } else if(context.isExtensionSupported<Extensions::EXT::direct_state_access>()) {
-        /* Extension added above */
-
-        renderbufferStorageMultisampleImplementation = &Renderbuffer::storageMultisampleImplementationDSAEXT;
     } else
     #endif
     {

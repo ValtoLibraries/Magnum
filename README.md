@@ -10,6 +10,7 @@ commercial purposes.
 [![Build Status](https://travis-ci.org/mosra/magnum.svg?branch=master)](https://travis-ci.org/mosra/magnum)
 [![Build Status](https://ci.appveyor.com/api/projects/status/5b477m034cfaskse/branch/master?svg=true)](https://ci.appveyor.com/project/mosra/magnum/branch/master)
 [![Coverage Status](https://codecov.io/gh/mosra/magnum/branch/master/graph/badge.svg)](https://codecov.io/gh/mosra/magnum)
+[![Hunter Package](https://img.shields.io/badge/hunter-magnum-lightgrey.svg)](https://docs.hunter.sh/en/latest/packages/pkg/magnum.html)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 -   Project homepage — https://magnum.graphics/
@@ -85,11 +86,15 @@ The best way to get started is to read the thorough
 [download, build, install and start using Magnum](https://doc.magnum.graphics/magnum/getting-started.html)
 in your project. There is also a complete
 [building documentation](https://doc.magnum.graphics/magnum/building.html) — we
-provide packages for many platforms, including Windows, Linux and macOS.
-
-After that, there are various [tutorials and examples](https://doc.magnum.graphics/magnum/example-index.html)
+provide packages for many platforms, including Windows, Linux and macOS. After
+that, there are various [tutorials and examples](https://doc.magnum.graphics/magnum/example-index.html)
 and a complete [feature guide](https://doc.magnum.graphics/magnum/features.html)
 explaining all aspects of the library.
+
+Apart from that, various Magnum functionality is available through
+[single-header libraries](https://doc.magnum.graphics/magnum/singles.html).
+Just download a file, `#include` it in your project and you're ready to go! No
+buildsystem wrangling needed.
 
 RELATED PROJECTS
 ================
@@ -112,6 +117,11 @@ separate repositories.
 -   **Magnum Extras** — playground for testing new APIs, specialized stuff
     that doesn't necessarily need to be a part of main Magnum repository or
     mutually exclusive functionality: https://github.com/mosra/magnum-extras
+-   **Magnum Bindings** — bindings to other languages such as Python are at
+    https://github.com/mosra/magnum-bindings
+-   **Magnum Singles** — various functionality from Magnum available as
+    easy-to-integrate fast-to-compile single-header libraries:
+    https://github.com/mosra/magnum-singles
 
 Outside of the project itself, there's also a lot of community contributions
 — [check them out on the website](https://magnum.graphics/features/community/).

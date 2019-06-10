@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -24,6 +24,7 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <Corrade/Containers/Reference.h>
 #include <Corrade/TestSuite/Tester.h>
 
 #include "Magnum/Audio/Context.h"
@@ -36,7 +37,7 @@
 #include "Magnum/SceneGraph/MatrixTransformation2D.h"
 #include "Magnum/SceneGraph/MatrixTransformation3D.h"
 
-namespace Magnum { namespace Audio { namespace Test {
+namespace Magnum { namespace Audio { namespace Test { namespace {
 
 typedef SceneGraph::Scene<SceneGraph::MatrixTransformation2D> Scene2D;
 typedef SceneGraph::Object<SceneGraph::MatrixTransformation2D> Object2D;
@@ -106,6 +107,6 @@ void ListenerALTest::updateGroups() {
     CORRADE_COMPARE(playable.source().position(), offset*13.0f);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Audio::Test::ListenerALTest)

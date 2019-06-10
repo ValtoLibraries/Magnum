@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,19 +25,22 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Audio/Source.h"
 
-namespace Magnum { namespace Audio { namespace Test {
+namespace Magnum { namespace Audio { namespace Test { namespace {
 
 struct SourceTest: TestSuite::Tester {
     explicit SourceTest();
 
     void debugState();
+    void debugType();
 };
 
 SourceTest::SourceTest() {
-    addTests({&SourceTest::debugState});
+    addTests({&SourceTest::debugState,
+              &SourceTest::debugType});
 }
 
 void SourceTest::debugState() {
@@ -46,6 +49,12 @@ void SourceTest::debugState() {
     CORRADE_COMPARE(out.str(), "Audio::Source::State::Playing Audio::Source::State(0xdead)\n");
 }
 
-}}}
+void SourceTest::debugType() {
+    std::ostringstream out;
+    Debug(&out) << Source::Type::Streaming << Source::Type(0xdead);
+    CORRADE_COMPARE(out.str(), "Audio::Source::Type::Streaming Audio::Source::Type(0xdead)\n");
+}
+
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Audio::Test::SourceTest)

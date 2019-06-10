@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,8 +24,10 @@
 */
 
 #include <unordered_map>
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Directory.h>
 
+#include "Magnum/FileCallback.h"
 #include "Magnum/PixelFormat.h"
 #include "Magnum/Animation/Player.h"
 #include "Magnum/MeshTools/Transform.h"
@@ -49,7 +51,7 @@ int main() {
 {
 /* [AbstractImporter-usage] */
 PluginManager::Manager<Trade::AbstractImporter> manager;
-std::unique_ptr<Trade::AbstractImporter> importer =
+Containers::Pointer<Trade::AbstractImporter> importer =
     manager.loadAndInstantiate("AnyImageImporter");
 if(!importer || !importer->openFile("image.png"))
     Fatal{} << "Can't open image.png with AnyImageImporter";
@@ -63,7 +65,7 @@ if(!image) Fatal{} << "Importing the image failed";
 
 #if defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT))
 {
-std::unique_ptr<Trade::AbstractImporter> importer;
+Containers::Pointer<Trade::AbstractImporter> importer;
 /* [AbstractImporter-usage-callbacks] */
 struct Data {
     std::unordered_map<std::string,
@@ -71,13 +73,13 @@ struct Data {
 } data;
 
 importer->setFileCallback([](const std::string& filename,
-    Trade::ImporterFileCallbackPolicy policy, Data& data)
+    InputFileCallbackPolicy policy, Data& data)
         -> Containers::Optional<Containers::ArrayView<const char>>
     {
         auto found = data.files.find(filename);
 
         /* Discard the memory mapping, if not needed anymore */
-        if(policy == Trade::ImporterFileCallbackPolicy::Close) {
+        if(policy == InputFileCallbackPolicy::Close) {
             if(found != data.files.end()) data.files.erase(found);
             return {};
         }
@@ -95,10 +97,10 @@ importer->openFile("scene.gltf"); // memory-maps all files
 #endif
 
 {
-std::unique_ptr<Trade::AbstractImporter> importer;
+Containers::Pointer<Trade::AbstractImporter> importer;
 Float shininess;
 /* [AbstractImporter-usage-cast] */
-std::unique_ptr<Trade::AbstractMaterialData> data = importer->material(12);
+Containers::Pointer<Trade::AbstractMaterialData> data = importer->material(12);
 if(data && data->type() == Trade::MaterialType::Phong) {
     auto& phong = static_cast<Trade::PhongMaterialData&>(*data);
 
@@ -110,10 +112,10 @@ static_cast<void>(shininess);
 }
 
 {
-std::unique_ptr<Trade::AbstractImporter> importer;
+Containers::Pointer<Trade::AbstractImporter> importer;
 /* [AbstractImporter-setFileCallback] */
 importer->setFileCallback([](const std::string& filename,
-    Trade::ImporterFileCallbackPolicy, void*) {
+    InputFileCallbackPolicy, void*) {
         Utility::Resource rs("data");
         return Containers::optional(rs.getRaw(filename));
     });
@@ -121,19 +123,19 @@ importer->setFileCallback([](const std::string& filename,
 }
 
 {
-std::unique_ptr<Trade::AbstractImporter> importer;
+Containers::Pointer<Trade::AbstractImporter> importer;
 /* [AbstractImporter-setFileCallback-template] */
 struct Data {
     std::unordered_map<std::string, Containers::Array<char>> files;
 } data;
 
 importer->setFileCallback([](const std::string& filename,
-    Trade::ImporterFileCallbackPolicy, Data& data)
+    InputFileCallbackPolicy, Data& data)
         -> Containers::Optional<Containers::ArrayView<const char>>
     {
         auto found = data.files.find(filename);
         if(found == data.files.end()) {
-            if(!Utility::Directory::fileExists(filename))
+            if(!Utility::Directory::exists(filename))
                 return Containers::NullOpt;
             found = data.files.emplace(filename, Utility::Directory::read(filename)).first;
         }
@@ -144,7 +146,7 @@ importer->setFileCallback([](const std::string& filename,
 
 {
 UnsignedInt id{};
-std::unique_ptr<Trade::AbstractImporter> importer;
+Containers::Pointer<Trade::AbstractImporter> importer;
 /* [AnimationData-usage] */
 
 Containers::Optional<Trade::AnimationData> data = importer->animation(id);
@@ -183,7 +185,7 @@ Trade::ImageData2D image{CompressedPixelFormat::Bc1RGBUnorm,
 #ifdef MAGNUM_TARGET_GL
 {
 /* [ImageData-usage] */
-std::unique_ptr<Trade::AbstractImporter> importer;
+Containers::Pointer<Trade::AbstractImporter> importer;
 Containers::Optional<Trade::ImageData2D> image = importer->image2D(0);
 if(!image) Fatal{} << "Oopsie!";
 

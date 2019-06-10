@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -97,11 +97,18 @@ template<UnsignedInt dimensions, class T> class Range {
         }
 
         /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Range(ZeroInitT).
+         */
+        constexpr /*implicit*/ Range() noexcept: Range<dimensions, T>{ZeroInit, typename std::conditional<dimensions == 1, void*, ZeroInitT*>::type{}} {}
+
+        /**
          * @brief Construct zero range
          *
          * Construct zero-size range positioned at origin.
          */
-        constexpr /*implicit*/ Range(ZeroInitT = ZeroInit) noexcept: Range<dimensions, T>{ZeroInit, typename std::conditional<dimensions == 1, void*, ZeroInitT*>::type{}} {}
+        constexpr explicit Range(ZeroInitT) noexcept: Range<dimensions, T>{ZeroInit, typename std::conditional<dimensions == 1, void*, ZeroInitT*>::type{}} {}
 
         /** @brief Construct without initializing the contents */
         explicit Range(NoInitT) noexcept: Range<dimensions, T>{NoInit, typename std::conditional<dimensions == 1, void*, NoInitT*>::type{}} {}
@@ -134,10 +141,7 @@ template<UnsignedInt dimensions, class T> class Range {
          * Performs only default casting on the values, no rounding or
          * anything else. Example usage:
          *
-         * @code{.cpp}
-         * Range2D<Float> floatingPoint({1.3f, 2.7f}, {-15.0f, 7.0f});
-         * Range2D<Byte> integral(floatingPoint); // {{1, 2}, {-15, 7}}
-         * @endcode
+         * @snippet MagnumMath.cpp Range-conversion
          */
         template<class U> constexpr explicit Range(const Range<dimensions, U>& other) noexcept: _min(other._min), _max(other._max) {}
 
@@ -354,21 +358,18 @@ See @ref Range for more information.
 */
 template<class T> class Range2D: public Range<2, T> {
     public:
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Range2D(ZeroInitT).
+         */
+        constexpr /*implicit*/ Range2D() noexcept: Range<2, T>{ZeroInit} {}
+
         /** @copydoc Range(ZeroInitT) */
-        constexpr /*implicit*/ Range2D(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Range<2, T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Range2D(ZeroInitT) noexcept: Range<2, T>{ZeroInit} {}
 
         /** @copydoc Range(NoInitT) */
-        explicit Range2D(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Range<2, T>{NoInit}
-            #endif
-            {}
+        explicit Range2D(NoInitT) noexcept: Range<2, T>{NoInit} {}
 
         /** @copydoc Range(const VectorType&, const VectorType&) */
         constexpr /*implicit*/ Range2D(const Vector2<T>& min, const Vector2<T>& max) noexcept: Range<2, T>(min, max) {}
@@ -387,12 +388,7 @@ template<class T> class Range2D: public Range<2, T> {
             decltype(Implementation::RangeConverter<2, T, U>())
             #endif
             >
-        constexpr explicit Range2D(const U& other)
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Range<2, T>{Implementation::RangeConverter<2, T, U>::from(other)}
-            #endif
-            {}
+        constexpr explicit Range2D(const U& other): Range<2, T>{Implementation::RangeConverter<2, T, U>::from(other)} {}
 
         /** @copydoc Range(const Range&) */
         constexpr /*implicit*/ Range2D(const Range<2, T>& other) noexcept: Range<2, T>(other) {}
@@ -497,21 +493,18 @@ See @ref Range for more information.
 */
 template<class T> class Range3D: public Range<3, T> {
     public:
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Range3D(ZeroInitT).
+         */
+        constexpr /*implicit*/ Range3D() noexcept: Range<3, T>{ZeroInit} {}
+
         /** @copydoc Range(ZeroInitT) */
-        constexpr /*implicit*/ Range3D(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Range<3, T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Range3D(ZeroInitT) noexcept: Range<3, T>{ZeroInit} {}
 
         /** @brief @copybrief Range(NoInitT) */
-        explicit Range3D(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Range<3, T>{NoInit}
-            #endif
-            {}
+        explicit Range3D(NoInitT) noexcept: Range<3, T>{NoInit} {}
 
         /** @copydoc Range(const VectorType&, const VectorType&) */
         constexpr /*implicit*/ Range3D(const Vector3<T>& min, const Vector3<T>& max) noexcept: Range<3, T>(min, max) {}
@@ -523,12 +516,7 @@ template<class T> class Range3D: public Range<3, T> {
          * @brief Construct range from external representation
          * @todoc Remove workaround when Doxygen no longer chokes on that line
          */
-        template<class U, class V = decltype(Implementation::RangeConverter<3, T, U>::from(std::declval<U>()))> constexpr explicit Range3D(const U& other) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Range<3, T>{Implementation::RangeConverter<3, T, U>::from(other)}
-            #endif
-            {}
+        template<class U, class V = decltype(Implementation::RangeConverter<3, T, U>::from(std::declval<U>()))> constexpr explicit Range3D(const U& other) noexcept: Range<3, T>{Implementation::RangeConverter<3, T, U>::from(other)} {}
 
         /** @copydoc Range(const Range&) */
         constexpr /*implicit*/ Range3D(const Range<3, T>& other) noexcept: Range<3, T>(other) {}
@@ -727,6 +715,7 @@ template<UnsignedInt dimensions, class T> inline bool intersects(const Range<dim
            (Vector<dimensions, T>{a.min()} < b.max()).all();
 }
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{Range} */
 template<UnsignedInt dimensions, class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Range<dimensions, T>& value) {
     debug << "Range({" << Corrade::Utility::Debug::nospace << Vector<dimensions, T>{value.min()}[0];
@@ -737,13 +726,6 @@ template<UnsignedInt dimensions, class T> Corrade::Utility::Debug& operator<<(Co
     for(UnsignedInt i = 1; i != dimensions; ++i)
         debug << Corrade::Utility::Debug::nospace << "," << Vector<dimensions, T>{value.max()}[i];
     return debug << Corrade::Utility::Debug::nospace << "})";
-}
-
-template<UnsignedInt dimensions, class T> inline bool Range<dimensions, T>::operator==(const Range<dimensions, T>& other) const {
-    /* For non-scalar types default implementation of TypeTraits would be used,
-       which is just operator== */
-    return TypeTraits<VectorType>::equals(_min, other._min) &&
-        TypeTraits<VectorType>::equals(_max, other._max);
 }
 
 /* Explicit instantiation for commonly used types */
@@ -758,6 +740,14 @@ extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utili
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Range<2, Double>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Range<3, Double>&);
 #endif
+#endif
+
+template<UnsignedInt dimensions, class T> inline bool Range<dimensions, T>::operator==(const Range<dimensions, T>& other) const {
+    /* For non-scalar types default implementation of TypeTraits would be used,
+       which is just operator== */
+    return TypeTraits<VectorType>::equals(_min, other._min) &&
+        TypeTraits<VectorType>::equals(_max, other._max);
+}
 
 namespace Implementation {
 
@@ -773,43 +763,6 @@ template<UnsignedInt dimensions, class T> struct StrictWeakOrdering<Range<dimens
 };
 
 }
-
-}}
-
-namespace Corrade { namespace Utility {
-
-/** @configurationvalue{Magnum::Math::Range} */
-template<Magnum::UnsignedInt dimensions, class T> struct ConfigurationValue<Magnum::Math::Range<dimensions, T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes elements separated with spaces */
-    static std::string toString(const Magnum::Math::Range<dimensions, T>& value, const ConfigurationValueFlags flags) {
-        return ConfigurationValue<Magnum::Math::Vector<dimensions*2, T>>::toString(
-            reinterpret_cast<const Magnum::Math::Vector<dimensions*2, T>&>(value), flags);
-    }
-
-    /** @brief Reads elements separated with whitespace */
-    static Magnum::Math::Range<dimensions, T> fromString(const std::string& stringValue, const ConfigurationValueFlags flags) {
-        const auto vec = ConfigurationValue<Magnum::Math::Vector<dimensions*2, T>>::fromString(stringValue, flags);
-        return *reinterpret_cast<const Magnum::Math::Range<dimensions, T>*>(vec.data());
-    }
-};
-
-/** @configurationvalue{Magnum::Math::Range2D} */
-template<class T> struct ConfigurationValue<Magnum::Math::Range2D<T>>: public ConfigurationValue<Magnum::Math::Range<2, T>> {};
-
-/** @configurationvalue{Magnum::Math::Range3D} */
-template<class T> struct ConfigurationValue<Magnum::Math::Range3D<T>>: public ConfigurationValue<Magnum::Math::Range<3, T>> {};
-
-/* Explicit instantiation for commonly used types */
-#if !defined(DOXYGEN_GENERATING_OUTPUT) && !defined(__MINGW32__)
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Range<2, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Range<2, Magnum::Int>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Range<3, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Range<3, Magnum::Int>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Range<2, Magnum::Double>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Range<3, Magnum::Double>>;
-#endif
 
 }}
 

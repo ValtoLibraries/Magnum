@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,14 +81,7 @@ Visualizes object position, rotation and scale using colored axes. See
 
 Example code:
 
-@code{.cpp}
-// Create some options
-DebugTools::ResourceManager::instance().set("my", DebugTools::ObjectRendererOptions().setSize(0.3f));
-
-// Create debug renderer for given object, use "my" options for it
-Object3D* object;
-new DebugTools::ObjectRenderer2D(object, "my", debugDrawables);
-@endcode
+@snippet MagnumDebugTools-gl.cpp ObjectRenderer
 
 @note This class is available only if Magnum is compiled with
     @ref MAGNUM_TARGET_GL "TARGET_GL" and `WITH_SCENEGRAPH` enabled (done by
@@ -118,7 +111,6 @@ template<UnsignedInt dimensions> class MAGNUM_DEBUGTOOLS_EXPORT ObjectRenderer: 
         Resource<ObjectRendererOptions> _options;
         Resource<GL::AbstractShaderProgram, Shaders::VertexColor<dimensions>> _shader;
         Resource<GL::Mesh> _mesh;
-        Resource<GL::Buffer> _vertexBuffer, _indexBuffer;
 };
 
 /** @brief Two-dimensional object renderer */

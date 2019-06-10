@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,9 +37,9 @@ using namespace Magnum::Math::Literals;
 int main() {
 
 {
-Vector3 a, b;
 Float t{};
 {
+Vector3 a, b;
 /* [ease] */
 auto lerpBounceIn =
     Animation::ease<Vector3, Math::lerp, Animation::Easing::bounceIn>();
@@ -303,8 +303,11 @@ const Animation::Track<Float, Vector2> jump{{
 
 Vector2 position = jump.at(2.2f);               // y = 0.775
 /* [Track-usage] */
+static_cast<void>(position);
+}
 
 {
+const Animation::Track<Float, Vector2> jump;
 /* [Track-performance-hint] */
 std::size_t hint = 0;
 Vector2 position = jump.at(2.2f, hint);         // y = 0.775, hint = 2
@@ -313,13 +316,11 @@ static_cast<void>(position);
 }
 
 {
+const Animation::Track<Float, Vector2> jump;
 /* [Track-performance-strict] */
 std::size_t hint = 0;
 Vector2 position = jump.atStrict(2.2f, hint);   // y = 0.775, hint = 2
 /* [Track-performance-strict] */
-static_cast<void>(position);
-}
-
 static_cast<void>(position);
 }
 
@@ -341,12 +342,12 @@ const Keyframe data[]{
 };
 
 Animation::TrackView<Float, Vector2> positions{
-    {&data[0].time, Containers::arraySize(data), sizeof(Keyframe)},
-    {&data[0].position, Containers::arraySize(data), sizeof(Keyframe)},
+    {data, &data[0].time, Containers::arraySize(data), sizeof(Keyframe)},
+    {data, &data[0].position, Containers::arraySize(data), sizeof(Keyframe)},
     Math::lerp};
 Animation::TrackView<Float, Deg> rotations{
-    {&data[0].time, Containers::arraySize(data), sizeof(Keyframe)},
-    {&data[0].rotation, Containers::arraySize(data), sizeof(Keyframe)},
+    {data, &data[0].time, Containers::arraySize(data), sizeof(Keyframe)},
+    {data, &data[0].rotation, Containers::arraySize(data), sizeof(Keyframe)},
     Math::lerp};
 
 Float time = 2.2f;

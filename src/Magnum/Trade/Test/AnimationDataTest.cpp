@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,11 +25,12 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Quaternion.h"
 #include "Magnum/Trade/AnimationData.h"
 
-namespace Magnum { namespace Trade { namespace Test {
+namespace Magnum { namespace Trade { namespace Test { namespace {
 
 struct AnimationDataTest: TestSuite::Tester {
     explicit AnimationDataTest();
@@ -92,15 +93,15 @@ void AnimationDataTest::construct() {
         {AnimationTrackType::Vector3,
          AnimationTrackTargetType::Translation3D, 42,
          Animation::TrackView<Float, Vector3>{
-            {&view[0].time, view.size(), sizeof(Data)},
-            {&view[0].position, view.size(), sizeof(Data)},
+            {view, &view[0].time, view.size(), sizeof(Data)},
+            {view, &view[0].position, view.size(), sizeof(Data)},
             Animation::Interpolation::Constant,
             animationInterpolatorFor<Vector3>(Animation::Interpolation::Constant)}},
         {AnimationTrackType::Quaternion,
          AnimationTrackTargetType::Rotation3D, 1337,
          Animation::TrackView<Float, Quaternion>{
-            {&view[0].time, view.size(), sizeof(Data)},
-            {&view[0].rotation, view.size(), sizeof(Data)},
+            {view, &view[0].time, view.size(), sizeof(Data)},
+            {view, &view[0].rotation, view.size(), sizeof(Data)},
             Animation::Interpolation::Linear,
             animationInterpolatorFor<Quaternion>(Animation::Interpolation::Linear)}}
         }}, {-1.0f, 7.0f}, &state};
@@ -154,14 +155,14 @@ void AnimationDataTest::constructImplicitDuration() {
         {AnimationTrackType::Bool,
          AnimationTrackTargetType(129), 0,
          Animation::TrackView<Float, bool>{
-            {&view[0].time, 2, sizeof(Data)},
-            {&view[0].value, 2, sizeof(Data)},
+            {view, &view[0].time, 2, sizeof(Data)},
+            {view, &view[0].value, 2, sizeof(Data)},
             Animation::Interpolation::Constant}},
         {AnimationTrackType::Bool,
          AnimationTrackTargetType(130), 1,
          Animation::TrackView<Float, bool>{
-            {&view[2].time, 2, sizeof(Data)},
-            {&view[2].value, 2, sizeof(Data)},
+            {view, &view[2].time, 2, sizeof(Data)},
+            {view, &view[2].value, 2, sizeof(Data)},
             Animation::Interpolation::Linear}}
         }}, &state};
 
@@ -223,15 +224,15 @@ void AnimationDataTest::constructMove() {
         {AnimationTrackType::Vector3,
          AnimationTrackTargetType::Translation3D, 42,
          Animation::TrackView<Float, Vector3>{
-            {&view[0].time, view.size(), sizeof(Data)},
-            {&view[0].position, view.size(), sizeof(Data)},
+            {view, &view[0].time, view.size(), sizeof(Data)},
+            {view, &view[0].position, view.size(), sizeof(Data)},
             Animation::Interpolation::Constant,
             animationInterpolatorFor<Vector3>(Animation::Interpolation::Constant)}},
         {AnimationTrackType::Quaternion,
          AnimationTrackTargetType::Rotation3D, 1337,
          Animation::TrackView<Float, Quaternion>{
-            {&view[0].time, view.size(), sizeof(Data)},
-            {&view[0].rotation, view.size(), sizeof(Data)},
+            {view, &view[0].time, view.size(), sizeof(Data)},
+            {view, &view[0].rotation, view.size(), sizeof(Data)},
             Animation::Interpolation::Linear,
             animationInterpolatorFor<Quaternion>(Animation::Interpolation::Linear)}}
         }}, {-1.0f, 7.0f}, &state};
@@ -323,8 +324,8 @@ void AnimationDataTest::trackCustomResultType() {
          AnimationTrackType::Vector3,
          AnimationTrackTargetType::Scaling3D, 0,
          Animation::TrackView<Float, Vector3i, Vector3>{
-             {&view[0].time, view.size(), sizeof(Data)},
-             {&view[0].position, view.size(), sizeof(Data)},
+             {view, &view[0].time, view.size(), sizeof(Data)},
+             {view, &view[0].position, view.size(), sizeof(Data)},
              [](const Vector3i& a, const Vector3i& b, Float t) -> Vector3 {
                  return Math::lerp(Vector3{a}*0.01f, Vector3{b}*0.01f, t);
              }}}}
@@ -396,6 +397,6 @@ void AnimationDataTest::debugAnimationTrackTargetType() {
     CORRADE_COMPARE(out.str(), "Trade::AnimationTrackTargetType::Rotation3D Trade::AnimationTrackTargetType::Custom(135) Trade::AnimationTrackTargetType(0x42)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Trade::Test::AnimationDataTest)

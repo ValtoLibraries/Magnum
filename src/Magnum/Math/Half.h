@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,9 +64,12 @@ class Half {
         /**
          * @brief Default constructor
          *
-         * Creates a zero value.
+         * Equivalent to @ref Half(ZeroInitT).
          */
-        constexpr /*implicit*/ Half(ZeroInitT = ZeroInit) noexcept: _data{} {}
+        constexpr /*implicit*/ Half() noexcept: _data{} {}
+
+        /** @brief Construct a zero value */
+        constexpr explicit Half(ZeroInitT) noexcept: _data{} {}
 
         /** @brief Construct a half value from underlying 16-bit representation */
         constexpr explicit Half(UnsignedShort data) noexcept: _data{data} {}
@@ -150,6 +153,7 @@ inline Half operator "" _h(long double value) { return Half(Float(value)); }
 
 }
 
+#ifndef CORRADE_NO_DEBUG
 /**
 @debugoperator{Half}
 
@@ -160,6 +164,7 @@ Prints the value with 4 significant digits.
 @todoc remove `long double value` once doxygen can link to long double overloads properly
 */
 MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, Half value);
+#endif
 
 namespace Implementation {
 
@@ -174,7 +179,7 @@ template<> struct StrictWeakOrdering<Half> {
 
 }}
 
-#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+#if !defined(CORRADE_NO_TWEAKABLE) && (defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN))
 namespace Corrade { namespace Utility {
 
 /**

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
  * @brief Class @ref Magnum::Math::DualQuaternion, function @ref Magnum::Math::sclerp()
  */
 
-#include <cmath>
+#include <Corrade/Utility/StlMath.h>
 
 #include "Magnum/Math/Dual.h"
 #include "Magnum/Math/Functions.h"
@@ -103,9 +103,8 @@ template<class T> inline DualQuaternion<T> sclerp(const DualQuaternion<T>& norma
     const Dual<Vector3<T>> n{direction, moment};
 
     /* q_ScLERP = q_A*(cos(t*a/2) + n*sin(t*a/2)) */
-    Dual<T> sin, cos;
-    std::tie(sin, cos) = Math::sincos(t*Dual<Rad<T>>(aHalf));
-    return normalizedA*DualQuaternion<T>{n*sin, cos};
+    const std::pair<Dual<T>, Dual<T>> sincos = Math::sincos(t*Dual<Rad<T>>(aHalf));
+    return normalizedA*DualQuaternion<T>{n*sincos.first, sincos.second};
 }
 
 /** @relatesalso DualQuaternion
@@ -170,9 +169,8 @@ template<class T> inline DualQuaternion<T> sclerpShortestPath(const DualQuaterni
     const Dual<Vector3<T>> n{direction, moment};
 
     /* q_ScLERP = q_A*(cos(t*a/2) + n*sin(t*a/2)) */
-    Dual<T> sin, cos;
-    std::tie(sin, cos) = Math::sincos(t*Dual<Rad<T>>(aHalf));
-    return normalizedA*DualQuaternion<T>{n*sin, cos};
+    const std::pair<Dual<T>, Dual<T>> sincos = Math::sincos(t*Dual<Rad<T>>(aHalf));
+    return normalizedA*DualQuaternion<T>{n*sincos.first, sincos.second};
 }
 
 /**
@@ -247,32 +245,24 @@ template<class T> class DualQuaternion: public Dual<Quaternion<T>> {
         /**
          * @brief Default constructor
          *
+         * Equivalent to @ref DualQuaternion(IdentityInitT).
+         */
+        constexpr /*implicit*/ DualQuaternion() noexcept: Dual<Quaternion<T>>{{}, {{}, T(0)}} {}
+
+        /**
+         * @brief Identity constructor
+         *
          * Creates unit dual quaternion. @f[
          *      \hat q = [\boldsymbol 0, 1] + \epsilon [\boldsymbol 0, 0]
          * @f]
          */
-        constexpr /*implicit*/ DualQuaternion(IdentityInitT = IdentityInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Dual<Quaternion<T>>{{}, {{}, T(0)}}
-            #endif
-            {}
+        constexpr explicit DualQuaternion(IdentityInitT) noexcept: Dual<Quaternion<T>>{{}, {{}, T(0)}} {}
 
         /** @brief Construct zero-initialized dual quaternion */
-        constexpr explicit DualQuaternion(ZeroInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Dual<Quaternion<T>>{Quaternion<T>{ZeroInit}, Quaternion<T>{ZeroInit}}
-            #endif
-            {}
+        constexpr explicit DualQuaternion(ZeroInitT) noexcept: Dual<Quaternion<T>>{Quaternion<T>{ZeroInit}, Quaternion<T>{ZeroInit}} {}
 
         /** @brief Construct without initializing the contents */
-        explicit DualQuaternion(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Dual<Quaternion<T>>{NoInit}
-            #endif
-            {}
+        explicit DualQuaternion(NoInitT) noexcept: Dual<Quaternion<T>>{NoInit} {}
 
         /**
          * @brief Construct dual quaternion from real and dual part
@@ -290,11 +280,7 @@ template<class T> class DualQuaternion: public Dual<Quaternion<T>> {
          *      \hat q = [\hat{\boldsymbol v}, \hat s] = [\boldsymbol v_0, s_0] + \epsilon [\boldsymbol v_\epsilon, s_\epsilon]
          * @f]
          */
-        constexpr /*implicit*/ DualQuaternion(const Dual<Vector3<T>>& vector, const Dual<T>& scalar) noexcept
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Dual<Quaternion<T>>{{vector.real(), scalar.real()}, {vector.dual(), scalar.dual()}}
-            #endif
-            {}
+        constexpr /*implicit*/ DualQuaternion(const Dual<Vector3<T>>& vector, const Dual<T>& scalar) noexcept: Dual<Quaternion<T>>{{vector.real(), scalar.real()}, {vector.dual(), scalar.dual()}} {}
 
         /**
          * @brief Construct dual quaternion from vector
@@ -304,11 +290,7 @@ template<class T> class DualQuaternion: public Dual<Quaternion<T>> {
          * @f]
          * @see @ref transformPointNormalized()
          */
-        #ifdef DOXYGEN_GENERATING_OUTPUT
-        constexpr explicit DualQuaternion(const Vector3<T>& vector) noexcept;
-        #else
         constexpr explicit DualQuaternion(const Vector3<T>& vector) noexcept: Dual<Quaternion<T>>({}, {vector, T(0)}) {}
-        #endif
 
         /**
          * @brief Construct dual quaternion from another of different type
@@ -525,6 +507,7 @@ template<class T> class DualQuaternion: public Dual<Quaternion<T>> {
 
 MAGNUM_DUAL_OPERATOR_IMPLEMENTATION(DualQuaternion, Quaternion, T)
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{DualQuaternion} */
 template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const DualQuaternion<T>& value) {
     return debug << "DualQuaternion({{" << Corrade::Utility::Debug::nospace
@@ -544,36 +527,11 @@ template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& d
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const DualQuaternion<Float>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const DualQuaternion<Double>&);
 #endif
+#endif
 
 namespace Implementation {
     template<class T> struct StrictWeakOrdering<DualQuaternion<T>>: StrictWeakOrdering<Dual<Quaternion<T>>> {};
 }
-
-}}
-
-namespace Corrade { namespace Utility {
-
-/** @configurationvalue{Magnum::Math::DualQuaternion} */
-template<class T> struct ConfigurationValue<Magnum::Math::DualQuaternion<T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes elements separated with spaces */
-    static std::string toString(const Magnum::Math::DualQuaternion<T>& value, ConfigurationValueFlags flags) {
-        return ConfigurationValue<Magnum::Math::Vector<8, T>>::toString(reinterpret_cast<const Magnum::Math::Vector<8, T>&>(value), flags);
-    }
-
-    /** @brief Reads elements separated with whitespace */
-    static Magnum::Math::DualQuaternion<T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
-        const Magnum::Math::Vector<8, T> value = ConfigurationValue<Magnum::Math::Vector<8, T>>::fromString(stringValue, flags);
-        return reinterpret_cast<const Magnum::Math::DualQuaternion<T>&>(value);
-    }
-};
-
-/* Explicit instantiation for commonly used types */
-#if !defined(DOXYGEN_GENERATING_OUTPUT) && !defined(__MINGW32__)
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::DualQuaternion<Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::DualQuaternion<Magnum::Double>>;
-#endif
 
 }}
 

@@ -1,8 +1,9 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
+#   Copyright © 2018, 2019 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -23,7 +24,9 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-# Headers
+# Code shared by more application/context implementations
+set(MagnumPlatform_SRCS )
+
 set(MagnumPlatform_HEADERS
     GLContext.h
     Platform.h
@@ -31,8 +34,57 @@ set(MagnumPlatform_HEADERS
     ScreenedApplication.h
     ScreenedApplication.hpp)
 
-if(BUILD_DEPRECATED AND TARGET_GL)
-    list(APPEND MagnumPlatform_HEADERS Context.h)
+set(MagnumPlatform_PRIVATE_HEADERS )
+
+# DPI scaling queries only for EmscriptenApplication, Sdl2Application and
+# GlfwApplication at the moment, build the files only then
+if(WITH_EMSCRIPTENAPPLICATION OR WITH_GLFWAPPLICATION OR WITH_SDL2APPLICATION)
+    # List of libraries to link when using the MagnumPlatformObjects target
+    # TODO: use target_link_libraries() when we are on a CMake version that
+    # supports it (3.12?)
+    set(MagnumPlatform_LINK_LIBRARIES )
+    set(MagnumPlatform_COMPILE_DEFINITIONS )
+
+    list(APPEND MagnumPlatform_PRIVATE_HEADERS Implementation/DpiScaling.h)
+    if(CORRADE_TARGET_APPLE)
+        # We can't build both DpiScaling.cpp and DpiScaling.mm as they both
+        # result in DpiScaling.o and Xcode/CMake gets confused, so including
+        # the cpp from the mm instead
+        list(APPEND MagnumPlatform_SRCS Implementation/DpiScaling.mm)
+    else()
+        list(APPEND MagnumPlatform_SRCS Implementation/DpiScaling.cpp)
+    endif()
+
+    add_library(MagnumPlatformObjects OBJECT
+        ${MagnumPlatform_SRCS}
+        ${MagnumPlatform_HEADERS}
+        ${MagnumPlatform_PRIVATE_HEADERS})
+    target_include_directories(MagnumPlatformObjects PUBLIC $<TARGET_PROPERTY:MagnumGL,INTERFACE_INCLUDE_DIRECTORIES>)
+    if(BUILD_STATIC_PIC)
+        set_target_properties(MagnumPlatformObjects PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+    set_target_properties(MagnumPlatformObjects PROPERTIES FOLDER "Magnum/Platform")
+
+    # Use the Foundation framework on Apple to query the DPI awareness
+    if(CORRADE_TARGET_APPLE)
+        find_library(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY Foundation)
+        find_path(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR NAMES NSBundle.h)
+        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY
+            _MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR)
+        list(APPEND MagnumPlatform_LINK_LIBRARIES ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY})
+        target_include_directories(MagnumPlatformObjects PRIVATE ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR})
+
+    # If there is X11, ask it for DPI
+    elseif(CORRADE_TARGET_UNIX)
+        find_package(X11)
+        if(X11_FOUND)
+            # Not linking to X11, we dlopen() instead
+            target_include_directories(MagnumPlatformObjects PRIVATE ${X11_X11_INCLUDE_PATH})
+            target_compile_definitions(MagnumPlatformObjects PUBLIC "_MAGNUM_PLATFORM_USE_X11")
+            list(APPEND MagnumPlatform_LINK_LIBRARIES ${CMAKE_DL_LIBS})
+            list(APPEND MagnumPlatform_COMPILE_DEFINITIONS "_MAGNUM_PLATFORM_USE_X11")
+        endif()
+    endif()
 endif()
 
 # Files to display in project view of IDEs only (filled in below)
@@ -41,7 +93,7 @@ set(MagnumPlatform_FILES )
 install(FILES ${MagnumPlatform_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
 
 # Decide about platform-specific context for cross-platform toolkits
-if((WITH_GLFWAPPLICATION OR WITH_GLUTAPPLICATION OR WITH_SDL2APPLICATION) AND TARGET_GL)
+if((WITH_GLFWAPPLICATION OR WITH_SDL2APPLICATION) AND TARGET_GL)
     if(CORRADE_TARGET_APPLE AND NOT MAGNUM_TARGET_GLES)
         set(NEED_CGLCONTEXT 1)
         set(MagnumSomeContext_OBJECTS $<TARGET_OBJECTS:MagnumCglContextObjects>)
@@ -55,8 +107,10 @@ if((WITH_GLFWAPPLICATION OR WITH_GLUTAPPLICATION OR WITH_SDL2APPLICATION) AND TA
         # to link to GLX explicitly. Otherwise (and also on all systems except
         # Linux) the transitive dependency to classic GL lib from MagnumGL is
         # enough. Can't use OpenGL_OpenGL_FOUND, because that one is set also
-        # if GLVND is *not* found. WTF.
-        if(OPENGL_opengl_LIBRARY)
+        # if GLVND is *not* found. WTF. Also can't just check for
+        # OPENGL_opengl_LIBRARY because that's set even if OpenGL_GL_PREFERENCE
+        # is explicitly set to LEGACY.
+        if(OPENGL_opengl_LIBRARY AND OpenGL_GL_PREFERENCE STREQUAL GLVND)
             set(MagnumSomeContext_LIBRARY OpenGL::GLX)
         endif()
     elseif(MAGNUM_TARGET_GLES AND NOT CORRADE_TARGET_EMSCRIPTEN)
@@ -117,6 +171,45 @@ if(WITH_ANDROIDAPPLICATION)
     add_library(Magnum::AndroidApplication ALIAS MagnumAndroidApplication)
 endif()
 
+# Emscripten application
+if(WITH_EMSCRIPTENAPPLICATION)
+    if(NOT CORRADE_TARGET_EMSCRIPTEN)
+        message(FATAL_ERROR "EmscriptenApplication is available only when targeting Emscripten. Set WITH_EMSCRIPTENAPPLICATION to OFF to skip building it.")
+    endif()
+
+    set(MagnumEmscriptenApplication_SRCS
+        $<TARGET_OBJECTS:MagnumPlatformObjects>
+        EmscriptenApplication.cpp)
+    set(MagnumEmscriptenApplication_HEADERS
+        EmscriptenApplication.h)
+
+    add_library(MagnumEmscriptenApplication STATIC
+        ${MagnumEmscriptenApplication_SRCS}
+        ${MagnumEmscriptenApplication_HEADERS}
+        ${MagnumEmscriptenApplication_PRIVATE_HEADERS})
+    set_target_properties(MagnumEmscriptenApplication PROPERTIES
+        DEBUG_POSTFIX "-d"
+        FOLDER "Magnum/Platform")
+    # TODO: use MagnumPlatformObjects instead of ${MagnumPlatform_*} when
+    # CMake supports it
+    target_link_libraries(MagnumEmscriptenApplication PUBLIC Magnum
+        ${MagnumPlatform_LINK_LIBRARIES})
+    target_compile_definitions(MagnumEmscriptenApplication PRIVATE
+        ${MagnumPlatform_COMPILE_DEFINITIONS})
+    if(TARGET_GL)
+        target_link_libraries(MagnumEmscriptenApplication PUBLIC MagnumGL)
+    endif()
+
+    install(FILES ${MagnumEmscriptenApplication_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
+    install(TARGETS MagnumEmscriptenApplication
+        RUNTIME DESTINATION ${MAGNUM_BINARY_INSTALL_DIR}
+        LIBRARY DESTINATION ${MAGNUM_LIBRARY_INSTALL_DIR}
+        ARCHIVE DESTINATION ${MAGNUM_LIBRARY_INSTALL_DIR})
+
+    # Magnum EmscriptenApplication target alias for superprojects
+    add_library(Magnum::EmscriptenApplication ALIAS MagnumEmscriptenApplication)
+endif()
+
 # GLFW application
 if(WITH_GLFWAPPLICATION)
     find_package(GLFW)
@@ -124,13 +217,12 @@ if(WITH_GLFWAPPLICATION)
         message(FATAL_ERROR "GLFW library, required by GlfwApplication, was not found. Set WITH_GLFWAPPLICATION to OFF to skip building it.")
     endif()
 
-    set(MagnumGlfwApplication_SRCS GlfwApplication.cpp)
+    set(MagnumGlfwApplication_SRCS
+        $<TARGET_OBJECTS:MagnumPlatformObjects>
+        GlfwApplication.cpp)
     set(MagnumGlfwApplication_HEADERS GlfwApplication.h)
     if(TARGET_GL)
         list(APPEND MagnumGlfwApplication_SRCS ${MagnumSomeContext_OBJECTS})
-    endif()
-    if(CORRADE_TARGET_APPLE)
-        list(APPEND MagnumGlfwApplication_SRCS Implementation/dpiScaling.mm)
     endif()
 
     add_library(MagnumGlfwApplication STATIC
@@ -139,9 +231,17 @@ if(WITH_GLFWAPPLICATION)
     set_target_properties(MagnumGlfwApplication PROPERTIES
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
+        set_target_properties(MagnumGlfwApplication PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
     # Assuming that PIC is not needed because the Application lib is always
     # linked to the executable and not to any intermediate shared lib
-    target_link_libraries(MagnumGlfwApplication PUBLIC Magnum GLFW::GLFW)
+    # TODO: use MagnumPlatformObjects instead of ${MagnumPlatform_*} when
+    # CMake supports it
+    target_link_libraries(MagnumGlfwApplication PUBLIC Magnum GLFW::GLFW
+        ${MagnumPlatform_LINK_LIBRARIES})
+    target_compile_definitions(MagnumGlfwApplication PRIVATE
+        ${MagnumPlatform_COMPILE_DEFINITIONS})
     if(TARGET_GL)
         target_link_libraries(MagnumGlfwApplication PUBLIC
             MagnumGL
@@ -149,24 +249,10 @@ if(WITH_GLFWAPPLICATION)
             ${MagnumSomeContext_LIBRARY})
     endif()
 
-    # Use the Foundation framework on Apple to query the DPI awareness
-    if(CORRADE_TARGET_APPLE)
-        find_library(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY Foundation)
-        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY)
-        find_path(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR NAMES NSBundle.h)
-        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR)
-        target_link_libraries(MagnumGlfwApplication PUBLIC ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY})
-        target_include_directories(MagnumGlfwApplication PRIVATE ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR})
-
-    # If there is X11, ask it for DPI
-    elseif(CORRADE_TARGET_UNIX)
-        find_package(X11)
-        if(X11_FOUND)
-            # Not linking to X11, we dlopen() instead
-            target_include_directories(MagnumGlfwApplication PRIVATE ${X11_X11_INCLUDE_PATH})
-            target_link_libraries(MagnumGlfwApplication PUBLIC ${CMAKE_DL_LIBS})
-            target_compile_definitions(MagnumGlfwApplication PRIVATE "_MAGNUM_PLATFORM_USE_X11")
-        endif()
+    # Link also EGL library, if on ES (and not on WebGL)
+    if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_DESKTOP_GLES AND NOT MAGNUM_TARGET_WEBGL)
+        find_package(EGL REQUIRED)
+        target_link_libraries(MagnumGlfwApplication PUBLIC EGL::EGL)
     endif()
 
     install(FILES ${MagnumGlfwApplication_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
@@ -179,47 +265,6 @@ if(WITH_GLFWAPPLICATION)
     add_library(Magnum::GlfwApplication ALIAS MagnumGlfwApplication)
 endif()
 
-# GLUT application
-if(WITH_GLUTAPPLICATION)
-    if(NOT MAGNUM_BUILD_DEPRECATED)
-        message(FATAL_ERROR "GlutApplication is scheduled for removal and not available if BUILD_DEPRECATED is disabled. Please consider switching to Sdl2Application or GlfwApplication instead.")
-    endif()
-
-    find_package(GLUT)
-    if(NOT GLUT_FOUND)
-        message(FATAL_ERROR "GLUT library, required by GlutApplication, was not found. Set WITH_GLUTAPPLICATION to OFF to skip building it.")
-    endif()
-
-    set(MagnumGlutApplication_SRCS
-        GlutApplication.cpp
-        ${MagnumSomeContext_OBJECTS})
-    set(MagnumGlutApplication_HEADERS GlutApplication.h)
-
-    add_library(MagnumGlutApplication STATIC
-        ${MagnumGlutApplication_SRCS}
-        ${MagnumGlutApplication_HEADERS})
-    set_target_properties(MagnumGlutApplication PROPERTIES
-        DEBUG_POSTFIX "-d"
-        FOLDER "Magnum/Platform")
-    # Assuming that PIC is not needed because the Application lib is always
-    # linked to the executable and not to any intermediate shared lib
-    target_include_directories(MagnumGlutApplication PUBLIC ${GLUT_INCLUDE_DIR})
-    target_link_libraries(MagnumGlutApplication PUBLIC
-        MagnumGL
-        ${GLUT_glut_LIBRARY}
-        # need to link to GLX explicitly if using GLVND (CMake 3.11+)
-        ${MagnumSomeContext_LIBRARY})
-
-    install(FILES ${MagnumGlutApplication_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
-    install(TARGETS MagnumGlutApplication
-        RUNTIME DESTINATION ${MAGNUM_BINARY_INSTALL_DIR}
-        LIBRARY DESTINATION ${MAGNUM_LIBRARY_INSTALL_DIR}
-        ARCHIVE DESTINATION ${MAGNUM_LIBRARY_INSTALL_DIR})
-
-    # Magnum GlutApplication target alias for superprojects
-    add_library(Magnum::GlutApplication ALIAS MagnumGlutApplication)
-endif()
-
 # SDL2 application
 if(WITH_SDL2APPLICATION)
     find_package(SDL2)
@@ -227,13 +272,12 @@ if(WITH_SDL2APPLICATION)
         message(FATAL_ERROR "SDL2 library, required by Sdl2Application, was not found. Set WITH_SDL2APPLICATION to OFF to skip building it.")
     endif()
 
-    set(MagnumSdl2Application_SRCS Sdl2Application.cpp)
+    set(MagnumSdl2Application_SRCS
+        $<TARGET_OBJECTS:MagnumPlatformObjects>
+        Sdl2Application.cpp)
     set(MagnumSdl2Application_HEADERS Sdl2Application.h)
     if(TARGET_GL)
         list(APPEND MagnumSdl2Application_SRCS ${MagnumSomeContext_OBJECTS})
-    endif()
-    if(CORRADE_TARGET_APPLE)
-        list(APPEND MagnumSdl2Application_SRCS Implementation/dpiScaling.mm)
     endif()
 
     add_library(MagnumSdl2Application STATIC
@@ -242,9 +286,17 @@ if(WITH_SDL2APPLICATION)
     set_target_properties(MagnumSdl2Application PROPERTIES
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
+        set_target_properties(MagnumSdl2Application PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
     # Assuming that PIC is not needed because the Application lib is always
     # linked to the executable and not to any intermediate shared lib
-    target_link_libraries(MagnumSdl2Application PUBLIC Magnum SDL2::SDL2)
+    # TODO: use MagnumPlatformObjects instead of ${MagnumPlatform_*} when
+    # CMake supports it
+    target_link_libraries(MagnumSdl2Application PUBLIC Magnum SDL2::SDL2
+        ${MagnumPlatform_LINK_LIBRARIES})
+    target_compile_definitions(MagnumSdl2Application PRIVATE
+        ${MagnumPlatform_COMPILE_DEFINITIONS})
     if(TARGET_GL)
         target_link_libraries(MagnumSdl2Application PUBLIC
             MagnumGL
@@ -252,24 +304,10 @@ if(WITH_SDL2APPLICATION)
             ${MagnumSomeContext_LIBRARY})
     endif()
 
-    # Use the Foundation framework on Apple to query the DPI awareness
-    if(CORRADE_TARGET_APPLE)
-        find_library(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY Foundation)
-        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY)
-        find_path(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR NAMES NSBundle.h)
-        mark_as_advanced(_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR)
-        target_link_libraries(MagnumSdl2Application PUBLIC ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_LIBRARY})
-        target_include_directories(MagnumSdl2Application PRIVATE ${_MAGNUM_APPLE_FOUNDATION_FRAMEWORK_INCLUDE_DIR})
-
-    # If there is X11, ask it for DPI
-    elseif(CORRADE_TARGET_UNIX)
-        find_package(X11)
-        if(X11_FOUND)
-            # Not linking to X11, we dlopen() instead
-            target_include_directories(MagnumSdl2Application PRIVATE ${X11_X11_INCLUDE_PATH})
-            target_link_libraries(MagnumSdl2Application PUBLIC ${CMAKE_DL_LIBS})
-            target_compile_definitions(MagnumSdl2Application PRIVATE "_MAGNUM_PLATFORM_USE_X11")
-        endif()
+    # Link also EGL library, if on ES (and not on WebGL)
+    if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_DESKTOP_GLES AND NOT MAGNUM_TARGET_WEBGL)
+        find_package(EGL REQUIRED)
+        target_link_libraries(MagnumSdl2Application PUBLIC EGL::EGL)
     endif()
 
     install(FILES ${MagnumSdl2Application_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/Platform)
@@ -296,6 +334,10 @@ endif()
 
 # GLX application
 if(WITH_GLXAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "GlxApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_ABSTRACTXAPPLICATION 1)
     set(NEED_GLXCONTEXTHANDLER 1)
     set(NEED_GLXCONTEXT 1)
@@ -339,6 +381,10 @@ endif()
 
 # X/EGL application
 if(WITH_XEGLAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "XEglApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_ABSTRACTXAPPLICATION 1)
     set(NEED_EGLCONTEXTHANDLER 1)
     set(NEED_EGLCONTEXT 1)
@@ -382,6 +428,10 @@ endif()
 
 # Windowless EGL application
 if(WITH_WINDOWLESSEGLAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "WindowlessEglApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_EGLCONTEXT 1)
 
     set(MagnumWindowlessEglApplication_SRCS
@@ -400,7 +450,7 @@ if(WITH_WINDOWLESSEGLAPPLICATION)
     set_target_properties(MagnumWindowlessEglApplication PROPERTIES
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
-    if(BUILD_STATIC_PIC)
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
         set_target_properties(MagnumWindowlessEglApplication PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif()
     target_link_libraries(MagnumWindowlessEglApplication PUBLIC MagnumGL EGL::EGL)
@@ -417,6 +467,10 @@ endif()
 
 # Windowless GLX application
 if(WITH_WINDOWLESSGLXAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "WindowlessGlxApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_GLXCONTEXT 1)
 
     find_package(X11)
@@ -437,7 +491,7 @@ if(WITH_WINDOWLESSGLXAPPLICATION)
         FOLDER "Magnum/Platform")
     # X11 macros are a mess, disable warnings for C-style casts
     target_compile_options(MagnumWindowlessGlxApplication PRIVATE "-Wno-old-style-cast")
-    if(BUILD_STATIC_PIC)
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
         set_target_properties(MagnumWindowlessGlxApplication PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif()
     target_include_directories(MagnumWindowlessGlxApplication PUBLIC ${X11_INCLUDE_DIR})
@@ -459,6 +513,10 @@ endif()
 
 # Windowless iOS application
 if(WITH_WINDOWLESSIOSAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "WindowlessIosApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_EGLCONTEXT 1)
 
     # We need to link to Foundation framework to use ObjC
@@ -477,7 +535,7 @@ if(WITH_WINDOWLESSIOSAPPLICATION)
     set_target_properties(MagnumWindowlessIosApplication PROPERTIES
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
-    if(BUILD_STATIC_PIC)
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
         set_target_properties(MagnumWindowlessIosApplication PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif()
     target_link_libraries(MagnumWindowlessIosApplication
@@ -497,6 +555,10 @@ endif()
 
 # Windowless WGL application
 if(WITH_WINDOWLESSWGLAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "WindowlessWglApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_WGLCONTEXT 1)
 
     set(MagnumWindowlessWglApplication_SRCS
@@ -511,7 +573,7 @@ if(WITH_WINDOWLESSWGLAPPLICATION)
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
     target_compile_definitions(MagnumWindowlessWglApplication PRIVATE "UNICODE")
-    if(BUILD_STATIC_PIC)
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
         set_target_properties(MagnumWindowlessWglApplication PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif()
     target_link_libraries(MagnumWindowlessWglApplication PUBLIC MagnumGL)
@@ -528,6 +590,10 @@ endif()
 
 # Windowless Windows/EGL application
 if(WITH_WINDOWLESSWINDOWSEGLAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "WindowlessWindowsEglApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_EGLCONTEXT 1)
 
     set(MagnumWindowlessWindowsEglApplication_SRCS
@@ -546,7 +612,7 @@ if(WITH_WINDOWLESSWINDOWSEGLAPPLICATION)
     set_target_properties(MagnumWindowlessWindowsEglApplication PROPERTIES
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
-    if(BUILD_STATIC_PIC)
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
         set_target_properties(MagnumWindowlessWindowsEglApplication PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif()
     target_link_libraries(MagnumWindowlessWindowsEglApplication PUBLIC MagnumGL EGL::EGL)
@@ -563,6 +629,10 @@ endif()
 
 # Windowless CGL application
 if(WITH_WINDOWLESSCGLAPPLICATION)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "WindowlessCglApplication is available only if TARGET_GL is enabled")
+    endif()
+
     set(NEED_CGLCONTEXT 1)
 
     set(MagnumWindowlessCglApplication_SRCS
@@ -576,7 +646,7 @@ if(WITH_WINDOWLESSCGLAPPLICATION)
     set_target_properties(MagnumWindowlessCglApplication PROPERTIES
         DEBUG_POSTFIX "-d"
         FOLDER "Magnum/Platform")
-    if(BUILD_STATIC_PIC)
+    if(NOT BUILD_STATIC OR BUILD_STATIC_PIC)
         set_target_properties(MagnumWindowlessCglApplication PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif()
     target_link_libraries(MagnumWindowlessCglApplication PUBLIC MagnumGL)
@@ -694,10 +764,13 @@ if(NEED_CGLCONTEXT OR WITH_CGLCONTEXT)
 
     # Also create proper static library, if requested
     if(WITH_CGLCONTEXT)
-        # CMake-generated XCode projects had some problems when library
-        # consisted only of $<TARGET_OBJECTS> entries, thus compiling the
-        # sources again in this case
-        add_library(MagnumCglContext STATIC ${MagnumContext_SRCS})
+        if(NOT TARGET_GL)
+            message(SEND_ERROR "CglContext is available only if TARGET_GL is enabled")
+        endif()
+
+        add_library(MagnumCglContext STATIC
+            $<TARGET_OBJECTS:MagnumCglContextObjects>
+            ${PROJECT_SOURCE_DIR}/src/dummy.cpp) # XCode workaround, see file comment for details
         set_target_properties(MagnumCglContext PROPERTIES
             DEBUG_POSTFIX "-d"
             FOLDER "Magnum/Platform")
@@ -735,6 +808,10 @@ if(NEED_EGLCONTEXT OR WITH_EGLCONTEXT)
 
     # Also create proper static library, if requested
     if(WITH_EGLCONTEXT)
+        if(NOT TARGET_GL)
+            message(SEND_ERROR "EglContext is available only if TARGET_GL is enabled")
+        endif()
+
         add_library(MagnumEglContext STATIC
             $<TARGET_OBJECTS:MagnumEglContextObjects>
             ${PROJECT_SOURCE_DIR}/src/dummy.cpp) # XCode workaround, see file comment for details
@@ -770,6 +847,10 @@ if(NEED_GLXCONTEXT OR WITH_GLXCONTEXT)
 
     # Also create proper static library, if requested
     if(WITH_GLXCONTEXT)
+        if(NOT TARGET_GL)
+            message(SEND_ERROR "GlxContext is available only if TARGET_GL is enabled")
+        endif()
+
         add_library(MagnumGlxContext STATIC $<TARGET_OBJECTS:MagnumGlxContextObjects>)
         set_target_properties(MagnumGlxContext PROPERTIES
             DEBUG_POSTFIX "-d"
@@ -804,6 +885,10 @@ if(NEED_WGLCONTEXT OR WITH_WGLCONTEXT)
 
     # Also create proper static library, if requested
     if(WITH_WGLCONTEXT)
+        if(NOT TARGET_GL)
+            message(SEND_ERROR "WglContext is available only if TARGET_GL is enabled")
+        endif()
+
         add_library(MagnumWglContext STATIC $<TARGET_OBJECTS:MagnumWglContextObjects>)
         set_target_properties(MagnumWglContext PROPERTIES
             DEBUG_POSTFIX "-d"
@@ -825,6 +910,10 @@ endif()
 
 # Magnum GL Info
 if(WITH_GL_INFO)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "magnum-gl-info is available only if TARGET_GL is enabled")
+    endif()
+
     add_executable(magnum-gl-info gl-info.cpp)
     target_link_libraries(magnum-gl-info PRIVATE MagnumGL)
     if(MAGNUM_TARGET_HEADLESS OR CORRADE_TARGET_EMSCRIPTEN OR CORRADE_TARGET_ANDROID)

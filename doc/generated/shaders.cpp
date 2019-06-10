@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,8 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Directory.h>
 
@@ -80,7 +82,7 @@ struct ShaderVisualizer: Platform::WindowlessApplication {
     std::string vector();
     std::string distanceFieldVector();
 
-    std::unique_ptr<Trade::AbstractImporter> _importer;
+    Containers::Pointer<Trade::AbstractImporter> _importer;
 };
 
 namespace {
@@ -89,7 +91,7 @@ namespace {
 
 int ShaderVisualizer::exec() {
     PluginManager::Manager<Trade::AbstractImageConverter> converterManager;
-    std::unique_ptr<Trade::AbstractImageConverter> converter = converterManager.loadAndInstantiate("PngImageConverter");
+    Containers::Pointer<Trade::AbstractImageConverter> converter = converterManager.loadAndInstantiate("PngImageConverter");
     if(!converter) {
         Error() << "Cannot load image converter plugin";
         std::exit(1);
@@ -193,7 +195,7 @@ std::string ShaderVisualizer::vertexColor() {
     std::vector<Color3> colors;
     colors.reserve(sphere.positions(0).size());
     for(Vector3 position: sphere.positions(0))
-        colors.push_back(Color3::fromHsv(Math::lerp(240.0_degf, 420.0_degf, Math::max(1.0f - (position - target).length(), 0.0f)), 0.85f, 0.666f));
+        colors.push_back(Color3::fromHsv({Math::lerp(240.0_degf, 420.0_degf, Math::max(1.0f - (position - target).length(), 0.0f)), 0.85f, 0.666f}));
 
     GL::Buffer vertices, indices;
     vertices.setData(MeshTools::interleave(sphere.positions(0), colors), GL::BufferUsage::StaticDraw);

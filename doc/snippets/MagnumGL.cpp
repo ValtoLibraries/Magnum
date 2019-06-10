@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,9 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 */
+
+#include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Containers/Reference.h>
 
 #include "Magnum/Image.h"
 #include "Magnum/PixelFormat.h"
@@ -199,7 +202,6 @@ static_cast<void>(format);
 GL::Texture2D texture;
 
 /* - on OpenGL 4.5+/ARB_direct_state_access this calls glTextureStorage2D()
-   - if EXT_direct_state_access is available, calls glTextureStorage2DEXT()
    - on OpenGL 4.2+/ARB_texture_storage and OpenGL ES 3.0+ calls glTexStorage2D()
    - on OpenGL ES 2.0 with EXT_texture_storage calls glTexStorage2DEXT()
    - otherwise emulated using a sequence of four glTexImage2D() calls */
@@ -894,7 +896,8 @@ GL::Renderbuffer depthStencil;
 
 framebuffer.attachTexture(GL::Framebuffer::ColorAttachment{0}, color, 0);
 framebuffer.attachTexture(GL::Framebuffer::ColorAttachment{1}, normal, 0);
-framebuffer.attachRenderbuffer(GL::Framebuffer::BufferAttachment::DepthStencil, depthStencil);
+framebuffer.attachRenderbuffer(
+    GL::Framebuffer::BufferAttachment::DepthStencil, depthStencil);
 /* [Framebuffer-usage-attach] */
 }
 #endif
@@ -908,9 +911,16 @@ struct MyShader {
 };
 GL::Framebuffer framebuffer{{}};
 /* [Framebuffer-usage-map] */
-framebuffer.mapForDraw({{MyShader::ColorOutput, GL::Framebuffer::ColorAttachment(0)},
-                        {MyShader::NormalOutput, GL::Framebuffer::ColorAttachment(1)}});
+framebuffer.mapForDraw({
+    {MyShader::ColorOutput, GL::Framebuffer::ColorAttachment(0)},
+    {MyShader::NormalOutput, GL::Framebuffer::ColorAttachment(1)}});
 /* [Framebuffer-usage-map] */
+
+/* [Framebuffer-mapForDraw] */
+framebuffer.mapForDraw({
+    {MyShader::ColorOutput, GL::Framebuffer::ColorAttachment(0)},
+    {MyShader::NormalOutput, GL::Framebuffer::DrawAttachment::None}});
+/* [Framebuffer-mapForDraw] */
 }
 
 {
@@ -1234,6 +1244,15 @@ GL::CompressedBufferImage2D image = texture.compressedSubImage(range, {},
 /* [RectangleTexture-compressedSubImage2] */
 }
 #endif
+
+{
+GL::Renderer::Feature feature = GL::Renderer::Feature::Blending;
+bool enabled{};
+/* [Renderer-setFeature] */
+enabled ? GL::Renderer::enable(feature) : GL::Renderer::disable(feature)
+/* [Renderer-setFeature] */
+;
+}
 
 #if !(defined(MAGNUM_TARGET_GLES2) && defined(MAGNUM_TARGET_WEBGL))
 {

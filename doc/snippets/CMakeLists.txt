@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,7 +50,22 @@ endif()
 
 add_library(snippets-Magnum STATIC ${snippets_Magnum_SRCS})
 target_link_libraries(snippets-Magnum PRIVATE Magnum)
+if(MAGNUM_TARGET_GL)
+    target_link_libraries(snippets-Magnum PRIVATE MagnumGL)
+endif()
 set_target_properties(snippets-Magnum PROPERTIES FOLDER "Magnum/doc/snippets")
+
+# This is taken from corrade/src/Corrade/Test/CMakeLists.txt, keep in sync
+if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.0") OR
+   (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.9") OR
+   (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0") OR
+   (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"))
+    add_library(snippets-Magnum-cpp14 STATIC MagnumMath-cpp14.cpp)
+    target_link_libraries(snippets-Magnum-cpp14 PRIVATE Magnum)
+    set_target_properties(snippets-Magnum-cpp14 PROPERTIES
+        CORRADE_CXX_STANDARD 14
+        FOLDER "Magnum/doc/snippets")
+endif()
 
 if(WITH_AUDIO)
     add_library(snippets-MagnumAudio STATIC MagnumAudio.cpp)
@@ -82,6 +97,9 @@ if(WITH_TRADE)
         plugins.cpp
         MagnumTrade.cpp)
     target_link_libraries(snippets-MagnumTrade PRIVATE MagnumTrade)
+    if(MAGNUM_TARGET_GL)
+        target_link_libraries(snippets-MagnumTrade PRIVATE MagnumGL)
+    endif()
     set_target_properties(snippets-MagnumTrade PROPERTIES FOLDER "Magnum/doc/snippets")
 endif()
 
@@ -92,24 +110,31 @@ if(WITH_DEBUGTOOLS)
         MagnumDebugTools.cpp)
     target_link_libraries(snippets-MagnumDebugTools PRIVATE MagnumDebugTools)
     set_target_properties(snippets-MagnumDebugTools PROPERTIES FOLDER "Magnum/doc/snippets")
-endif()
 
-# TODO: causes spurious linker errors on Travis iOS build, so I'm disabling it
-if(WITH_DEBUGTOOLS AND Corrade_TestSuite_FOUND AND NOT CORRADE_TARGET_IOS)
-    set(SNIPPETS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
-                   ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+    # TODO: causes spurious linker errors on Travis iOS build, so I'm disabling it
+    if(NOT CORRADE_TARGET_IOS)
+        set(SNIPPETS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
+                       ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
-    # CompareImage documentation snippet. I need it executable so I can
-    # copy&paste the output to the documentation. Also not using
-    # corrade_add_test() because it shouldn't be run as part of CTest as it
-    # purposedly fails.
-    add_executable(debugtools-compareimage debugtools-compareimage.cpp)
-    target_link_libraries(debugtools-compareimage PRIVATE
-        MagnumDebugTools
-        MagnumTrade)
-    target_include_directories(debugtools-compareimage PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    set_target_properties(debugtools-compareimage PROPERTIES FOLDER "Magnum/doc/snippets")
+        # CompareImage documentation snippet. I need it executable so I can
+        # copy&paste the output to the documentation. Also not using
+        # corrade_add_test() because it shouldn't be run as part of CTest as it
+        # purposedly fails.
+        add_executable(debugtools-compareimage debugtools-compareimage.cpp)
+        target_link_libraries(debugtools-compareimage PRIVATE
+            MagnumDebugTools
+            MagnumTrade)
+        target_include_directories(debugtools-compareimage PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+        set_target_properties(debugtools-compareimage PROPERTIES FOLDER "Magnum/doc/snippets")
+    endif()
+
+    if(TARGET_GL)
+        add_library(snippets-MagnumDebugTools-gl STATIC
+            MagnumDebugTools-gl.cpp)
+        target_link_libraries(snippets-MagnumDebugTools-gl PRIVATE MagnumDebugTools)
+        set_target_properties(snippets-MagnumDebugTools-gl PROPERTIES FOLDER "Magnum/doc/snippets")
+    endif()
 endif()
 
 if(WITH_PRIMITIVES)
@@ -142,7 +167,14 @@ if(WITH_SCENEGRAPH)
     endif()
 endif()
 
-if(WITH_SDL2APPLICATION)
+if(WITH_VK)
+    add_library(snippets-MagnumVk STATIC MagnumVk.cpp)
+    target_link_libraries(snippets-MagnumVk PRIVATE MagnumVk)
+    set_target_properties(snippets-MagnumVk
+        PROPERTIES FOLDER "Magnum/doc/snippets")
+endif()
+
+if(WITH_SDL2APPLICATION AND TARGET_GL)
     add_executable(getting-started getting-started.cpp)
     add_executable(getting-started-blue getting-started-blue.cpp)
     target_link_libraries(getting-started PRIVATE MagnumSdl2Application)
@@ -158,13 +190,6 @@ if(WITH_SDL2APPLICATION)
         getting-started-blue
         snippets-MagnumPlatform
         PROPERTIES FOLDER "Magnum/doc/snippets")
-    # Otherwise it's not linked correctly. I have no idea why, but whatever.
-    if(CMAKE_VERSION VERSION_LESS 3.0)
-        find_package(SDL2 REQUIRED)
-        target_link_libraries(getting-started PRIVATE SDL2::SDL2)
-        target_link_libraries(getting-started-blue PRIVATE SDL2::SDL2)
-        target_link_libraries(snippets-MagnumPlatform PRIVATE SDL2::SDL2)
-    endif()
 endif()
 
 if((NOT TARGET_GLES AND WITH_SDL2APPLICATION) OR (TARGET_GLES AND WITH_XEGLAPPLICATION))
@@ -178,11 +203,6 @@ if((NOT TARGET_GLES AND WITH_SDL2APPLICATION) OR (TARGET_GLES AND WITH_XEGLAPPLI
     set_target_properties(
         snippets-MagnumPlatform-portability
         PROPERTIES FOLDER "Magnum/doc/snippets")
-    # Otherwise it's not linked correctly. I have no idea why, but whatever.
-    if(CMAKE_VERSION VERSION_LESS 3.0)
-        find_package(SDL2 REQUIRED)
-        target_link_libraries(snippets-MagnumPlatform-portability PRIVATE SDL2::SDL2)
-    endif()
 endif()
 
 if(WITH_WINDOWLESSEGLAPPLICATION)

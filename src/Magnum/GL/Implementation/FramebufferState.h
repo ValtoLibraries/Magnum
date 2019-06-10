@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,6 +84,8 @@ struct FramebufferState {
     FramebufferTarget(AbstractFramebuffer::*bindInternalImplementation)();
     #endif
 
+    GLenum(AbstractFramebuffer::*implementationColorReadFormatTypeImplementation)(GLenum what);
+
     void(Framebuffer::*createImplementation)();
     void(Framebuffer::*renderbufferImplementation)(Framebuffer::BufferAttachment, GLuint);
     #ifndef MAGNUM_TARGET_GLES
@@ -93,6 +95,7 @@ struct FramebufferState {
     void(Framebuffer::*textureCubeMapImplementation)(Framebuffer::BufferAttachment, GLenum, GLuint, GLint);
     #if !defined(MAGNUM_TARGET_WEBGL) && !defined(MAGNUM_TARGET_GLES2)
     void(Framebuffer::*textureImplementation)(Framebuffer::BufferAttachment, GLuint, GLint);
+    void(Framebuffer::*layeredTextureCubeMapArrayImplementation)(Framebuffer::BufferAttachment, GLuint, GLint);
     #endif
     #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
     void(Framebuffer::*textureLayerImplementation)(Framebuffer::BufferAttachment, GLuint, GLint, GLint);

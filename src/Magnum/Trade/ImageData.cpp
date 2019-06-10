@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,10 @@
 
 #include "ImageData.h"
 
+#include <Corrade/Containers/StridedArrayView.h>
+
 #include "Magnum/PixelFormat.h"
+#include "Magnum/Implementation/ImagePixelView.h"
 
 namespace Magnum { namespace Trade {
 
@@ -78,6 +81,16 @@ template<UnsignedInt dimensions> UnsignedInt ImageData<dimensions>::pixelSize() 
 template<UnsignedInt dimensions> std::pair<VectorTypeFor<dimensions, std::size_t>, VectorTypeFor<dimensions, std::size_t>> ImageData<dimensions>::dataProperties() const {
     CORRADE_ASSERT(!_compressed, "Trade::ImageData::dataProperties(): the image is compressed", {});
     return Implementation::imageDataProperties<dimensions>(*this);
+}
+
+template<UnsignedInt dimensions> Containers::StridedArrayView<dimensions + 1, char> ImageData<dimensions>::pixels() {
+    CORRADE_ASSERT(!_compressed, "Trade::ImageData::pixels(): the image is compressed", {});
+    return Implementation::imagePixelView<dimensions, char>(*this);
+}
+
+template<UnsignedInt dimensions> Containers::StridedArrayView<dimensions + 1, const char> ImageData<dimensions>::pixels() const {
+    CORRADE_ASSERT(!_compressed, "Trade::ImageData::pixels(): the image is compressed", {});
+    return Implementation::imagePixelView<dimensions, const char>(*this);
 }
 
 template<UnsignedInt dimensions> ImageData<dimensions>::operator ImageView<dimensions>() const

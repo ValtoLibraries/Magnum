@@ -9,20 +9,12 @@ void setPolygonMode(PolygonMode mode);
 #endif
 /* [glcompatibility] */
 
-/* [collisionoperator] */
-/** @collisionoccurenceoperator{Point,Sphere} */
-inline bool operator%(const Point& a, const Sphere& b) { return b % a; }
-
-/** @collisionoperator{Point,Sphere} */
-inline Collision operator/(const Point& a, const Sphere& b) { return (b/a).reverted(); }
-/* [collisionoperator] */
-
 /* [extension] */
 /** @gl_extension{ARB,timer_query} */
 /* [extension] */
 
 /* [extension2] */
-/** @gl_extension2{NV,read_buffer_front,GL_NV_read_buffer} */
+/** @gl_extension2{NV,read_buffer_front,NV_read_buffer} */
 /* [extension2] */
 
 /* [webgl_extension] */
@@ -53,7 +45,7 @@ static void setSeamless(bool enabled) {
 /* [fn_gl2] */
 
 /* [fn_gl_extension] */
-/** @fn_gl_extension{NamedCopyBufferSubData,EXT,direct_state_access} */
+/** @fn_gl_extension{LabelObject,EXT,debug_label} */
 /* [fn_gl_extension] */
 
 /* [fn_vk] */

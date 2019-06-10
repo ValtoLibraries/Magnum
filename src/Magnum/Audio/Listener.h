@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -119,7 +119,7 @@ template<UnsignedInt dimensions> class Listener: public SceneGraph::AbstractFeat
          * listener-related configuration for @ref Renderer (position,
          * orientation, gain).
          */
-        void update(std::initializer_list<std::reference_wrapper<PlayableGroup<dimensions>>> groups);
+        void update(std::initializer_list<Containers::Reference<PlayableGroup<dimensions>>> groups);
 
         /** @brief Listener gain */
         Float gain() const { return _gain; }

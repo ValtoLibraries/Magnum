@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,10 +55,10 @@ namespace Magnum { namespace Text {
 @brief MagnumFont converter plugin
 
 Expects filename prefix, creates two files, `prefix.conf` and `prefix.tga`. See
-@ref MagnumFont for more information about the font.
+@ref MagnumFont for more information about the font. The plugin requires the
+passed @ref AbstractGlyphCache to support @ref GlyphCacheFeature::ImageDownload.
 
-This plugin is available only on desktop OpenGL, as it uses @ref GL::Texture::image()
-to read back the generated data. It depends on the @ref Text library and the
+This plugin depends on the @ref Text library and the
 @ref Trade::TgaImageConverter "TgaImageConverter" plugin. It is built if
 `WITH_MAGNUMFONTCONVERTER` is enabled when building Magnum. To use as a
 dynamic plugin, you need to load the @cpp "MagnumFontConverter" @ce plugin from
@@ -78,7 +78,7 @@ class MAGNUM_MAGNUMFONTCONVERTER_EXPORT MagnumFontConverter: public Text::Abstra
 
     private:
         MAGNUM_MAGNUMFONTCONVERTER_LOCAL Features doFeatures() const override;
-        MAGNUM_MAGNUMFONTCONVERTER_LOCAL std::vector<std::pair<std::string, Containers::Array<char>>> doExportFontToData(AbstractFont& font, GlyphCache& cache, const std::string& filename, const std::u32string& characters) const override;
+        MAGNUM_MAGNUMFONTCONVERTER_LOCAL std::vector<std::pair<std::string, Containers::Array<char>>> doExportFontToData(AbstractFont& font, AbstractGlyphCache& cache, const std::string& filename, const std::u32string& characters) const override;
 };
 
 }}

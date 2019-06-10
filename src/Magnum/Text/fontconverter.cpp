@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,8 +25,10 @@
 
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 
+#include "Magnum/Math/ConfigurationValue.h"
 #include "Magnum/Text/AbstractFont.h"
 #include "Magnum/Text/AbstractFontConverter.h"
 #include "Magnum/Text/DistanceFieldGlyphCache.h"
@@ -120,6 +122,10 @@ According to @ref Text::MagnumFontConverter "MagnumFontConverter" plugin
 documentation, this will generate files `myfont.conf` and `myfont.tga` in
 current directory. You can then load and use them via the
 @ref Text::MagnumFont "MagnumFont" plugin.
+
+@note This executable is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 
 namespace Text {
@@ -148,7 +154,7 @@ FontConverter::FontConverter(const Arguments& arguments): Platform::WindowlessAp
         .addOption("output-size", "256 256").setHelp("output-size", "output atlas size. If set to zero size, distance field computation will not be used.", "\"X Y\"")
         .addOption("radius", "24").setHelp("radius", "distance field computation radius", "N")
         .addSkippedPrefix("magnum", "engine-specific options")
-        .setHelp("Converts font to raster one of given atlas size.")
+        .setGlobalHelp("Converts font to raster one of given atlas size.")
         .parse(arguments.argc, arguments.argv);
 
     createContext();
@@ -164,14 +170,14 @@ int FontConverter::exec() {
     PluginManager::Manager<Text::AbstractFont> fontManager{
         args.value("plugin-dir").empty() ? std::string{} :
         Utility::Directory::join(args.value("plugin-dir"), Text::AbstractFont::pluginSearchPaths()[0])};
-    std::unique_ptr<Text::AbstractFont> font = fontManager.loadAndInstantiate(args.value("font"));
+    Containers::Pointer<Text::AbstractFont> font = fontManager.loadAndInstantiate(args.value("font"));
     if(!font) return 1;
 
     /* Load font converter */
     PluginManager::Manager<Text::AbstractFontConverter> converterManager{
         args.value("plugin-dir").empty() ? std::string{} :
         Utility::Directory::join(args.value("plugin-dir"), Text::AbstractFontConverter::pluginSearchPaths()[0])};
-    std::unique_ptr<Text::AbstractFontConverter> converter = converterManager.loadAndInstantiate(args.value("converter"));
+    Containers::Pointer<Text::AbstractFontConverter> converter = converterManager.loadAndInstantiate(args.value("converter"));
     if(!converter) return 2;
 
     /* Open font */
@@ -181,7 +187,7 @@ int FontConverter::exec() {
     }
 
     /* Create distance field glyph cache if radius is specified */
-    std::unique_ptr<Text::GlyphCache> cache;
+    Containers::Pointer<Text::GlyphCache> cache;
     if(!args.value<Vector2i>("output-size").isZero()) {
         Debug() << "Populating distance field glyph cache...";
 

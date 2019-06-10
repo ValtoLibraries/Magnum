@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,16 +29,13 @@
  * @brief Class @ref Magnum::GL::MeshView
  */
 
-#include <functional>
 #include <initializer_list>
+#include <Corrade/Containers/Reference.h>
 
+#include "Magnum/Magnum.h"
 #include "Magnum/GL/GL.h"
 #include "Magnum/GL/OpenGL.h"
 #include "Magnum/GL/visibility.h"
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include <Corrade/Utility/Macros.h>
-#endif
 
 namespace Magnum { namespace GL {
 
@@ -67,8 +64,8 @@ class MAGNUM_GL_EXPORT MeshView {
         /**
          * @brief Draw multiple meshes at once
          *
-         * In OpenGL ES, if @gl_extension2{EXT,multi_draw_arrays,multi_draw_arrays}
-         * is not present, the functionality is emulated using sequence of
+         * In OpenGL ES, if @gl_extension{EXT,multi_draw_arrays} is not
+         * present, the functionality is emulated using sequence of
          * @ref draw(AbstractShaderProgram&) calls.
          *
          * If @gl_extension{ARB,vertex_array_object} (part of OpenGL 3.0), OpenGL
@@ -88,10 +85,10 @@ class MAGNUM_GL_EXPORT MeshView {
          * @requires_gl Specifying base vertex for indexed meshes is not
          *      available in OpenGL ES or WebGL.
          */
-        static void draw(AbstractShaderProgram& shader, std::initializer_list<std::reference_wrapper<MeshView>> meshes);
+        static void draw(AbstractShaderProgram& shader, std::initializer_list<Containers::Reference<MeshView>> meshes);
 
         /** @overload */
-        static void draw(AbstractShaderProgram&& shader, std::initializer_list<std::reference_wrapper<MeshView>> meshes) {
+        static void draw(AbstractShaderProgram&& shader, std::initializer_list<Containers::Reference<MeshView>> meshes) {
             draw(shader, meshes);
         }
 
@@ -203,7 +200,9 @@ class MAGNUM_GL_EXPORT MeshView {
          * @requires_gl42 Extension @gl_extension{ARB,transform_feedback_instanced}
          *      if using @ref draw(AbstractShaderProgram&, TransformFeedback&, UnsignedInt)
          * @requires_gles30 Extension @gl_extension{ANGLE,instanced_arrays},
-         *      @gl_extension2{EXT,draw_instanced,draw_instanced} or
+         *      @gl_extension{EXT,instanced_arrays},
+         *      @gl_extension{EXT,draw_instanced},
+         *      @gl_extension{NV,instanced_arrays},
          *      @gl_extension{NV,draw_instanced} in OpenGL ES 2.0.
          * @requires_webgl20 Extension @webgl_extension{ANGLE,instanced_arrays}
          *      in WebGL 1.0.
@@ -238,7 +237,7 @@ class MAGNUM_GL_EXPORT MeshView {
          * @return Reference to self (for method chaining)
          *
          * See @ref Mesh::draw(AbstractShaderProgram&) for more information.
-         * @see @ref draw(AbstractShaderProgram&, std::initializer_list<std::reference_wrapper<MeshView>>),
+         * @see @ref draw(AbstractShaderProgram&, std::initializer_list<Containers::Reference<MeshView>>),
          *      @ref draw(AbstractShaderProgram&, TransformFeedback&, UnsignedInt)
          * @requires_gl32 Extension @gl_extension{ARB,draw_elements_base_vertex}
          *      if the mesh is indexed and @ref baseVertex() is not `0`.
@@ -247,8 +246,10 @@ class MAGNUM_GL_EXPORT MeshView {
          * @requires_gl42 Extension @gl_extension{ARB,base_instance} if
          *      @ref baseInstance() is not `0`.
          * @requires_gles30 Extension @gl_extension{ANGLE,instanced_arrays},
-         *      @gl_extension{EXT,instanced_arrays} or
-         *      @gl_extension{NV,instanced_arrays} in OpenGL ES 2.0 if
+         *      @gl_extension{EXT,instanced_arrays},
+         *      @gl_extension{EXT,draw_instanced},
+         *      @gl_extension{NV,instanced_arrays},
+         *      @gl_extension{NV,draw_instanced} in OpenGL ES 2.0 if
          *      @ref instanceCount() is more than `1`.
          * @requires_webgl20 Extension @webgl_extension{ANGLE,instanced_arrays}
          *      in WebGL 1.0 if @ref instanceCount() is more than `1`.
@@ -286,11 +287,11 @@ class MAGNUM_GL_EXPORT MeshView {
 
     private:
         #ifndef MAGNUM_TARGET_WEBGL
-        static MAGNUM_GL_LOCAL void multiDrawImplementationDefault(std::initializer_list<std::reference_wrapper<MeshView>> meshes);
+        static MAGNUM_GL_LOCAL void multiDrawImplementationDefault(std::initializer_list<Containers::Reference<MeshView>> meshes);
         #endif
-        static MAGNUM_GL_LOCAL void multiDrawImplementationFallback(std::initializer_list<std::reference_wrapper<MeshView>> meshes);
+        static MAGNUM_GL_LOCAL void multiDrawImplementationFallback(std::initializer_list<Containers::Reference<MeshView>> meshes);
 
-        std::reference_wrapper<Mesh> _original;
+        Containers::Reference<Mesh> _original;
 
         bool _countSet{};
         Int _count{}, _baseVertex{}, _instanceCount{1};
@@ -317,17 +318,6 @@ inline MeshView& MeshView::setIndexRange(Int first, UnsignedInt start, UnsignedI
     return *this;
 }
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::MeshView
- * @deprecated Use @ref GL::MeshView instead.
- */
-typedef CORRADE_DEPRECATED("use GL::MeshView instead") Magnum::GL::MeshView MeshView;
-#endif
-
-}
+}}
 
 #endif

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,7 @@
 #include "Magnum/Trade/MeshData2D.h"
 #include "Magnum/Trade/MeshData3D.h"
 
-namespace Magnum { namespace Primitives { namespace Test {
+namespace Magnum { namespace Primitives { namespace Test { namespace {
 
 struct AxisTest: TestSuite::Tester {
     explicit AxisTest();
@@ -63,6 +63,6 @@ void AxisTest::threeDimensions() {
     CORRADE_COMPARE(axis.colors(0).size(), 12);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Primitives::Test::AxisTest)

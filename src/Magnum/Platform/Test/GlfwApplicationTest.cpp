@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,12 +23,43 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <Corrade/Utility/DebugStl.h>
+
 #include "Magnum/Platform/GlfwApplication.h"
 
-namespace Magnum { namespace Platform { namespace Test {
+namespace Magnum { namespace Platform { namespace Test { namespace {
 
 struct GlfwApplicationTest: Platform::Application {
-    explicit GlfwApplicationTest(const Arguments& arguments): Platform::Application{arguments} {}
+    explicit GlfwApplicationTest(const Arguments& arguments): Platform::Application{arguments} {
+        Debug{} << "window size" << windowSize() << framebufferSize() << dpiScaling();
+    }
+
+    /* For testing HiDPI resize events */
+    void viewportEvent(ViewportEvent& event) override {
+        Debug{} << "viewport event" << event.windowSize()
+            #ifdef MAGNUM_TARGET_GL
+            << event.framebufferSize()
+            #endif
+            << event.dpiScaling();
+    }
+
+    void keyPressEvent(KeyEvent& event) override {
+        #if GLFW_VERSION_MAJOR*100 + GLFW_VERSION_MINOR >= 302
+        Debug{} << "key press event:" << int(event.key()) << event.keyName();
+        #endif
+
+        if(event.key() == KeyEvent::Key::F1) {
+            Debug{} << "starting text input";
+            startTextInput();
+        } else if(event.key() == KeyEvent::Key::Esc) {
+            Debug{} << "stopping text input";
+            stopTextInput();
+        }
+    }
+
+    void textInputEvent(TextInputEvent& event) override {
+        Debug{} << "text input event:" << std::string{event.text(), event.text().size()};
+    }
 
     void exitEvent(ExitEvent& event) override {
         Debug{} << "application exiting";
@@ -38,6 +69,6 @@ struct GlfwApplicationTest: Platform::Application {
     void drawEvent() override {}
 };
 
-}}}
+}}}}
 
 MAGNUM_APPLICATION_MAIN(Magnum::Platform::Test::GlfwApplicationTest)

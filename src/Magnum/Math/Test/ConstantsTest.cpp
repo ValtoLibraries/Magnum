@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,13 +23,13 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#include <cmath>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/StlMath.h>
 
 #include "Magnum/Math/Constants.h"
 #include "Magnum/Math/Functions.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct ConstantsTest: Corrade::TestSuite::Tester {
     explicit ConstantsTest();
@@ -87,6 +87,6 @@ template<class T> void ConstantsTest::specials() {
     CORRADE_VERIFY(h != h);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::ConstantsTest)

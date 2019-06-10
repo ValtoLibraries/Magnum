@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,13 +29,12 @@
  * @brief Class @ref Magnum::Math::Vector, function @ref Magnum::Math::dot(), @ref Magnum::Math::angle()
  */
 
-#include <cmath>
-#ifdef _MSC_VER
-#include <algorithm> /* std::max() */
-#endif
+#include <utility>
 #include <Corrade/Utility/Assert.h>
-#include <Corrade/Utility/ConfigurationValue.h>
+#ifndef CORRADE_NO_DEBUG
 #include <Corrade/Utility/Debug.h>
+#endif
+#include <Corrade/Utility/StlMath.h>
 
 #include "Magnum/visibility.h"
 #include "Magnum/Math/Angle.h"
@@ -43,6 +42,21 @@
 #include "Magnum/Math/TypeTraits.h"
 
 namespace Magnum { namespace Math {
+
+#ifndef DOXYGEN_GENERATING_OUTPUT
+/* Documented in Functions.h, defined here because Vector needs them */
+template<class T> inline typename std::enable_if<IsScalar<T>::value, bool>::type isNan(T value) {
+    return std::isnan(UnderlyingTypeOf<T>(value));
+}
+
+template<class T> constexpr typename std::enable_if<IsScalar<T>::value, T>::type min(T a, T b) {
+    return b < a ? b : a;
+}
+
+template<class T> constexpr typename std::enable_if<IsScalar<T>::value, T>::type max(T a, T b) {
+    return a < b ? b : a;
+}
+#endif
 
 namespace Implementation {
     template<std::size_t, class, class> struct VectorConverter;
@@ -64,6 +78,9 @@ namespace Implementation {
             return vec == Vector<size, T>{};
         }
     };
+
+    /* Used to make friends to speed up debug builds */
+    template<std::size_t, class> struct MatrixDeterminant;
 }
 
 /** @relatesalso Vector
@@ -115,8 +132,6 @@ See @ref matrix-vector for brief introduction.
 template<std::size_t size, class T> class Vector {
     static_assert(size != 0, "Vector cannot have zero elements");
 
-    template<std::size_t, class> friend class Vector;
-
     public:
         typedef T Type;         /**< @brief Underlying data type */
 
@@ -125,7 +140,7 @@ template<std::size_t size, class T> class Vector {
         };
 
         /**
-         * @brief Vector from array
+         * @brief Vector from an array
          * @return Reference to the data as if it was Vector, thus doesn't
          *      perform any copying.
          *
@@ -154,23 +169,30 @@ template<std::size_t size, class T> class Vector {
         /**
          * @brief Default constructor
          *
+         * Equivalent to @ref Vector(ZeroInitT).
+         */
+        constexpr /*implicit*/ Vector() noexcept: _data{} {}
+
+        /**
+         * @brief Construct a zero vector
+         *
          * @f[
          *      \boldsymbol v = \boldsymbol 0
          * @f]
          */
-        constexpr /*implicit*/ Vector(ZeroInitT = ZeroInit) noexcept: _data{} {}
+        constexpr explicit Vector(ZeroInitT) noexcept: _data{} {}
 
-        /** @brief Construct vector without initializing the contents */
+        /** @brief Construct a vector without initializing the contents */
         explicit Vector(NoInitT) noexcept {}
 
-        /** @brief Construct vector from components */
+        /** @brief Construct a vector from components */
         #ifdef DOXYGEN_GENERATING_OUTPUT
         template<class ...U> constexpr /*implicit*/ Vector(T first, U... next) noexcept;
         #else
         template<class ...U, class V = typename std::enable_if<sizeof...(U)+1 == size, T>::type> constexpr /*implicit*/ Vector(T first, U... next) noexcept: _data{first, next...} {}
         #endif
 
-        /** @brief Construct vector with one value for all components */
+        /** @brief Construct a vector with one value for all components */
         #ifdef DOXYGEN_GENERATING_OUTPUT
         constexpr explicit Vector(T value) noexcept;
         #else
@@ -178,26 +200,22 @@ template<std::size_t size, class T> class Vector {
         #endif
 
         /**
-         * @brief Construct vector from another of different type
+         * @brief Construct a vector from another of different type
          *
          * Performs only default casting on the values, no rounding or
          * anything else. Example usage:
          *
-         * @code{.cpp}
-         * Vector<4, Float> floatingPoint(1.3f, 2.7f, -15.0f, 7.0f);
-         * Vector<4, Byte> integral(floatingPoint);
-         * // integral == {1, 2, -15, 7}
-         * @endcode
+         * @snippet MagnumMath.cpp Vector-conversion
          */
         template<class U> constexpr explicit Vector(const Vector<size, U>& other) noexcept: Vector(typename Implementation::GenerateSequence<size>::Type(), other) {}
 
-        /** @brief Construct vector from external representation */
+        /** @brief Construct a vector from external representation */
         template<class U, class V = decltype(Implementation::VectorConverter<size, T, U>::from(std::declval<U>()))> constexpr explicit Vector(const U& other) noexcept: Vector(Implementation::VectorConverter<size, T, U>::from(other)) {}
 
         /** @brief Copy constructor */
         constexpr /*implicit*/ Vector(const Vector<size, T>&) noexcept = default;
 
-        /** @brief Convert vector to external representation */
+        /** @brief Convert a vector to external representation */
         template<class U, class V = decltype(Implementation::VectorConverter<size, T, U>::to(std::declval<Vector<size, T>>()))> constexpr explicit operator U() const {
             return Implementation::VectorConverter<size, T, U>::to(*this);
         }
@@ -233,28 +251,28 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Component-wise less than
+         * @brief Component-wise less than comparison
          *
          * @m_keyword{lessThan(),GLSL lessThan(),}
          */
         BoolVector<size> operator<(const Vector<size, T>& other) const;
 
         /**
-         * @brief Component-wise less than or equal
+         * @brief Component-wise less than or equal comparison
          *
          * @m_keyword{lessThanEqual(),GLSL lessThanEqual(),}
          */
         BoolVector<size> operator<=(const Vector<size, T>& other) const;
 
         /**
-         * @brief Component-wise greater than or equal
+         * @brief Component-wise greater than or equal comparison
          *
          * @m_keyword{greaterThanEqual(),GLSL greaterThanEqual(),}
          */
         BoolVector<size> operator>=(const Vector<size, T>& other) const;
 
         /**
-         * @brief Component-wise greater than
+         * @brief Component-wise greater than comparison
          *
          * @m_keyword{greaterThan(),GLSL greaterThan(),}
          */
@@ -295,7 +313,7 @@ template<std::size_t size, class T> class Vector {
         Vector<size, T> operator-() const;
 
         /**
-         * @brief Add and assign vector
+         * @brief Add and assign a vector
          *
          * The computation is done in-place. @f[
          *      \boldsymbol a_i = \boldsymbol a_i + \boldsymbol b_i
@@ -309,7 +327,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Add vector
+         * @brief Add a vector
          *
          * @see @ref operator+=(), @ref sum()
          */
@@ -318,7 +336,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Subtract and assign vector
+         * @brief Subtract and assign a vector
          *
          * The computation is done in-place. @f[
          *      \boldsymbol a_i = \boldsymbol a_i - \boldsymbol b_i
@@ -332,7 +350,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Subtract vector
+         * @brief Subtract a vector
          *
          * @see @ref operator-=()
          */
@@ -341,7 +359,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Multiply vector with number and assign
+         * @brief Multiply with a scalar and assign
          *
          * The computation is done in-place. @f[
          *      \boldsymbol a_i = b \boldsymbol a_i
@@ -349,26 +367,26 @@ template<std::size_t size, class T> class Vector {
          * @see @ref operator*=(const Vector<size, T>&),
          *      @ref operator*=(Vector<size, Integral>&, FloatingPoint)
          */
-        Vector<size, T>& operator*=(T number) {
+        Vector<size, T>& operator*=(T scalar) {
             for(std::size_t i = 0; i != size; ++i)
-                _data[i] *= number;
+                _data[i] *= scalar;
 
             return *this;
         }
 
         /**
-         * @brief Multiply vector with number
+         * @brief Multiply with a scalar
          *
          * @see @ref operator*(const Vector<size, T>&) const,
          *      @ref operator*=(T), @ref operator*(T, const Vector<size, T>&),
          *      @ref operator*(const Vector<size, Integral>&, FloatingPoint)
          */
-        Vector<size, T> operator*(T number) const {
-            return Vector<size, T>(*this) *= number;
+        Vector<size, T> operator*(T scalar) const {
+            return Vector<size, T>(*this) *= scalar;
         }
 
         /**
-         * @brief Divide vector with number and assign
+         * @brief Divide with a scalar and assign
          *
          * The computation is done in-place. @f[
          *      \boldsymbol a_i = \frac{\boldsymbol a_i} b
@@ -376,26 +394,26 @@ template<std::size_t size, class T> class Vector {
          * @see @ref operator/=(const Vector<size, T>&),
          *      @ref operator/=(Vector<size, Integral>&, FloatingPoint)
          */
-        Vector<size, T>& operator/=(T number) {
+        Vector<size, T>& operator/=(T scalar) {
             for(std::size_t i = 0; i != size; ++i)
-                _data[i] /= number;
+                _data[i] /= scalar;
 
             return *this;
         }
 
         /**
-         * @brief Divide vector with number
+         * @brief Divide with a scalar
          *
          * @see @ref operator/(const Vector<size, T>&) const,
          *      @ref operator/=(T), @ref operator/(T, const Vector<size, T>&),
          *      @ref operator/(const Vector<size, Integral>&, FloatingPoint)
          */
-        Vector<size, T> operator/(T number) const {
-            return Vector<size, T>(*this) /= number;
+        Vector<size, T> operator/(T scalar) const {
+            return Vector<size, T>(*this) /= scalar;
         }
 
         /**
-         * @brief Multiply vector component-wise and assign
+         * @brief Multiply a vector component-wise and assign
          *
          * The computation is done in-place. @f[
          *      \boldsymbol a_i = \boldsymbol a_i \boldsymbol b_i
@@ -411,7 +429,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Multiply vector component-wise
+         * @brief Multiply a vector component-wise
          *
          * @see @ref operator*(T) const, @ref operator*=(const Vector<size, T>&),
          *      @ref operator*(const Vector<size, Integral>&, const Vector<size, FloatingPoint>&),
@@ -422,7 +440,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Divide vector component-wise and assign
+         * @brief Divide a vector component-wise and assign
          *
          * The computation is done in-place. @f[
          *      \boldsymbol a_i = \frac{\boldsymbol a_i}{\boldsymbol b_i}
@@ -438,7 +456,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Divide vector component-wise
+         * @brief Divide a vector component-wise
          *
          * @see @ref operator/(T) const, @ref operator/=(const Vector<size, T>&),
          *      @ref operator/(const Vector<size, Integral>&, const Vector<size, FloatingPoint>&)
@@ -509,9 +527,7 @@ template<std::size_t size, class T> class Vector {
          * this function is faster than the obvious way of sizing
          * a @ref normalized() vector. Enabled only for floating-point types.
          *
-         * @code{.cpp}
-         * vec*(vec.lengthInverted()*length) // the parentheses are important
-         * @endcode
+         * @snippet MagnumMath.cpp Vector-resized
          *
          * @see @ref normalized()
          */
@@ -525,7 +541,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Vector projected onto line
+         * @brief Vector projected onto a line
          *
          * Returns a vector projected onto @p line. Enabled only for
          * floating-point types. @f[
@@ -543,7 +559,7 @@ template<std::size_t size, class T> class Vector {
         }
 
         /**
-         * @brief Vector projected onto normalized line
+         * @brief Vector projected onto a normalized line
          *
          * Slightly faster alternative to @ref projected(), expects @p line to
          * be normalized. Enabled only for floating-point types. @f[
@@ -587,25 +603,43 @@ template<std::size_t size, class T> class Vector {
         /**
          * @brief Minimal value in the vector
          *
-         * @see @ref Math::min(), @ref minmax()
+         * <em>NaN</em>s are ignored, unless the vector is all <em>NaN</em>s.
+         * @see @ref Math::min(), @ref minmax(), @ref Math::isNan()
          */
         T min() const;
 
         /**
          * @brief Maximal value in the vector
          *
-         * @see @ref Math::max(), @ref minmax()
+         * <em>NaN</em>s are ignored, unless the vector is all <em>NaN</em>s.
+         * @see @ref Math::max(), @ref minmax(), @ref Math::isNan()
          */
         T max() const;
 
         /**
          * @brief Minimal and maximal value in the vector
          *
-         * @see @ref min(), @ref max(), @ref Math::minmax()
+         * <em>NaN</em>s are ignored, unless the vector is all <em>NaN</em>s.
+         * @see @ref min(), @ref max(), @ref Math::minmax(), @ref Math::isNan()
          */
         std::pair<T, T> minmax() const;
 
+    #ifndef DOXYGEN_GENERATING_OUTPUT
+    protected:
+    #else
     private:
+    #endif
+        /* So derived classes can avoid the overhead of operator[] in debug
+           builds */
+        T _data[size];
+
+    private:
+        template<std::size_t, class> friend class Vector;
+        /* These three needed to access _data to speed up debug builds */
+        template<std::size_t, std::size_t, class> friend class RectangularMatrix;
+        template<std::size_t, class> friend class Matrix;
+        template<std::size_t, class> friend struct Implementation::MatrixDeterminant;
+
         /* Implementation for Vector<size, T>::Vector(const Vector<size, U>&) */
         template<class U, std::size_t ...sequence> constexpr explicit Vector(Implementation::Sequence<sequence...>, const Vector<size, U>& vector) noexcept: _data{T(vector._data[sequence])...} {}
 
@@ -617,14 +651,12 @@ template<std::size_t size, class T> class Vector {
         }
 
         template<std::size_t ...sequence> constexpr Vector<size, T> flippedInternal(Implementation::Sequence<sequence...>) const {
-            return {(*this)[size - 1 - sequence]...};
+            return {_data[size - 1 - sequence]...};
         }
-
-        T _data[size];
 };
 
 /** @relates Vector
-@brief Multiply number with vector
+@brief Multiply a scalar with a vector
 
 Same as @ref Vector::operator*(T) const.
 */
@@ -634,13 +666,13 @@ template<std::size_t size, class T> inline Vector<size, T> operator*(
     #else
     typename std::common_type<T>::type
     #endif
-    number, const Vector<size, T>& vector)
+    scalar, const Vector<size, T>& vector)
 {
-    return vector*number;
+    return vector*scalar;
 }
 
 /** @relates Vector
-@brief Divide vector with number and invert
+@brief Divide a vector with a scalar and invert
 
 @f[
     \boldsymbol c_i = \frac b {\boldsymbol a_i}
@@ -653,18 +685,18 @@ template<std::size_t size, class T> inline Vector<size, T> operator/(
     #else
     typename std::common_type<T>::type
     #endif
-    number, const Vector<size, T>& vector)
+    scalar, const Vector<size, T>& vector)
 {
     Vector<size, T> out;
 
     for(std::size_t i = 0; i != size; ++i)
-        out[i] = number/vector[i];
+        out[i] = scalar/vector[i];
 
     return out;
 }
 
 /** @relates Vector
-@brief Do modulo of integral vector and assign
+@brief Do modulo of an integral vector and assign
 
 The computation is done in-place.
 */
@@ -682,7 +714,7 @@ operator%=(Vector<size, Integral>& a, Integral b) {
 }
 
 /** @relates Vector
-@brief Modulo of integral vector
+@brief Modulo of an integral vector
 */
 template<std::size_t size, class Integral> inline
 #ifdef DOXYGEN_GENERATING_OUTPUT
@@ -728,7 +760,7 @@ operator%(const Vector<size, Integral>& a, const Vector<size, Integral>& b) {
 }
 
 /** @relates Vector
-@brief Bitwise NOT of integral vector
+@brief Bitwise NOT of an integral vector
 */
 template<std::size_t size, class Integral> inline
 #ifdef DOXYGEN_GENERATING_OUTPUT
@@ -842,7 +874,7 @@ operator^(const Vector<size, Integral>& a, const Vector<size, Integral>& b) {
 }
 
 /** @relates Vector
-@brief Do bitwise left shift of integral vector and assign
+@brief Do bitwise left shift of an integral vector and assign
 
 The computation is done in-place.
 */
@@ -867,7 +899,7 @@ operator<<=(Vector<size, Integral>& vector,
 }
 
 /** @relates Vector
-@brief Bitwise left shift of integral vector
+@brief Bitwise left shift of an integral vector
 */
 template<std::size_t size, class Integral> inline
 #ifdef DOXYGEN_GENERATING_OUTPUT
@@ -888,7 +920,7 @@ operator<<(const Vector<size, Integral>& vector,
 }
 
 /** @relates Vector
-@brief Do bitwise right shift of integral vector and assign
+@brief Do bitwise right shift of an integral vector and assign
 
 The computation is done in-place.
 */
@@ -912,7 +944,7 @@ operator>>=(Vector<size, Integral>& vector,
 }
 
 /** @relates Vector
-@brief Bitwise left shift of integral vector
+@brief Bitwise left shift of an integral vector
 */
 template<std::size_t size, class Integral> inline
 #ifdef DOXYGEN_GENERATING_OUTPUT
@@ -932,7 +964,7 @@ operator>>(const Vector<size, Integral>& vector,
 }
 
 /** @relates Vector
-@brief Multiply integral vector with floating-point number and assign
+@brief Multiply an integral vector with a floating-point scalar and assign
 
 Similar to @ref Vector::operator*=(T), except that the multiplication is done
 in floating-point. The computation is done in-place.
@@ -943,15 +975,15 @@ Vector<size, Integral>&
 #else
 typename std::enable_if<std::is_integral<Integral>::value && std::is_floating_point<FloatingPoint>::value, Vector<size, Integral>&>::type
 #endif
-operator*=(Vector<size, Integral>& vector, FloatingPoint number) {
+operator*=(Vector<size, Integral>& vector, FloatingPoint scalar) {
     for(std::size_t i = 0; i != size; ++i)
-        vector[i] = Integral(vector[i]*number);
+        vector[i] = Integral(vector[i]*scalar);
 
     return vector;
 }
 
 /** @relates Vector
-@brief Multiply integral vector with floating-point number
+@brief Multiply an integral vector with a floating-point scalar
 
 Similar to @ref Vector::operator*(T) const, except that the multiplication is
 done in floating-point.
@@ -962,13 +994,13 @@ Vector<size, Integral>
 #else
 typename std::enable_if<std::is_integral<Integral>::value && std::is_floating_point<FloatingPoint>::value, Vector<size, Integral>>::type
 #endif
-operator*(const Vector<size, Integral>& vector, FloatingPoint number) {
+operator*(const Vector<size, Integral>& vector, FloatingPoint scalar) {
     Vector<size, Integral> copy(vector);
-    return copy *= number;
+    return copy *= scalar;
 }
 
 /** @relates Vector
-@brief Multiply floating-point number with integral vector
+@brief Multiply a floating-point scalar with an integral vector
 
 Same as @ref operator*(const Vector<size, Integral>&, FloatingPoint).
 */
@@ -978,12 +1010,12 @@ Vector<size, Integral>
 #else
 typename std::enable_if<std::is_integral<Integral>::value && std::is_floating_point<FloatingPoint>::value, Vector<size, Integral>>::type
 #endif
-operator*(FloatingPoint number, const Vector<size, Integral>& vector) {
-    return vector*number;
+operator*(FloatingPoint scalar, const Vector<size, Integral>& vector) {
+    return vector*scalar;
 }
 
 /** @relates Vector
-@brief Divide integral vector with floating-point number and assign
+@brief Divide an integral vector with a floating-point scalar and assign
 
 Similar to @ref Vector::operator/=(T), except that the division is done in
 floating-point. The computation is done in-place.
@@ -994,15 +1026,15 @@ Vector<size, Integral>&
 #else
 typename std::enable_if<std::is_integral<Integral>::value && std::is_floating_point<FloatingPoint>::value, Vector<size, Integral>&>::type
 #endif
-operator/=(Vector<size, Integral>& vector, FloatingPoint number) {
+operator/=(Vector<size, Integral>& vector, FloatingPoint scalar) {
     for(std::size_t i = 0; i != size; ++i)
-        vector[i] = Integral(vector[i]/number);
+        vector[i] = Integral(vector[i]/scalar);
 
     return vector;
 }
 
 /** @relates Vector
-@brief Divide integral vector with floating-point number
+@brief Divide an integral vector with a floating-point scalar
 
 Similar to @ref Vector::operator/(T) const, except that the division is done in
 floating-point.
@@ -1013,13 +1045,13 @@ Vector<size, Integral>
 #else
 typename std::enable_if<std::is_integral<Integral>::value && std::is_floating_point<FloatingPoint>::value, Vector<size, Integral>>::type
 #endif
-operator/(const Vector<size, Integral>& vector, FloatingPoint number) {
+operator/(const Vector<size, Integral>& vector, FloatingPoint scalar) {
     Vector<size, Integral> copy(vector);
-    return copy /= number;
+    return copy /= scalar;
 }
 
 /** @relates Vector
-@brief Multiply integral vector with floating-point vector component-wise and assign
+@brief Multiply an integral vector with a floating-point vector component-wise and assign
 
 Similar to @ref Vector::operator*=(const Vector<size, T>&), except that the
 multiplication is done in floating-point. The computation is done in-place.
@@ -1038,7 +1070,7 @@ operator*=(Vector<size, Integral>& a, const Vector<size, FloatingPoint>& b) {
 }
 
 /** @relates Vector
-@brief Multiply integral vector with floating-point vector component-wise
+@brief Multiply an integral vector with a floating-point vector component-wise
 
 Similar to @ref Vector::operator*(const Vector<size, T>&) const, except that
 the multiplication is done in floating-point. The result is always integral
@@ -1057,7 +1089,7 @@ operator*(const Vector<size, Integral>& a, const Vector<size, FloatingPoint>& b)
 }
 
 /** @relates Vector
-@brief Multiply floating-point vector with integral vector component-wise
+@brief Multiply a floating-point vector with an integral vector component-wise
 
 Same as @ref operator*(const Vector<size, Integral>&, const Vector<size, FloatingPoint>&).
 */
@@ -1072,7 +1104,7 @@ operator*(const Vector<size, FloatingPoint>& a, const Vector<size, Integral>& b)
 }
 
 /** @relates Vector
-@brief Divide integral vector with floating-point vector component-wise and assign
+@brief Divide an integral vector with a floating-point vector component-wise and assign
 
 Similar to @ref Vector::operator/=(const Vector<size, T>&), except that the
 division is done in floating-point. The computation is done in-place.
@@ -1091,7 +1123,7 @@ operator/=(Vector<size, Integral>& a, const Vector<size, FloatingPoint>& b) {
 }
 
 /** @relates Vector
-@brief Divide integral vector with floating-point vector component-wise
+@brief Divide an integral vector with a floating-point vector component-wise
 
 Similar to @ref Vector::operator/(const Vector<size, T>&) const, except that
 the division is done in floating-point. The result is always integral vector,
@@ -1109,6 +1141,7 @@ operator/(const Vector<size, Integral>& a, const Vector<size, FloatingPoint>& b)
     return copy /= b;
 }
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{Vector} */
 template<std::size_t size, class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Vector<size, T>& value) {
     debug << "Vector(" << Corrade::Utility::Debug::nospace;
@@ -1133,6 +1166,7 @@ extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utili
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Vector<2, Double>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Vector<3, Double>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Vector<4, Double>&);
+#endif
 #endif
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
@@ -1382,28 +1416,47 @@ template<std::size_t size, class T> inline T Vector<size, T>::product() const {
     return out;
 }
 
-template<std::size_t size, class T> inline T Vector<size, T>::min() const {
-    T out(_data[0]);
+namespace Implementation {
+    /* Non-floating-point types, the first is a non-NaN for sure */
+    template<std::size_t size, class T> constexpr std::size_t firstNonNan(const T(&)[size], std::false_type) {
+        return 0;
+    }
+    /* Floating-point types, return the first that's not NaN */
+    template<std::size_t size, class T> inline std::size_t firstNonNan(const T(&data)[size], std::true_type) {
+        /* Find the first non-NaN value to compare against. If all are NaN,
+           return the last value so the following loop in min/max/minmax()
+           doesn't even execute. */
+        for(std::size_t i = 0; i != size; ++i)
+            if(!isNan(data[i])) return i;
+        return size - 1;
+    }
+}
 
-    for(std::size_t i = 1; i != size; ++i)
-        out = std::min(out, _data[i]);
+template<std::size_t size, class T> inline T Vector<size, T>::min() const {
+    std::size_t i = Implementation::firstNonNan(_data, IsFloatingPoint<T>{});
+    T out(_data[i]);
+
+    for(++i; i != size; ++i)
+        out = Math::min(out, _data[i]);
 
     return out;
 }
 
 template<std::size_t size, class T> inline T Vector<size, T>::max() const {
-    T out(_data[0]);
+    std::size_t i = Implementation::firstNonNan(_data, IsFloatingPoint<T>{});
+    T out(_data[i]);
 
-    for(std::size_t i = 1; i != size; ++i)
-        out = std::max(out, _data[i]);
+    for(++i; i != size; ++i)
+        out = Math::max(out, _data[i]);
 
     return out;
 }
 
 template<std::size_t size, class T> inline std::pair<T, T> Vector<size, T>::minmax() const {
-    T min{_data[0]}, max{_data[0]};
+    std::size_t i = Implementation::firstNonNan(_data, IsFloatingPoint<T>{});
+    T min{_data[i]}, max{_data[i]};
 
-    for(std::size_t i = 1; i != size; ++i) {
+    for(++i; i != size; ++i) {
         if(_data[i] < min)
             min = _data[i];
         else if(_data[i] > max)
@@ -1429,63 +1482,6 @@ template<std::size_t size, class T> struct StrictWeakOrdering<Vector<size, T>> {
 };
 
 }
-
-}}
-
-namespace Corrade { namespace Utility {
-
-/** @configurationvalue{Magnum::Math::Vector} */
-template<std::size_t size, class T> struct ConfigurationValue<Magnum::Math::Vector<size, T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes elements separated with spaces */
-    static std::string toString(const Magnum::Math::Vector<size, T>& value, ConfigurationValueFlags flags) {
-        std::string output;
-
-        for(std::size_t i = 0; i != size; ++i) {
-            if(!output.empty()) output += ' ';
-            output += ConfigurationValue<T>::toString(value[i], flags);
-        }
-
-        return output;
-    }
-
-    /** @brief Reads elements separated with whitespace */
-    static Magnum::Math::Vector<size, T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
-        Magnum::Math::Vector<size, T> result;
-
-        std::size_t oldpos = 0, pos = std::string::npos, i = 0;
-        do {
-            pos = stringValue.find(' ', oldpos);
-            std::string part = stringValue.substr(oldpos, pos-oldpos);
-
-            if(!part.empty()) {
-                result[i] = ConfigurationValue<T>::fromString(part, flags);
-                ++i;
-            }
-
-            oldpos = pos+1;
-        } while(pos != std::string::npos && i != size);
-
-        return result;
-    }
-};
-
-/* Explicit instantiation for commonly used types */
-#if !defined(DOXYGEN_GENERATING_OUTPUT) && !defined(__MINGW32__)
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<2, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<3, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<4, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<2, Magnum::Int>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<3, Magnum::Int>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<4, Magnum::Int>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<2, Magnum::UnsignedInt>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<3, Magnum::UnsignedInt>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<4, Magnum::UnsignedInt>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<2, Magnum::Double>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<3, Magnum::Double>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Vector<4, Magnum::Double>>;
-#endif
 
 }}
 

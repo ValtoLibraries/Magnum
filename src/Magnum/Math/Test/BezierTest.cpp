@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Ashwin Ravichandran <ashwinravichandran24@gmail.com>
 
@@ -26,7 +26,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Bezier.h"
 #include "Magnum/Math/CubicHermite.h"
@@ -54,7 +54,7 @@ template<> struct BezierConverter<2, 2, Float, QBezier2D> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 typedef Math::Vector2<Float> Vector2;
 typedef Math::Vector2<Double> Vector2d;
@@ -89,7 +89,6 @@ struct BezierTest: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
 BezierTest::BezierTest() {
@@ -114,8 +113,7 @@ BezierTest::BezierTest() {
 
               &BezierTest::strictWeakOrdering,
 
-              &BezierTest::debug,
-              &BezierTest::configuration});
+              &BezierTest::debug});
 }
 
 void BezierTest::construct() {
@@ -134,6 +132,9 @@ void BezierTest::constructDefault() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<QuadraticBezier2D>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<QuadraticBezier2D, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, QuadraticBezier2D>::value));
 }
 
 void BezierTest::constructNoInit() {
@@ -275,46 +276,43 @@ void BezierTest::valueCubic() {
 void BezierTest::subdivideLinear() {
     LinearBezier2D bezier{Vector2{0.0f, 0.0f}, Vector2{20.0f, 4.0f}};
 
-    LinearBezier2D left, right;
-    std::tie(left, right) = bezier.subdivide(0.25f);
+    std::pair<LinearBezier2D, LinearBezier2D> subdivided = bezier.subdivide(0.25f);
 
-    CORRADE_COMPARE(left[0], bezier[0]);
-    CORRADE_COMPARE(left[1], right[0]);
-    CORRADE_COMPARE(right[1], bezier[1]);
-    CORRADE_COMPARE(left.value(0.8f), bezier.value(0.2f));
-    CORRADE_COMPARE(right.value(0.33333f), bezier.value(0.5f));
-    CORRADE_COMPARE(left, (LinearBezier2D{Vector2{0.0f, 0.0f}, Vector2{5.0f, 1.0f}}));
-    CORRADE_COMPARE(right, (LinearBezier2D{Vector2{5.0f, 1.0f}, Vector2{20.0f, 4.0f}}));
+    CORRADE_COMPARE(subdivided.first[0], bezier[0]);
+    CORRADE_COMPARE(subdivided.first[1], subdivided.second[0]);
+    CORRADE_COMPARE(subdivided.second[1], bezier[1]);
+    CORRADE_COMPARE(subdivided.first.value(0.8f), bezier.value(0.2f));
+    CORRADE_COMPARE(subdivided.second.value(0.33333f), bezier.value(0.5f));
+    CORRADE_COMPARE(subdivided.first, (LinearBezier2D{Vector2{0.0f, 0.0f}, Vector2{5.0f, 1.0f}}));
+    CORRADE_COMPARE(subdivided.second, (LinearBezier2D{Vector2{5.0f, 1.0f}, Vector2{20.0f, 4.0f}}));
 }
 
 void BezierTest::subdivideQuadratic() {
     QuadraticBezier2D bezier{Vector2{0.0f, 0.0f}, Vector2{10.0f, 15.0f}, Vector2{20.0f, 4.0f}};
 
-    QuadraticBezier2D left, right;
-    std::tie(left, right) = bezier.subdivide(0.25f);
+    std::pair<QuadraticBezier2D, QuadraticBezier2D> subdivided = bezier.subdivide(0.25f);
 
-    CORRADE_COMPARE(left[0], bezier[0]);
-    CORRADE_COMPARE(left[2], right[0]);
-    CORRADE_COMPARE(right[2], bezier[2]);
-    CORRADE_COMPARE(left.value(0.8f), bezier.value(0.2f));
-    CORRADE_COMPARE(right.value(0.33333f), bezier.value(0.5f));
-    CORRADE_COMPARE(left, (QuadraticBezier2D{Vector2{0.0f, 0.0f}, Vector2{2.5f, 3.75f}, Vector2{5.0f, 5.875f}}));
-    CORRADE_COMPARE(right, (QuadraticBezier2D{Vector2{5.0f, 5.875f}, Vector2{12.5f, 12.25f}, Vector2{20.0f, 4.0f}}));
+    CORRADE_COMPARE(subdivided.first[0], bezier[0]);
+    CORRADE_COMPARE(subdivided.first[2], subdivided.second[0]);
+    CORRADE_COMPARE(subdivided.second[2], bezier[2]);
+    CORRADE_COMPARE(subdivided.first.value(0.8f), bezier.value(0.2f));
+    CORRADE_COMPARE(subdivided.second.value(0.33333f), bezier.value(0.5f));
+    CORRADE_COMPARE(subdivided.first, (QuadraticBezier2D{Vector2{0.0f, 0.0f}, Vector2{2.5f, 3.75f}, Vector2{5.0f, 5.875f}}));
+    CORRADE_COMPARE(subdivided.second, (QuadraticBezier2D{Vector2{5.0f, 5.875f}, Vector2{12.5f, 12.25f}, Vector2{20.0f, 4.0f}}));
 }
 
 void BezierTest::subdivideCubic() {
     CubicBezier2D bezier{Vector2{0.0f, 0.0f}, Vector2{10.0f, 15.0f}, Vector2{20.0f, 4.0f}, Vector2{5.0f, -20.0f}};
 
-    CubicBezier2D left, right;
-    std::tie(left, right) = bezier.subdivide(0.25f);
+    std::pair<CubicBezier2D, CubicBezier2D> subdivided = bezier.subdivide(0.25f);
 
-    CORRADE_COMPARE(left[0], bezier[0]);
-    CORRADE_COMPARE(left[3], right[0]);
-    CORRADE_COMPARE(right[3], bezier[3]);
-    CORRADE_COMPARE(left.value(0.8f), bezier.value(0.2f));
-    CORRADE_COMPARE(right.value(0.33333f), bezier.value(0.5f));
-    CORRADE_COMPARE(left, (CubicBezier2D{Vector2{0.0f, 0.0f}, Vector2{2.5f, 3.75f}, Vector2{5.0f, 5.875f}, Vector2{7.10938f, 6.57812f}}));
-    CORRADE_COMPARE(right, (CubicBezier2D{Vector2{7.10938f, 6.57812f}, Vector2{13.4375f, 8.6875f}, Vector2{16.25f, -2.0f}, Vector2{5.0f, -20.0f}}));
+    CORRADE_COMPARE(subdivided.first[0], bezier[0]);
+    CORRADE_COMPARE(subdivided.first[3], subdivided.second[0]);
+    CORRADE_COMPARE(subdivided.second[3], bezier[3]);
+    CORRADE_COMPARE(subdivided.first.value(0.8f), bezier.value(0.2f));
+    CORRADE_COMPARE(subdivided.second.value(0.33333f), bezier.value(0.5f));
+    CORRADE_COMPARE(subdivided.first, (CubicBezier2D{Vector2{0.0f, 0.0f}, Vector2{2.5f, 3.75f}, Vector2{5.0f, 5.875f}, Vector2{7.10938f, 6.57812f}}));
+    CORRADE_COMPARE(subdivided.second, (CubicBezier2D{Vector2{7.10938f, 6.57812f}, Vector2{13.4375f, 8.6875f}, Vector2{16.25f, -2.0f}, Vector2{5.0f, -20.0f}}));
 }
 
 void BezierTest::strictWeakOrdering() {
@@ -338,17 +336,6 @@ void BezierTest::debug() {
     CORRADE_COMPARE(out.str(), "Bezier({0, 1}, {1.5, -0.3}, {2.1, 0.5}, {0, 2})\n");
 }
 
-void BezierTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    CubicBezier2D bezier{Vector2{0.0f, 1.0f}, Vector2{1.5f, -0.3f}, Vector2{2.1f, 0.5f}, Vector2{0.0f, 2.0f}};
-    std::string value("0 1 1.5 -0.3 2.1 0.5 0 2");
-
-    c.setValue("bezier", bezier);
-    CORRADE_COMPARE(c.value("bezier"), value);
-    CORRADE_COMPARE(c.value<CubicBezier2D>("bezier"), bezier);
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::BezierTest)

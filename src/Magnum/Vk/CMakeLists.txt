@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 #
@@ -36,6 +36,7 @@ set(MagnumVk_GracefulAssert_SRCS
     Enums.cpp)
 set(MagnumVk_HEADERS
     Enums.h
+    Integration.h
     Vk.h
     Vulkan.h
 

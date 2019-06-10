@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 
@@ -30,10 +30,10 @@
  * @brief Class @ref Magnum::Platform::GlfwApplication, macro @ref MAGNUM_GLFWAPPLICATION_MAIN()
  */
 
-#include <memory>
 #include <string>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/Containers/Pointer.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Tags.h"
@@ -130,9 +130,11 @@ If no other application header is included, this class is also aliased to
 @section Platform-GlfwApplication-dpi DPI awareness
 
 DPI awareness behavior is consistent with @ref Sdl2Application except that iOS
-or Emscripten specifics don't apply here. See
-@ref Platform-Sdl2Application-dpi "its DPI awareness documentation" for more
-information.
+or Emscripten specifics don't apply here. In addition, on Windows, GLFW is
+implicitly advertising DPI awareness, so the manifest file described in
+@ref platforms-windows-hidpi doesn't necessarily need to be supplied. See
+@ref Platform-Sdl2Application-dpi "Sdl2Application DPI awareness documentation"
+for more information.
 */
 class GlfwApplication {
     public:
@@ -210,14 +212,6 @@ class GlfwApplication {
          */
         explicit GlfwApplication(const Arguments& arguments, NoCreateT);
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief @copybrief GlfwApplication(const Arguments&, NoCreateT)
-         * @deprecated Use @ref GlfwApplication(const Arguments&, NoCreateT) instead.
-         */
-        CORRADE_DEPRECATED("use GlfwApplication(const Arguments&, NoCreateT) instead") explicit GlfwApplication(const Arguments& arguments, std::nullptr_t): GlfwApplication{arguments, NoCreate} {}
-        #endif
-
         /** @brief Copying is not allowed */
         GlfwApplication(const GlfwApplication&) = delete;
 
@@ -238,9 +232,13 @@ class GlfwApplication {
          */
         int exec();
 
-        /** @brief Exit application main loop */
-        void exit() {
+        /**
+         * @brief Exit application main loop
+         * @param exitCode  The exit code the application should return
+         */
+        void exit(int exitCode = 0) {
             glfwSetWindowShouldClose(_window, true);
+            _exitCode = exitCode;
         }
 
         /**
@@ -301,22 +299,6 @@ class GlfwApplication {
          */
         void create();
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief create(const Configuration&, const GLConfiguration&)
-         * @deprecated Use @ref create(const Configuration&, const GLConfiguration&) instead.
-         */
-        CORRADE_DEPRECATED("use create(const Configuration&, const GLConfiguration&) instead") void createContext(const Configuration& configuration) {
-            create(configuration);
-        }
-
-        /** @brief @copybrief create()
-         * @deprecated Use @ref create() instead.
-         */
-        CORRADE_DEPRECATED("use create() instead") void createContext() {
-            create();
-        }
-        #endif
-
         #ifdef MAGNUM_TARGET_GL
         /**
          * @brief Try to create context with given configuration for OpenGL context
@@ -340,15 +322,6 @@ class GlfwApplication {
          */
         bool tryCreate(const Configuration& configuration);
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief tryCreate(const Configuration&, const GLConfiguration&)
-         * @deprecated Use @ref tryCreate(const Configuration&, const GLConfiguration&) instead.
-         */
-        CORRADE_DEPRECATED("use tryCreate(const Configuration&) instead") bool tryCreateContext(const Configuration& configuration) {
-            return tryCreate(configuration);
-        }
-        #endif
-
         /** @{ @name Screen handling */
 
     public:
@@ -362,6 +335,30 @@ class GlfwApplication {
          * @see @ref dpiScaling()
          */
         Vector2i windowSize() const;
+
+        #if GLFW_VERSION_MAJOR*100 + GLFW_VERSION_MINOR >= 302 || defined(DOXYGEN_GENERATING_OUTPUT)
+        /**
+         * @brief Set window minimum size
+         * @param size    The minimum size, in screen coordinates
+         *
+         * If a value is set to @cpp -1 @ce, it will disable/remove the
+         * corresponding limit.
+         *
+         * @note Supported since GLFW 3.2.
+         */
+        void setMinWindowSize(const Vector2i& size = {-1, -1});
+
+        /**
+         * @brief Set window maximum size
+         * @param size    The maximum size, in screen coordinates
+         *
+         * If a value is set to @cpp -1 @ce, it will disable/remove the
+         * corresponding limit.
+         *
+         * @note Supported since GLFW 3.2.
+         */
+        void setMaxWindowSize(const Vector2i& size = {-1, -1});
+        #endif
 
         #if defined(MAGNUM_TARGET_GL) || defined(DOXYGEN_GENERATING_OUTPUT)
         /**
@@ -416,28 +413,17 @@ class GlfwApplication {
          * Set @cpp 0 @ce for no VSync, @cpp 1 @ce for enabled VSync. Some
          * platforms support @cpp -1 @ce for late swap tearing. Default is
          * driver-dependent.
+         *
+         * @note Unlike SDL2, GLFW doesn't provide any getter for the swap
+         *      interval, so this class doesn't provide any equivalent to
+         *      @ref Sdl2Application::swapInterval().
          */
         void setSwapInterval(Int interval);
 
         /** @copydoc Sdl2Application::redraw() */
         void redraw() { _flags |= Flag::Redraw; }
 
-    #ifdef DOXYGEN_GENERATING_OUTPUT
-    protected:
-    #else
     private:
-    #endif
-        /**
-         * @brief Exit event
-         *
-         * If implemented, it allows the application to react to an application
-         * exit (for example to save its internal state) and suppress it as
-         * well (for example to show a exit confirmation dialog). The default
-         * implementation calls @ref ExitEvent::setAccepted() on @p event,
-         * which tells the application that it's safe to exit.
-         */
-        virtual void exitEvent(ExitEvent& event);
-
         /**
          * @brief Viewport event
          *
@@ -493,11 +479,7 @@ class GlfwApplication {
             glfwSetCursorPos(_window, Double(position.x()), Double(position.y()));
         }
 
-    #ifdef DOXYGEN_GENERATING_OUTPUT
-    protected:
-    #else
     private:
-    #endif
         /** @copydoc Sdl2Application::mousePressEvent() */
         virtual void mousePressEvent(MouseEvent& event);
 
@@ -545,11 +527,7 @@ class GlfwApplication {
          */
         void stopTextInput() { _flags &= ~Flag::TextInputActive; }
 
-    #ifdef DOXYGEN_GENERATING_OUTPUT
-    protected:
-    #else
     private:
-    #endif
         /**
          * @brief Text input event
          *
@@ -557,6 +535,21 @@ class GlfwApplication {
          * @see @ref isTextInputActive()
          */
         virtual void textInputEvent(TextInputEvent& event);
+
+        /*@}*/
+
+        /** @{ @name Special events */
+
+        /**
+         * @brief Exit event
+         *
+         * If implemented, it allows the application to react to an application
+         * exit (for example to save its internal state) and suppress it as
+         * well (for example to show a exit confirmation dialog). The default
+         * implementation calls @ref ExitEvent::setAccepted() on @p event,
+         * which tells the application that it's safe to exit.
+         */
+        virtual void exitEvent(ExitEvent& event);
 
         /*@}*/
 
@@ -580,8 +573,12 @@ class GlfwApplication {
         GLFWwindow* _window{nullptr};
         Flags _flags;
         #ifdef MAGNUM_TARGET_GL
-        std::unique_ptr<Platform::GLContext> _context;
+        Containers::Pointer<Platform::GLContext> _context;
         #endif
+        int _exitCode = 0;
+
+        Vector2i _minWindowSize;
+        Vector2i _maxWindowSize;
 };
 
 CORRADE_ENUMSET_OPERATORS(GlfwApplication::Flags)
@@ -590,7 +587,7 @@ CORRADE_ENUMSET_OPERATORS(GlfwApplication::Flags)
 /**
 @brief OpenGL context configuration
 
-The created window is always with double-buffered OpenGL context.
+The created window is always with a double-buffered OpenGL context.
 
 @note This function is available only if Magnum is compiled with
     @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
@@ -603,7 +600,7 @@ class GlfwApplication::GLConfiguration {
         /**
          * @brief Context flag
          *
-         * @see @ref Flags, @ref setFlags(), @ref Context::Flag
+         * @see @ref Flags, @ref setFlags(), @ref GL::Context::Flag
          */
         enum class Flag: UnsignedByte {
             #ifndef MAGNUM_TARGET_GLES
@@ -634,7 +631,7 @@ class GlfwApplication::GLConfiguration {
         /**
          * @brief Context flags
          *
-         * @see @ref setFlags()
+         * @see @ref setFlags(), @ref GL::Context::Flags
          */
         typedef Containers::EnumSet<Flag> Flags;
 
@@ -830,18 +827,6 @@ namespace Implementation {
 */
 class GlfwApplication::Configuration {
     public:
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        /** @brief @copybrief GLConfiguration::Flag
-         * @deprecated Use @ref GLConfiguration::Flag instead.
-         */
-        typedef GLConfiguration::Flag Flag;
-
-        /** @brief @copybrief GLConfiguration::Flags
-         * @deprecated Use @ref GLConfiguration::Flags instead.
-         */
-        typedef GLConfiguration::Flags Flags;
-        #endif
-
         /**
          * @brief Window flag
          *
@@ -1069,62 +1054,6 @@ class GlfwApplication::Configuration {
             return *this;
         }
 
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        /** @brief @copybrief GLConfiguration::flags()
-         * @deprecated Use @ref GLConfiguration::flags() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::flags() instead") GLConfiguration::Flags flags() const { return _flags; }
-
-        /** @brief @copybrief GLConfiguration::setFlags()
-         * @deprecated Use @ref GLConfiguration::setFlags() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::setFlags() instead") Configuration& setFlags(GLConfiguration::Flags flags) {
-            _flags = flags;
-            return *this;
-        }
-
-        /** @brief @copybrief GLConfiguration::version()
-         * @deprecated Use @ref GLConfiguration::version() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::version() instead") GL::Version version() const { return _version; }
-
-        /** @brief @copybrief GLConfiguration::setVersion()
-         * @deprecated Use @ref GLConfiguration::setVersion() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::setVersion() instead") Configuration& setVersion(GL::Version version) {
-            _version = version;
-            return *this;
-        }
-
-        /** @brief @copybrief GLConfiguration::sampleCount()
-         * @deprecated Use @ref GLConfiguration::sampleCount() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::sampleCount() instead") Int sampleCount() const { return _sampleCount; }
-
-        /** @brief @copybrief GLConfiguration::setSampleCount()
-         * @deprecated Use @ref GLConfiguration::setSampleCount() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::setSampleCount() instead") Configuration& setSampleCount(Int count) {
-            _sampleCount = count;
-            return *this;
-        }
-
-        /** @brief @copybrief GLConfiguration::isSrgbCapable()
-         * @deprecated Use @ref GLConfiguration::isSrgbCapable() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::isSRGBCapable() instead") bool isSRGBCapable() const {
-            return _srgbCapable;
-        }
-
-        /** @brief @copybrief GLConfiguration::setSrgbCapable()
-         * @deprecated Use @ref GLConfiguration::setSrgbCapable() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::setSrgbCapable() instead") Configuration& setSRGBCapable(bool enabled) {
-            _srgbCapable = enabled;
-            return *this;
-        }
-        #endif
-
     private:
         std::string _title;
         Vector2i _size;
@@ -1132,12 +1061,6 @@ class GlfwApplication::Configuration {
         DpiScalingPolicy _dpiScalingPolicy;
         Vector2 _dpiScaling;
         CursorMode _cursorMode;
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        Int _sampleCount;
-        GL::Version _version;
-        Flags _flags;
-        bool _srgbCapable;
-        #endif
 };
 
 CORRADE_ENUMSET_OPERATORS(GlfwApplication::Configuration::WindowFlags)
@@ -1188,6 +1111,18 @@ class GlfwApplication::ExitEvent {
 */
 class GlfwApplication::ViewportEvent {
     public:
+        /** @brief Copying is not allowed */
+        ViewportEvent(const ViewportEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ViewportEvent(ViewportEvent&&) = delete;
+
+        /** @brief Copying is not allowed */
+        ViewportEvent& operator=(const ViewportEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ViewportEvent& operator=(ViewportEvent&&) = delete;
+
         /**
          * @brief Window size
          *
@@ -1198,15 +1133,22 @@ class GlfwApplication::ViewportEvent {
          */
         Vector2i windowSize() const { return _windowSize; }
 
+        #if defined(MAGNUM_TARGET_GL) || defined(DOXYGEN_GENERATING_OUTPUT)
         /**
          * @brief Framebuffer size
          *
          * On some platforms with HiDPI displays, framebuffer size can be
          * different from @ref windowSize(). See
          * @ref Platform-GlfwApplication-dpi for more information.
-         * @see @ref GlfwApplication::framebufferSize()
+         *
+         * @note This function is available only if Magnum is compiled with
+         *      @ref MAGNUM_TARGET_GL enabled (done by default). See
+         *      @ref building-features for more information.
+         *
+         * @see @ref GlfwApplication::framebufferSize(), @ref dpiScaling()
          */
         Vector2i framebufferSize() const { return _framebufferSize; }
+        #endif
 
         /**
          * @brief DPI scaling
@@ -1215,17 +1157,28 @@ class GlfwApplication::ViewportEvent {
          * scaling value being changed in tandem with a window/framebuffer
          * size. Simply resizing a window doesn't change the DPI scaling value.
          * See @ref Platform-GlfwApplication-dpi for more information.
-         * @see @ref GlfwApplication::dpiScaling()
+         * @see @ref GlfwApplication::dpiScaling(), @ref framebufferSize()
          */
         Vector2 dpiScaling() const { return _dpiScaling; }
 
     private:
         friend GlfwApplication;
 
-        explicit ViewportEvent(const Vector2i& windowSize, const Vector2i& framebufferSize, const Vector2& dpiScaling): _windowSize{windowSize}, _framebufferSize{framebufferSize}, _dpiScaling{dpiScaling} {}
+        explicit ViewportEvent(const Vector2i& windowSize,
+            #ifdef MAGNUM_TARGET_GL
+            const Vector2i& framebufferSize,
+            #endif
+            const Vector2& dpiScaling): _windowSize{windowSize},
+                #ifdef MAGNUM_TARGET_GL
+                _framebufferSize{framebufferSize},
+                #endif
+                _dpiScaling{dpiScaling} {}
 
-        Vector2i _windowSize, _framebufferSize;
-        Vector2 _dpiScaling;
+        const Vector2i _windowSize;
+        #ifdef MAGNUM_TARGET_GL
+        const Vector2i _framebufferSize;
+        #endif
+        const Vector2 _dpiScaling;
 };
 
 /**
@@ -1315,8 +1268,6 @@ CORRADE_ENUMSET_OPERATORS(GlfwApplication::InputEvent::Modifiers)
 @see @ref keyPressEvent(), @ref keyReleaseEvent()
 */
 class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
-    friend GlfwApplication;
-
     public:
         /**
          * @brief Key
@@ -1420,7 +1371,15 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
             Slash = GLFW_KEY_SLASH,             /**< Slash */
             /* Note: This may only be represented as SHIFT + 5 */
             Percent = '%',                      /**< Percent */
-            Smicolon = GLFW_KEY_SEMICOLON,      /**< Semicolon */
+            Semicolon = GLFW_KEY_SEMICOLON,     /**< Semicolon */
+
+            #ifdef MAGNUM_BUILD_DEPRECATED
+            /** Semicolon
+             * @deprecated Use @ref Key::Semicolon instead.
+             */
+            Smicolon CORRADE_DEPRECATED_ENUM("use Key::Semicolon instead") = Semicolon,
+            #endif
+
             Equal = GLFW_KEY_EQUAL,             /**< Equal */
 
             Zero = GLFW_KEY_0,                  /**< Zero */
@@ -1524,6 +1483,8 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
         bool isRepeated() const { return _repeated; }
 
     private:
+        friend GlfwApplication;
+
         explicit KeyEvent(Key key, Modifiers modifiers, bool repeated): _key{key}, _modifiers{modifiers}, _repeated{repeated} {}
 
         const Key _key;
@@ -1538,8 +1499,6 @@ class GlfwApplication::KeyEvent: public GlfwApplication::InputEvent {
     @ref mouseReleaseEvent()
 */
 class GlfwApplication::MouseEvent: public GlfwApplication::InputEvent {
-    friend GlfwApplication;
-
     public:
         /**
          * @brief Mouse button
@@ -1570,6 +1529,8 @@ class GlfwApplication::MouseEvent: public GlfwApplication::InputEvent {
         Modifiers modifiers() const { return _modifiers; }
 
     private:
+        friend GlfwApplication;
+
         explicit MouseEvent(Button button, const Vector2i& position, Modifiers modifiers): _button{button}, _position{position}, _modifiers{modifiers} {}
 
         const Button _button;
@@ -1583,8 +1544,6 @@ class GlfwApplication::MouseEvent: public GlfwApplication::InputEvent {
 @see @ref MouseEvent, @ref MouseScrollEvent, @ref mouseMoveEvent()
 */
 class GlfwApplication::MouseMoveEvent: public GlfwApplication::InputEvent {
-    friend GlfwApplication;
-
     public:
         /**
          * @brief Mouse button
@@ -1622,13 +1581,17 @@ class GlfwApplication::MouseMoveEvent: public GlfwApplication::InputEvent {
         Modifiers modifiers();
 
     private:
+        friend GlfwApplication;
+
         explicit MouseMoveEvent(GLFWwindow* window, const Vector2i& position): _window{window}, _position{position} {}
 
-        GLFWwindow* _window;
-        Containers::Optional<Buttons> _buttons;
+        GLFWwindow* const _window;
         const Vector2i _position;
+        Containers::Optional<Buttons> _buttons;
         Containers::Optional<Modifiers> _modifiers;
 };
+
+CORRADE_ENUMSET_OPERATORS(GlfwApplication::MouseMoveEvent::Buttons)
 
 /**
 @brief Mouse scroll event
@@ -1636,8 +1599,6 @@ class GlfwApplication::MouseMoveEvent: public GlfwApplication::InputEvent {
 @see @ref MouseEvent, @ref MouseMoveEvent, @ref mouseScrollEvent()
 */
 class GlfwApplication::MouseScrollEvent: public GlfwApplication::InputEvent {
-    friend GlfwApplication;
-
     public:
         /** @brief Scroll offset */
         Vector2 offset() const { return _offset; }
@@ -1657,9 +1618,11 @@ class GlfwApplication::MouseScrollEvent: public GlfwApplication::InputEvent {
         Modifiers modifiers();
 
     private:
+        friend GlfwApplication;
+
         explicit MouseScrollEvent(GLFWwindow* window, const Vector2& offset): _window{window}, _offset{offset} {}
 
-        GLFWwindow* _window;
+        GLFWwindow* const _window;
         const Vector2 _offset;
         Containers::Optional<Vector2i> _position;
         Containers::Optional<Modifiers> _modifiers;
@@ -1671,8 +1634,6 @@ class GlfwApplication::MouseScrollEvent: public GlfwApplication::InputEvent {
 @see @ref textInputEvent()
 */
 class GlfwApplication::TextInputEvent {
-    friend GlfwApplication;
-
     public:
         /** @brief Copying is not allowed */
         TextInputEvent(const TextInputEvent&) = delete;
@@ -1703,9 +1664,11 @@ class GlfwApplication::TextInputEvent {
         Containers::ArrayView<const char> text() const { return _text; }
 
     private:
+        friend GlfwApplication;
+
         explicit TextInputEvent(Containers::ArrayView<const char> text): _text{text}, _accepted{false} {}
 
-        Containers::ArrayView<const char> _text;
+        const Containers::ArrayView<const char> _text;
         bool _accepted;
 };
 

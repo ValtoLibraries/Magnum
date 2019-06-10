@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Alice Margatroid <loveoverwhelming@gmail.com>
 
@@ -31,6 +31,7 @@
  */
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/Optional.h>
 
 #include "Magnum/Audio/AbstractImporter.h"
 
@@ -102,7 +103,7 @@ class MAGNUM_WAVAUDIOIMPORTER_EXPORT WavImporter: public AbstractImporter {
         MAGNUM_WAVAUDIOIMPORTER_LOCAL UnsignedInt doFrequency() const override;
         MAGNUM_WAVAUDIOIMPORTER_LOCAL Containers::Array<char> doData() override;
 
-        Containers::Array<char> _data;
+        Containers::Optional<Containers::Array<char>> _data;
         BufferFormat _format;
         UnsignedInt _frequency;
 };

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -202,7 +202,7 @@ enum class AnimationTrackTargetType: UnsignedByte {
     /**
      * This and all higher values are for importer-specific targets. Can be of
      * any type, @ref AnimationData::trackTarget() might or might not point to
-     * an existing object. See documentation of particular importer for
+     * an existing object. See documentation of a particular importer for
      * details.
      */
     Custom = 128
@@ -214,8 +214,8 @@ MAGNUM_TRADE_EXPORT Debug& operator<<(Debug& debug, AnimationTrackTargetType val
 /**
 @brief Animation track data
 
-Used when constructing @ref AnimationData. Fields can be accessed through its
-API.
+Convenience type for populating @ref AnimationData. Has no accessors, as the
+data are then accessible through @ref AnimationData APIs.
 @experimental
 */
 class AnimationTrackData {
@@ -224,8 +224,8 @@ class AnimationTrackData {
          * @brief Default constructor
          *
          * Leaves contents at unspecified values. Provided as a convenience for
-         * initialization of @ref AnimationData structure, expected to be
-         * replaced with concrete values later.
+         * initialization of the track array for @ref AnimationData, expected
+         * to be replaced with concrete values later.
          */
         /*implicit*/ AnimationTrackData() noexcept: _type{}, _resultType{}, _targetType{}, _target{}, _view{} {}
 
@@ -453,7 +453,7 @@ template<class V, class R = Animation::ResultOf<V>> MAGNUM_TRADE_EXPORT auto ani
 #if !defined(CORRADE_NO_ASSERT) || defined(CORRADE_GRACEFUL_ASSERT)
 namespace Implementation {
     /* LCOV_EXCL_START */
-    template<class T> constexpr AnimationTrackType animationTypeFor();
+    template<class> constexpr AnimationTrackType animationTypeFor();
     template<> constexpr AnimationTrackType animationTypeFor<bool>() { return AnimationTrackType::Bool; }
     template<> constexpr AnimationTrackType animationTypeFor<Float>() { return AnimationTrackType::Float; }
     template<> constexpr AnimationTrackType animationTypeFor<UnsignedInt>() { return AnimationTrackType::UnsignedInt; }

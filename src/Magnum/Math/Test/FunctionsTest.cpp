@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,13 +23,12 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#include <tuple>
 #include <Corrade/TestSuite/Tester.h>
 
 #include "Magnum/Math/Functions.h"
 #include "Magnum/Math/Vector4.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct FunctionsTest: Corrade::TestSuite::Tester {
     explicit FunctionsTest();
@@ -38,11 +37,8 @@ struct FunctionsTest: Corrade::TestSuite::Tester {
     void pow();
 
     void min();
-    void minList();
     void max();
-    void maxList();
     void minmax();
-    void minmaxList();
     void clamp();
     void nanPropagation();
 
@@ -75,6 +71,8 @@ struct FunctionsTest: Corrade::TestSuite::Tester {
     void trigonometricWithBase();
 };
 
+using namespace Literals;
+
 typedef Math::Constants<Float> Constants;
 typedef Math::Deg<Float> Deg;
 typedef Math::Rad<Float> Rad;
@@ -90,11 +88,8 @@ FunctionsTest::FunctionsTest() {
               &FunctionsTest::pow,
 
               &FunctionsTest::min,
-              &FunctionsTest::minList,
               &FunctionsTest::max,
-              &FunctionsTest::maxList,
               &FunctionsTest::minmax,
-              &FunctionsTest::minmaxList,
               &FunctionsTest::clamp,
               &FunctionsTest::nanPropagation,
 
@@ -137,47 +132,33 @@ void FunctionsTest::powIntegral() {
     CORRADE_COMPARE(a, 125);
 
     CORRADE_COMPARE(Math::pow<2>(Vector3{2.0f, -3.0f, 1.5f}), (Vector3{4.0f, 9.0f, 2.25f}));
+
+    /* Not testing wrapped types -- what unit should have degrees squared? */
 }
 
 void FunctionsTest::pow() {
     CORRADE_COMPARE(Math::pow(2.0f, 0.5f), 1.414213562f);
     CORRADE_COMPARE(Math::pow(Vector3{2.0f, 9.0f, 25.0f}, 0.5f), (Vector3{1.414213562f, 3.0f, 5.0f}));
+
+    /* Not testing wrapped types -- what unit should have degrees squared? */
 }
 
 void FunctionsTest::min() {
     CORRADE_COMPARE(Math::min(5, 9), 5);
     CORRADE_COMPARE(Math::min(Vector3i(5, -3, 2), Vector3i(9, -5, 18)), Vector3i(5, -5, 2));
     CORRADE_COMPARE(Math::min(Vector3i{5, -3, 2}, 1), (Vector3i{1, -3, 1}));
-}
 
-void FunctionsTest::minList() {
-    CORRADE_COMPARE(Math::min({5, -2, 9}), -2);
-    CORRADE_COMPARE(Math::min({Vector3i(5, -3, 2),
-                               Vector3i(-2, 14, 7),
-                               Vector3i(9, -5, 18)}), Vector3i(-2, -5, 2));
-
-    CORRADE_COMPARE(Math::min(std::initializer_list<Vector3i>{}), Vector3i{});
-
-    const Int array[]{5, -2, 9};
-    CORRADE_COMPARE(Math::min(array), -2);
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::min(5.0_degf, 9.0_degf), 5.0_degf);
 }
 
 void FunctionsTest::max() {
     CORRADE_COMPARE(Math::max(5, 9), 9);
     CORRADE_COMPARE(Math::max(Vector3i(5, -3, 2), Vector3i(9, -5, 18)), Vector3i(9, -3, 18));
     CORRADE_COMPARE(Math::max(Vector3i{5, -3, 2}, 3), (Vector3i{5, 3, 3}));
-}
 
-void FunctionsTest::maxList() {
-    CORRADE_COMPARE(Math::max({5, -2, 9}), 9);
-    CORRADE_COMPARE(Math::max({Vector3i(5, -3, 2),
-                               Vector3i(-2, 14, 7),
-                               Vector3i(9, -5, 18)}), Vector3i(9, 14, 18));
-
-    CORRADE_COMPARE(Math::max(std::initializer_list<Vector3i>{}), Vector3i{});
-
-    const Int array[]{5, -2, 9};
-    CORRADE_COMPARE(Math::max(array), 9);
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::max(5.0_degf, 9.0_degf), 9.0_degf);
 }
 
 void FunctionsTest::minmax() {
@@ -190,27 +171,9 @@ void FunctionsTest::minmax() {
     const std::pair<Vector3, Vector3> expectedVector{{5.0f, -4.0f, 1.0f}, {7.0f, -3.0f, 1.0f}};
     CORRADE_COMPARE_AS(Math::minmax(a, b), expectedVector, std::pair<Vector3, Vector3>);
     CORRADE_COMPARE_AS(Math::minmax(b, a), expectedVector, std::pair<Vector3, Vector3>);
-}
 
-void FunctionsTest::minmaxList() {
-    const auto expected = std::make_pair(-3.0f, 2.0f);
-    CORRADE_COMPARE(Math::minmax({-1.0f, 2.0f, -3.0f}), expected);
-    CORRADE_COMPARE(Math::minmax({-1.0f, -3.0f, 2.0f}), expected);
-    CORRADE_COMPARE(Math::minmax({2.0f, -1.0f, -3.0f}), expected);
-    CORRADE_COMPARE(Math::minmax({2.0f, -3.0f, -1.0f}), expected);
-    CORRADE_COMPARE(Math::minmax({-3.0f, 2.0f, -1.0f}), expected);
-    CORRADE_COMPARE(Math::minmax({-3.0f, -1.0f, 2.0f}), expected);
-
-    const std::pair<Vector2, Vector2> expectedVec{Vector2{-3.0f, -2.0f}, Vector2{2.0f, 3.0f}};
-    CORRADE_COMPARE(Math::minmax({Vector2{-1.0f, 3.0f}, Vector2{2.0f, 1.0f}, Vector2{-3.0f, -2.0f}}), expectedVec);
-    CORRADE_COMPARE(Math::minmax({Vector2{-1.0f, 1.0f}, Vector2{-3.0f, 3.0f}, Vector2{2.0f, -2.0f}}), expectedVec);
-    CORRADE_COMPARE(Math::minmax({Vector2{2.0f, -2.0f}, Vector2{-1.0f, 1.0f}, Vector2{-3.0f, 3.0f}}), expectedVec);
-    CORRADE_COMPARE(Math::minmax({Vector2{2.0f, 1.0f}, Vector2{-3.0f, -2.0f}, Vector2{-1.0f, 3.0f}}), expectedVec);
-    CORRADE_COMPARE(Math::minmax({Vector2{-3.0f, 3.0f}, Vector2{2.0f, -2.0f}, Vector2{-1.0f, 1.0f}}), expectedVec);
-    CORRADE_COMPARE(Math::minmax({Vector2{-3.0f, -2.0f}, Vector2{-1.0f, 3.0f}, Vector2{2.0f, 1.0f}}), expectedVec);
-
-    const Float array[]{-1.0f, 2.0f, -3.0f};
-    CORRADE_COMPARE(Math::minmax(array), expected);
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::minmax(4.0_degf, 5.0_degf), std::make_pair(4.0_degf, 5.0_degf));
 }
 
 void FunctionsTest::clamp() {
@@ -225,18 +188,25 @@ void FunctionsTest::clamp() {
         Vector3(0.5f, 2.0f, 5.0f));
 
     CORRADE_COMPARE(Math::clamp(Vector3(0.5f, -1.6f, 9.5f), -1.0f, 5.0f), Vector3(0.5f, -1.0f, 5.0f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::clamp(0.5_degf, 0.75_degf, 1.0_degf), 0.75_degf);
 }
 
 void FunctionsTest::nanPropagation() {
     CORRADE_COMPARE(Math::min(Constants::nan(), 5.0f), Constants::nan());
+    CORRADE_COMPARE(Math::min(5.0f, Constants::nan()), 5.0f);
     CORRADE_COMPARE(Math::min(Vector2{Constants::nan(), 6.0f}, Vector2{5.0f})[0], Constants::nan());
     CORRADE_COMPARE(Math::min(Vector2{Constants::nan(), 6.0f}, Vector2{5.0f})[1], 5.0f);
 
     CORRADE_COMPARE(Math::max(Constants::nan(), 5.0f), Constants::nan());
+    CORRADE_COMPARE(Math::max(5.0f, Constants::nan()), 5.0f);
     CORRADE_COMPARE(Math::max(Vector2{Constants::nan(), 4.0f}, Vector2{5.0f})[0], Constants::nan());
     CORRADE_COMPARE(Math::max(Vector2{Constants::nan(), 4.0f}, Vector2{5.0f})[1], 5.0f);
 
     CORRADE_COMPARE(Math::clamp(Constants::nan(), 2.0f, 6.0f), Constants::nan());
+    /* NaN clamp bounds are not propagating the NaN, but those cases are
+       usually user error anyway */
     CORRADE_COMPARE(Math::clamp(Vector2{Constants::nan(), 1.0f}, 2.0f, 6.0f)[0], Constants::nan());
     CORRADE_COMPARE(Math::clamp(Vector2{Constants::nan(), 1.0f}, 2.0f, 6.0f)[1], 2.0f);
 }
@@ -246,17 +216,26 @@ void FunctionsTest::sign() {
     CORRADE_COMPARE(Math::sign(0.0f), 0.0f);
     CORRADE_COMPARE(Math::sign(-3.7), -1.0);
     CORRADE_COMPARE(Math::sign(Vector3i(0, -3, 2)), Vector3i(0, -1, 1));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::sign(-3.7_degf), -1.0_degf);
 }
 
 void FunctionsTest::abs() {
     CORRADE_COMPARE(Math::abs(-5), 5);
     CORRADE_COMPARE(Math::abs(5), 5);
     CORRADE_COMPARE(Math::abs(Vector3i(5, -3, 2)), Vector3i(5, 3, 2));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::abs(-5.0_degf), 5.0_degf);
 }
 
 void FunctionsTest::floor() {
     CORRADE_COMPARE(Math::floor(0.7f), 0.0f);
     CORRADE_COMPARE(Math::floor(Vector3(2.3f, 0.7f, 1.5f)), Vector3(2.0f, 0.0f, 1.0f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::floor(2.7_degf), 2.0_degf);
 }
 
 void FunctionsTest::round() {
@@ -271,21 +250,31 @@ void FunctionsTest::round() {
     CORRADE_COMPARE(Math::round(1.3f), 1.0f);
     CORRADE_COMPARE(Math::round(1.5f), 2.0f);
     CORRADE_COMPARE(Math::round(2.0f), 2.0f);
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::round(2.7_degf), 3.0_degf);
 }
 
 void FunctionsTest::ceil() {
     CORRADE_COMPARE(Math::ceil(2.3f), 3.0f);
     CORRADE_COMPARE(Math::ceil(Vector3(2.3f, 0.7f, 1.5f)), Vector3(3.0f, 1.0f, 2.0f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::ceil(2.7_degf), 3.0_degf);
 }
 
 void FunctionsTest::sqrt() {
     CORRADE_COMPARE(Math::sqrt(16), 4);
     CORRADE_COMPARE(Math::sqrt(Vector3i(256, 1, 0)), Vector3i(16, 1, 0));
+
+    /* Not testing wrapped types -- what unit should have degrees squared? */
 }
 
 void FunctionsTest::sqrtInverted() {
     CORRADE_COMPARE(Math::sqrtInverted(16.0f), 0.25f);
     CORRADE_COMPARE(Math::sqrtInverted(Vector3(1.0f, 4.0f, 16.0f)), Vector3(1.0f, 0.5f, 0.25f));
+
+    /* Not testing wrapped types -- what unit should have degrees squared? */
 }
 
 void FunctionsTest::lerp() {
@@ -305,6 +294,9 @@ void FunctionsTest::lerp() {
 
     /* Vector as interpolation phase */
     CORRADE_COMPARE(Math::lerp(a, b, Vector3(0.25f, 0.5f, 0.75f)), Vector3(0.0f, 0.0f, 9.0f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::lerp(2.0_degf, 5.0_degf, 0.5f), 3.5_degf);
 }
 
 void FunctionsTest::lerpBool() {
@@ -315,6 +307,9 @@ void FunctionsTest::lerpBool() {
     /* Vector interpolation phase */
     CORRADE_COMPARE(Math::lerp(Vector3i{1, 2, 3}, Vector3i{5, 6, 7}, BoolVector<3>(5)), (Vector3i{5, 2, 7}));
     CORRADE_COMPARE(Math::lerp(BoolVector<3>{false}, BoolVector<3>{true}, BoolVector<3>(5)), BoolVector<3>{5});
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::lerp(2.0_degf, 5.0_degf, true), 5.0_degf);
 }
 
 void FunctionsTest::lerpInverted() {
@@ -325,6 +320,9 @@ void FunctionsTest::lerpInverted() {
     Vector3 a(-1.0f, 2.0f, 3.0f);
     Vector3 b(3.0f, -2.0f, 11.0f);
     CORRADE_COMPARE(Math::lerpInverted(a, b, Vector3(0.0f, 0.0f, 9.0f)), Vector3(0.25f, 0.5f, 0.75f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::lerpInverted(2.0_degf, 5.0_degf, 3.5_degf), 0.5f);
 }
 
 void FunctionsTest::select() {
@@ -342,12 +340,18 @@ void FunctionsTest::select() {
 
     /* Vector as interpolation phase */
     CORRADE_COMPARE(Math::select(a, b, Vector3(0.25f, 1.5f, 1.0f)), Vector3(-1.0f, -2.0f, 11.0f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::select(2.0_degf, 5.0_degf, 0.5_degf), 2.0_degf);
 }
 
 void FunctionsTest::selectBool() {
     CORRADE_COMPARE(Math::select(true, false, 0.5f), true);
     CORRADE_COMPARE(Math::select(Math::BoolVector<4>{0xa}, Math::BoolVector<4>{0x5}, 1.1f), Math::BoolVector<4>{0x5});
     CORRADE_COMPARE(Math::select(Math::BoolVector<4>{0xa}, Math::BoolVector<4>{0x5}, Vector4{1.1f, -1.0f, 1.3f, 0.5f}), Math::BoolVector<4>{0xf});
+
+    /* Wrapped types */
+    CORRADE_COMPARE(Math::select(true, false, 0.5_degf), true);
 }
 
 void FunctionsTest::fma() {
@@ -356,6 +360,9 @@ void FunctionsTest::fma() {
                               Vector3( 3.0f,  2.0f, -1.0f),
                               Vector3(0.75f, 0.25f,  0.1f)),
                               Vector3(6.75f, 3.25f, -0.4f));
+
+    /* Not testing wrapped types as the resulting unit is less clear -- convert
+       to an unitless type first */
 }
 
 void FunctionsTest::logIntegral() {
@@ -369,17 +376,20 @@ void FunctionsTest::log2() {
 
 void FunctionsTest::log() {
     CORRADE_COMPARE(Math::log(2.0f), 0.693147f);
+
+    /* Not testing wrapped types -- what unit should have degrees squared? */
 }
 
 void FunctionsTest::exp() {
     CORRADE_COMPARE(Math::exp(0.693147f), 2.0f);
+
+    /* Not testing wrapped types -- what unit should have degrees squared? */
 }
 
 void FunctionsTest::div() {
-    Int quotient, remainder;
-    std::tie(quotient, remainder) = Math::div(57, 6);
-    CORRADE_COMPARE(quotient, 9);
-    CORRADE_COMPARE(remainder, 3);
+    std::pair<Int, Int> div = Math::div(57, 6);
+    CORRADE_COMPARE(div.first, 9);
+    CORRADE_COMPARE(div.second, 3);
 }
 
 void FunctionsTest::isInf() {
@@ -387,6 +397,10 @@ void FunctionsTest::isInf() {
     CORRADE_VERIFY(Math::isInf(-Constants::inf()));
     CORRADE_VERIFY(!Math::isInf(Constants::nan()));
     CORRADE_VERIFY(!Math::isInf(5.3f));
+
+    /* Wrapped types */
+    CORRADE_VERIFY(Math::isInf(-Rad(Constants::inf())));
+    CORRADE_VERIFY(!Math::isInf(5.3_degf));
 }
 
 void FunctionsTest::isInfVector() {
@@ -399,6 +413,10 @@ void FunctionsTest::isNan() {
     CORRADE_VERIFY(!Math::isNan(-Constants::inf()));
     CORRADE_VERIFY(Math::isNan(Constants::nan()));
     CORRADE_VERIFY(!Math::isNan(5.3f));
+
+    /* Wrapped types */
+    CORRADE_VERIFY(Math::isNan(-Rad(Constants::nan())));
+    CORRADE_VERIFY(!Math::isNan(5.3_degf));
 }
 
 void FunctionsTest::isNanfVector() {
@@ -445,6 +463,6 @@ void FunctionsTest::trigonometricWithBase() {
     CORRADE_COMPARE(Math::tan(2*Rad(Constants::pi()/8)), 1.0f);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::FunctionsTest)

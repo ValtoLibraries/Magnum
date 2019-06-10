@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
  * @brief Class @ref Magnum::Audio::AnyImporter
  */
 
-#include <memory>
+#include <Corrade/Containers/Pointer.h>
 
 #include "Magnum/Audio/AbstractImporter.h"
 #include "MagnumPlugins/AnyAudioImporter/configure.h"
@@ -70,6 +70,8 @@ of the `Magnum` package and link to the `Magnum::AnyAudioImporter` target. See
 
 Supported formats:
 
+-   AAC (`*.aac`), loaded with any plugin that provides `AacAudioImporter`
+-   MP3 (`*.mp3`), loaded with any plugin that provides `Mp3AudioImporter`
 -   OGG Vorbis (`*.ogg`), loaded with any plugin that provides
     `VorbisAudioImporter`
 -   WAV (`*.wav`), loaded with @ref WavImporter "WavAudioImporter" or any other
@@ -98,7 +100,7 @@ class MAGNUM_ANYAUDIOIMPORTER_EXPORT AnyImporter: public AbstractImporter {
         MAGNUM_ANYAUDIOIMPORTER_LOCAL UnsignedInt doFrequency() const override;
         MAGNUM_ANYAUDIOIMPORTER_LOCAL Containers::Array<char> doData() override;
 
-        std::unique_ptr<AbstractImporter> _in;
+        Containers::Pointer<AbstractImporter> _in;
 };
 
 }}

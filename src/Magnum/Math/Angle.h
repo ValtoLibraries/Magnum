@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,8 +29,9 @@
  * @brief Class @ref Magnum::Math::Deg, @ref Magnum::Math::Rad, literal @link Magnum::Math::Literals::operator""_degf() @endlink, @link Magnum::Math::Literals::operator""_radf() @endlink, @link Magnum::Math::Literals::operator""_deg() @endlink, @link Magnum::Math::Literals::operator""_rad() @endlink
  */
 
-#include <Corrade/configure.h>
+#ifndef CORRADE_NO_DEBUG
 #include <Corrade/Utility/Debug.h>
+#endif
 
 #include "Magnum/visibility.h"
 #include "Magnum/Math/Constants.h"
@@ -97,21 +98,21 @@ These silent errors are easily avoided by requiring explicit conversions:
 */
 template<class T> class Deg: public Unit<Deg, T> {
     public:
-        /** @brief Construct zero angle */
-        constexpr /*implicit*/ Deg(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Unit<Math::Deg, T>{ZeroInit}
-            #endif
-            {}
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Deg(ZeroInitT).
+         */
+        /* Needs to be Math::Deg here and in all other places because older
+           Clang and both MSVC 2015 and 2017 treat it as a template instantce
+           Deg<T> instead of a Deg template */
+        constexpr /*implicit*/ Deg() noexcept: Unit<Math::Deg, T>{ZeroInit} {}
+
+        /** @brief Construct a zero angle */
+        constexpr explicit Deg(ZeroInitT) noexcept: Unit<Math::Deg, T>{ZeroInit} {}
 
         /** @brief Construct without initializing the contents */
-        explicit Deg(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Unit<Math::Deg, T>{NoInit}
-            #endif
-            {}
+        explicit Deg(NoInitT) noexcept: Unit<Math::Deg, T>{NoInit} {}
 
         /** @brief Explicit constructor from unitless type */
         constexpr explicit Deg(T value) noexcept: Unit<Math::Deg, T>(value) {}
@@ -169,21 +170,18 @@ See @ref Deg for more information.
 */
 template<class T> class Rad: public Unit<Rad, T> {
     public:
-        /** @brief Default constructor */
-        constexpr /*implicit*/ Rad(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Unit<Math::Rad, T>{ZeroInit}
-            #endif
-            {}
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Rad(ZeroInitT).
+         */
+        constexpr /*implicit*/ Rad() noexcept: Unit<Math::Rad, T>{ZeroInit} {}
+
+        /** @brief Constructor a zero angle */
+        constexpr explicit Rad(ZeroInitT) noexcept: Unit<Math::Rad, T>{ZeroInit} {}
 
         /** @brief Construct without initializing the contents */
-        explicit Rad(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Unit<Math::Rad, T>{NoInit}
-            #endif
-            {}
+        explicit Rad(NoInitT) noexcept: Unit<Math::Rad, T>{NoInit} {}
 
         /** @brief Construct from unitless type */
         constexpr explicit Rad(T value) noexcept: Unit<Math::Rad, T>(value) {}
@@ -230,6 +228,7 @@ constexpr Rad<Float> operator "" _radf(long double value) { return Rad<Float>(Fl
 template<class T> constexpr Deg<T>::Deg(Unit<Rad, T> value): Unit<Math::Deg, T>(T(180)*T(value)/Math::Constants<T>::pi()) {}
 template<class T> constexpr Rad<T>::Rad(Unit<Deg, T> value): Unit<Math::Rad, T>(T(value)*Math::Constants<T>::pi()/T(180)) {}
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{Rad} */
 template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Unit<Rad, T>& value) {
     return debug << "Rad(" << Corrade::Utility::Debug::nospace << T(value) << Corrade::Utility::Debug::nospace << ")";
@@ -247,42 +246,13 @@ extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utili
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Unit<Rad, Double>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Unit<Deg, Double>&);
 #endif
+#endif
 
 }}
 
 namespace Corrade { namespace Utility {
 
-/** @configurationvalue{Magnum::Math::Deg} */
-template<class T> struct ConfigurationValue<Magnum::Math::Deg<T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes degrees as a number */
-    static std::string toString(const Magnum::Math::Deg<T>& value, ConfigurationValueFlags flags) {
-        return ConfigurationValue<T>::toString(T(value), flags);
-    }
-
-    /** @brief Reads degrees as a number */
-    static Magnum::Math::Deg<T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
-        return Magnum::Math::Deg<T>(ConfigurationValue<T>::fromString(stringValue, flags));
-    }
-};
-
-/** @configurationvalue{Magnum::Math::Rad} */
-template<class T> struct ConfigurationValue<Magnum::Math::Rad<T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes degrees as a number */
-    static std::string toString(const Magnum::Math::Rad<T>& value, ConfigurationValueFlags flags) {
-        return ConfigurationValue<T>::toString(T(value), flags);
-    }
-
-    /** @brief Reads degrees as a number */
-    static Magnum::Math::Rad<T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
-        return Magnum::Math::Rad<T>(ConfigurationValue<T>::fromString(stringValue, flags));
-    }
-};
-
-#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+#if !defined(CORRADE_NO_TWEAKABLE) && (defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN))
 /**
 @tweakableliteral{Magnum::Math::Deg}
 

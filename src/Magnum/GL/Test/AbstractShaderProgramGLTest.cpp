@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,8 +24,10 @@
 */
 
 #include <sstream>
-#include <Corrade/Utility/Resource.h>
+#include <Corrade/Containers/Reference.h>
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
+#include <Corrade/Utility/Resource.h>
 
 #include "Magnum/Image.h"
 #include "Magnum/GL/AbstractShaderProgram.h"
@@ -43,7 +45,7 @@
 #include "Magnum/Math/Vector4.h"
 #include "Magnum/Math/Color.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct AbstractShaderProgramGLTest: OpenGLTester {
     explicit AbstractShaderProgramGLTest();
@@ -126,12 +128,10 @@ AbstractShaderProgramGLTest::AbstractShaderProgramGLTest() {
               });
 }
 
-namespace {
-    class DummyShader: public AbstractShaderProgram {
-        public:
-            explicit DummyShader() {}
-    };
-}
+class DummyShader: public AbstractShaderProgram {
+    public:
+        explicit DummyShader() {}
+};
 
 void AbstractShaderProgramGLTest::construct() {
     {
@@ -183,21 +183,19 @@ void AbstractShaderProgramGLTest::label() {
 }
 #endif
 
-namespace {
-    struct MyPublicShader: AbstractShaderProgram {
-        using AbstractShaderProgram::attachShaders;
-        using AbstractShaderProgram::bindAttributeLocation;
-        #ifndef MAGNUM_TARGET_GLES
-        using AbstractShaderProgram::bindFragmentDataLocationIndexed;
-        using AbstractShaderProgram::bindFragmentDataLocation;
-        #endif
-        using AbstractShaderProgram::link;
-        using AbstractShaderProgram::uniformLocation;
-        #ifndef MAGNUM_TARGET_GLES2
-        using AbstractShaderProgram::uniformBlockIndex;
-        #endif
-    };
-}
+struct MyPublicShader: AbstractShaderProgram {
+    using AbstractShaderProgram::attachShaders;
+    using AbstractShaderProgram::bindAttributeLocation;
+    #ifndef MAGNUM_TARGET_GLES
+    using AbstractShaderProgram::bindFragmentDataLocationIndexed;
+    using AbstractShaderProgram::bindFragmentDataLocation;
+    #endif
+    using AbstractShaderProgram::link;
+    using AbstractShaderProgram::uniformLocation;
+    #ifndef MAGNUM_TARGET_GLES2
+    using AbstractShaderProgram::uniformBlockIndex;
+    #endif
+};
 
 void AbstractShaderProgramGLTest::create() {
     Utility::Resource rs("AbstractShaderProgramGLTest");
@@ -440,18 +438,16 @@ void AbstractShaderProgramGLTest::uniformNotFound() {
         "GL::AbstractShaderProgram: location of uniform 'another' cannot be retrieved\n");
 }
 
-namespace {
-    struct MyShader: AbstractShaderProgram {
-        explicit MyShader();
+struct MyShader: AbstractShaderProgram {
+    explicit MyShader();
 
-        using AbstractShaderProgram::setUniform;
+    using AbstractShaderProgram::setUniform;
 
-        Int matrixUniform,
-            multiplierUniform,
-            colorUniform,
-            additionsUniform;
-    };
-}
+    Int matrixUniform,
+        multiplierUniform,
+        colorUniform,
+        additionsUniform;
+};
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 MyShader::MyShader() {
@@ -546,19 +542,16 @@ void AbstractShaderProgramGLTest::uniformArray() {
 }
 
 #ifndef MAGNUM_TARGET_GLES
+struct MyDoubleShader: AbstractShaderProgram {
+    explicit MyDoubleShader();
 
-namespace {
-    struct MyDoubleShader: AbstractShaderProgram {
-        explicit MyDoubleShader();
+    using AbstractShaderProgram::setUniform;
 
-        using AbstractShaderProgram::setUniform;
-
-        Int matrixUniform,
-            multiplierUniform,
-            colorUniform,
-            additionsUniform;
-    };
-}
+    Int matrixUniform,
+        multiplierUniform,
+        colorUniform,
+        additionsUniform;
+};
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 MyDoubleShader::MyDoubleShader() {
@@ -720,16 +713,14 @@ void AbstractShaderProgramGLTest::uniformBlockIndexNotFound() {
         "GL::AbstractShaderProgram: index of uniform block 'another' cannot be retrieved\n");
 }
 
-namespace {
-    struct UniformBlockShader: AbstractShaderProgram {
-        explicit UniformBlockShader();
+struct UniformBlockShader: AbstractShaderProgram {
+    explicit UniformBlockShader();
 
-        using AbstractShaderProgram::setUniformBlockBinding;
+    using AbstractShaderProgram::setUniformBlockBinding;
 
-        Int matricesUniformBlock,
-            materialUniformBlock;
-    };
-}
+    Int matricesUniformBlock,
+        materialUniformBlock;
+};
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 UniformBlockShader::UniformBlockShader() {
@@ -854,6 +845,6 @@ void AbstractShaderProgramGLTest::compute() {
 #endif
 #endif
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::AbstractShaderProgramGLTest)

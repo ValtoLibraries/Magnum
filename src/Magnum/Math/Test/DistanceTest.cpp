@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 
@@ -26,11 +26,12 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Constants.h"
 #include "Magnum/Math/Distance.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct DistanceTest: Corrade::TestSuite::Tester {
     explicit DistanceTest();
@@ -199,6 +200,6 @@ void DistanceTest::pointPlaneNormalizedNotNormalized() {
     CORRADE_COMPARE(out.str(), "Math::Distance::pointPlaneNormalized(): plane normal Vector(2, 2, 2) is not normalized\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::DistanceTest)

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,11 +26,15 @@
 #include "AbstractFont.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/EnumSet.hpp>
+#include <Corrade/Containers/Optional.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Unicode.h>
 
+#include "Magnum/FileCallback.h"
 #include "Magnum/Math/Functions.h"
-#include "Magnum/Text/GlyphCache.h"
+#include "Magnum/Text/AbstractGlyphCache.h"
 
 #ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
 #include "Magnum/Text/configure.h"
@@ -39,7 +43,7 @@
 namespace Magnum { namespace Text {
 
 std::string AbstractFont::pluginInterface() {
-    return "cz.mosra.magnum.Text.AbstractFont/0.2.4";
+    return "cz.mosra.magnum.Text.AbstractFont/0.3";
 }
 
 #ifndef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
@@ -60,12 +64,24 @@ AbstractFont::AbstractFont() = default;
 
 AbstractFont::AbstractFont(PluginManager::AbstractManager& manager, const std::string& plugin): AbstractPlugin{manager, plugin} {}
 
-bool AbstractFont::openData(const std::vector<std::pair<std::string, Containers::ArrayView<const char>>>& data, const Float size) {
+void AbstractFont::setFileCallback(Containers::Optional<Containers::ArrayView<const char>>(*callback)(const std::string&, InputFileCallbackPolicy, void*), void* const userData) {
+    CORRADE_ASSERT(!isOpened(), "Text::AbstractFont::setFileCallback(): can't be set while a font is opened", );
+    CORRADE_ASSERT(features() & (Feature::FileCallback|Feature::OpenData), "Text::AbstractFont::setFileCallback(): font plugin supports neither loading from data nor via callbacks, callbacks can't be used", );
+
+    _fileCallback = callback;
+    _fileCallbackUserData = userData;
+    doSetFileCallback(callback, userData);
+}
+
+void AbstractFont::doSetFileCallback(Containers::Optional<Containers::ArrayView<const char>>(*)(const std::string&, InputFileCallbackPolicy, void*), void*) {}
+
+bool AbstractFont::openData(Containers::ArrayView<const char> data, const Float size) {
     CORRADE_ASSERT(features() & Feature::OpenData,
         "Text::AbstractFont::openData(): feature not supported", false);
-    CORRADE_ASSERT(!data.empty(),
-        "Text::AbstractFont::openData(): no data passed", false);
 
+    /* We accept empty data here (instead of checking for them and failing so
+       the check doesn't be done on the plugin side) because for some file
+       formats it could be valid (MagnumFont in particular). */
     close();
     const Metrics metrics = doOpenData(data, size);
     _size = metrics.size;
@@ -76,40 +92,62 @@ bool AbstractFont::openData(const std::vector<std::pair<std::string, Containers:
     return isOpened();
 }
 
-auto AbstractFont::doOpenData(const std::vector<std::pair<std::string, Containers::ArrayView<const char>>>& data, const Float size) -> Metrics {
-    CORRADE_ASSERT(!(features() & Feature::MultiFile),
-        "Text::AbstractFont::openData(): feature advertised but not implemented", {});
-    CORRADE_ASSERT(data.size() == 1,
-        "Text::AbstractFont::openData(): expected just one file for single-file format", {});
-
-    close();
-    return doOpenSingleData(data[0].second, size);
-}
-
-bool AbstractFont::openSingleData(const Containers::ArrayView<const char> data, const Float size) {
-    CORRADE_ASSERT(features() & Feature::OpenData,
-        "Text::AbstractFont::openSingleData(): feature not supported", false);
-    CORRADE_ASSERT(!(features() & Feature::MultiFile),
-        "Text::AbstractFont::openSingleData(): the format is not single-file", false);
-
-    close();
-    const Metrics metrics = doOpenSingleData(data, size);
-    _size = metrics.size;
-    _ascent = metrics.ascent;
-    _descent = metrics.descent;
-    _lineHeight = metrics.lineHeight;
-    CORRADE_INTERNAL_ASSERT(isOpened() || (!_size && !_ascent && !_descent && !_lineHeight));
-    return isOpened();
-}
-
-auto AbstractFont::doOpenSingleData(Containers::ArrayView<const char>, Float) -> Metrics {
-    CORRADE_ASSERT(false, "Text::AbstractFont::openSingleData(): feature advertised but not implemented", {});
+auto AbstractFont::doOpenData(Containers::ArrayView<const char>, Float) -> Metrics {
+    CORRADE_ASSERT(false, "Text::AbstractFont::openData(): feature advertised but not implemented", {});
     return {};
 }
 
+#ifdef MAGNUM_BUILD_DEPRECATED
+bool AbstractFont::openData(const std::vector<std::pair<std::string, Containers::ArrayView<const char>>>& data, const Float size) {
+    close();
+
+    setFileCallback([](const std::string& file, InputFileCallbackPolicy, const std::vector<std::pair<std::string, Containers::ArrayView<const char>>>& data) -> Containers::Optional<Containers::ArrayView<const char>> {
+        for(auto&& i: data) if(i.first == file) return i.second;
+        return {};
+    }, data);
+
+    return !data.empty() && openData(data.front().second, size);
+}
+
+bool AbstractFont::openSingleData(const Containers::ArrayView<const char> data, const Float size) {
+    return openData(data, size);
+}
+#endif
+
 bool AbstractFont::openFile(const std::string& filename, const Float size) {
     close();
-    const Metrics metrics = doOpenFile(filename, size);
+    Metrics metrics;
+
+    /* If file loading callbacks are not set or the font implementation
+       supports handling them directly, call into the implementation */
+    if(!_fileCallback || (doFeatures() & Feature::FileCallback)) {
+        metrics = doOpenFile(filename, size);
+
+    /* Otherwise, if loading from data is supported, use the callback and pass
+       the data through to openData(). Mark the file as ready to be closed once
+       opening is finished. */
+    } else if(doFeatures() & Feature::OpenData) {
+        /* This needs to be duplicated here and in the doOpenFile()
+           implementation in order to support both following cases:
+            - plugins that don't support FileCallback but have their own
+              doOpenFile() implementation (callback needs to be used here,
+              because the base doOpenFile() implementation might never get
+              called)
+            - plugins that support FileCallback but want to delegate the actual
+              file loading to the default implementation (callback used in the
+              base doOpenFile() implementation, because this branch is never
+              taken in that case) */
+        const Containers::Optional<Containers::ArrayView<const char>> data = _fileCallback(filename, InputFileCallbackPolicy::LoadTemporary, _fileCallbackUserData);
+        if(!data) {
+            Error() << "Text::AbstractFont::openFile(): cannot open file" << filename;
+            return isOpened();
+        }
+        metrics = doOpenData(*data, size);
+        _fileCallback(filename, InputFileCallbackPolicy::Close, _fileCallbackUserData);
+
+    /* Shouldn't get here, the assert is fired already in setFileCallback() */
+    } else CORRADE_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
+
     _size = metrics.size;
     _ascent = metrics.ascent;
     _descent = metrics.descent;
@@ -119,16 +157,32 @@ bool AbstractFont::openFile(const std::string& filename, const Float size) {
 }
 
 auto AbstractFont::doOpenFile(const std::string& filename, const Float size) -> Metrics {
-    CORRADE_ASSERT(features() & Feature::OpenData && !(features() & Feature::MultiFile),
-        "Text::AbstractFont::openFile(): not implemented", {});
+    CORRADE_ASSERT(features() & Feature::OpenData, "Text::AbstractFont::openFile(): not implemented", {});
 
-    /* Open file */
-    if(!Utility::Directory::fileExists(filename)) {
-        Error() << "Trade::AbstractFont::openFile(): cannot open file" << filename;
-        return {};
+    Metrics metrics;
+
+    /* If callbacks are set, use them. This is the same implementation as in
+       openFile(), see the comment there for details. */
+    if(_fileCallback) {
+        const Containers::Optional<Containers::ArrayView<const char>> data = _fileCallback(filename, InputFileCallbackPolicy::LoadTemporary, _fileCallbackUserData);
+        if(!data) {
+            Error() << "Text::AbstractFont::openFile(): cannot open file" << filename;
+            return {};
+        }
+        metrics = doOpenData(*data, size);
+        _fileCallback(filename, InputFileCallbackPolicy::Close, _fileCallbackUserData);
+
+    /* Otherwise open the file directly */
+    } else {
+        if(!Utility::Directory::exists(filename)) {
+            Error() << "Text::AbstractFont::openFile(): cannot open file" << filename;
+            return {};
+        }
+
+        metrics = doOpenData(Utility::Directory::read(filename), size);
     }
 
-    return doOpenSingleData(Utility::Directory::read(filename), size);
+    return metrics;
 }
 
 void AbstractFont::close() {
@@ -138,6 +192,26 @@ void AbstractFont::close() {
         _lineHeight = 0.0f;
         CORRADE_INTERNAL_ASSERT(!isOpened());
     }
+}
+
+Float AbstractFont::size() const {
+    CORRADE_ASSERT(isOpened(), "Text::AbstractFont::size(): no font opened", {});
+    return _size;
+}
+
+Float AbstractFont::ascent() const {
+    CORRADE_ASSERT(isOpened(), "Text::AbstractFont::ascent(): no font opened", {});
+    return _ascent;
+}
+
+Float AbstractFont::descent() const {
+    CORRADE_ASSERT(isOpened(), "Text::AbstractFont::descent(): no font opened", {});
+    return _descent;
+}
+
+Float AbstractFont::lineHeight() const {
+    CORRADE_ASSERT(isOpened(), "Text::AbstractFont::lineHeight(): no font opened", {});
+    return _lineHeight;
 }
 
 UnsignedInt AbstractFont::glyphId(const char32_t character) {
@@ -152,20 +226,20 @@ Vector2 AbstractFont::glyphAdvance(const UnsignedInt glyph) {
     return doGlyphAdvance(glyph);
 }
 
-void AbstractFont::fillGlyphCache(GlyphCache& cache, const std::string& characters) {
+void AbstractFont::fillGlyphCache(AbstractGlyphCache& cache, const std::string& characters) {
     CORRADE_ASSERT(isOpened(),
-        "Text::AbstractFont::createGlyphCache(): no font opened", );
+        "Text::AbstractFont::fillGlyphCache(): no font opened", );
     CORRADE_ASSERT(!(features() & Feature::PreparedGlyphCache),
         "Text::AbstractFont::fillGlyphCache(): feature not supported", );
 
     doFillGlyphCache(cache, Utility::Unicode::utf32(characters));
 }
 
-void AbstractFont::doFillGlyphCache(GlyphCache&, const std::u32string&) {
+void AbstractFont::doFillGlyphCache(AbstractGlyphCache&, const std::u32string&) {
     CORRADE_ASSERT(false, "Text::AbstractFont::fillGlyphCache(): feature advertised but not implemented", );
 }
 
-std::unique_ptr<GlyphCache> AbstractFont::createGlyphCache() {
+Containers::Pointer<AbstractGlyphCache> AbstractFont::createGlyphCache() {
     CORRADE_ASSERT(isOpened(),
         "Text::AbstractFont::createGlyphCache(): no font opened", nullptr);
     CORRADE_ASSERT(features() & Feature::PreparedGlyphCache,
@@ -174,15 +248,36 @@ std::unique_ptr<GlyphCache> AbstractFont::createGlyphCache() {
     return doCreateGlyphCache();
 }
 
-std::unique_ptr<GlyphCache> AbstractFont::doCreateGlyphCache() {
+Containers::Pointer<AbstractGlyphCache> AbstractFont::doCreateGlyphCache() {
     CORRADE_ASSERT(false, "Text::AbstractFont::createGlyphCache(): feature advertised but not implemented", nullptr);
     return nullptr;
 }
 
-std::unique_ptr<AbstractLayouter> AbstractFont::layout(const GlyphCache& cache, const Float size, const std::string& text) {
+Containers::Pointer<AbstractLayouter> AbstractFont::layout(const AbstractGlyphCache& cache, const Float size, const std::string& text) {
     CORRADE_ASSERT(isOpened(), "Text::AbstractFont::layout(): no font opened", nullptr);
 
     return doLayout(cache, size, text);
+}
+
+Debug& operator<<(Debug& debug, const AbstractFont::Feature value) {
+    switch(value) {
+        /* LCOV_EXCL_START */
+        #define _c(v) case AbstractFont::Feature::v: return debug << "Text::AbstractFont::Feature::" #v;
+        _c(OpenData)
+        _c(FileCallback)
+        _c(PreparedGlyphCache)
+        #undef _c
+        /* LCOV_EXCL_STOP */
+    }
+
+    return debug << "Text::AbstractFont::Feature(" << Debug::nospace << reinterpret_cast<void*>(UnsignedByte(value)) << Debug::nospace << ")";
+}
+
+Debug& operator<<(Debug& debug, const AbstractFont::Features value) {
+    return Containers::enumSetDebugOutput(debug, value, "Text::AbstractFont::Features{}", {
+        AbstractFont::Feature::OpenData,
+        AbstractFont::Feature::FileCallback,
+        AbstractFont::Feature::PreparedGlyphCache});
 }
 
 AbstractLayouter::AbstractLayouter(UnsignedInt glyphCount): _glyphCount(glyphCount) {}

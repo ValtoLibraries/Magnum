@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,7 +32,7 @@
 #include "Magnum/Text/AbstractFont.h"
 #include "Magnum/Text/Renderer.h"
 
-namespace Magnum { namespace Text { namespace Test {
+namespace Magnum { namespace Text { namespace Test { namespace {
 
 struct RendererGLTest: GL::OpenGLTester {
     explicit RendererGLTest();
@@ -53,8 +53,6 @@ RendererGLTest::RendererGLTest() {
 
               &RendererGLTest::multiline});
 }
-
-namespace {
 
 class TestLayouter: public Text::AbstractLayouter {
     public:
@@ -81,16 +79,14 @@ class TestFont: public Text::AbstractFont {
     UnsignedInt doGlyphId(char32_t) override { return 0; }
     Vector2 doGlyphAdvance(UnsignedInt) override { return {}; }
 
-    std::unique_ptr<AbstractLayouter> doLayout(const GlyphCache&, const Float size, const std::string& text) override {
-        return std::unique_ptr<AbstractLayouter>(new TestLayouter(size, text.size()));
+    Containers::Pointer<AbstractLayouter> doLayout(const AbstractGlyphCache&, const Float size, const std::string& text) override {
+        return Containers::Pointer<AbstractLayouter>(new TestLayouter(size, text.size()));
     }
 };
 
 /* *static_cast<GlyphCache*>(nullptr) makes Clang Analyzer grumpy */
 char glyphCacheData;
 GlyphCache& nullGlyphCache = *reinterpret_cast<GlyphCache*>(&glyphCacheData);
-
-}
 
 void RendererGLTest::renderData() {
     TestFont font;
@@ -357,8 +353,8 @@ void RendererGLTest::multiline() {
             UnsignedInt doGlyphId(char32_t) override { return 0; }
             Vector2 doGlyphAdvance(UnsignedInt) override { return {}; }
 
-            std::unique_ptr<AbstractLayouter> doLayout(const GlyphCache&, Float, const std::string& text) override {
-                return std::unique_ptr<AbstractLayouter>(new Layouter(text.size()));
+            Containers::Pointer<AbstractLayouter> doLayout(const AbstractGlyphCache&, Float, const std::string& text) override {
+                return Containers::Pointer<AbstractLayouter>(new Layouter(text.size()));
             }
 
             bool _opened;
@@ -435,6 +431,6 @@ void RendererGLTest::multiline() {
     }), TestSuite::Compare::Container);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Text::Test::RendererGLTest)

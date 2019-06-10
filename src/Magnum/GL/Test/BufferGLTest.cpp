@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,16 +24,18 @@
 */
 
 #include <array>
+#include <tuple>
 #include <vector>
 #include <Corrade/Containers/Array.h>
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/GL/Buffer.h"
 #include "Magnum/GL/Context.h"
 #include "Magnum/GL/Extensions.h"
 #include "Magnum/GL/OpenGLTester.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct BufferGLTest: OpenGLTester {
     explicit BufferGLTest();
@@ -212,54 +214,54 @@ void BufferGLTest::data() {
 
     /* Plain array */
     constexpr Int data[] = {2, 7, 5, 13, 25};
-    buffer.setData({data, 5}, BufferUsage::StaticDraw);
-    MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE(buffer.size(), 5*4);
-
-    /* STL vector */
-    std::vector<Int> data2{2, 7, 5, 13, 25};
-    buffer.setData(data2, BufferUsage::StaticDraw);
-    MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE(buffer.size(), 5*4);
-
-    /* STL array */
-    std::array<Int, 5> data3{{2, 7, 5, 13, 25}};
-    buffer.setData(data3, BufferUsage::StaticDraw);
+    buffer.setData(data, BufferUsage::StaticDraw);
     MAGNUM_VERIFY_NO_GL_ERROR();
     CORRADE_COMPARE(buffer.size(), 5*4);
 
     /** @todo How to verify the contents in ES? */
     #ifndef MAGNUM_TARGET_GLES
-    auto contents = buffer.data();
     MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE_AS(Containers::arrayCast<Int>(contents),
+    CORRADE_COMPARE_AS(Containers::arrayCast<Int>(buffer.data()),
+        Containers::arrayView(data),
+        TestSuite::Compare::Container);
+    #endif
+
+    /* STL initializer list */
+    buffer.setData({2, 7, 5, 13, 25}, BufferUsage::StaticDraw);
+    MAGNUM_VERIFY_NO_GL_ERROR();
+    CORRADE_COMPARE(buffer.size(), 5*4);
+
+    /** @todo How to verify the contents in ES? */
+    #ifndef MAGNUM_TARGET_GLES
+    MAGNUM_VERIFY_NO_GL_ERROR();
+    CORRADE_COMPARE_AS(Containers::arrayCast<Int>(buffer.data()),
         Containers::arrayView(data),
         TestSuite::Compare::Container);
     #endif
 
     /* Plain array */
     constexpr Int subData[] = {125, 3, 15};
-    buffer.setSubData(4, {subData, 3});
-    MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE(buffer.size(), 5*4);
-
-    /* STL vector */
-    std::vector<Int> subData2{125, 3, 15};
-    buffer.setSubData(4, subData2);
-    MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE(buffer.size(), 5*4);
-
-    /* STL array */
-    std::array<Int, 3> subData3{{125, 3, 15}};
-    buffer.setSubData(4, subData3);
+    buffer.setSubData(4, subData);
     MAGNUM_VERIFY_NO_GL_ERROR();
     CORRADE_COMPARE(buffer.size(), 5*4);
 
     /** @todo How to verify the contents in ES? */
     #ifndef MAGNUM_TARGET_GLES
-    auto subContents = buffer.subData(4, 3*4);
     MAGNUM_VERIFY_NO_GL_ERROR();
-    CORRADE_COMPARE_AS(Containers::arrayCast<Int>(subContents),
+    CORRADE_COMPARE_AS(Containers::arrayCast<Int>(buffer.subData(4, 3*4)),
+        Containers::arrayView(subData),
+        TestSuite::Compare::Container);
+    #endif
+
+    /* STL initializer list */
+    buffer.setSubData(4, {125, 3, 15});
+    MAGNUM_VERIFY_NO_GL_ERROR();
+    CORRADE_COMPARE(buffer.size(), 5*4);
+
+    /** @todo How to verify the contents in ES? */
+    #ifndef MAGNUM_TARGET_GLES
+    MAGNUM_VERIFY_NO_GL_ERROR();
+    CORRADE_COMPARE_AS(Containers::arrayCast<Int>(buffer.subData(4, 3*4)),
         Containers::arrayView(subData),
         TestSuite::Compare::Container);
     #endif
@@ -410,6 +412,6 @@ void BufferGLTest::invalidate() {
     MAGNUM_VERIFY_NO_GL_ERROR();
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::BufferGLTest)

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Matrix3.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -55,7 +55,7 @@ template<> struct RectangularMatrixConverter<3, 3, float, Mat3> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct Matrix3Test: Corrade::TestSuite::Tester {
     explicit Matrix3Test();
@@ -100,7 +100,6 @@ struct Matrix3Test: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
 typedef Math::Deg<Float> Deg;
@@ -150,8 +149,7 @@ Matrix3Test::Matrix3Test() {
 
               &Matrix3Test::strictWeakOrdering,
 
-              &Matrix3Test::debug,
-              &Matrix3Test::configuration});
+              &Matrix3Test::debug});
 }
 
 using namespace Literals;
@@ -186,6 +184,9 @@ void Matrix3Test::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Matrix3>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix3, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, Matrix3>::value));
 }
 
 void Matrix3Test::constructZero() {
@@ -195,6 +196,9 @@ void Matrix3Test::constructZero() {
                                {0.0f, 0.0f, 0.0f}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix3, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Matrix3>::value));
 }
 
 void Matrix3Test::constructNoInit() {
@@ -525,6 +529,7 @@ void Matrix3Test::scalingPart() {
         Matrix3::scaling({0.5f, 3.5f});
 
     CORRADE_COMPARE(translationRotationScaling.scaling(), (Vector2{0.5f, 3.5f}));
+    CORRADE_COMPARE(translationRotationScaling.scalingSquared(), (Vector2{0.25f, 12.25f}));
 }
 
 void Matrix3Test::uniformScalingPart() {
@@ -625,19 +630,6 @@ void Matrix3Test::debug() {
                              "       8, 7, 8)\n");
 }
 
-void Matrix3Test::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Matrix3 m({5.0f, 8.0f,   4.0f},
-              {4.0f, 7.0f, 3.125f},
-              {4.0f, 5.0f,  9.55f});
-    std::string value("5 4 4 8 7 5 4 3.125 9.55");
-
-    c.setValue("matrix", m);
-    CORRADE_COMPARE(c.value("matrix"), value);
-    CORRADE_COMPARE(c.value<Matrix3>("matrix"), m);
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::Matrix3Test)

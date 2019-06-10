@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -379,7 +379,7 @@ class MAGNUM_GL_EXPORT CubeMapTextureArray: public AbstractTexture {
          * See @ref Texture::setSrgbDecode() for more information.
          * @requires_extension Extension @gl_extension{EXT,texture_sRGB_decode}
          * @requires_es_extension Extension @gl_extension{ANDROID,extension_pack_es31a} /
-         *      @gl_extension2{EXT,texture_sRGB_decode,texture_sRGB_decode}
+         *      @gl_extension{EXT,texture_sRGB_decode}
          */
         CubeMapTextureArray& setSrgbDecode(bool decode) {
             AbstractTexture::setSrgbDecode(decode);
@@ -843,18 +843,7 @@ class MAGNUM_GL_EXPORT CubeMapTextureArray: public AbstractTexture {
         explicit CubeMapTextureArray(GLuint id, ObjectFlags flags) noexcept: AbstractTexture{id, GL_TEXTURE_CUBE_MAP_ARRAY, flags} {}
 };
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::CubeMapTextureArray
- * @deprecated Use @ref GL::CubeMapTextureArray instead.
- */
-typedef CORRADE_DEPRECATED("use GL::CubeMapTextureArray instead") Magnum::GL::CubeMapTextureArray CubeMapTextureArray;
-#endif
-
-}
+}}
 #else
 #error this header is not available in OpenGL ES 2.0 and WebGL build
 #endif

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,9 @@
  */
 
 #include <Corrade/Utility/Assert.h>
+#ifndef CORRADE_NO_DEBUG
 #include <Corrade/Utility/Debug.h>
+#endif
 
 #include "Magnum/Math/Matrix.h"
 #include "Magnum/Math/Vector2.h"
@@ -122,11 +124,18 @@ template<class T> class Complex {
         /**
          * @brief Default constructor
          *
+         * Equivalent to @ref Complex(IdentityInitT).
+         */
+        constexpr /*implicit*/ Complex() noexcept: _real(T(1)), _imaginary(T(0)) {}
+
+        /**
+         * @brief Identity constructor
+         *
          * Constructs unit complex number. @f[
          *      c = 1 + i0
          * @f]
          */
-        constexpr /*implicit*/ Complex(IdentityInitT = IdentityInit) noexcept: _real(T(1)), _imaginary(T(0)) {}
+        constexpr explicit Complex(IdentityInitT) noexcept: _real(T(1)), _imaginary(T(0)) {}
 
         /** @brief Construct zero-initialized complex number */
         constexpr explicit Complex(ZeroInitT) noexcept: _real{}, _imaginary{} {}
@@ -607,6 +616,7 @@ template<class T> inline Complex<T> slerp(const Complex<T>& normalizedA, const C
     return (std::sin((T(1) - t)*a)*normalizedA + std::sin(t*a)*normalizedB)/std::sin(a);
 }
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{Complex} */
 template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Complex<T>& value) {
     return debug << "Complex(" << Corrade::Utility::Debug::nospace
@@ -618,6 +628,7 @@ template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& d
 #ifndef DOXYGEN_GENERATING_OUTPUT
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Complex<Float>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Complex<Double>&);
+#endif
 #endif
 
 namespace Implementation {
@@ -634,28 +645,6 @@ template<class T> struct StrictWeakOrdering<Complex<T>> {
 };
 
 }
-
-}}
-
-namespace Corrade { namespace Utility {
-
-/** @configurationvalue{Magnum::Math::Complex} */
-template<class T> struct ConfigurationValue<Magnum::Math::Complex<T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes elements separated with spaces */
-    static std::string toString(const Magnum::Math::Complex<T>& value, ConfigurationValueFlags flags) {
-        return ConfigurationValue<Magnum::Math::Vector<2, T>>::toString(reinterpret_cast<const Magnum::Math::Vector<2, T>&>(value), flags);
-    }
-
-    /** @brief Reads elements separated with whitespace */
-    static Magnum::Math::Complex<T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
-        const Magnum::Math::Vector<2, T> value = ConfigurationValue<Magnum::Math::Vector<2, T>>::fromString(stringValue, flags);
-        return reinterpret_cast<const Magnum::Math::Complex<T>&>(value);
-    }
-};
-
-/* No explicit instantiation needed, as Vector<2, T> is instantiated already */
 
 }}
 

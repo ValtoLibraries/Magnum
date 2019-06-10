@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,12 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Endianness.h>
 
 #include "Magnum/MeshTools/CompressIndices.h"
 
-namespace Magnum { namespace MeshTools { namespace Test {
+namespace Magnum { namespace MeshTools { namespace Test { namespace {
 
 struct CompressIndicesTest: TestSuite::Tester {
     explicit CompressIndicesTest();
@@ -125,6 +126,6 @@ void CompressIndicesTest::compressAsShort() {
     CORRADE_COMPARE(out.str(), "MeshTools::compressIndicesAs(): type too small to represent value 65536\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::MeshTools::Test::CompressIndicesTest)

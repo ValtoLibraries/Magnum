@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Matrix4.h"
 #include "Magnum/Math/Quaternion.h"
@@ -52,7 +52,7 @@ template<> struct QuaternionConverter<Float, Quat> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct QuaternionTest: Corrade::TestSuite::Tester {
     explicit QuaternionTest();
@@ -115,7 +115,6 @@ struct QuaternionTest: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
 typedef Math::Deg<Float> Deg;
@@ -190,8 +189,7 @@ QuaternionTest::QuaternionTest() {
 
               &QuaternionTest::strictWeakOrdering,
 
-              &QuaternionTest::debug,
-              &QuaternionTest::configuration});
+              &QuaternionTest::debug});
 }
 
 void QuaternionTest::construct() {
@@ -213,6 +211,9 @@ void QuaternionTest::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Quaternion>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Quaternion, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, Quaternion>::value));
 }
 
 void QuaternionTest::constructZero() {
@@ -220,6 +221,9 @@ void QuaternionTest::constructZero() {
     CORRADE_COMPARE(a, Quaternion({0.0f, 0.0f, 0.0f}, 0.0f));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Quaternion, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Quaternion>::value));
 }
 
 void QuaternionTest::constructNoInit() {
@@ -511,7 +515,7 @@ void QuaternionTest::matrix() {
     Quaternion q2 = Quaternion::rotation(Deg(130.0f), axis);
     CORRADE_COMPARE_AS(m2.trace(), 0.0f, Corrade::TestSuite::Compare::Less);
     CORRADE_COMPARE_AS(m2.diagonal()[2],
-        std::max(m2.diagonal()[0], m2.diagonal()[1]),
+        Math::max(m2.diagonal()[0], m2.diagonal()[1]),
         Corrade::TestSuite::Compare::Greater);
     CORRADE_COMPARE(Quaternion::fromMatrix(m2), q2);
 
@@ -521,7 +525,7 @@ void QuaternionTest::matrix() {
     Quaternion q3 = Quaternion::rotation(Deg(130.0f), axis2);
     CORRADE_COMPARE_AS(m3.trace(), 0.0f, Corrade::TestSuite::Compare::Less);
     CORRADE_COMPARE_AS(m3.diagonal()[1],
-        std::max(m3.diagonal()[0], m3.diagonal()[2]),
+        Math::max(m3.diagonal()[0], m3.diagonal()[2]),
         Corrade::TestSuite::Compare::Greater);
     CORRADE_COMPARE(Quaternion::fromMatrix(m3), q3);
 
@@ -531,7 +535,7 @@ void QuaternionTest::matrix() {
     Quaternion q4 = Quaternion::rotation(Deg(130.0f), axis3);
     CORRADE_COMPARE_AS(m4.trace(), 0.0f, Corrade::TestSuite::Compare::Less);
     CORRADE_COMPARE_AS(m4.diagonal()[0],
-        std::max(m4.diagonal()[1], m4.diagonal()[2]),
+        Math::max(m4.diagonal()[1], m4.diagonal()[2]),
         Corrade::TestSuite::Compare::Greater);
     CORRADE_COMPARE(Quaternion::fromMatrix(m4), q4);
 }
@@ -744,25 +748,6 @@ void QuaternionTest::debug() {
     CORRADE_COMPARE(o.str(), "Quaternion({1, 2, 3}, -4)\n");
 }
 
-void QuaternionTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Quaternion q{{3.0f, 3.125f, 9.0f}, 9.55f};
-    std::string value{"3 3.125 9 9.55"};
-
-    c.setValue("quat", q);
-    CORRADE_COMPARE(c.value("quat"), value);
-    CORRADE_COMPARE(c.value<Quaternion>("quat"), q);
-
-    /* Underflow */
-    c.setValue("underflow", "2.1 8.9");
-    CORRADE_COMPARE(c.value<Quaternion>("underflow"), (Quaternion{{2.1f, 8.9f, 0.0f}, 0.0f}));
-
-    /* Overflow */
-    c.setValue("overflow", "2 1 8 9 16 33");
-    CORRADE_COMPARE(c.value<Quaternion>("overflow"), (Quaternion{{2.0f, 1.0f, 8.0f}, 9.0f}));
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::QuaternionTest)

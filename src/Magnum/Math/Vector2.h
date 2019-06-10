@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,20 +63,18 @@ See @ref matrix-vector for brief introduction.
 template<class T> class Vector2: public Vector<2, T> {
     public:
         /**
-         * @brief Vector in direction of X axis (right)
+         * @brief Vector in a direction of X axis (right)
          *
          * Usable for translation in given axis, for example:
          *
-         * @code{.cpp}
-         * Matrix3::translation(Vector2::xAxis(5.0f)); // same as Matrix3::translation({5.0f, 0.0f});
-         * @endcode
+         * @snippet MagnumMath.cpp Vector2-xAxis
          *
          * @see @ref yAxis(), @ref xScale(), @ref Matrix3::right()
          */
         constexpr static Vector2<T> xAxis(T length = T(1)) { return {length, T(0)}; }
 
         /**
-         * @brief Vector in direction of Y axis (up)
+         * @brief Vector in a direction of Y axis (up)
          *
          * See @ref xAxis() for more information.
          * @see @ref yScale(), @ref Matrix3::up()
@@ -84,41 +82,36 @@ template<class T> class Vector2: public Vector<2, T> {
         constexpr static Vector2<T> yAxis(T length = T(1)) { return {T(0), length}; }
 
         /**
-         * @brief Scaling vector in direction of X axis (width)
+         * @brief Scaling vector in a direction of X axis (width)
          *
          * Usable for scaling along given direction, for example:
          *
-         * @code{.cpp}
-         * Matrix3::scaling(Vector2::xScale(-2.0f)); // same as Matrix3::scaling({-2.0f, 1.0f});
-         * @endcode
+         * @snippet MagnumMath.cpp Vector2-xScale
          *
          * @see @ref yScale(), @ref xAxis()
          */
         constexpr static Vector2<T> xScale(T scale) { return {scale, T(1)}; }
 
         /**
-         * @brief Scaling vector in direction of Y axis (height)
+         * @brief Scaling vector in a direction of Y axis (height)
          *
          * See @ref xScale() for more information.
          * @see @ref yAxis()
          */
         constexpr static Vector2<T> yScale(T scale) { return {T(1), scale}; }
 
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Vector2(ZeroInitT).
+         */
+        constexpr /*implicit*/ Vector2() noexcept: Vector<2, T>{ZeroInit} {}
+
         /** @copydoc Vector::Vector(ZeroInitT) */
-        constexpr /*implicit*/ Vector2(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector<2, T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Vector2(ZeroInitT) noexcept: Vector<2, T>{ZeroInit} {}
 
         /** @copydoc Vector::Vector(NoInitT) */
-        explicit Vector2(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector<2, T>{NoInit}
-            #endif
-            {}
+        explicit Vector2(NoInitT) noexcept: Vector<2, T>{NoInit} {}
 
         /** @copydoc Vector::Vector(T) */
         constexpr explicit Vector2(T value) noexcept: Vector<2, T>(value) {}
@@ -148,10 +141,10 @@ template<class T> class Vector2: public Vector<2, T> {
         /** @brief Copy constructor */
         constexpr /*implicit*/ Vector2(const Vector<2, T>& other) noexcept: Vector<2, T>(other) {}
 
-        T& x() { return (*this)[0]; }                   /**< @brief X component */
-        constexpr T x() const { return (*this)[0]; }    /**< @overload */
-        T& y() { return (*this)[1]; }                   /**< @brief Y component */
-        constexpr T y() const { return (*this)[1]; }    /**< @overload */
+        T& x() { return Vector<2, T>::_data[0]; } /**< @brief X component */
+        constexpr T x() const { return Vector<2, T>::_data[0]; } /**< @overload */
+        T& y() { return Vector<2, T>::_data[1]; } /**< @brief Y component */
+        constexpr T y() const { return Vector<2, T>::_data[1]; } /**< @overload */
 
         /**
          * @brief Perpendicular vector
@@ -194,11 +187,6 @@ namespace Implementation {
     template<class T> struct StrictWeakOrdering<Vector2<T>>: StrictWeakOrdering<Vector<2, T>> {};
 }
 
-}}
-
-namespace Corrade { namespace Utility {
-    /** @configurationvalue{Magnum::Math::Vector2} */
-    template<class T> struct ConfigurationValue<Magnum::Math::Vector2<T>>: public ConfigurationValue<Magnum::Math::Vector<2, T>> {};
 }}
 
 #endif

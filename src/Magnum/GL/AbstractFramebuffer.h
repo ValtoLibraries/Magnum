@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -262,6 +262,38 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
 
         /** @brief Viewport rectangle */
         Range2Di viewport() const { return _viewport; }
+
+        /**
+         * @brief Implementation-specific color read format
+         *
+         * The result is not cached in any way. If
+         * @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is not
+         * available, the framebuffer is bound to some target before the
+         * operation (if not already).
+         * @see @ref implementationColorReadType(),
+         *      @fn_gl{GetNamedFramebufferParameter} with
+         *      @def_gl_keyword{IMPLEMENTATION_COLOR_READ_FORMAT},
+         *      eventually @fn_gl{BindFramebuffer} and either
+         *      @fn_gl{GetFramebufferParameter} or @fn_gl{Get} with
+         *      @def_gl{IMPLEMENTATION_COLOR_READ_FORMAT}
+         */
+        PixelFormat implementationColorReadFormat();
+
+        /**
+         * @brief Implementation-specific color read type
+         *
+         * The result is not cached in any way. If
+         * @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is not
+         * available, the framebuffer is bound to some target before the
+         * operation (if not already).
+         * @see @ref implementationColorReadFormat(),
+         *      @fn_gl{GetNamedFramebufferParameter} with
+         *      @def_gl_keyword{IMPLEMENTATION_COLOR_READ_TYPE}, eventually
+         *      @fn_gl{BindFramebuffer} and either
+         *      @fn_gl{GetFramebufferParameter} or @fn_gl{Get} with
+         *      @def_gl{IMPLEMENTATION_COLOR_READ_TYPE}
+         */
+        PixelType implementationColorReadType();
 
         /**
          * @brief Set viewport
@@ -528,13 +560,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          * @param level             Texture mip level
          * @param offset            Offset inside the texture
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture1D::setStorage(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl2_keyword{CopyTextureSubImage1D,CopyTexSubImage1D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage1D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CopyTexSubImage1D}
          * @requires_gl 1D textures are not available in OpenGL ES or WebGL.
@@ -549,13 +579,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          * @param level             Texture mip level
          * @param offset            Offset inside the texture
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture2D::setStorage(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl2_keyword{CopyTextureSubImage2D,CopyTexSubImage2D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl{CopyTexSubImage2D}
          */
@@ -568,13 +596,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          * @param texture           Texture where to put the data
          * @param offset            Offset inside the texture
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref RectangleTexture::setStorage(), @fn_gl{BindFramebuffer},
          *      then @fn_gl2_keyword{CopyTextureSubImage2D,CopyTexSubImage2D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CopyTexSubImage2D}
          * @requires_gl Rectangle textures are not available in OpenGL ES and
@@ -592,12 +618,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          *
          * Z coordinate of the offset is equivalent to number of texture face,
          * i.e. +X is `0` and so on, in order of (+X, -X, +Y, -Y, +Z, -Z). If
-         * neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) nor
-         * @gl_extension{EXT,direct_state_access} desktop extension is available,
-         * the texture is bound before the operation (if not already).
+         * @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is not
+         * available, the texture is bound before the operation (if not
+         * already).
          * @see @ref CubeMapTexture::setStorage(), @fn_gl{BindFramebuffer},
          *      then @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CopyTexSubImage2D}
          */
@@ -611,13 +636,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          * @param level             Texture mip level
          * @param offset            Offset inside the texture
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture3D::setStorage(), @fn_gl{BindFramebuffer}, then
          *      @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CopyTexSubImage3D}
          * @requires_gles30 Extension @gl_extension{OES,texture_3D} in OpenGL
@@ -635,13 +658,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          * @param level             Texture mip level
          * @param offset            Offset inside the texture
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture1DArray::setStorage(), @fn_gl{BindFramebuffer},
          *      then @fn_gl2_keyword{CopyTextureSubImage2D,CopyTexSubImage2D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage2D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CopyTexSubImage2D}
          * @requires_gl 1D array textures are not available in OpenGL ES or
@@ -658,13 +679,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          * @param level             Texture mip level
          * @param offset            Offset inside the texture
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref Texture2DArray::setStorage(), @fn_gl{BindFramebuffer},
          *      then @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CopyTexSubImage3D}
          * @requires_gl30 Extension @gl_extension{EXT,texture_array}
@@ -684,13 +703,11 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
          *
          * Z coordinate of the offset is equivalent to layer * 6 + number of
          * texture face, i.e. +X is `0` and so on, in order of (+X, -X, +Y, -Y,
-         * +Z, -Z). If neither @gl_extension{ARB,direct_state_access} (part of
-         * OpenGL 4.5) nor @gl_extension{EXT,direct_state_access} desktop
-         * available, the texture is bound before the operation (if not
-         * already).
+         * +Z, -Z). If @gl_extension{ARB,direct_state_access} (part of OpenGL
+         * 4.5) is not available, the texture is bound before the operation (if
+         * not already).
          * @see @ref CubeMapTextureArray::setStorage(), @fn_gl{BindFramebuffer},
          *      then @fn_gl2_keyword{CopyTextureSubImage3D,CopyTexSubImage3D},
-         *      @fn_gl_extension_keyword{CopyTextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CopyTexSubImage3D}
          * @requires_gl40 Extension @gl_extension{ARB,texture_cube_map_array}
@@ -707,10 +724,25 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
     #else
     protected:
     #endif
-        explicit AbstractFramebuffer(): _flags{ObjectFlag::DeleteOnDestruction} {}
-        explicit AbstractFramebuffer(GLuint id, const Range2Di& viewport, ObjectFlags flags) noexcept: _id{id}, _viewport{viewport}, _flags{flags} {}
+        /* Used by the (constexpr) DefaultFramebuffer constructor and both
+           the NoCreate and normal constructor of Framebuffer */
+        constexpr explicit AbstractFramebuffer(GLuint id, const Range2Di& viewport, ObjectFlags flags) noexcept: _id{id}, _viewport{viewport}, _flags{flags} {}
 
         ~AbstractFramebuffer() = default;
+
+        AbstractFramebuffer(const AbstractFramebuffer&) = delete;
+        AbstractFramebuffer(AbstractFramebuffer&& other) noexcept: _id{other._id}, _viewport{other._viewport}, _flags{other._flags} {
+            other._id = 0;
+            other._viewport = {};
+        }
+        AbstractFramebuffer& operator=(const AbstractFramebuffer&) = delete;
+        AbstractFramebuffer& operator=(AbstractFramebuffer&& other) noexcept {
+            using std::swap;
+            swap(_id, other._id);
+            swap(_viewport, other._viewport);
+            swap(_flags, other._flags);
+            return *this;
+        }
 
         void MAGNUM_GL_LOCAL createIfNotAlready();
 
@@ -740,13 +772,19 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
         FramebufferTarget MAGNUM_GL_LOCAL bindImplementationSingle();
         #endif
 
+        GLenum MAGNUM_GL_LOCAL implementationColorReadFormatTypeImplementationGlobal(GLenum what);
+        #ifndef MAGNUM_TARGET_GLES
+        GLenum MAGNUM_GL_LOCAL implementationColorReadFormatTypeImplementationFramebuffer(GLenum what);
+        GLenum MAGNUM_GL_LOCAL implementationColorReadFormatTypeImplementationFramebufferDSA(GLenum what);
+        GLenum MAGNUM_GL_LOCAL implementationColorReadFormatTypeImplementationFramebufferDSAMesa(GLenum what);
+        #endif
+
         GLenum MAGNUM_GL_LOCAL checkStatusImplementationDefault(FramebufferTarget target);
         #ifdef MAGNUM_TARGET_GLES2
         GLenum MAGNUM_GL_LOCAL checkStatusImplementationSingle(FramebufferTarget);
         #endif
         #ifndef MAGNUM_TARGET_GLES
         GLenum MAGNUM_GL_LOCAL checkStatusImplementationDSA(FramebufferTarget target);
-        GLenum MAGNUM_GL_LOCAL checkStatusImplementationDSAEXT(FramebufferTarget target);
         #endif
 
         #ifndef MAGNUM_TARGET_GLES2
@@ -766,7 +804,6 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
         void MAGNUM_GL_LOCAL drawBuffersImplementationDefault(GLsizei count, const GLenum* buffers);
         #ifndef MAGNUM_TARGET_GLES
         void MAGNUM_GL_LOCAL drawBuffersImplementationDSA(GLsizei count, const GLenum* buffers);
-        void MAGNUM_GL_LOCAL drawBuffersImplementationDSAEXT(GLsizei count, const GLenum* buffers);
         #endif
         #else
         void MAGNUM_GL_LOCAL drawBuffersImplementationEXT(GLsizei count, const GLenum* buffers);
@@ -778,7 +815,6 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
         #ifndef MAGNUM_TARGET_GLES
         void MAGNUM_GL_LOCAL drawBufferImplementationDefault(GLenum buffer);
         void MAGNUM_GL_LOCAL drawBufferImplementationDSA(GLenum buffer);
-        void MAGNUM_GL_LOCAL drawBufferImplementationDSAEXT(GLenum buffer);
         #endif
 
         #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
@@ -786,7 +822,6 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
         #endif
         #ifndef MAGNUM_TARGET_GLES
         void MAGNUM_GL_LOCAL readBufferImplementationDSA(GLenum buffer);
-        void MAGNUM_GL_LOCAL readBufferImplementationDSAEXT(GLenum buffer);
         #endif
 
         static void MAGNUM_GL_LOCAL readImplementationDefault(const Range2Di& rectangle, PixelFormat format, PixelType type, std::size_t dataSize, GLvoid* data);
@@ -797,14 +832,12 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
         #ifndef MAGNUM_TARGET_GLES
         static void MAGNUM_GL_LOCAL copySub1DImplementationDefault(const Range2Di& rectangle, AbstractTexture& texture, Int level, Int offset);
         static void MAGNUM_GL_LOCAL copySub1DImplementationDSA(const Range2Di& rectangle, AbstractTexture& texture, Int level, Int offset);
-        static void MAGNUM_GL_LOCAL copySub1DImplementationDSAEXT(const Range2Di& rectangle, AbstractTexture& texture, Int level, Int offset);
         #endif
 
         static void MAGNUM_GL_LOCAL copySub2DImplementationDefault(const Range2Di& rectangle, AbstractTexture& texture, GLenum textureTarget, Int level, const Vector2i& offset);
         #ifndef MAGNUM_TARGET_GLES
         static void MAGNUM_GL_LOCAL copySub2DImplementationDSA(const Range2Di& rectangle, AbstractTexture& texture, GLenum textureTarget, Int level, const Vector2i& offset);
         static void MAGNUM_GL_LOCAL copySubCubeMapImplementationDSA(const Range2Di& rectangle, AbstractTexture& texture, GLenum textureTarget, Int level, const Vector2i& offset);
-        static void MAGNUM_GL_LOCAL copySub2DImplementationDSAEXT(const Range2Di& rectangle, AbstractTexture& texture, GLenum textureTarget, Int level, const Vector2i& offset);
         #endif
 
         #if !(defined(MAGNUM_TARGET_GLES2) && defined(MAGNUM_TARGET_WEBGL))
@@ -812,7 +845,6 @@ class MAGNUM_GL_EXPORT AbstractFramebuffer {
         #endif
         #ifndef MAGNUM_TARGET_GLES
         static void MAGNUM_GL_LOCAL copySub3DImplementationDSA(const Range2Di& rectangle, AbstractTexture& texture, Int level, const Vector3i& offset);
-        static void MAGNUM_GL_LOCAL copySub3DImplementationDSAEXT(const Range2Di& rectangle, AbstractTexture& texture, Int level, const Vector3i& offset);
         #endif
 
         void MAGNUM_GL_LOCAL invalidateImplementationNoOp(GLsizei, const GLenum*);
@@ -835,49 +867,6 @@ CORRADE_ENUMSET_OPERATORS(FramebufferClearMask)
 CORRADE_ENUMSET_OPERATORS(FramebufferBlitMask)
 #endif
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::FramebufferClear
- * @deprecated Use @ref GL::FramebufferClear instead.
- */
-typedef CORRADE_DEPRECATED("use GL::FramebufferClear instead") Magnum::GL::FramebufferClear FramebufferClear;
-
-/** @brief @copybrief GL::FramebufferClearMask
- * @deprecated Use @ref GL::FramebufferClearMask instead.
- */
-typedef CORRADE_DEPRECATED("use GL::FramebufferClearMask instead") Magnum::GL::FramebufferClearMask FramebufferClearMask;
-
-#if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-/** @brief @copybrief GL::FramebufferBlit
- * @deprecated Use @ref GL::FramebufferBlit instead.
- */
-typedef CORRADE_DEPRECATED("use GL::FramebufferBlit instead") Magnum::GL::FramebufferBlit FramebufferBlit;
-
-/** @brief @copybrief GL::FramebufferBlitMask
- * @deprecated Use @ref GL::FramebufferBlitMask instead.
- */
-typedef CORRADE_DEPRECATED("use GL::FramebufferBlitMask instead") Magnum::GL::FramebufferBlitMask FramebufferBlitMask;
-
-/** @brief @copybrief GL::FramebufferBlitFilter
- * @deprecated Use @ref GL::FramebufferBlitFilter instead.
- */
-typedef CORRADE_DEPRECATED("use GL::FramebufferBlitFilter instead") Magnum::GL::FramebufferBlitFilter FramebufferBlitFilter;
-#endif
-
-/** @brief @copybrief GL::FramebufferTarget
- * @deprecated Use @ref GL::FramebufferTarget instead.
- */
-typedef CORRADE_DEPRECATED("use GL::FramebufferTarget instead") Magnum::GL::FramebufferTarget FramebufferTarget;
-
-/** @brief @copybrief GL::AbstractFramebuffer
- * @deprecated Use @ref GL::AbstractFramebuffer instead.
- */
-typedef CORRADE_DEPRECATED("use GL::AbstractFramebuffer instead") Magnum::GL::AbstractFramebuffer AbstractFramebuffer;
-#endif
-
-}
+}}
 
 #endif

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Matrix.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -55,7 +55,7 @@ template<> struct RectangularMatrixConverter<3, 3, float, Mat3> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct MatrixTest: Corrade::TestSuite::Tester {
     explicit MatrixTest();
@@ -86,7 +86,6 @@ struct MatrixTest: Corrade::TestSuite::Tester {
     void subclass();
 
     void debug();
-    void configuration();
 };
 
 typedef Matrix<2, Float> Matrix2x2;
@@ -125,8 +124,7 @@ MatrixTest::MatrixTest() {
               &MatrixTest::subclassTypes,
               &MatrixTest::subclass,
 
-              &MatrixTest::debug,
-              &MatrixTest::configuration});
+              &MatrixTest::debug});
 }
 
 void MatrixTest::construct() {
@@ -163,6 +161,9 @@ void MatrixTest::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Matrix4x4>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix4x4, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, Matrix4x4>::value));
 }
 
 void MatrixTest::constructZero() {
@@ -173,6 +174,9 @@ void MatrixTest::constructZero() {
                                  Vector4(0.0f, 0.0f, 0.0f, 0.0f)));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Matrix4x4, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Matrix4x4>::value));
 }
 
 void MatrixTest::constructNoInit() {
@@ -489,20 +493,6 @@ void MatrixTest::debug() {
                              "       0, 0, 0, 1)\n");
 }
 
-void MatrixTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Matrix4x4 m(Vector4(3.0f,  5.0f, 8.0f,   4.0f),
-                Vector4(4.0f,  4.0f, 7.0f, 3.125f),
-                Vector4(7.0f, -1.0f, 8.0f,   0.0f),
-                Vector4(9.0f,  4.0f, 5.0f,  9.55f));
-    std::string value("3 4 7 9 5 4 -1 4 8 7 8 5 4 3.125 0 9.55");
-
-    c.setValue("matrix", m);
-    CORRADE_COMPARE(c.value("matrix"), value);
-    CORRADE_COMPARE(c.value<Matrix4x4>("matrix"), m);
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::MatrixTest)

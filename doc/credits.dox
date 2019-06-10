@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,6 +67,8 @@ There's also a list of @ref credits-contributors "people and organizations that 
 /** @page credits-contributors Contributors
 @brief People and organizations that contributed to Magnum
 
+@m_keywords{Credits}
+
 Listing only people with code contributions or other significant work, because
 otherwise there's too many :) There's also a @ref corrade-credits-contributors "similar list for Corrade"
 and a list of @ref credits-third-party "third party components with their license info".
@@ -97,6 +99,10 @@ Are the below lists missing your name or something's wrong?
 -   **[\@biosek](https://github.com/biosek)** --- documentation fixes
 -   **Borislav Stanimirov** ([\@iboB](https://github.com/iboB)) --- strict
     weak ordering for @ref Math types
+-   **Daniel Bloor** ([\@Bluer01](https://github.com/Bluer01)) --- setting old
+    code on fire
+-   **Daniel Guzman** ([\@roig](https://github.com/roig)) --- improvements to
+    @ref ResourceManager
 -   **Denis Igorevich Lobanov** ([\@denislobanov](https://github.com/denislobanov))
     --- math fixes
 -   **[\@dlardi](https://github.com/dlardi)** --- WGL-related bugfixes
@@ -104,15 +110,24 @@ Are the below lists missing your name or something's wrong?
     macOS-related updates to @ref Platform::GlfwApplication
 -   **Émile Grégoire** ([\@emgre](https://github.com/emgre)) --- documentation
     updates, algorithm bugfixes
+-   **Erik Wijmans** ([\@erikwijmans](https://github.com/erikwijmans)) ---
+    NVidia-specific workarounds for headless EGL contexts
 -   **Gerhard de Clercq** --- Windows RT (Store/Phone) port
 -   **Guillaume Giraud** ([\@Guillaume227](https://github.com/Guillaume227)) ---
     algorithm bugfixes
+-   **Guillaume Jacquemin** ([\@williamjcm](https://github.com/williamjcm)) ---
+    MSYS2 packages, additions to @ref Audio, @ref Platform::Sdl2Application and
+    @ref Platform::GlfwApplication, [base-wxwidgets](https://github.com/mosra/magnum-bootstrap/tree/base-wxwidgets)
+    bootstrap project
+-   **Hilario Pérez Corona** ([\@hpcorona](https://github.com/hpcorona)) ---
+    improvements to @cb{.cmake} android_create_apk() @ce
 -   **Ivan P.** ([\@uzername](https://github.com/uzername)) --- documentation
     improvements
--   **Jonathan Hale** ([\@Squareys](https://github.com/Squareys)) --- @ref Audio
-    library enhancements, @ref Platform::GlfwApplication implementation,
-    frustum and cone culling, bug reports, Windows build improvements,
-    documentation improvements and tons of other stuff
+-   **Jonathan Hale** ([\@Squareys](https://github.com/Squareys)) ---
+    @ref Audio library enhancements, @ref Platform::GlfwApplication and
+    @ref Platform::EmscriptenApplication implementation, frustum and cone
+    culling, bug reports, Windows build improvements, documentation
+    improvements and tons of other stuff
 -   **Joel Clay** ([\@jclay](https://github.com/jclay)) --- Vcpkg packages
 -   **Konstantinos Chatzilygeroudis** ([\@costashatz](https://github.com/costashatz))
     --- Debian package
@@ -120,6 +135,9 @@ Are the below lists missing your name or something's wrong?
     fixes
 -   **Leon Moctezuma** ([\@leonidax](https://github.com/leonidax)) ---
     bugreports, API design direction
+-   **Max Schwarz** ([\@xqms](https://github.com/xqms)) --- `Any*` plugin
+    improvements, fixes in the @ref GL library
+-   **Michael Tao** ([\@mtao](https://github.com/mtao)) --- Gentoo build fixes
 -   **Miguel Martin** ([\@miguelmartin75](https://github.com/miguelmartin75))
     --- initial macOS port, various other improvements
 -   **Nathan Ollerenshaw** ([\@matjam](https://github.com/matjam)) --- Ubuntu
@@ -134,6 +152,8 @@ Are the below lists missing your name or something's wrong?
     and GLES fixes
 -   **Samuel Kogler** ([\@skogler](https://github.com/skogler)) ---
     @ref Platform::GlfwApplication crash fixes
+-   **[\@Selot](https://github.com/Selot)** --- Fixes in the `base-qt`
+    bootstrap project
 -   **Séverin Lemaignan** ([\@severin-lemaignan](severin-lemaignan/)) --- lots
     of feedback and bug reports for the initial releases
 -   **[\@sigman78](https://github.com/sigman78)** --- Initial MSVC 2017 port,
@@ -144,6 +164,8 @@ Are the below lists missing your name or something's wrong?
     buildsystem improvements
 -   **Stefan Wasilewski** ([\@smw](https://github.com/smw)) --- macOS port
     improvements
+-   **Thibault Jochem** ([\@Tryum](https://github.com/Tryum)) ---
+    @ref Platform::GlfwApplication improvements
 -   **Thomas Tissot-Dupont** ([\@dolphineye](https://github.com/dolphineye))
     --- OpenGL ES compatiblity improvements
 -   **Travis Watkins** ([\@amaranth](https://github.com/amaranth)) --- support

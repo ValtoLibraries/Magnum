@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -78,11 +78,18 @@ template<UnsignedInt dimensions, class T> class AbstractObject
     #endif
 {
     public:
+        /** @brief Transformation underlying type */
+        typedef T Type;
+
         /** @brief Matrix type */
         typedef MatrixTypeFor<dimensions, T> MatrixType;
 
-        /** @brief Feature object type */
+        /** @brief Feature type */
         typedef AbstractFeature<dimensions, T> FeatureType;
+
+        enum: UnsignedInt {
+            Dimensions = dimensions /**< Dimension count */
+        };
 
         /* This isn't protected because having virtual destructor here is
            better than having it duplicated in all Object specializations */

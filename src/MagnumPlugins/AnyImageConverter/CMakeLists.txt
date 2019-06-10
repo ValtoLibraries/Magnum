@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 find_package(Corrade REQUIRED PluginManager)
 
-if(BUILD_STATIC)
+if(BUILD_PLUGINS_STATIC)
     set(MAGNUM_ANYIMAGECONVERTER_BUILD_STATIC 1)
 endif()
 
@@ -50,9 +50,7 @@ install(FILES AnyImageConverter.h ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 # Automatic static plugin import
 if(BUILD_PLUGINS_STATIC)
     install(FILES importStaticPlugin.cpp DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/AnyImageConverter)
-    if(NOT CMAKE_VERSION VERSION_LESS 3.1)
-        target_sources(AnyImageConverter INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/importStaticPlugin.cpp)
-    endif()
+    target_sources(AnyImageConverter INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/importStaticPlugin.cpp)
 endif()
 
 if(BUILD_TESTS)

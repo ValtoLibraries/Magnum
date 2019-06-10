@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,6 @@ Example usage:
 @snippet MagnumMeshTools.cpp compressIndices
 
 @see @ref compressIndicesAs()
-@todo Extract IndexType out of Mesh class
 */
 std::tuple<Containers::Array<char>, MeshIndexType, UnsignedInt, UnsignedInt> MAGNUM_MESHTOOLS_EXPORT compressIndices(const std::vector<UnsignedInt>& indices);
 
@@ -72,9 +71,9 @@ Example usage:
 template<class T> MAGNUM_MESHTOOLS_EXPORT Containers::Array<T> compressIndicesAs(const std::vector<UnsignedInt>& indices);
 
 #if defined(CORRADE_TARGET_WINDOWS) && !defined(__MINGW32__)
-extern template MAGNUM_MESHTOOLS_EXPORT Containers::Array<UnsignedByte> compressIndicesAs<UnsignedByte>(const std::vector<UnsignedInt>& indices);
-extern template MAGNUM_MESHTOOLS_EXPORT Containers::Array<UnsignedShort> compressIndicesAs<UnsignedShort>(const std::vector<UnsignedInt>& indices);
-extern template MAGNUM_MESHTOOLS_EXPORT Containers::Array<UnsignedInt> compressIndicesAs<UnsignedInt>(const std::vector<UnsignedInt>& indices);
+extern template MAGNUM_MESHTOOLS_EXPORT Containers::Array<UnsignedByte> compressIndicesAs<UnsignedByte>(const std::vector<UnsignedInt>&);
+extern template MAGNUM_MESHTOOLS_EXPORT Containers::Array<UnsignedShort> compressIndicesAs<UnsignedShort>(const std::vector<UnsignedInt>&);
+extern template MAGNUM_MESHTOOLS_EXPORT Containers::Array<UnsignedInt> compressIndicesAs<UnsignedInt>(const std::vector<UnsignedInt>&);
 #endif
 
 }}

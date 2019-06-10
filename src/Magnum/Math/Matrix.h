@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,55 +65,37 @@ template<std::size_t size, class T> class Matrix: public RectangularMatrix<size,
         /**
          * @brief Default constructor
          *
-         * Creates identity matrix. @p value allows you to specify value on
-         * diagonal.
+         * Equivalent to @ref Matrix(IdentityInitT, T).
          */
-        constexpr /*implicit*/ Matrix(IdentityInitT = IdentityInit, T value = T(1)) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : RectangularMatrix<size, size, T>{typename Implementation::GenerateSequence<size>::Type(), Vector<size, T>(value)}
-            #endif
-            {}
-
-        /** @copydoc RectangularMatrix::RectangularMatrix(ZeroInitT) */
-        constexpr explicit Matrix(ZeroInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : RectangularMatrix<size, size, T>{ZeroInit}
-            #endif
-            {}
-
-        /** @copydoc RectangularMatrix::RectangularMatrix(NoInitT) */
-        constexpr explicit Matrix(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : RectangularMatrix<size, size, T>{NoInit}
-            #endif
-            {}
-
-        /** @brief Construct matrix from column vectors */
-        template<class ...U> constexpr /*implicit*/ Matrix(const Vector<size, T>& first, const U&... next) noexcept: RectangularMatrix<size, size, T>(first, next...) {}
-
-        /** @brief Construct matrix with one value for all elements */
-        constexpr explicit Matrix(T value) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : RectangularMatrix<size, size, T>{typename Implementation::GenerateSequence<size>::Type(), value}
-            #endif
-            {}
+        constexpr /*implicit*/ Matrix() noexcept: RectangularMatrix<size, size, T>{typename Implementation::GenerateSequence<size>::Type(), Vector<size, T>(T(1))} {}
 
         /**
-         * @brief Construct matrix from another of different type
+         * @brief Construct an identity matrix
+         *
+         * The @p value allows you to specify a value on diagonal.
+         * @see @ref fromDiagonal()
+         */
+        constexpr explicit Matrix(IdentityInitT, T value = T(1)) noexcept: RectangularMatrix<size, size, T>{typename Implementation::GenerateSequence<size>::Type(), Vector<size, T>(value)} {}
+
+        /** @copydoc RectangularMatrix::RectangularMatrix(ZeroInitT) */
+        constexpr explicit Matrix(ZeroInitT) noexcept: RectangularMatrix<size, size, T>{ZeroInit} {}
+
+        /** @copydoc RectangularMatrix::RectangularMatrix(NoInitT) */
+        constexpr explicit Matrix(NoInitT) noexcept: RectangularMatrix<size, size, T>{NoInit} {}
+
+        /** @brief Construct from column vectors */
+        template<class ...U> constexpr /*implicit*/ Matrix(const Vector<size, T>& first, const U&... next) noexcept: RectangularMatrix<size, size, T>(first, next...) {}
+
+        /** @brief Construct with one value for all elements */
+        constexpr explicit Matrix(T value) noexcept: RectangularMatrix<size, size, T>{typename Implementation::GenerateSequence<size>::Type(), value} {}
+
+        /**
+         * @brief Construct from a matrix of adifferent type
          *
          * Performs only default casting on the values, no rounding or
          * anything else. Example usage:
          *
-         * @code{.cpp}
-         * Matrix2x2<Float> floatingPoint({1.3f, 2.7f},
-         *                                {-15.0f, 7.0f});
-         * Matrix2x2<Byte> integral(floatingPoint);
-         * // integral == {{1, 2}, {-15, 7}}
-         * @endcode
+         * @snippet MagnumMath.cpp Matrix-conversion
          */
         template<class U> constexpr explicit Matrix(const RectangularMatrix<size, size, U>& other) noexcept: RectangularMatrix<size, size, T>(other) {}
 
@@ -121,18 +103,13 @@ template<std::size_t size, class T> class Matrix: public RectangularMatrix<size,
         template<class U, class V = decltype(Implementation::RectangularMatrixConverter<size, size, T, U>::from(std::declval<U>()))> constexpr explicit Matrix(const U& other): RectangularMatrix<size, size, T>(Implementation::RectangularMatrixConverter<size, size, T, U>::from(other)) {}
 
         /**
-         * @brief Construct matrix by slicing or expanding another of a different size
+         * @brief Construct by slicing or expanding a matrix of different size
          *
          * If the other matrix is larger, takes only the first @cpp size @ce
          * columns and rows from it; if the other matrix is smaller, it's
          * expanded to an identity (ones on diagonal, zeros elsewhere).
          */
-        template<std::size_t otherSize> constexpr explicit Matrix(const RectangularMatrix<otherSize, otherSize, T>& other) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Matrix<size, T>{typename Implementation::GenerateSequence<size>::Type(), other}
-            #endif
-            {}
+        template<std::size_t otherSize> constexpr explicit Matrix(const RectangularMatrix<otherSize, otherSize, T>& other) noexcept: Matrix<size, T>{typename Implementation::GenerateSequence<size>::Type(), other} {}
 
         /** @brief Copy constructor */
         constexpr /*implicit*/ Matrix(const RectangularMatrix<size, size, T>& other) noexcept: RectangularMatrix<size, size, T>(other) {}
@@ -224,6 +201,8 @@ template<std::size_t size, class T> class Matrix: public RectangularMatrix<size,
         #endif
 
     private:
+        friend struct Implementation::MatrixDeterminant<size, T>;
+
         /* Implementation for RectangularMatrix<cols, rows, T>::RectangularMatrix(const RectangularMatrix<cols, rows, U>&) */
         template<std::size_t otherSize, std::size_t ...col> constexpr explicit Matrix(Implementation::Sequence<col...>, const RectangularMatrix<otherSize, otherSize, T>& other) noexcept: RectangularMatrix<size, size, T>{Implementation::valueOrIdentityVector<size, col>(other)...} {}
 };
@@ -297,27 +276,45 @@ MAGNUM_MATRIX_OPERATOR_IMPLEMENTATION(Matrix<size, T>)
 namespace Implementation {
 
 template<std::size_t size, class T> struct MatrixDeterminant {
-    T operator()(const Matrix<size, T>& m);
+    T operator()(const Matrix<size, T>& m) {
+        T out(0);
+
+        /* Using ._data[] instead of [] to avoid function call indirection on
+           debug builds (saves a lot, yet doesn't obfuscate too much) */
+        for(std::size_t col = 0; col != size; ++col)
+            out += ((col & 1) ? -1 : 1)*m._data[col]._data[0]*m.ij(col, 0).determinant();
+
+        return out;
+    }
 };
 
-template<std::size_t size, class T> T MatrixDeterminant<size, T>::operator()(const Matrix<size, T>& m) {
-    T out(0);
-
-    for(std::size_t col = 0; col != size; ++col)
-        out += ((col & 1) ? -1 : 1)*m[col][0]*m.ij(col, 0).determinant();
-
-    return out;
-}
+/* This is not *critically* needed here (the specializations for 2x2 and 1x1
+   are technically enough to make things work), but together with the raw data
+   access it speeds up the debug build five times, so I think it's worth to
+   have it */
+template<class T> struct MatrixDeterminant<3, T> {
+    constexpr T operator()(const Matrix<3, T>& m) const {
+        /* Using ._data[] instead of [] to avoid function call indirection
+           on debug builds (saves a lot, yet doesn't obfuscate too much) */
+        return m._data[0]._data[0]*((m._data[1]._data[1]*m._data[2]._data[2]) - (m._data[2]._data[1]*m._data[1]._data[2])) -
+            m._data[0]._data[1]*(m._data[1]._data[0]*m._data[2]._data[2] - m._data[2]._data[0]*m._data[1]._data[2]) +
+            m._data[0]._data[2]*(m._data[1]._data[0]*m._data[2]._data[1] - m._data[2]._data[0]*m._data[1]._data[1]);
+    }
+};
 
 template<class T> struct MatrixDeterminant<2, T> {
     constexpr T operator()(const Matrix<2, T>& m) const {
-        return m[0][0]*m[1][1] - m[1][0]*m[0][1];
+        /* Using ._data[] instead of [] to avoid function call indirection
+           on debug builds (saves a lot, yet doesn't obfuscate too much) */
+        return m._data[0]._data[0]*m._data[1]._data[1] - m._data[1]._data[0]*m._data[0]._data[1];
     }
 };
 
 template<class T> struct MatrixDeterminant<1, T> {
     constexpr T operator()(const Matrix<1, T>& m) const {
-        return m[0][0];
+        /* Using ._data[] instead of [] to avoid function call indirection
+           on debug builds (saves a lot, yet doesn't obfuscate too much) */
+        return m._data[0]._data[0];
     }
 };
 
@@ -327,14 +324,17 @@ template<std::size_t size, class T> struct StrictWeakOrdering<Matrix<size, T>>: 
 #endif
 
 template<std::size_t size, class T> bool Matrix<size, T>::isOrthogonal() const {
+    /* Using ._data[] instead of [] to avoid function call indirection on debug
+       builds (saves a lot, yet doesn't obfuscate too much) */
+
     /* Normality */
     for(std::size_t i = 0; i != size; ++i)
-        if(!(*this)[i].isNormalized()) return false;
+        if(!RectangularMatrix<size, size, T>::_data[i].isNormalized()) return false;
 
     /* Orthogonality */
     for(std::size_t i = 0; i != size-1; ++i)
         for(std::size_t j = i+1; j != size; ++j)
-            if(dot((*this)[i], (*this)[j]) > TypeTraits<T>::epsilon())
+            if(dot(RectangularMatrix<size, size, T>::_data[i], RectangularMatrix<size, size, T>::_data[j]) > TypeTraits<T>::epsilon())
                 return false;
 
     return true;
@@ -343,10 +343,13 @@ template<std::size_t size, class T> bool Matrix<size, T>::isOrthogonal() const {
 template<std::size_t size, class T> Matrix<size-1, T> Matrix<size, T>::ij(const std::size_t skipCol, const std::size_t skipRow) const {
     Matrix<size-1, T> out{NoInit};
 
+    /* Using ._data[] instead of [] to avoid function call indirection on debug
+       builds (saves a lot, yet doesn't obfuscate too much) */
     for(std::size_t col = 0; col != size-1; ++col)
         for(std::size_t row = 0; row != size-1; ++row)
-            out[col][row] = (*this)[col + (col >= skipCol)]
-                                    [row + (row >= skipRow)];
+            out._data[col]._data[row] = RectangularMatrix<size, size, T>::
+                _data[col + (col >= skipCol)]
+               ._data[row + (row >= skipRow)];
 
     return out;
 }
@@ -356,18 +359,15 @@ template<std::size_t size, class T> Matrix<size, T> Matrix<size, T>::inverted() 
 
     const T _determinant = determinant();
 
+    /* Using ._data[] instead of [] to avoid function call indirection on debug
+       builds (saves a lot, yet doesn't obfuscate too much) */
     for(std::size_t col = 0; col != size; ++col)
         for(std::size_t row = 0; row != size; ++row)
-            out[col][row] = (((row+col) & 1) ? -1 : 1)*ij(row, col).determinant()/_determinant;
+            out._data[col]._data[row] = (((row+col) & 1) ? -1 : 1)*ij(row, col).determinant()/_determinant;
 
     return out;
 }
 
-}}
-
-namespace Corrade { namespace Utility {
-    /** @configurationvalue{Magnum::Math::Matrix} */
-    template<std::size_t size, class T> struct ConfigurationValue<Magnum::Math::Matrix<size, T>>: public ConfigurationValue<Magnum::Math::RectangularMatrix<size, size, T>> {};
 }}
 
 #endif

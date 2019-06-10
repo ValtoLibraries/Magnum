@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,14 +23,13 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#include <tuple>
 #include <Corrade/TestSuite/Tester.h>
 
 #include "Magnum/Math/Matrix3.h"
 #include "Magnum/Math/Matrix4.h"
 #include "Magnum/Math/Algorithms/Qr.h"
 
-namespace Magnum { namespace Math { namespace Algorithms { namespace Test {
+namespace Magnum { namespace Math { namespace Algorithms { namespace Test { namespace {
 
 struct QrTest: Corrade::TestSuite::Tester {
     explicit QrTest();
@@ -55,35 +54,33 @@ void QrTest::test() {
                 Vector3{-20.0f,  27.0f,  11.0f},
                 Vector3{-14.0f,  -4.0f,  -2.0f}};
 
-    Matrix3x3 q, r;
-    std::tie(q, r) = Algorithms::qr(a);
+    std::pair<Matrix3x3, Matrix3x3> qr = Algorithms::qr(a);
 
     auto qExpected = Matrix3x3{Vector3{  0.0f,  15.0f, 20.0f},
                                Vector3{-20.0f,  12.0f, -9.0f},
                                Vector3{-15.0f, -16.0f, 12.0f}}/25.0f;
-    CORRADE_COMPARE(q, qExpected);
+    CORRADE_COMPARE(qr.first, qExpected);
 
     Matrix3x3 rExpected{Vector3{ 5.0f,  0.0f,  0.0f},
                         Vector3{25.0f, 25.0f,  0.0f},
                         Vector3{-4.0f, 10.0f, 10.0f}};
-    CORRADE_COMPARE(r, rExpected);
+    CORRADE_COMPARE(qr.second, rExpected);
 }
 
 void QrTest::decomposeRotationShear() {
     Matrix4 a = Matrix4::scaling({1.5f, 2.0f, 1.0f})*Matrix4::rotationZ(35.0_degf);
 
-    Matrix3x3 q, r;
-    std::tie(q, r) = Algorithms::qr(a.rotationScaling());
-    CORRADE_COMPARE(q*r, a.rotationScaling());
+    std::pair<Matrix3x3, Matrix3x3> qr = Algorithms::qr(a.rotationScaling());
+    CORRADE_COMPARE(qr.first*qr.second, a.rotationScaling());
 
-    auto q4 = Matrix4::from(q, {});
-    auto r4 = Matrix4::from(r, {});
+    auto q4 = Matrix4::from(qr.first, {});
+    auto r4 = Matrix4::from(qr.second, {});
 
     CORRADE_COMPARE(q4, Matrix4::rotationZ(43.03357_degf));
     CORRADE_COMPARE(r4.scaling(), (Vector3{1.68099f, 1.85048f, 1.0f}));
     CORRADE_COMPARE(r4.rotationShear(), Matrix4::shearingXZ(0.274077f, 0.0f).rotationShear());
 }
 
-}}}}
+}}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Algorithms::Test::QrTest)

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,14 +23,15 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#include <functional>
 #include <sstream>
+#include <Corrade/Containers/Reference.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Animation/Player.h"
 
-namespace Magnum { namespace Animation { namespace Test {
+namespace Magnum { namespace Animation { namespace Test { namespace {
 
 struct PlayerTest: TestSuite::Tester {
     explicit PlayerTest();
@@ -89,38 +90,37 @@ struct PlayerTest: TestSuite::Tester {
     void debugState();
 };
 
-namespace {
-    const struct {
-        const char* name;
-        Float offsetFloat;
-        std::chrono::minutes offsetChrono;
-        bool failsFloat, failsFuzzyFloat;
-    } RunFor100YearsData[]{
-        {"0", 0.0f, {}, false, false},
-        {"1 minute", 60.0f, std::chrono::minutes(1), false, false},
-        {"5 minutes", 5.0f*60.0f, std::chrono::minutes{5}, true, false},
-        {"30 minutes", 30.0f*60.0f, std::chrono::minutes{30}, true, false},
-        {"1 hour", 60.0f*60.0f, std::chrono::minutes{60}, true, false},
-        {"1 day", 24.0f*60.0f*60.0f, std::chrono::minutes{24*60}, true, true},
-        {"100 days", 100.0f*24.0f*60.0f*60.0f, std::chrono::minutes{100*24*60}, true, true},
-        {"100 years", 100.0f*365.0f*24.0f*60.0f*60.0f,
-            /* MSVC 2017 (but not 2015) ICEs when assigning hours to minutes
-               (or just any other two different chrono types) in a struct array
-               initializer (not when there's just a struct and also not when
-               the struct is only a chrono member itself). Keeping at least one
-               instance here so I can monitor when this gets fixed. */
-            #if !defined(CORRADE_MSVC2017_COMPATIBILITY) || defined(CORRADE_MSVC2015_COMPATIBLITY)
-            std::chrono::hours{100*365*24},
-            #else
-            std::chrono::minutes{100*365*24*60},
-            #endif
-            true, true},
-    };
-}
+const struct {
+    const char* name;
+    Float offsetFloat;
+    std::chrono::minutes offsetChrono;
+    bool failsFloat, failsFuzzyFloat;
+} RunFor100YearsData[]{
+    {"0", 0.0f, {}, false, false},
+    {"1 minute", 60.0f, std::chrono::minutes(1), false, false},
+    {"5 minutes", 5.0f*60.0f, std::chrono::minutes{5}, true, false},
+    {"30 minutes", 30.0f*60.0f, std::chrono::minutes{30}, true, false},
+    {"1 hour", 60.0f*60.0f, std::chrono::minutes{60}, true, false},
+    {"1 day", 24.0f*60.0f*60.0f, std::chrono::minutes{24*60}, true, true},
+    {"100 days", 100.0f*24.0f*60.0f*60.0f, std::chrono::minutes{100*24*60}, true, true},
+    {"100 years", 100.0f*365.0f*24.0f*60.0f*60.0f,
+        /* MSVC 2017 (but not 2015) ICEs when assigning hours to minutes
+           (or just any other two different chrono types) in a struct array
+           initializer (not when there's just a struct and also not when
+           the struct is only a chrono member itself). Keeping at least one
+           instance here so I can monitor when this gets fixed. */
+        #if !defined(CORRADE_MSVC2017_COMPATIBILITY) || defined(CORRADE_MSVC2015_COMPATIBLITY)
+        std::chrono::hours{100*365*24},
+        #else
+        std::chrono::minutes{100*365*24*60},
+        #endif
+        true, true},
+};
 
 PlayerTest::PlayerTest() {
     addTests({&PlayerTest::constructEmpty,
               &PlayerTest::construct,
+              &PlayerTest::constructChrono,
               &PlayerTest::constructCopy,
               &PlayerTest::constructMove,
 
@@ -184,14 +184,12 @@ void PlayerTest::constructEmpty() {
     CORRADE_COMPARE(player.size(), 0);
 }
 
-namespace {
-    const Animation::Track<Float, Float> Track{{
-        {1.0f, 1.5f},
-        {2.5f, 3.0f},
-        {3.0f, 5.0f},
-        {4.0f, 2.0f}
-    }, Math::lerp};
-}
+const Animation::Track<Float, Float> Track{{
+    {1.0f, 1.5f},
+    {2.5f, 3.0f},
+    {3.0f, 5.0f},
+    {4.0f, 2.0f}
+}, Math::lerp};
 
 void PlayerTest::construct() {
     Animation::Track<Float, Int> track2{{
@@ -1248,11 +1246,9 @@ void PlayerTest::addWithCallbackOnChangeTemplate() {
     CORRADE_COMPARE(data.called, 2);
 }
 
-namespace {
-    /* Can't use raw lambdas because MSVC 2015 */
-    void callback(std::vector<Int>& data, Int value) {
-        data.push_back(value);
-    }
+/* Can't use raw lambdas because MSVC 2015 */
+void callback(std::vector<Int>& data, Int value) {
+    data.push_back(value);
 }
 
 void PlayerTest::addRawCallback() {
@@ -1357,6 +1353,6 @@ void PlayerTest::debugState() {
     CORRADE_COMPARE(out.str(), "Animation::State::Playing Animation::State(0xde)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Animation::Test::PlayerTest)

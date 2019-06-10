@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Vector.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -50,7 +50,7 @@ template<> struct VectorConverter<3, Float, Vec3> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct VectorTest: Corrade::TestSuite::Tester {
     explicit VectorTest();
@@ -97,6 +97,8 @@ struct VectorTest: Corrade::TestSuite::Tester {
     void max();
     void minmax();
 
+    void nanIgnoring();
+
     void projected();
     void projectedOntoNormalized();
     void projectedOntoNormalizedNotNormalized();
@@ -111,9 +113,9 @@ struct VectorTest: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
+typedef Math::Constants<Float> Constants;
 typedef Math::Rad<Float> Rad;
 typedef Vector<2, Float> Vector2;
 typedef Vector<3, Float> Vector3;
@@ -163,6 +165,8 @@ VectorTest::VectorTest() {
               &VectorTest::max,
               &VectorTest::minmax,
 
+              &VectorTest::nanIgnoring,
+
               &VectorTest::projected,
               &VectorTest::projectedOntoNormalized,
               &VectorTest::projectedOntoNormalizedNotNormalized,
@@ -176,8 +180,7 @@ VectorTest::VectorTest() {
 
               &VectorTest::strictWeakOrdering,
 
-              &VectorTest::debug,
-              &VectorTest::configuration});
+              &VectorTest::debug});
 }
 
 void VectorTest::construct() {
@@ -212,6 +215,9 @@ void VectorTest::constructDefault() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Vector4>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Vector4, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Vector4>::value));
 }
 
 void VectorTest::constructNoInit() {
@@ -480,6 +486,26 @@ void VectorTest::minmax() {
     CORRADE_COMPARE((Vector3{2.0f, -3.0f, -1.0f}.minmax()), expected);
     CORRADE_COMPARE((Vector3{-3.0f, 2.0f, -1.0f}.minmax()), expected);
     CORRADE_COMPARE((Vector3{-3.0f, -1.0f, 2.0f}.minmax()), expected);
+}
+
+void VectorTest::nanIgnoring() {
+    Vector3 oneNan{1.0f, Constants::nan(), -3.0f};
+    Vector3 firstNan{Constants::nan(), 1.0f, -3.0f};
+    Vector3 allNan{Constants::nan(), Constants::nan(), Constants::nan()};
+
+    CORRADE_COMPARE(oneNan.min(), -3.0f);
+    CORRADE_COMPARE(firstNan.min(), -3.0f);
+    CORRADE_COMPARE(allNan.min(), Constants::nan());
+
+    CORRADE_COMPARE(oneNan.max(), 1.0f);
+    CORRADE_COMPARE(firstNan.max(), 1.0f);
+    CORRADE_COMPARE(allNan.max(), Constants::nan());
+
+    CORRADE_COMPARE(oneNan.minmax(), std::make_pair(-3.0f, 1.0f));
+    CORRADE_COMPARE(firstNan.minmax(), std::make_pair(-3.0f, 1.0f));
+    /* Need to compare this way because of NaNs */
+    CORRADE_COMPARE(allNan.minmax().first, Constants::nan());
+    CORRADE_COMPARE(allNan.minmax().second, Constants::nan());
 }
 
 void VectorTest::projected() {
@@ -754,25 +780,6 @@ void VectorTest::debug() {
     CORRADE_COMPARE(o.str(), "a Vector(0, 0, 0, 0) b Vector(0, 0, 0, 0)\n");
 }
 
-void VectorTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Vector4 vec(3.0f, 3.125f, 9.0f, 9.55f);
-    std::string value("3 3.125 9 9.55");
-
-    c.setValue("vector", vec);
-    CORRADE_COMPARE(c.value("vector"), value);
-    CORRADE_COMPARE(c.value<Vector4>("vector"), vec);
-
-    /* Underflow */
-    c.setValue("underflow", "2.1 8.9");
-    CORRADE_COMPARE(c.value<Vector4>("underflow"), (Vector4{2.1f, 8.9f, 0.0f, 0.0f}));
-
-    /* Overflow */
-    c.setValue("overflow", "2 1 8 9 16 33");
-    CORRADE_COMPARE(c.value<Vector4>("overflow"), (Vector4{2.0f, 1.0f, 8.0f, 9.0f}));
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::VectorTest)

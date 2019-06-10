@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Animation/Easing.h"
 #include "Magnum/Animation/Interpolation.h"
@@ -33,7 +34,7 @@
 #include "Magnum/Math/DualQuaternion.h"
 #include "Magnum/Math/Half.h"
 
-namespace Magnum { namespace Animation { namespace Test {
+namespace Magnum { namespace Animation { namespace Test { namespace {
 
 struct InterpolationTest: TestSuite::Tester {
     explicit InterpolationTest();
@@ -75,8 +76,6 @@ struct InterpolationTest: TestSuite::Tester {
     void debugInterpolation();
     void debugExtrapolation();
 };
-
-namespace {
 
 using namespace Math::Literals;
 
@@ -145,8 +144,6 @@ const struct {
     {"after", 3},
     {"out of bounds", 405780454}
 };
-
-}
 
 InterpolationTest::InterpolationTest() {
     addTests({&InterpolationTest::interpolatorFor,
@@ -374,10 +371,8 @@ void InterpolationTest::interpolatorForCubicHermiteQuaternion() {
         "Animation::interpolatorFor(): can't deduce interpolator function for Animation::Interpolation(0xde)\n");
 }
 
-namespace {
-    constexpr Float Keys[]{0.0f, 2.0f, 4.0f, 5.0f};
-    constexpr Float Values[]{3.0f, 1.0f, 2.5f, 0.5f};
-}
+constexpr Float Keys[]{0.0f, 2.0f, 4.0f, 5.0f};
+constexpr Float Values[]{3.0f, 1.0f, 2.5f, 0.5f};
 
 void InterpolationTest::interpolate() {
     const auto& data = Data[testCaseInstanceId()];
@@ -442,14 +437,12 @@ void InterpolationTest::interpolateStrictHint() {
     CORRADE_COMPARE(hint, 2);
 }
 
-namespace {
-    using namespace Math::Literals;
+using namespace Math::Literals;
 
-    const Half HalfValues[]{3.0_h, 1.0_h, 2.5_h, 0.5_h};
+const Half HalfValues[]{3.0_h, 1.0_h, 2.5_h, 0.5_h};
 
-    Float lerpHalf(const Half& a, const Half& b, Float t) {
-        return Math::lerp(Float(a), Float(b), t);
-    }
+Float lerpHalf(const Half& a, const Half& b, Float t) {
+    return Math::lerp(Float(a), Float(b), t);
 }
 
 void InterpolationTest::interpolateDifferentResultType() {
@@ -466,9 +459,7 @@ void InterpolationTest::interpolateStrictDifferentResultType() {
     CORRADE_COMPARE(hint, 2);
 }
 
-namespace {
-    constexpr Int IntegerKeys[]{0, 48, 96, 120};
-}
+constexpr Int IntegerKeys[]{0, 48, 96, 120};
 
 void InterpolationTest::interpolateIntegerKey() {
     std::size_t hint{};
@@ -581,6 +572,6 @@ void InterpolationTest::debugExtrapolation() {
     CORRADE_COMPARE(out.str(), "Animation::Extrapolation::DefaultConstructed Animation::Extrapolation(0xde)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Animation::Test::InterpolationTest)

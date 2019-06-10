@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -126,9 +126,6 @@ if(BUILD_TESTS)
     add_library(MagnumTradeTestLib ${SHARED_OR_STATIC}
         $<TARGET_OBJECTS:MagnumTradeObjects>
         ${MagnumTrade_GracefulAssert_SRCS})
-    target_include_directories(MagnumTradeTestLib PUBLIC
-        ${PROJECT_SOURCE_DIR}/src
-        ${PROJECT_BINARY_DIR}/src)
     target_compile_definitions(MagnumTradeTestLib PRIVATE
         "CORRADE_GRACEFUL_ASSERT" "MagnumTrade_EXPORTS")
     set_target_properties(MagnumTradeTestLib PROPERTIES

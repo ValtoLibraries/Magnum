@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,17 +32,54 @@
 #include "Magnum/configure.h"
 
 #ifdef MAGNUM_TARGET_GL
+#include <Corrade/Containers/EnumSet.h>
+
+#include "Magnum/Magnum.h"
 #include "Magnum/GL/GL.h"
 #include "Magnum/Trade/Trade.h"
 #include "Magnum/MeshTools/visibility.h"
 
 #ifdef MAGNUM_BUILD_DEPRECATED
 #include <tuple>
-#include <memory>
+#include <memory> /* deliberately kept here */
 #include <Corrade/Utility/Macros.h>
 #endif
 
 namespace Magnum { namespace MeshTools {
+
+/**
+@brief Mesh compilation flag
+
+@see @ref CompileFlags, @ref compile(const Trade::MeshData3D&, CompileFlags)
+*/
+enum class CompileFlag: UnsignedByte {
+    /**
+     * If the mesh is @ref MeshPrimitive::Triangles, generates normals using
+     * @ref MeshTools::generateFlatNormals(). If the mesh is not a triangle
+     * mesh or doesn't have 3D positions, this flag does nothing. If the mesh
+     * already has its own normals, these get replaced.
+     */
+    GenerateFlatNormals = 1 << 0,
+
+    /**
+     * If the mesh @ref MeshPrimitive::Triangles, generates normals using
+     * @ref MeshTools::generateSmoothNormals() based on triangle adjacency
+     * information from the index buffer. If the mesh is not indexed, this
+     * behaves the same as @ref CompileFlag::GenerateFlatNormals. If the mesh
+     * is not a triangle mesh or doesn't have 3D positions, this flag does
+     * nothing. If the mesh already has its own normals, these get replaced.
+     */
+    GenerateSmoothNormals = 1 << 1
+};
+
+/**
+@brief Mesh compilation flags
+
+@see @ref compile(const Trade::MeshData3D&, CompileFlags)
+*/
+typedef Containers::EnumSet<CompileFlag> CompileFlags;
+
+CORRADE_ENUMSET_OPERATORS(CompileFlags)
 
 /**
 @brief Compile 2D mesh data
@@ -103,12 +140,13 @@ greater flexibility.
 
 @see @ref shaders-generic
 */
-MAGNUM_MESHTOOLS_EXPORT GL::Mesh compile(const Trade::MeshData3D& meshData);
+MAGNUM_MESHTOOLS_EXPORT GL::Mesh compile(const Trade::MeshData3D& meshData, CompileFlags flags = {});
 
 #ifdef MAGNUM_BUILD_DEPRECATED
-/** @brief @copybrief compile(const Trade::MeshData3D&)
- * @deprecated Use @ref compile(const Trade::MeshData3D&) instead. The @p usage
- *      parameter is ignored and returned buffer instances are empty.
+/** @brief @copybrief compile(const Trade::MeshData3D&, CompileFlags)
+ * @deprecated Use @ref compile(const Trade::MeshData3D&, CompileFlags)
+ *      instead. The @p usage parameter is ignored and returned buffer
+ *      instances are empty.
  */
 CORRADE_DEPRECATED("use compile(const Trade::MeshData3D&) instead") MAGNUM_MESHTOOLS_EXPORT std::tuple<GL::Mesh, std::unique_ptr<GL::Buffer>, std::unique_ptr<GL::Buffer>> compile(const Trade::MeshData3D& meshData, GL::BufferUsage usage);
 #endif

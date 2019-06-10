@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 #include "ImageView.h"
 
 #include "Magnum/PixelFormat.h"
+#include "Magnum/Implementation/ImagePixelView.h"
 
 namespace Magnum {
 
@@ -46,6 +47,10 @@ template<UnsignedInt dimensions> ImageView<dimensions>::ImageView(const PixelSto
 template<UnsignedInt dimensions> void ImageView<dimensions>::setData(const Containers::ArrayView<const void> data) {
     CORRADE_ASSERT(Implementation::imageDataSize(*this) <= data.size(), "ImageView::setData(): data too small, got" << data.size() << "but expected at least" << Implementation::imageDataSize(*this) << "bytes", );
     _data = {reinterpret_cast<const char*>(data.data()), data.size()};
+}
+
+template<UnsignedInt dimensions> Containers::StridedArrayView<dimensions + 1, const char> ImageView<dimensions>::pixels() const {
+    return Implementation::imagePixelView<dimensions, const char>(*this);
 }
 
 template<UnsignedInt dimensions> CompressedImageView<dimensions>::CompressedImageView(const CompressedPixelStorage storage, const CompressedPixelFormat format, const VectorTypeFor<dimensions, Int>& size, const Containers::ArrayView<const void> data) noexcept: _storage{storage}, _format{format}, _size{size}, _data{reinterpret_cast<const char*>(data.data()), data.size()} {}

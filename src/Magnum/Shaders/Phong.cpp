@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,8 @@
 #include <Corrade/Containers/Array.h>
 #endif
 #include <Corrade/Containers/EnumSet.hpp>
-#include <Corrade/Utility/Format.h>
+#include <Corrade/Containers/Reference.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 
 #include "Magnum/GL/Context.h"
@@ -45,7 +46,8 @@ namespace {
     enum: Int {
         AmbientTextureLayer = 0,
         DiffuseTextureLayer = 1,
-        SpecularTextureLayer = 2
+        SpecularTextureLayer = 2,
+        NormalTextureLayer = 3
     };
 }
 
@@ -86,13 +88,15 @@ Phong::Phong(const Flags flags, const UnsignedInt lightCount): _flags{flags}, _l
     lightInitializer.resize(lightInitializer.size() - 1);
     #endif
 
-    vert.addSource(flags ? "#define TEXTURED\n" : "")
+    vert.addSource(flags & (Flag::AmbientTexture|Flag::DiffuseTexture|Flag::SpecularTexture|Flag::NormalTexture) ? "#define TEXTURED\n" : "")
+        .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
         .addSource(Utility::formatString("#define LIGHT_COUNT {}\n", lightCount))
         .addSource(rs.get("generic.glsl"))
         .addSource(rs.get("Phong.vert"));
     frag.addSource(flags & Flag::AmbientTexture ? "#define AMBIENT_TEXTURE\n" : "")
         .addSource(flags & Flag::DiffuseTexture ? "#define DIFFUSE_TEXTURE\n" : "")
         .addSource(flags & Flag::SpecularTexture ? "#define SPECULAR_TEXTURE\n" : "")
+        .addSource(flags & Flag::NormalTexture ? "#define NORMAL_TEXTURE\n" : "")
         .addSource(flags & Flag::AlphaMask ? "#define ALPHA_MASK\n" : "")
         .addSource(Utility::formatString(
             "#define LIGHT_COUNT {}\n"
@@ -143,6 +147,7 @@ Phong::Phong(const Flags flags, const UnsignedInt lightCount): _flags{flags}, _l
         if(flags & Flag::AmbientTexture) setUniform(uniformLocation("ambientTexture"), AmbientTextureLayer);
         if(flags & Flag::DiffuseTexture) setUniform(uniformLocation("diffuseTexture"), DiffuseTextureLayer);
         if(flags & Flag::SpecularTexture) setUniform(uniformLocation("specularTexture"), SpecularTextureLayer);
+        if(flags & Flag::NormalTexture) setUniform(uniformLocation("normalTexture"), NormalTextureLayer);
     }
 
     /* Set defaults in OpenGL ES (for desktop they are set in shader code itself) */
@@ -184,10 +189,17 @@ Phong& Phong::bindSpecularTexture(GL::Texture2D& texture) {
     return *this;
 }
 
-Phong& Phong::bindTextures(GL::Texture2D* ambient, GL::Texture2D* diffuse, GL::Texture2D* specular) {
-    CORRADE_ASSERT(_flags & (Flag::AmbientTexture|Flag::DiffuseTexture|Flag::SpecularTexture),
+Phong& Phong::bindNormalTexture(GL::Texture2D& texture) {
+    CORRADE_ASSERT(_flags & Flag::NormalTexture,
+        "Shaders::Phong::bindNormalTexture(): the shader was not created with normal texture enabled", *this);
+    texture.bind(NormalTextureLayer);
+    return *this;
+}
+
+Phong& Phong::bindTextures(GL::Texture2D* ambient, GL::Texture2D* diffuse, GL::Texture2D* specular, GL::Texture2D* normal) {
+    CORRADE_ASSERT(_flags & (Flag::AmbientTexture|Flag::DiffuseTexture|Flag::SpecularTexture, Flag::NormalTexture),
         "Shaders::Phong::bindTextures(): the shader was not created with any textures enabled", *this);
-    GL::AbstractTexture::bind(AmbientTextureLayer, {ambient, diffuse, specular});
+    GL::AbstractTexture::bind(AmbientTextureLayer, {ambient, diffuse, specular, normal});
     return *this;
 }
 
@@ -233,6 +245,7 @@ Debug& operator<<(Debug& debug, const Phong::Flag value) {
         _c(AmbientTexture)
         _c(DiffuseTexture)
         _c(SpecularTexture)
+        _c(NormalTexture)
         _c(AlphaMask)
         #undef _c
         /* LCOV_EXCL_STOP */
@@ -246,6 +259,7 @@ Debug& operator<<(Debug& debug, const Phong::Flags value) {
         Phong::Flag::AmbientTexture,
         Phong::Flag::DiffuseTexture,
         Phong::Flag::SpecularTexture,
+        Phong::Flag::NormalTexture,
         Phong::Flag::AlphaMask});
 }
 

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,6 +68,37 @@ format of image queries in graphics APIs:
 As with @ref ImageView, this class supports extra storage parameters and
 implementation-specific pixel format specification. See the @ref ImageView
 documentation for more information.
+
+@section Image-pixel-views Obtaining a view on pixel data
+
+While the raw image data are available through @ref data(), for correct pixel
+addressing it's required to incorporate all @ref storage() parameters such as
+row alignment, row length, skip offset and such. This is very error-prone to
+do by hand even with the help of @ref dataProperties().
+
+The @ref pixels() accessor returns a multi-dimensional
+@ref Corrade::Containers::StridedArrayView describing layout of the data and
+providing easy access to particular rows, pixels and pixel channels. The
+non-templated version returns a view that has one dimension more than the
+actual image, with the last dimension being bytes in a particular pixels. The
+second-to-last dimension is always pixels in a row, the one before (if the
+image is at least 2D) is rows in an image, and for 3D images the very first
+dimension describes image slices. Desired usage is casting to a concrete type
+based on @ref format() first, either using the templated @ref pixels<T>() or
+using @ref Corrade::Containers::arrayCast() and then operating on the
+concretely typed array. The following example brightens the center 32x32 area
+of an image:
+
+@snippet Magnum.cpp Image-pixels
+
+@attention Note that the correctness of the cast is can't be generally checked
+    apart from expecting that the last dimension size is equal to the new type
+    size. It's the user responsibility to ensure the type matches given
+    @ref format().
+
+This operation is available also on @ref ImageView and non-compressed
+@ref Trade::ImageData. See @ref Corrade::Containers::StridedArrayView docs for
+more information about transforming, slicing and converting the view further.
 
 @see @ref Image1D, @ref Image2D, @ref Image3D, @ref CompressedImage
 */
@@ -302,14 +333,6 @@ template<UnsignedInt dimensions> class Image {
          */
         UnsignedInt formatExtra() const { return _formatExtra; }
 
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        /**
-         * @brief Data type of pixel data
-         * @deprecated Cast @ref formatExtra() to @ref GL::PixelType instead.
-         */
-        CORRADE_DEPRECATED("cast formatExtra() to GL::PixelType instead") GL::PixelType type() const { return GL::PixelType(_formatExtra); }
-        #endif
-
         /**
          * @brief Pixel size (in bytes)
          *
@@ -332,7 +355,7 @@ template<UnsignedInt dimensions> class Image {
         /**
          * @brief Raw data
          *
-         * @see @ref release()
+         * @see @ref release(), @ref pixels()
          */
         Containers::ArrayView<char> data() & { return _data; }
         Containers::ArrayView<char> data() && = delete; /**< @overload */
@@ -351,41 +374,33 @@ template<UnsignedInt dimensions> class Image {
             return reinterpret_cast<const T*>(_data.data());
         }
 
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
         /**
-         * @brief Set image data
-         * @param storage           Storage of pixel data
-         * @param format            Format of pixel data
-         * @param formatExtra       Additional pixel format specifier
-         * @param size              Image size
-         * @param data              Image data
+         * @brief View on pixel data
          *
-         * @deprecated Move-assign a new instance instead.
-         *
-         * Deletes previous data and replaces them with new. The @p data array
-         * is expected to be of proper size for given parameters.
-         * @see @ref release()
+         * Provides direct and easy-to-use access to image pixels. See
+         * @ref Image-pixel-views for more information.
          */
-        template<class T, class U> CORRADE_DEPRECATED("move-assign a new instance instead") void setData(PixelStorage storage, T format, U formatExtra, const VectorTypeFor<dimensions, Int>& size, Containers::Array<char>&& data) {
-            *this = Image<dimensions>{storage, format, formatExtra, size, std::move(data)};
-        }
+        Containers::StridedArrayView<dimensions + 1, char> pixels();
+        Containers::StridedArrayView<dimensions + 1, const char> pixels() const; /**< @overload */
 
         /**
-         * @brief Set image data
-         * @param format            Format of pixel data
-         * @param formatExtra       Additional pixel format specifier
-         * @param size              Image size
-         * @param data              Image data
+         * @brief View on pixel data with a concrete pixel type
          *
-         * @deprecated Move-assign a new instance instead.
-         *
-         * Equivalent to calling @ref setData(PixelStorage, T, U, const VectorTypeFor<dimensions, Int>&, Containers::Array<char>&&)
-         * with default-constructed @ref PixelStorage.
+         * Compared to non-templated @ref pixels() in addition casts the pixel
+         * data to a specified type. The user is responsible for choosing
+         * correct type for given @ref format() --- checking it on the library
+         * side is not possible for the general case.
          */
-        template<class T, class U> CORRADE_DEPRECATED("move-assign a new instance instead") void setData(T format, U formatExtra, const VectorTypeFor<dimensions, Int>& size, Containers::Array<char>&& data) {
-            *this = Image<dimensions>{format, formatExtra, size, std::move(data)};
+        template<class T> Containers::StridedArrayView<dimensions, T> pixels() {
+            /* Deliberately not adding a StridedArrayView include, it should
+               work without since this is a templated function */
+            return Containers::arrayCast<dimensions, T>(pixels());
         }
-        #endif
+
+        /** @overload */
+        template<class T> Containers::StridedArrayView<dimensions, const T> pixels() const {
+            return Containers::arrayCast<dimensions, const T>(pixels());
+        }
 
         /**
          * @brief Release data storage
@@ -575,39 +590,6 @@ template<UnsignedInt dimensions> class CompressedImage {
             return reinterpret_cast<const T*>(_data.data());
         }
 
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        /**
-         * @brief Set image data
-         * @param storage           Storage of compressed pixel data
-         * @param format            Format of compressed pixel data
-         * @param size              Image size
-         * @param data              Image data
-         *
-         * @deprecated Move-assign a new instance instead.
-         *
-         * Deletes previous data and replaces it with @p data.
-         * @see @ref release()
-         */
-        CORRADE_DEPRECATED("move-assign a new instance instead") void setData(CompressedPixelStorage storage, CompressedPixelFormat format, const VectorTypeFor<dimensions, Int>& size, Containers::Array<char>&& data) {
-            *this = CompressedImage<dimensions>{storage, GL::CompressedPixelFormat(format), size, std::move(data)};
-        }
-
-        /**
-         * @brief Set image data
-         * @param format            Format of compressed pixel data
-         * @param size              Image size
-         * @param data              Image data
-         *
-         * @deprecated Move-assign a new instance instead.
-         *
-         * Equivalent to calling @ref setData(CompressedPixelStorage, CompressedPixelFormat, const VectorTypeFor<dimensions, Int>&, Containers::Array<char>&&)
-         * with default-constructed @ref CompressedPixelStorage.
-         */
-        CORRADE_DEPRECATED("move-assign a new instance instead") void setData(CompressedPixelFormat format, const VectorTypeFor<dimensions, Int>& size, Containers::Array<char>&& data) {
-            *this = CompressedImage<dimensions>{GL::CompressedPixelFormat(format), size, std::move(data)};
-        }
-        #endif
-
         /**
          * @brief Release data storage
          *
@@ -688,13 +670,7 @@ template<UnsignedInt dimensions> inline Containers::Array<char> CompressedImage<
     return data;
 }
 
-template<UnsignedInt dimensions> template<class T, class U> inline Image<dimensions>::Image(const PixelStorage storage, const T format, const U formatExtra, const VectorTypeFor<dimensions, Int>& size, Containers::Array<char>&& data) noexcept: Image{storage,
-    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-    Implementation::wrapPixelFormatIfNotGLSpecific(format),
-    #else
-    UnsignedInt(format),
-    #endif
-    UnsignedInt(formatExtra), Implementation::pixelSizeAdl(format, formatExtra), size, std::move(data)} {
+template<UnsignedInt dimensions> template<class T, class U> inline Image<dimensions>::Image(const PixelStorage storage, const T format, const U formatExtra, const VectorTypeFor<dimensions, Int>& size, Containers::Array<char>&& data) noexcept: Image{storage, UnsignedInt(format), UnsignedInt(formatExtra), Implementation::pixelSizeAdl(format, formatExtra), size, std::move(data)} {
     static_assert(sizeof(T) <= 4 && sizeof(U) <= 4,
         "format types larger than 32bits are not supported");
 }
@@ -704,13 +680,7 @@ template<UnsignedInt dimensions> template<class T> inline  Image<dimensions>::Im
         "format types larger than 32bits are not supported");
 }
 
-template<UnsignedInt dimensions> template<class T, class U> inline Image<dimensions>::Image(const PixelStorage storage, const T format, const U formatExtra) noexcept: Image{storage,
-    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-    Implementation::wrapPixelFormatIfNotGLSpecific(format),
-    #else
-    UnsignedInt(format),
-    #endif
-    UnsignedInt(formatExtra), Implementation::pixelSizeAdl(format, formatExtra)} {
+template<UnsignedInt dimensions> template<class T, class U> inline Image<dimensions>::Image(const PixelStorage storage, const T format, const U formatExtra) noexcept: Image{storage, UnsignedInt(format), UnsignedInt(formatExtra), Implementation::pixelSizeAdl(format, formatExtra)} {
     static_assert(sizeof(T) <= 4 && sizeof(U) <= 4,
         "format types larger than 32bits are not supported");
 }

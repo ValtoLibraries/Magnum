@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,39 +26,16 @@
 */
 
 /** @file
- * @brief Function @ref Magnum::MeshTools::generateFlatNormals()
+ * @deprecated Use @ref Magnum/MeshTools/GenerateNormals.h instead.
  */
 
-#include <tuple>
-#include <vector>
+#include "Magnum/configure.h"
 
-#include "Magnum/Magnum.h"
-#include "Magnum/MeshTools/visibility.h"
-
-namespace Magnum { namespace MeshTools {
-
-/**
-@brief Generate flat normals
-@param indices      Array of triangle face indices
-@param positions    Array of vertex positions
-@return Normal indices and vectors
-
-All vertices in each triangle face get the same normal vector. Removes
-duplicates before returning. Example usage:
-
-@snippet MagnumMeshTools.cpp generateFlatNormals
-
-This will generate index buffer that's different from the input @p indices
-array, so you'll need to recombine them using @ref combineIndexedArrays() in
-order to have a single index array for both vertices and normals:
-
-@snippet MagnumMeshTools.cpp generateFlatNormals-recombine
-
-@attention The function requires the mesh to have triangle faces, thus index
-    count must be divisible by 3.
-*/
-std::tuple<std::vector<UnsignedInt>, std::vector<Vector3>> MAGNUM_MESHTOOLS_EXPORT generateFlatNormals(const std::vector<UnsignedInt>& indices, const std::vector<Vector3>& positions);
-
-}}
+#ifdef MAGNUM_BUILD_DEPRECATED
+#include "Magnum/MeshTools/GenerateNormals.h"
+CORRADE_DEPRECATED_FILE("use Magnum/MeshTools/GenerateNormals.h instead")
+#else
+#error use Magnum/MeshTools/GenerateNormals.h instead
+#endif
 
 #endif

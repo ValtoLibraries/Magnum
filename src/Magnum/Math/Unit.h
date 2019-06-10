@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,13 +46,20 @@ template<template<class> class Derived, class T> class Unit {
     public:
         typedef T Type;             /**< @brief Underlying data type */
 
-        /** @brief Construct zero value */
-        constexpr /*implicit*/ Unit(ZeroInitT = ZeroInit) noexcept: _value(T(0)) {}
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Unit(ZeroInitT).
+         */
+        constexpr /*implicit*/ Unit() noexcept: _value(T(0)) {}
+
+        /** @brief Construct a zero value */
+        constexpr explicit Unit(ZeroInitT) noexcept: _value(T(0)) {}
 
         /** @brief Construct without initializing the contents */
         explicit Unit(NoInitT) noexcept {}
 
-        /** @brief Explicit conversion from unitless type */
+        /** @brief Explicit conversion from a unitless type */
         constexpr explicit Unit(T value) noexcept: _value(value) {}
 
         /** @brief Construct from another underlying type */
@@ -99,46 +106,46 @@ template<template<class> class Derived, class T> class Unit {
             return Unit<Derived, T>(-_value);
         }
 
-        /** @brief Add and assign value */
+        /** @brief Add and assign a value */
         Unit<Derived, T>& operator+=(Unit<Derived, T> other) {
             _value += other._value;
             return *this;
         }
 
-        /** @brief Add value */
+        /** @brief Add a value */
         constexpr Unit<Derived, T> operator+(Unit<Derived, T> other) const {
             return Unit<Derived, T>(_value + other._value);
         }
 
-        /** @brief Subtract and assign value */
+        /** @brief Subtract and assign a value */
         Unit<Derived, T>& operator-=(Unit<Derived, T> other) {
             _value -= other._value;
             return *this;
         }
 
-        /** @brief Subtract value */
+        /** @brief Subtract a value */
         constexpr Unit<Derived, T> operator-(Unit<Derived, T> other) const {
             return Unit<Derived, T>(_value - other._value);
         }
 
-        /** @brief Multiply with number and assign */
+        /** @brief Multiply with a number and assign */
         Unit<Derived, T>& operator*=(T number) {
             _value *= number;
             return *this;
         }
 
-        /** @brief Multiply with number */
+        /** @brief Multiply with a number */
         constexpr Unit<Derived, T> operator*(T number) const {
             return Unit<Derived, T>(_value*number);
         }
 
-        /** @brief Divide with number and assign */
+        /** @brief Divide with a number and assign */
         Unit<Derived, T>& operator/=(T number) {
             _value /= number;
             return *this;
         }
 
-        /** @brief Divide with number */
+        /** @brief Divide with a number */
         constexpr Unit<Derived, T> operator/(T number) const {
             return Unit<Derived, T>(_value/number);
         }

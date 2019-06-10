@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,10 +27,12 @@
 
 #include <sstream>
 #include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Configuration.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Unicode.h>
 
+#include "Magnum/Math/ConfigurationValue.h"
 #include "Magnum/Text/GlyphCache.h"
 #include "Magnum/Trade/ImageData.h"
 #include "MagnumPlugins/TgaImporter/TgaImporter.h"
@@ -38,8 +40,14 @@
 namespace Magnum { namespace Text {
 
 struct MagnumFont::Data {
+    /* Otherwise Clang complains about Utility::Configuration having explicit
+       constructor when emplace()ing the Pointer. Using = default works on
+       newer Clang but not older versions. */
+    explicit Data() {}
+
     Utility::Configuration conf;
-    Trade::ImageData2D image;
+    Containers::Optional<Trade::ImageData2D> image;
+    Containers::Optional<std::string> filePath;
     std::unordered_map<char32_t, UnsignedInt> glyphId;
     std::vector<Vector2> glyphAdvance;
 };
@@ -47,13 +55,13 @@ struct MagnumFont::Data {
 namespace {
     class MagnumFontLayouter: public AbstractLayouter {
         public:
-            explicit MagnumFontLayouter(const std::vector<Vector2>& glyphAdvance, const GlyphCache& cache, Float fontSize, Float textSize, std::vector<UnsignedInt>&& glyphs);
+            explicit MagnumFontLayouter(const std::vector<Vector2>& glyphAdvance, const AbstractGlyphCache& cache, Float fontSize, Float textSize, std::vector<UnsignedInt>&& glyphs);
 
         private:
             std::tuple<Range2D, Range2D, Vector2> doRenderGlyph(UnsignedInt i) override;
 
             const std::vector<Vector2>& glyphAdvance;
-            const GlyphCache& cache;
+            const AbstractGlyphCache& cache;
             const Float fontSize, textSize;
             const std::vector<UnsignedInt> glyphs;
     };
@@ -65,23 +73,26 @@ MagnumFont::MagnumFont(PluginManager::AbstractManager& manager, const std::strin
 
 MagnumFont::~MagnumFont() { close(); }
 
-auto MagnumFont::doFeatures() const -> Features { return Feature::OpenData|Feature::MultiFile|Feature::PreparedGlyphCache; }
+auto MagnumFont::doFeatures() const -> Features { return Feature::OpenData|Feature::FileCallback|Feature::PreparedGlyphCache; }
 
-bool MagnumFont::doIsOpened() const { return _opened; }
+bool MagnumFont::doIsOpened() const { return _opened && _opened->image; }
 
-auto MagnumFont::doOpenData(const std::vector<std::pair<std::string, Containers::ArrayView<const char>>>& data, const Float) -> Metrics {
-    /* We need just the configuration file and image file */
-    if(data.size() != 2) {
-        Error() << "Text::MagnumFont::openData(): wanted two files, got" << data.size();
+void MagnumFont::doClose() { _opened = nullptr; }
+
+auto MagnumFont::doOpenData(const Containers::ArrayView<const char> data, const Float) -> Metrics {
+    if(!_opened) _opened.emplace();
+
+    if(!_opened->filePath && !fileCallback()) {
+        Error{} << "Text::MagnumFont::openData(): the font can be opened only from the filesystem or if a file callback is present";
         return {};
     }
 
     /* Open the configuration file */
     /* MSVC 2017 requires explicit std::string constructor. MSVC 2015 doesn't. */
-    std::istringstream in(std::string{data[0].second.begin(), data[0].second.size()});
+    std::istringstream in(std::string{data.begin(), data.size()});
     Utility::Configuration conf(in, Utility::Configuration::Flag::SkipComments);
     if(!conf.isValid() || conf.isEmpty()) {
-        Error() << "Text::MagnumFont::openData(): cannot open file" << data[0].first;
+        Error{} << "Text::MagnumFont::openData(): font file is not valid";
         return {};
     }
 
@@ -92,62 +103,16 @@ auto MagnumFont::doOpenData(const std::vector<std::pair<std::string, Containers:
         return {};
     }
 
-    /* Check that we have also the image file */
-    if(conf.value("image") != data[1].first) {
-        Error() << "Text::MagnumFont::openData(): expected file"
-                << conf.value("image") << "but got" << data[1].first;
-        return {};
-    }
-
-    /* Open and load image file */
+    /* Open and load image file. Error messages should be printed by the
+       TgaImporter already, no need to repeat them again. */
     Trade::TgaImporter importer;
-    if(!importer.openData(data[1].second)) {
-        Error() << "Text::MagnumFont::openData(): cannot open image file";
-        return {};
-    }
-    Containers::Optional<Trade::ImageData2D> image = importer.image2D(0);
-    if(!image) {
-        Error() << "Text::MagnumFont::openData(): cannot load image file";
-        return {};
-    }
+    importer.setFileCallback(fileCallback(), fileCallbackUserData());
+    if(!importer.openFile(Utility::Directory::join(_opened->filePath ? *_opened->filePath : "", conf.value("image")))) return {};
+    _opened->image = importer.image2D(0);
+    if(!_opened->image) return {};
 
-    return openInternal(std::move(conf), std::move(*image));
-}
-
-auto MagnumFont::doOpenFile(const std::string& filename, Float) -> Metrics {
-    /* Open the configuration file */
-    Utility::Configuration conf(filename, Utility::Configuration::Flag::ReadOnly|Utility::Configuration::Flag::SkipComments);
-    if(!conf.isValid() || conf.isEmpty()) {
-        Error() << "Text::MagnumFont::openFile(): cannot open file" << filename;
-        return {};
-    }
-
-    /* Check version */
-    if(conf.value<UnsignedInt>("version") != 1) {
-        Error() << "Text::MagnumFont::openFile(): unsupported file version, expected 1 but got"
-                << conf.value<UnsignedInt>("version");
-        return {};
-    }
-
-    /* Open and load image file */
-    const std::string imageFilename = Utility::Directory::join(Utility::Directory::path(filename), conf.value("image"));
-    Trade::TgaImporter importer;
-    if(!importer.openFile(imageFilename)) {
-        Error() << "Text::MagnumFont::openFile(): cannot open image file" << imageFilename;
-        return {};
-    }
-    Containers::Optional<Trade::ImageData2D> image = importer.image2D(0);
-    if(!image) {
-        Error() << "Text::MagnumFont::openFile(): cannot load image file";
-        return {};
-    }
-
-    return openInternal(std::move(conf), std::move(*image));
-}
-
-auto MagnumFont::openInternal(Utility::Configuration&& conf, Trade::ImageData2D&& image) -> Metrics {
     /* Everything okay, save the data internally */
-    _opened = new Data{std::move(conf), std::move(image), std::unordered_map<char32_t, UnsignedInt>{}, {}};
+    _opened->conf = std::move(conf);
 
     /* Glyph advances */
     const std::vector<Utility::ConfigurationGroup*> glyphs = _opened->conf.groups("glyph");
@@ -169,9 +134,11 @@ auto MagnumFont::openInternal(Utility::Configuration&& conf, Trade::ImageData2D&
             _opened->conf.value<Float>("lineHeight")};
 }
 
-void MagnumFont::doClose() {
-    delete _opened;
-    _opened = nullptr;
+auto MagnumFont::doOpenFile(const std::string& filename, Float size) -> Metrics {
+    _opened.emplace();
+    _opened->filePath = Utility::Directory::path(filename);
+
+    return AbstractFont::doOpenFile(filename, size);
 }
 
 UnsignedInt MagnumFont::doGlyphId(const char32_t character) {
@@ -183,13 +150,13 @@ Vector2 MagnumFont::doGlyphAdvance(const UnsignedInt glyph) {
     return glyph < _opened->glyphAdvance.size() ? _opened->glyphAdvance[glyph] : Vector2();
 }
 
-std::unique_ptr<GlyphCache> MagnumFont::doCreateGlyphCache() {
+Containers::Pointer<AbstractGlyphCache> MagnumFont::doCreateGlyphCache() {
     /* Set cache image */
-    std::unique_ptr<GlyphCache> cache(new Text::GlyphCache(
+    Containers::Pointer<AbstractGlyphCache> cache(new Text::GlyphCache(
         _opened->conf.value<Vector2i>("originalImageSize"),
-        _opened->image.size(),
+        _opened->image->size(),
         _opened->conf.value<Vector2i>("padding")));
-    cache->setImage({}, _opened->image);
+    cache->setImage({}, *_opened->image);
 
     /* Fill glyph map */
     const std::vector<Utility::ConfigurationGroup*> glyphs = _opened->conf.groups("glyph");
@@ -199,7 +166,7 @@ std::unique_ptr<GlyphCache> MagnumFont::doCreateGlyphCache() {
     return cache;
 }
 
-std::unique_ptr<AbstractLayouter> MagnumFont::doLayout(const GlyphCache& cache, Float size, const std::string& text) {
+Containers::Pointer<AbstractLayouter> MagnumFont::doLayout(const AbstractGlyphCache& cache, Float size, const std::string& text) {
     /* Get glyph codes from characters */
     std::vector<UnsignedInt> glyphs;
     glyphs.reserve(text.size());
@@ -210,12 +177,12 @@ std::unique_ptr<AbstractLayouter> MagnumFont::doLayout(const GlyphCache& cache, 
         glyphs.push_back(it == _opened->glyphId.end() ? 0 : it->second);
     }
 
-    return std::unique_ptr<MagnumFontLayouter>(new MagnumFontLayouter(_opened->glyphAdvance, cache, this->size(), size, std::move(glyphs)));
+    return Containers::Pointer<MagnumFontLayouter>(new MagnumFontLayouter(_opened->glyphAdvance, cache, this->size(), size, std::move(glyphs)));
 }
 
 namespace {
 
-MagnumFontLayouter::MagnumFontLayouter(const std::vector<Vector2>& glyphAdvance, const GlyphCache& cache, const Float fontSize, const Float textSize, std::vector<UnsignedInt>&& glyphs): AbstractLayouter(glyphs.size()), glyphAdvance(glyphAdvance), cache(cache), fontSize(fontSize), textSize(textSize), glyphs(std::move(glyphs)) {}
+MagnumFontLayouter::MagnumFontLayouter(const std::vector<Vector2>& glyphAdvance, const AbstractGlyphCache& cache, const Float fontSize, const Float textSize, std::vector<UnsignedInt>&& glyphs): AbstractLayouter(glyphs.size()), glyphAdvance(glyphAdvance), cache(cache), fontSize(fontSize), textSize(textSize), glyphs(std::move(glyphs)) {}
 
 std::tuple<Range2D, Range2D, Vector2> MagnumFontLayouter::doRenderGlyph(const UnsignedInt i) {
     /* Position of the texture in the resulting glyph, texture coordinates */
@@ -241,4 +208,4 @@ std::tuple<Range2D, Range2D, Vector2> MagnumFontLayouter::doRenderGlyph(const Un
 }}
 
 CORRADE_PLUGIN_REGISTER(MagnumFont, Magnum::Text::MagnumFont,
-    "cz.mosra.magnum.Text.AbstractFont/0.2.4")
+    "cz.mosra.magnum.Text.AbstractFont/0.3")

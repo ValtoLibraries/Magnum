@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,9 +27,9 @@
 
 #include <map>
 #include <sstream>
-#include <vector>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/ImageView.h"
 #include "Magnum/PixelFormat.h"
@@ -47,7 +47,7 @@ template<std::size_t size, class T> Math::Vector<size, T> pixelAt(const char* co
     return reinterpret_cast<const Math::Vector<size, T>*>(pixels + stride*pos.y())[pos.x()];
 }
 
-template<std::size_t size, class T> Float calculateImageDelta(const ImageView2D& actual, const ImageView2D& expected, std::vector<Float>& output) {
+template<std::size_t size, class T> Float calculateImageDelta(const ImageView2D& actual, const ImageView2D& expected, Containers::ArrayView<Float> output) {
     CORRADE_INTERNAL_ASSERT(output.size() == std::size_t(expected.size().product()));
 
     /* Precalculate parameters for pixel access */
@@ -79,9 +79,9 @@ template<std::size_t size, class T> Float calculateImageDelta(const ImageView2D&
 
 }
 
-std::tuple<std::vector<Float>, Float, Float> calculateImageDelta(const ImageView2D& actual, const ImageView2D& expected) {
+std::tuple<Containers::Array<Float>, Float, Float> calculateImageDelta(const ImageView2D& actual, const ImageView2D& expected) {
     /* Calculate a delta image */
-    std::vector<Float> delta(expected.size().product());
+    Containers::Array<Float> delta{Containers::NoInit, std::size_t(expected.size().product())};
 
     CORRADE_ASSERT(!isPixelFormatImplementationSpecific(expected.format()),
         "DebugTools::CompareImage: can't compare implementation-specific pixel formats", {});
@@ -136,61 +136,6 @@ std::tuple<std::vector<Float>, Float, Float> calculateImageDelta(const ImageView
         case PixelFormat::RGBA16F:
             CORRADE_ASSERT(false,
                 "DebugTools::CompareImage: half-float formats are not supported yet", {});
-
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        CORRADE_IGNORE_DEPRECATED_PUSH
-        #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-        case PixelFormat::Red:
-        #endif
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::Green:
-        case PixelFormat::Blue:
-        #endif
-        #ifdef MAGNUM_TARGET_GLES2
-        case PixelFormat::Luminance:
-        #endif
-        #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-        case PixelFormat::RG:
-        #endif
-        #ifdef MAGNUM_TARGET_GLES2
-        case PixelFormat::LuminanceAlpha:
-        #endif
-        case PixelFormat::RGB:
-        case PixelFormat::RGBA:
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::BGR:
-        #endif
-        #ifndef MAGNUM_TARGET_WEBGL
-        case PixelFormat::BGRA:
-        #endif
-        #ifdef MAGNUM_TARGET_GLES2
-        case PixelFormat::SRGB:
-        case PixelFormat::SRGBAlpha:
-        #endif
-        #ifndef MAGNUM_TARGET_GLES2
-        case PixelFormat::RedInteger:
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::GreenInteger:
-        case PixelFormat::BlueInteger:
-        #endif
-        case PixelFormat::RGInteger:
-        case PixelFormat::RGBInteger:
-        case PixelFormat::RGBAInteger:
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::BGRInteger:
-        case PixelFormat::BGRAInteger:
-        #endif
-        #endif
-        case PixelFormat::DepthComponent:
-        #ifndef MAGNUM_TARGET_WEBGL
-        case PixelFormat::StencilIndex:
-        #endif
-        case PixelFormat::DepthStencil:
-            /** @todo CORRADE_ASSERT_UNREACHABLE() with message here */
-            CORRADE_ASSERT(false,
-                "DebugTools::CompareImage: deprecated GL-specific formats are not supported", {});
-        CORRADE_IGNORE_DEPRECATED_POP
-        #endif
     }
 
     CORRADE_ASSERT(max == max,
@@ -200,7 +145,7 @@ std::tuple<std::vector<Float>, Float, Float> calculateImageDelta(const ImageView
        precision -- that would result in having false negatives! */
     const Float mean = Math::Algorithms::kahanSum(delta.begin(), delta.end())/delta.size();
 
-    return std::make_tuple(delta, max, mean);
+    return std::make_tuple(std::move(delta), max, mean);
 }
 
 namespace {
@@ -209,7 +154,7 @@ namespace {
     const char Characters[] = " .,:~=+?7IZ$08DNM";
 }
 
-void printDeltaImage(Debug& out, const std::vector<Float>& deltas, const Vector2i& size, const Float max, const Float maxThreshold, const Float meanThreshold) {
+void printDeltaImage(Debug& out, Containers::ArrayView<const Float> deltas, const Vector2i& size, const Float max, const Float maxThreshold, const Float meanThreshold) {
     CORRADE_INTERNAL_ASSERT(meanThreshold <= maxThreshold);
 
     /* At most 64 characters per line. The console fonts height is usually 2x
@@ -302,57 +247,6 @@ void printPixelAt(Debug& out, const char* const pixels, const std::size_t stride
         case PixelFormat::RG16F:
         case PixelFormat::RGB16F:
         case PixelFormat::RGBA16F:
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        CORRADE_IGNORE_DEPRECATED_PUSH
-        #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-        case PixelFormat::Red:
-        #endif
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::Green:
-        case PixelFormat::Blue:
-        #endif
-        #ifdef MAGNUM_TARGET_GLES2
-        case PixelFormat::Luminance:
-        #endif
-        #if !(defined(MAGNUM_TARGET_WEBGL) && defined(MAGNUM_TARGET_GLES2))
-        case PixelFormat::RG:
-        #endif
-        #ifdef MAGNUM_TARGET_GLES2
-        case PixelFormat::LuminanceAlpha:
-        #endif
-        case PixelFormat::RGB:
-        case PixelFormat::RGBA:
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::BGR:
-        #endif
-        #ifndef MAGNUM_TARGET_WEBGL
-        case PixelFormat::BGRA:
-        #endif
-        #ifdef MAGNUM_TARGET_GLES2
-        case PixelFormat::SRGB:
-        case PixelFormat::SRGBAlpha:
-        #endif
-        #ifndef MAGNUM_TARGET_GLES2
-        case PixelFormat::RedInteger:
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::GreenInteger:
-        case PixelFormat::BlueInteger:
-        #endif
-        case PixelFormat::RGInteger:
-        case PixelFormat::RGBInteger:
-        case PixelFormat::RGBAInteger:
-        #ifndef MAGNUM_TARGET_GLES
-        case PixelFormat::BGRInteger:
-        case PixelFormat::BGRAInteger:
-        #endif
-        #endif
-        case PixelFormat::DepthComponent:
-        #ifndef MAGNUM_TARGET_WEBGL
-        case PixelFormat::StencilIndex:
-        #endif
-        case PixelFormat::DepthStencil:
-        CORRADE_IGNORE_DEPRECATED_POP
-        #endif
             /* Already handled by a printing assert before */
             CORRADE_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
     }
@@ -360,7 +254,7 @@ void printPixelAt(Debug& out, const char* const pixels, const std::size_t stride
 
 }
 
-void printPixelDeltas(Debug& out, const std::vector<Float>& delta, const ImageView2D& actual, const ImageView2D& expected, const Float maxThreshold, const Float meanThreshold, std::size_t maxCount) {
+void printPixelDeltas(Debug& out, Containers::ArrayView<const Float> delta, const ImageView2D& actual, const ImageView2D& expected, const Float maxThreshold, const Float meanThreshold, std::size_t maxCount) {
     /* Precalculate parameters for pixel access */
     Math::Vector2<std::size_t> offset, size;
 
@@ -462,7 +356,7 @@ bool ImageComparatorBase::operator()(const ImageView2D& actual, const ImageView2
         return false;
     }
 
-    std::vector<Float> delta;
+    Containers::Array<Float> delta;
     std::tie(delta, _max, _mean) = DebugTools::Implementation::calculateImageDelta(actual, expected);
 
     /* If both values are not above threshold, success */
@@ -485,7 +379,7 @@ bool ImageComparatorBase::operator()(const std::string& actual, const std::strin
     _fileState->actualFilename = actual;
     _fileState->expectedFilename = expected;
 
-    std::unique_ptr<Trade::AbstractImporter> importer;
+    Containers::Pointer<Trade::AbstractImporter> importer;
     if(!(importer = _fileState->manager->loadAndInstantiate("AnyImageImporter"))) {
         _state = State::PluginLoadFailed;
         return false;
@@ -521,7 +415,7 @@ bool ImageComparatorBase::operator()(const ImageView2D& actual, const std::strin
 
     _fileState->expectedFilename = expected;
 
-    std::unique_ptr<Trade::AbstractImporter> importer;
+    Containers::Pointer<Trade::AbstractImporter> importer;
     if(!(importer = _fileState->manager->loadAndInstantiate("AnyImageImporter"))) {
         _state = State::PluginLoadFailed;
         return false;
@@ -546,7 +440,7 @@ bool ImageComparatorBase::operator()(const std::string& actual, const ImageView2
 
     _fileState->actualFilename = actual;
 
-    std::unique_ptr<Trade::AbstractImporter> importer;
+    Containers::Pointer<Trade::AbstractImporter> importer;
     if(!(importer = _fileState->manager->loadAndInstantiate("AnyImageImporter"))) {
         _state = State::PluginLoadFailed;
         return false;

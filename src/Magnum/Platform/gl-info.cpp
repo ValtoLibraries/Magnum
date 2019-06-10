@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 
 #include <Corrade/Utility/Arguments.h>
 #include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/GL/AbstractShaderProgram.h"
 #include "Magnum/GL/Buffer.h"
@@ -181,6 +182,9 @@ Vendor extension support:
     ...
 @endcode
 
+@note This executable is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 
 class MagnumInfo: public Platform::WindowlessApplication {
@@ -197,7 +201,7 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
         .addBooleanOption("all-extensions").setHelp("all-extensions", "display extensions also for fully supported versions")
         .addBooleanOption("limits").setHelp("limits", "display also limits and implementation-defined values")
         .addSkippedPrefix("magnum", "engine-specific options")
-        .setHelp("Displays information about Magnum engine and OpenGL capabilities.");
+        .setGlobalHelp("Displays information about Magnum engine and OpenGL capabilities.");
 
     #ifdef CORRADE_TARGET_IOS
     {
@@ -253,7 +257,10 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
     Debug() << "    CORRADE_TARGET_WINDOWS_RT";
     #endif
     #ifdef CORRADE_TARGET_EMSCRIPTEN
-    Debug() << "    CORRADE_TARGET_EMSCRIPTEN";
+    Debug() << "    CORRADE_TARGET_EMSCRIPTEN (" << Debug::nospace
+        << __EMSCRIPTEN_major__ << Debug::nospace << "." << Debug::nospace
+        << __EMSCRIPTEN_minor__ << Debug::nospace << "." << Debug::nospace
+        << __EMSCRIPTEN_tiny__ << Debug::nospace << ")";
     #endif
     #ifdef CORRADE_TARGET_ANDROID
     Debug() << "    CORRADE_TARGET_ANDROID";
@@ -263,6 +270,9 @@ MagnumInfo::MagnumInfo(const Arguments& arguments): Platform::WindowlessApplicat
     #endif
     #ifdef CORRADE_TARGET_ARM
     Debug() << "    CORRADE_TARGET_ARM";
+    #endif
+    #ifdef CORRADE_TARGET_POWERPC
+    Debug() << "    CORRADE_TARGET_POWERPC";
     #endif
     #ifdef CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT
     Debug() << "    CORRADE_PLUGINMANAGER_NO_DYNAMIC_PLUGIN_SUPPORT";

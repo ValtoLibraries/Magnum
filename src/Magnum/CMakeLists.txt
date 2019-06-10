@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake
 
 # Files shared between main library and unit test library
 set(Magnum_SRCS
+    FileCallback.cpp
     Mesh.cpp
     PixelStorage.cpp
     Resource.cpp
@@ -46,6 +47,7 @@ set(Magnum_HEADERS
     AbstractResourceLoader.h
     Array.h
     DimensionTraits.h
+    FileCallback.h
     Image.h
     ImageView.h
     Magnum.h
@@ -61,74 +63,8 @@ set(Magnum_HEADERS
     Types.h
     visibility.h)
 
-# Compatibility headers for GL library
-if(WITH_GL AND BUILD_DEPRECATED)
-    list(APPEND Magnum_HEADERS
-        AbstractFramebuffer.h
-        AbstractObject.h
-        AbstractShaderProgram.h
-        AbstractTexture.h
-        Attribute.h
-        Buffer.h
-        Context.h
-        CubeMapTexture.h
-        DefaultFramebuffer.h
-        Extensions.h
-        Framebuffer.h
-        MeshView.h
-        OpenGL.h
-        Renderbuffer.h
-        RenderbufferFormat.h
-        Renderer.h
-        Shader.h
-        Tags.h
-        Texture.h
-        TextureFormat.h
-        Version.h)
-
-    # Desktop-only stuff
-    if(NOT TARGET_GLES)
-        list(APPEND Magnum_HEADERS RectangleTexture.h)
-    endif()
-
-    # OpenGL ES 3.0 and WebGL 2.0 stuff
-    if(NOT TARGET_GLES2)
-        list(APPEND Magnum_HEADERS
-            BufferImage.h
-            PrimitiveQuery.h
-            TextureArray.h
-            TransformFeedback.h)
-    endif()
-
-    # Desktop and OpenGL ES stuff that is not available in WebGL
-    if(NOT TARGET_WEBGL)
-        list(APPEND Magnum_HEADERS
-            DebugOutput.h
-            TimeQuery.h)
-
-        # Desktop and OpenGL ES 3.0 stuff that is not available in ES2 and WebGL
-        if(NOT TARGET_GLES2)
-            list(APPEND Magnum_HEADERS
-                BufferTexture.h
-                BufferTextureFormat.h
-                CubeMapTextureArray.h
-                ImageFormat.h
-                MultisampleTexture.h)
-        endif()
-    endif()
-
-    # Desktop, OpenGL ES and WebGL 2.0 stuff that is not available in WebGL 1.0
-    if(NOT (TARGET_WEBGL AND TARGET_GLES2))
-        list(APPEND Magnum_HEADERS
-            AbstractQuery.h
-            SampleQuery.h)
-    endif()
-endif()
-
-# Compatibility headers for OpenGLTester
-if(WITH_OPENGLTESTER AND BUILD_DEPRECATED)
-    list(APPEND Magnum_HEADERS OpenGLTester.h)
-endif()
+set(Magnum_PRIVATE_HEADERS
+    Implementation/ImagePixelView.h)
 
 # Files shared between main library and math unit test library
 set(MagnumMath_SRCS
@@ -162,10 +98,6 @@ target_include_directories(MagnumObjects PUBLIC
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_BINARY_DIR}/src
     $<TARGET_PROPERTY:Corrade::Utility,INTERFACE_INCLUDE_DIRECTORIES>)
-if(BUILD_DEPRECATED AND TARGET_GL) # TODO: remove once compat gets dropped
-    target_include_directories(MagnumObjects PUBLIC
-        ${PROJECT_SOURCE_DIR}/src/MagnumExternal/OpenGL)
-endif()
 if(NOT BUILD_STATIC)
     target_compile_definitions(MagnumObjects PRIVATE "MagnumObjects_EXPORTS")
 endif()
@@ -190,10 +122,6 @@ endif()
 target_include_directories(Magnum PUBLIC
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_BINARY_DIR}/src)
-if(BUILD_DEPRECATED AND TARGET_GL) # TODO: remove once compat gets dropped
-    target_include_directories(Magnum PUBLIC
-        ${PROJECT_SOURCE_DIR}/src/MagnumExternal/OpenGL)
-endif()
 target_link_libraries(Magnum PUBLIC
     Corrade::Utility)
 
@@ -236,10 +164,6 @@ if(WITH_SHADERS)
     add_subdirectory(Shaders)
 endif()
 
-if(WITH_SHAPES)
-    add_subdirectory(Shapes)
-endif()
-
 if(WITH_TEXT)
     add_subdirectory(Text)
 endif()
@@ -278,10 +202,6 @@ if(BUILD_TESTS)
     target_include_directories(MagnumTestLib PUBLIC
         ${PROJECT_SOURCE_DIR}/src
         ${PROJECT_BINARY_DIR}/src)
-    if(BUILD_DEPRECATED AND TARGET_GL) # TODO: remove once compat gets dropped
-        target_include_directories(MagnumTestLib PUBLIC
-            ${PROJECT_SOURCE_DIR}/src/MagnumExternal/OpenGL)
-    endif()
     target_compile_definitions(MagnumTestLib PRIVATE
         "CORRADE_GRACEFUL_ASSERT" "Magnum_EXPORTS")
     set_target_properties(MagnumTestLib PROPERTIES

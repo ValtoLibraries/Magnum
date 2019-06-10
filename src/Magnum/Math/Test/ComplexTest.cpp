@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Complex.h"
 #include "Magnum/Math/Matrix3.h"
@@ -51,7 +51,7 @@ template<> struct ComplexConverter<Float, Cmpl> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct ComplexTest: Corrade::TestSuite::Tester {
     explicit ComplexTest();
@@ -102,7 +102,6 @@ struct ComplexTest: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
 ComplexTest::ComplexTest() {
@@ -155,8 +154,7 @@ ComplexTest::ComplexTest() {
 
               &ComplexTest::strictWeakOrdering,
 
-              &ComplexTest::debug,
-              &ComplexTest::configuration});
+              &ComplexTest::debug});
 }
 
 typedef Math::Deg<Float> Deg;
@@ -187,6 +185,9 @@ void ComplexTest::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Complex>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Complex, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, Complex>::value));
 }
 
 void ComplexTest::constructZero() {
@@ -194,6 +195,9 @@ void ComplexTest::constructZero() {
     CORRADE_COMPARE(a, Complex(0.0f, 0.0f));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Complex, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Complex>::value));
 }
 
 void ComplexTest::constructNoInit() {
@@ -556,25 +560,6 @@ void ComplexTest::debug() {
     CORRADE_COMPARE(o.str(), "Complex(2.5, -7.5)\n");
 }
 
-void ComplexTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Complex x{3.0f, 3.125f};
-    std::string value{"3 3.125"};
-
-    c.setValue("complex", x);
-    CORRADE_COMPARE(c.value("complex"), value);
-    CORRADE_COMPARE(c.value<Complex>("complex"), x);
-
-    /* Underflow */
-    c.setValue("underflow", "2.1");
-    CORRADE_COMPARE(c.value<Complex>("underflow"), (Complex{2.1f, 0.0f}));
-
-    /* Overflow */
-    c.setValue("overflow", "2 9 16 33");
-    CORRADE_COMPARE(c.value<Complex>("overflow"), (Complex{2.0f, 9.0f}));
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::ComplexTest)

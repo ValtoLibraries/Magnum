@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,9 +65,7 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(GL::Texture2D& texture, Int level,
 
 Convenience alternative to the above, example usage:
 
-@code{.cpp}
-Image2D image = DebugTools::textureSubImage(texture, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte});
-@endcode
+@snippet MagnumDebugTools-gl.cpp textureSubImage-2D-rvalue
 
 @note This function is available only if Magnum is compiled with
     @ref MAGNUM_TARGET_GL "TARGET_GL" enabled (done by default). See
@@ -97,9 +95,7 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(GL::CubeMapTexture& texture, GL::C
 
 Convenience alternative to the above, example usage:
 
-@code{.cpp}
-Image2D image = DebugTools::textureSubImage(texture, CubeMapCoordinate::PositiveX, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte});
-@endcode
+@snippet MagnumDebugTools-gl.cpp textureSubImage-cubemap-rvalue
 
 @note This function is available only if Magnum is compiled with
     @ref MAGNUM_TARGET_GL "TARGET_GL" enabled (done by default). See
@@ -134,9 +130,7 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(GL::Texture2D& texture, Int level,
 
 Convenience alternative to the above, example usage:
 
-@code{.cpp}
-BufferImage2D image = DebugTools::textureSubImage(texture, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte}, BufferUsage::StaticRead);
-@endcode
+@snippet MagnumDebugTools-gl.cpp textureSubImage-2D-rvalue-buffer
 
 @note This function is available only if Magnum is compiled with
     @ref MAGNUM_TARGET_GL "TARGET_GL" enabled (done by default). See
@@ -168,9 +162,7 @@ MAGNUM_DEBUGTOOLS_EXPORT void textureSubImage(GL::CubeMapTexture& texture, GL::C
 
 Convenience alternative to the above, example usage:
 
-@code{.cpp}
-BufferImage2D image = DebugTools::textureSubImage(texture, CubeMapCoordinate::PositiveX, 0, rect, {PixelFormat::RGBA, PixelType::UnsignedByte}, BufferUsage::StaticRead);
-@endcode
+@snippet MagnumDebugTools-gl.cpp textureSubImage-cubemap-rvalue-buffer
 
 @note This function is available only if Magnum is compiled with
     @ref MAGNUM_TARGET_GL "TARGET_GL" enabled (done by default). See

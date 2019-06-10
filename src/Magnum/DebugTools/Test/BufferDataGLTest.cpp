@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,11 +26,13 @@
 #include <Corrade/TestSuite/Compare/Container.h>
 
 #include "Magnum/DebugTools/BufferData.h"
+#include "Magnum/GL/Context.h"
+#include "Magnum/GL/Extensions.h"
 #include "Magnum/GL/OpenGLTester.h"
 
-namespace Magnum { namespace DebugTools { namespace Test {
+namespace Magnum { namespace DebugTools { namespace Test { namespace {
 
-struct BufferDataGLTest: Magnum::GL::OpenGLTester {
+struct BufferDataGLTest: GL::OpenGLTester {
     explicit BufferDataGLTest();
 
     void data();
@@ -42,11 +44,17 @@ BufferDataGLTest::BufferDataGLTest() {
               &BufferDataGLTest::subData});
 }
 
-namespace {
-    constexpr Int Data[] = {2, 7, 5, 13, 25};
-}
+constexpr Int Data[] = {2, 7, 5, 13, 25};
 
 void BufferDataGLTest::data() {
+    #ifndef MAGNUM_TARGET_GLES
+    if(!GL::Context::current().isExtensionSupported<GL::Extensions::ARB::map_buffer_range>())
+        CORRADE_SKIP(GL::Extensions::ARB::map_buffer_range::string() + std::string(" is not supported"));
+    #elif defined(MAGNUM_TARGET_GLES2)
+    if(!GL::Context::current().isExtensionSupported<GL::Extensions::EXT::map_buffer_range>())
+        CORRADE_SKIP(GL::Extensions::EXT::map_buffer_range::string() + std::string(" is not supported"));
+    #endif
+
     GL::Buffer buffer;
     buffer.setData(Data, GL::BufferUsage::StaticDraw);
     const Containers::Array<Int> contents = bufferData<Int>(buffer);
@@ -56,6 +64,14 @@ void BufferDataGLTest::data() {
 }
 
 void BufferDataGLTest::subData() {
+    #ifndef MAGNUM_TARGET_GLES
+    if(!GL::Context::current().isExtensionSupported<GL::Extensions::ARB::map_buffer_range>())
+        CORRADE_SKIP(GL::Extensions::ARB::map_buffer_range::string() + std::string(" is not supported"));
+    #elif defined(MAGNUM_TARGET_GLES2)
+    if(!GL::Context::current().isExtensionSupported<GL::Extensions::EXT::map_buffer_range>())
+        CORRADE_SKIP(GL::Extensions::EXT::map_buffer_range::string() + std::string(" is not supported"));
+    #endif
+
     GL::Buffer buffer;
     buffer.setData(Data, GL::BufferUsage::StaticDraw);
     const Containers::Array<Int> contents = bufferSubData<Int>(buffer, 4, 3);
@@ -64,6 +80,6 @@ void BufferDataGLTest::subData() {
         TestSuite::Compare::Container);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::DebugTools::Test::BufferDataGLTest)

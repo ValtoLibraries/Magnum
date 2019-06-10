@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 #include "Image.h"
 
 #include "Magnum/PixelFormat.h"
+#include "Magnum/Implementation/ImagePixelView.h"
 
 namespace Magnum {
 
@@ -42,6 +43,14 @@ template<UnsignedInt dimensions> Image<dimensions>::Image(const PixelStorage sto
 template<UnsignedInt dimensions> Image<dimensions>::Image(const PixelStorage storage, const UnsignedInt format, const UnsignedInt formatExtra, const UnsignedInt pixelSize) noexcept: Image{storage, pixelFormatWrap(format), formatExtra, pixelSize} {}
 
 template<UnsignedInt dimensions> Image<dimensions>::Image(const PixelStorage storage, const PixelFormat format, const UnsignedInt formatExtra, const UnsignedInt pixelSize) noexcept: _storage{storage}, _format{format}, _formatExtra{formatExtra}, _pixelSize{pixelSize}, _data{} {}
+
+template<UnsignedInt dimensions> Containers::StridedArrayView<dimensions + 1, char> Image<dimensions>::pixels() {
+    return Implementation::imagePixelView<dimensions, char>(*this);
+}
+
+template<UnsignedInt dimensions> Containers::StridedArrayView<dimensions + 1, const char> Image<dimensions>::pixels() const {
+    return Implementation::imagePixelView<dimensions, const char>(*this);
+}
 
 template<UnsignedInt dimensions> CompressedImage<dimensions>::CompressedImage(const CompressedPixelStorage storage, const CompressedPixelFormat format, const VectorTypeFor<dimensions, Int>& size, Containers::Array<char>&& data) noexcept: _storage{storage}, _format{format}, _size{size}, _data{std::move(data)} {}
 

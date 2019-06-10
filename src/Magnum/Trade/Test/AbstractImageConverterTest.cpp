@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,9 +25,11 @@
 
 #include <sstream>
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Container.h>
 #include <Corrade/TestSuite/Compare/FileToString.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 
 #include "Magnum/Image.h"
@@ -37,7 +39,7 @@
 
 #include "configure.h"
 
-namespace Magnum { namespace Trade { namespace Test {
+namespace Magnum { namespace Trade { namespace Test { namespace {
 
 class AbstractImageConverterTest: public TestSuite::Tester {
     public:
@@ -308,8 +310,6 @@ void AbstractImageConverterTest::exportCompressedToDataNotImplemented() {
     CORRADE_COMPARE(out.str(), "Trade::AbstractImageConverter::exportToData(): feature advertised but not implemented\n");
 }
 
-namespace {
-
 class ImageDataExporter: public Trade::AbstractImageConverter {
     private:
         Features doFeatures() const override { return Feature::ConvertData|Feature::ConvertCompressedData; }
@@ -322,8 +322,6 @@ class ImageDataExporter: public Trade::AbstractImageConverter {
             return Containers::Array<char>{Containers::InPlaceInit, {'C'}};
         };
 };
-
-}
 
 void AbstractImageConverterTest::exportImageDataToData() {
     ImageDataExporter exporter;
@@ -541,6 +539,6 @@ void AbstractImageConverterTest::debugFeatures() {
     CORRADE_COMPARE(out.str(), "Trade::AbstractImageConverter::Feature::ConvertData|Trade::AbstractImageConverter::Feature::ConvertCompressedFile Trade::AbstractImageConverter::Features{}\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Trade::Test::AbstractImageConverterTest)

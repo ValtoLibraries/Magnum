@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,12 +35,6 @@
 #include "Magnum/Magnum.h"
 #include "Magnum/Math/Vector3.h"
 
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-#include "Magnum/GL/PixelFormat.h"
-
-#include <tuple>
-#endif
-
 namespace Magnum {
 
 /**
@@ -53,24 +47,6 @@ Descibes how to interpret data which are read from or stored into @ref Image,
 */
 class MAGNUM_EXPORT PixelStorage {
     public:
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        /** @brief Pixel size
-         * @deprecated Use @ref Magnum::pixelSize() or  @ref GL::pixelSize()
-         *      instead.
-         */
-        template<class = void> static CORRADE_DEPRECATED("use GL::pixelSize() instead") std::size_t pixelSize(GL::PixelFormat format, GL::PixelType type);
-
-        /** @brief Pixel size
-         * @deprecated Use @ref Magnum::pixelSize() or  @ref GL::pixelSize()
-         *      instead.
-         */
-        template<class T = void> static CORRADE_DEPRECATED("use GL::pixelSize() instead") std::size_t pixelSize(PixelFormat format, GL::PixelType type) {
-            CORRADE_IGNORE_DEPRECATED_PUSH
-            return pixelSize<T>(GL::PixelFormat(format), type);
-            CORRADE_IGNORE_DEPRECATED_POP
-        }
-        #endif
-
         /**
          * @brief Default constructor
          *
@@ -155,32 +131,6 @@ class MAGNUM_EXPORT PixelStorage {
          * @see @ref GL::pixelSize()
          */
         std::pair<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>> dataProperties(std::size_t pixelSize, const Vector3i& size) const;
-
-        #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-        /** @brief @copybrief dataProperties(std::size_t, const Vector3i&) const
-         *
-         * Returns byte offset in each direction, (row length, row count, layer
-         * count) and pixel size for image of given @p size with current pixel
-         * storage parameters, @p format and @p type.
-         * @deprecated Use @ref dataProperties(std::size_t, const Vector3i&) const
-         *      instead.
-         */
-        template<class = void> CORRADE_DEPRECATED("use dataProperties(std::size_t, const Vector3i&) instead") std::tuple<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>, std::size_t> dataProperties(GL::PixelFormat format, GL::PixelType type, const Vector3i& size) const;
-
-        /** @brief @copybrief dataProperties(std::size_t, const Vector3i&) const
-         *
-         * Returns byte offset in each direction, (row length, row count, layer
-         * count) and pixel size for image of given @p size with current pixel
-         * storage parameters, @p format and @p type.
-         * @deprecated Use @ref dataProperties(std::size_t, const Vector3i&) const
-         *      instead.
-         */
-        template<class T = void> CORRADE_DEPRECATED("use dataProperties(std::size_t, const Vector3i&) instead") std::tuple<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>, std::size_t> dataProperties(PixelFormat format, GL::PixelType type, const Vector3i& size) const {
-            CORRADE_IGNORE_DEPRECATED_PUSH
-            return dataProperties<T>(GL::PixelFormat(format), type, size);
-            CORRADE_IGNORE_DEPRECATED_POP
-        }
-        #endif
 
     #ifndef DOXYGEN_GENERATING_OUTPUT
     protected:
@@ -295,54 +245,35 @@ class MAGNUM_EXPORT CompressedPixelStorage: public PixelStorage {
 
 constexpr PixelStorage::PixelStorage() noexcept: _rowLength{0}, _imageHeight{0}, _skip{0}, _alignment{4} {}
 
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-/* These have to be in the header because GL::pixelSize() is in Magnum::GL and
-   putting that in the source would mean undefined reference. And MSVC would
-   instantiate them in the source if these wouldn't be templated. */
-template<class> inline std::size_t PixelStorage::pixelSize(const GL::PixelFormat format, const GL::PixelType type) {
-    return GL::pixelSize(format, type);
-}
-
-template<class> inline std::tuple<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>, std::size_t> PixelStorage::dataProperties(const GL::PixelFormat format, const GL::PixelType type, const Vector3i& size) const {
-    const std::size_t pixelSize = GL::pixelSize(format, type);
-    Math::Vector3<std::size_t> offset, dataSize;
-    std::tie(offset, dataSize) = dataProperties(pixelSize, size);
-    return std::make_tuple(offset, dataSize, pixelSize);
-}
-#endif
-
 namespace Implementation {
     /* Used in *Image::dataProperties() */
     template<std::size_t dimensions, class T> std::pair<Math::Vector<dimensions, std::size_t>, Math::Vector<dimensions, std::size_t>> imageDataProperties(const T& image) {
-        Math::Vector3<std::size_t> offset, dataSize;
-        std::tie(offset, dataSize) = image.storage().dataProperties(image.pixelSize(), Vector3i::pad(image.size(), 1));
-        return std::make_pair(Math::Vector<dimensions, std::size_t>::pad(offset), Math::Vector<dimensions, std::size_t>::pad(dataSize));
+        std::pair<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>> dataProperties = image.storage().dataProperties(image.pixelSize(), Vector3i::pad(image.size(), 1));
+        return std::make_pair(Math::Vector<dimensions, std::size_t>::pad(dataProperties.first), Math::Vector<dimensions, std::size_t>::pad(dataProperties.second));
     }
 
     /* Used in Compressed*Image::dataProperties() */
     template<std::size_t dimensions, class T> std::pair<Math::Vector<dimensions, std::size_t>, Math::Vector<dimensions, std::size_t>> compressedImageDataProperties(const T& image) {
-        Math::Vector3<std::size_t> offset, blockCount;
-        std::tie(offset, blockCount) = image.storage().dataProperties(Vector3i::pad(image.size(), 1));
-        return std::make_pair(Math::Vector<dimensions, std::size_t>::pad(offset), Math::Vector<dimensions, std::size_t>::pad(blockCount));
+        std::pair<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>> dataProperties = image.storage().dataProperties(Vector3i::pad(image.size(), 1));
+        return std::make_pair(Math::Vector<dimensions, std::size_t>::pad(dataProperties.first), Math::Vector<dimensions, std::size_t>::pad(dataProperties.second));
     }
 
     /* Used in image query functions */
     template<std::size_t dimensions, class T> std::size_t imageDataSizeFor(const T& image, const Math::Vector<dimensions, Int>& size) {
-        Math::Vector3<std::size_t> offset, dataSize;
-        std::tie(offset, dataSize) = image.storage().dataProperties(image.pixelSize(), Vector3i::pad(size, 1));
+        std::pair<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>> dataProperties = image.storage().dataProperties(image.pixelSize(), Vector3i::pad(size, 1));
 
         /* Smallest line/rectangle/cube that covers the area */
         std::size_t dataOffset = 0;
-        if(offset.z())
-            dataOffset += offset.z();
-        else if(offset.y()) {
+        if(dataProperties.first.z())
+            dataOffset += dataProperties.first.z();
+        else if(dataProperties.first.y()) {
             if(!image.storage().imageHeight())
-                dataOffset += offset.y();
-        } else if(offset.x()) {
+                dataOffset += dataProperties.first.y();
+        } else if(dataProperties.first.x()) {
             if(!image.storage().rowLength())
-                dataOffset += offset.x();
+                dataOffset += dataProperties.first.x();
         }
-        return dataOffset + dataSize.product();
+        return dataOffset + dataProperties.second.product();
     }
 
     /* Used in data size assertions */
@@ -353,12 +284,11 @@ namespace Implementation {
     template<std::size_t dimensions, class T> std::pair<std::size_t, std::size_t> compressedImageDataOffsetSizeFor(const T& image, const Math::Vector<dimensions, Int>& size) {
         CORRADE_INTERNAL_ASSERT(image.storage().compressedBlockSize().product() && image.storage().compressedBlockDataSize());
 
-        Math::Vector3<std::size_t> offset, blockCount;
-        std::tie(offset, blockCount) = image.storage().dataProperties(Vector3i::pad(size, 1));
+        std::pair<Math::Vector3<std::size_t>, Math::Vector3<std::size_t>> dataProperties = image.storage().dataProperties(Vector3i::pad(size, 1));
 
         const auto realBlockCount = Math::Vector3<std::size_t>{(Vector3i::pad(size, 1) + image.storage().compressedBlockSize() - Vector3i{1})/image.storage().compressedBlockSize()};
 
-        return {offset.sum(), (blockCount.product() - (blockCount.x() - realBlockCount.x()) - (blockCount.y() - realBlockCount.y())*blockCount.x())*image.storage().compressedBlockDataSize()};
+        return {dataProperties.first.sum(), (dataProperties.second.product() - (dataProperties.second.x() - realBlockCount.x()) - (dataProperties.second.y() - realBlockCount.y())*dataProperties.second.x())*image.storage().compressedBlockDataSize()};
     }
 
     /* Used in image query functions */

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,21 +23,29 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <string>
 #include <Corrade/TestSuite/Tester.h>
-#ifdef _MSC_VER
-#include <algorithm> /* std::max() */
-#endif
+#include <Corrade/Utility/DebugStl.h>
 
+#include "Magnum/Math/Math.h"
 #include "Magnum/Math/TypeTraits.h"
 #include "Magnum/Math/Constants.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct TypeTraitsTest: Corrade::TestSuite::Tester {
     explicit TypeTraitsTest();
 
     void sizeOfLongDouble();
     void name();
+
+    void isScalar();
+    void isVector();
+    void isIntegral();
+    void isFloatingPoint();
+    void isUnitless();
+
+    void underlyingTypeOf();
 
     template<class T> void equalsIntegral();
     template<class T> void equalsFloatingPoint0();
@@ -52,8 +60,6 @@ struct TypeTraitsTest: Corrade::TestSuite::Tester {
     template<class T> void equalsZeroFloatingPointLarge();
 };
 
-namespace {
-
 enum: std::size_t { EqualsZeroDataCount = 3 };
 
 struct {
@@ -66,8 +72,10 @@ struct {
     Float getStep(Float) const { return aStep; }
     Double get(Double) const { return b; }
     Double getStep(Double) const { return bStep; }
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
     long double get(long double) const { return c; }
     long double getStep(long double) const { return cStep; }
+    #endif
 } EqualsZeroData[EqualsZeroDataCount] = {
     {"", -3.141592653589793f, 5.0e-5f, -3.141592653589793, 5.0e-14, -3.141592653589793l,
         #if !defined(_MSC_VER) && (!defined(CORRADE_TARGET_ANDROID) || __LP64__)
@@ -92,11 +100,17 @@ struct {
         0.2l},
 };
 
-}
-
 TypeTraitsTest::TypeTraitsTest() {
     addTests({&TypeTraitsTest::sizeOfLongDouble,
               &TypeTraitsTest::name,
+
+              &TypeTraitsTest::isScalar,
+              &TypeTraitsTest::isVector,
+              &TypeTraitsTest::isIntegral,
+              &TypeTraitsTest::isFloatingPoint,
+              &TypeTraitsTest::isUnitless,
+
+              &TypeTraitsTest::underlyingTypeOf,
 
               &TypeTraitsTest::equalsIntegral<UnsignedByte>,
               &TypeTraitsTest::equalsIntegral<Byte>,
@@ -169,12 +183,76 @@ void TypeTraitsTest::name() {
     CORRADE_COMPARE(TypeTraits<Float>::name(), std::string{"Float"});
 }
 
+void TypeTraitsTest::isScalar() {
+    CORRADE_VERIFY(IsScalar<char>::value);
+    CORRADE_VERIFY(IsScalar<UnsignedShort>::value);
+    CORRADE_VERIFY(IsScalar<Deg<Float>>::value);
+    CORRADE_VERIFY((IsScalar<Unit<Rad, Double>>::value));
+    CORRADE_VERIFY(!IsScalar<Vector2<Float>>::value);
+    CORRADE_VERIFY(!IsVector<Matrix2x3<Float>>::value);
+    CORRADE_VERIFY(!IsScalar<char*>::value);
+    CORRADE_VERIFY(!IsScalar<bool>::value);
+}
+
+void TypeTraitsTest::isVector() {
+    CORRADE_VERIFY(!IsVector<UnsignedByte>::value);
+    CORRADE_VERIFY(!IsVector<Deg<UnsignedByte>>::value);
+    CORRADE_VERIFY((IsVector<Vector<2, Deg<Float>>>::value));
+    CORRADE_VERIFY(IsVector<Color3<UnsignedByte>>::value);
+    CORRADE_VERIFY(!IsVector<Matrix2x3<Float>>::value);
+    CORRADE_VERIFY(!IsVector<char*>::value);
+}
+
+void TypeTraitsTest::isIntegral() {
+    /* These three are usually different types */
+    CORRADE_VERIFY(IsIntegral<char>::value);
+    CORRADE_VERIFY(IsIntegral<Byte>::value);
+    CORRADE_VERIFY(IsIntegral<UnsignedByte>::value);
+
+    CORRADE_VERIFY(IsIntegral<Int>::value);
+    CORRADE_VERIFY((IsIntegral<Vector<7, UnsignedInt>>::value));
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    CORRADE_VERIFY(IsIntegral<Vector2<Long>>::value);
+    #endif
+    CORRADE_VERIFY(!IsIntegral<Deg<Float>>::value);
+    CORRADE_VERIFY(!IsIntegral<char*>::value);
+    CORRADE_VERIFY(!IsIntegral<bool>::value);
+}
+
+void TypeTraitsTest::isFloatingPoint() {
+    CORRADE_VERIFY(!IsFloatingPoint<Int>::value);
+    CORRADE_VERIFY(!(IsFloatingPoint<Vector<7, UnsignedInt>>::value));
+    CORRADE_VERIFY(IsFloatingPoint<Double>::value);
+    CORRADE_VERIFY((IsFloatingPoint<Vector<2, Float>>::value));
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
+    CORRADE_VERIFY(IsFloatingPoint<Vector2<long double>>::value);
+    #endif
+    CORRADE_VERIFY(IsFloatingPoint<Deg<Float>>::value);
+    CORRADE_VERIFY((IsFloatingPoint<Unit<Rad, Float>>::value));
+    CORRADE_VERIFY(!IsFloatingPoint<Deg<Half>>::value);
+    CORRADE_VERIFY(!IsFloatingPoint<char*>::value);
+}
+
+void TypeTraitsTest::isUnitless() {
+    CORRADE_VERIFY(IsUnitless<Int>::value);
+    CORRADE_VERIFY(IsUnitless<Color4<Float>>::value);
+    CORRADE_VERIFY(!IsUnitless<Deg<Float>>::value);
+    CORRADE_VERIFY(!(IsUnitless<Unit<Rad, Double>>::value));
+    CORRADE_VERIFY(!IsUnitless<char*>::value);
+}
+
+void TypeTraitsTest::underlyingTypeOf() {
+    CORRADE_VERIFY((std::is_same<UnderlyingTypeOf<Int>, Int>::value));
+    CORRADE_VERIFY((std::is_same<UnderlyingTypeOf<Deg<Float>>, Float>::value));
+    CORRADE_VERIFY((std::is_same<UnderlyingTypeOf<Unit<Rad, Double>>, Double>::value));
+}
+
 template<class T> void TypeTraitsTest::equalsIntegral() {
     setTestCaseName(std::string{"equalsIntegral<"} + TypeTraits<T>::name() + ">");
 
-    CORRADE_VERIFY(TypeTraits<T>::equals(1, 1));
-    CORRADE_VERIFY(!TypeTraits<T>::equals(1, -1));
-    CORRADE_VERIFY(!TypeTraits<T>::equals(1, 1+TypeTraits<T>::epsilon()));
+    CORRADE_VERIFY(TypeTraits<T>::equals(T(1), T(1)));
+    CORRADE_VERIFY(!TypeTraits<T>::equals(T(1), T(-1)));
+    CORRADE_VERIFY(!TypeTraits<T>::equals(T(1), T(1)+TypeTraits<T>::epsilon()));
 }
 
 template<class T> void TypeTraitsTest::equalsFloatingPoint0() {
@@ -212,20 +290,18 @@ template<class T> void TypeTraitsTest::equalsFloatingPointNaN() {
                                           Constants<T>::nan()));
 }
 
-namespace {
-    /* Argh! Why there is no standard std::abs() for unsigned types? */
-    template<class T, class U = typename std::enable_if<std::is_unsigned<T>::value>::type> T abs(T value) {
-        return value;
-    }
-    template<class T, class U = T, class V = typename std::enable_if<!std::is_unsigned<T>::value>::type> T abs(T value) {
-        return std::abs(value);
-    }
+/* Argh! Why there is no standard std::abs() for unsigned types? */
+template<class T, class U = typename std::enable_if<std::is_unsigned<T>::value>::type> T abs(T value) {
+    return value;
+}
+template<class T, class U = T, class V = typename std::enable_if<!std::is_unsigned<T>::value>::type> T abs(T value) {
+    return std::abs(value);
 }
 
 template<class T> void TypeTraitsTest::equalsZeroIntegral() {
     setTestCaseName(std::string{"equalsZeroIntegral<"} + TypeTraits<T>::name() + ">");
 
-    const T a(-123);
+    const T a = T(-123);
     const T magnitude = abs(a);
 
     CORRADE_VERIFY(TypeTraits<T>::equals(a, a));
@@ -248,6 +324,6 @@ template<class T> void TypeTraitsTest::equalsZeroFloatingPoint() {
     CORRADE_VERIFY(!TypeTraits<T>::equalsZero(a - step*T(2.0) - a, magnitude));
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::TypeTraitsTest)

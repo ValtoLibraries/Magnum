@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,13 +25,14 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Mesh.h"
 #include "Magnum/GL/AbstractShaderProgram.h"
 #include "Magnum/GL/Mesh.h"
 #include "Magnum/GL/MeshView.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 /* Tests MeshView as well */
 
@@ -48,14 +49,7 @@ struct MeshTest: TestSuite::Tester {
     void drawCountNotSet();
     void drawViewCountNotSet();
 
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    void indexSizeDeprecated();
-    #endif
-
     void mapPrimitive();
-    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL) && !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-    void mapPrimitiveDeprecated();
-    #endif
     void mapPrimitiveInvalid();
     void mapIndexType();
     void mapIndexTypeInvalid();
@@ -74,14 +68,7 @@ MeshTest::MeshTest() {
               &MeshTest::drawCountNotSet,
               &MeshTest::drawViewCountNotSet,
 
-              #ifdef MAGNUM_BUILD_DEPRECATED
-              &MeshTest::indexSizeDeprecated,
-              #endif
-
               &MeshTest::mapPrimitive,
-              #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL) && !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-              &MeshTest::mapPrimitiveDeprecated,
-              #endif
               &MeshTest::mapPrimitiveInvalid,
               &MeshTest::mapIndexType,
               &MeshTest::mapIndexTypeInvalid,
@@ -131,11 +118,9 @@ void MeshTest::constructMoveNoCreate() {
     CORRADE_VERIFY(true);
 }
 
-namespace {
-    struct Shader: AbstractShaderProgram {
-        explicit Shader(NoCreateT): AbstractShaderProgram{NoCreate} {}
-    };
-}
+struct Shader: AbstractShaderProgram {
+    explicit Shader(NoCreateT): AbstractShaderProgram{NoCreate} {}
+};
 
 void MeshTest::drawCountNotSet() {
     std::ostringstream out;
@@ -160,16 +145,6 @@ void MeshTest::drawViewCountNotSet() {
         "GL::MeshView::draw(): setCount() was never called, probably a mistake?\n");
 }
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-void MeshTest::indexSizeDeprecated() {
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    CORRADE_COMPARE(Mesh::indexSize(Mesh::IndexType::UnsignedByte), 1);
-    CORRADE_COMPARE(Mesh::indexSize(Mesh::IndexType::UnsignedShort), 2);
-    CORRADE_COMPARE(Mesh::indexSize(Mesh::IndexType::UnsignedInt), 4);
-    CORRADE_IGNORE_DEPRECATED_POP
-}
-#endif
-
 void MeshTest::mapPrimitive() {
     CORRADE_COMPARE(meshPrimitive(Magnum::MeshPrimitive::Points), MeshPrimitive::Points);
     CORRADE_COMPARE(meshPrimitive(Magnum::MeshPrimitive::Lines), MeshPrimitive::Lines);
@@ -179,15 +154,6 @@ void MeshTest::mapPrimitive() {
     CORRADE_COMPARE(meshPrimitive(Magnum::MeshPrimitive::TriangleStrip), MeshPrimitive::TriangleStrip);
     CORRADE_COMPARE(meshPrimitive(Magnum::MeshPrimitive::TriangleFan), MeshPrimitive::TriangleFan);
 }
-
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL) && !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-void MeshTest::mapPrimitiveDeprecated() {
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    CORRADE_COMPARE(meshPrimitive(Magnum::MeshPrimitive::TriangleStripAdjacency),
-        MeshPrimitive::TriangleStripAdjacency);
-    CORRADE_IGNORE_DEPRECATED_POP
-}
-#endif
 
 void MeshTest::mapPrimitiveInvalid() {
     std::ostringstream out;
@@ -225,6 +191,6 @@ void MeshTest::debugIndexType() {
     CORRADE_COMPARE(o.str(), "GL::MeshIndexType::UnsignedShort GL::MeshIndexType(0xdead)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::MeshTest)

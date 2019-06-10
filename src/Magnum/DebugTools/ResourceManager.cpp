@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,8 +23,6 @@
     DEALINGS IN THE SOFTWARE.
 */
 
-#define _MAGNUM_DO_NOT_WARN_DEPRECATED_SHAPES
-
 #include "ResourceManager.h"
 
 #include "Magnum/ResourceManager.hpp"
@@ -35,24 +33,10 @@
 #include "Magnum/GL/Mesh.h"
 #include "Magnum/GL/MeshView.h"
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "Magnum/DebugTools/ShapeRenderer.h"
-#endif
-
 namespace Magnum {
 
 namespace Implementation {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    #endif
-    template struct MAGNUM_DEBUGTOOLS_EXPORT ResourceManagerLocalInstanceImplementation<ResourceManagerLocalInstance, GL::AbstractShaderProgram, GL::Buffer, GL::Mesh, GL::MeshView, DebugTools::ForceRendererOptions, DebugTools::ObjectRendererOptions
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        , DebugTools::ShapeRendererOptions
-        #endif
-    >;
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    CORRADE_IGNORE_DEPRECATED_POP
-    #endif
+    template struct MAGNUM_DEBUGTOOLS_EXPORT ResourceManagerLocalInstanceImplementation<ResourceManagerLocalInstance, GL::AbstractShaderProgram, GL::Buffer, GL::Mesh, GL::MeshView, DebugTools::ForceRendererOptions, DebugTools::ObjectRendererOptions>;
 }
 
 namespace DebugTools {
@@ -60,11 +44,6 @@ namespace DebugTools {
 ResourceManager::ResourceManager() {
     setFallback(new ForceRendererOptions);
     setFallback(new ObjectRendererOptions);
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    setFallback(new ShapeRendererOptions);
-    CORRADE_IGNORE_DEPRECATED_POP
-    #endif
 }
 
 ResourceManager::~ResourceManager() = default;

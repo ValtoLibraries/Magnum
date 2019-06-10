@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -250,9 +250,8 @@ template<UnsignedInt dimensions> class MultisampleTexture: public AbstractTextur
          * After calling this function the texture is immutable and calling
          * @ref setStorage() again is not allowed.
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already). If @gl_extension{ARB,texture_storage_multisample} (part of
          * OpenGL 4.3) is not available, the texture is bound and the feature
          * is emulated using plain @gl_extension{ARB,texture_multisample}
@@ -260,8 +259,6 @@ template<UnsignedInt dimensions> class MultisampleTexture: public AbstractTextur
          * @see @ref maxSize(), @ref maxColorSamples(), @ref maxDepthSamples(),
          *      @ref maxIntegerSamples(), @fn_gl2_keyword{TextureStorage2DMultisample,TexStorage2DMultisample} /
          *      @fn_gl2_keyword{TextureStorage3DMultisample,TexStorage3DMultisample},
-         *      @fn_gl_extension_keyword{TextureStorage2DMultisample,EXT,direct_state_access} /
-         *      @fn_gl_extension_keyword{TextureStorage3DMultisample,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture}
          *      and @fn_gl_keyword{TexStorage2DMultisample} / @fn_gl_keyword{TexStorage3DMultisample}
          *      or @fn_gl_keyword{TexImage2DMultisample} / @fn_gl_keyword{TexImage3DMultisample}
@@ -338,35 +335,7 @@ typedef MultisampleTexture<2> MultisampleTexture2D;
 */
 typedef MultisampleTexture<3> MultisampleTexture2DArray;
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::MultisampleTextureSampleLocations
- * @deprecated Use @ref GL::MultisampleTextureSampleLocations instead.
- */
-typedef CORRADE_DEPRECATED("use GL::MultisampleTextureSampleLocations instead") Magnum::GL::MultisampleTextureSampleLocations MultisampleTextureSampleLocations;
-
-/** @brief @copybrief GL::MultisampleTexture
- * @deprecated Use @ref GL::MultisampleTexture instead.
- */
-#ifndef CORRADE_MSVC2015_COMPATIBILITY /* Multiple definitions still broken */
-template<UnsignedInt dimensions> using MultisampleTexture CORRADE_DEPRECATED_ALIAS("use GL::MultisampleTexture instead") = Magnum::GL::MultisampleTexture<dimensions>;
-#endif
-
-/** @brief @copybrief GL::MultisampleTexture2D
- * @deprecated Use @ref GL::MultisampleTexture2D instead.
- */
-typedef CORRADE_DEPRECATED("use GL::MultisampleTexture2D instead") Magnum::GL::MultisampleTexture2D MultisampleTexture2D;
-
-/** @brief @copybrief GL::MultisampleTexture2DArray
- * @deprecated Use @ref GL::MultisampleTexture2DArray instead.
- */
-typedef CORRADE_DEPRECATED("use GL::MultisampleTexture2DArray instead") Magnum::GL::MultisampleTexture2DArray MultisampleTexture2DArray;
-#endif
-
-}
+}}
 #else
 #error this header is not available in OpenGL ES 2.0 and WebGL build
 #endif

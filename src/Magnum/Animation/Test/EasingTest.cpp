@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,11 +27,11 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Numeric.h>
-#include <Corrade/Utility/Format.h>
+#include <Corrade/Utility/FormatStl.h>
 
 #include "Magnum/Animation/Easing.h"
 
-namespace Magnum { namespace Animation { namespace Test {
+namespace Magnum { namespace Animation { namespace Test { namespace {
 
 struct EasingTest: TestSuite::Tester {
     explicit EasingTest();
@@ -43,8 +43,6 @@ struct EasingTest: TestSuite::Tester {
 
     void benchmark();
 };
-
-namespace {
 
 #define _c(name) #name, Easing::name
 constexpr struct {
@@ -188,8 +186,6 @@ constexpr struct {
 };
 #undef _c
 
-}
-
 EasingTest::EasingTest() {
     addInstancedTests({&EasingTest::bounds},
         Containers::arraySize(BoundsData));
@@ -207,9 +203,7 @@ EasingTest::EasingTest() {
         Containers::arraySize(ValueData));
 }
 
-namespace {
-    constexpr std::size_t PropertyVerificationStepCount = 50;
-}
+enum: std::size_t { PropertyVerificationStepCount = 50 };
 
 void EasingTest::bounds() {
     auto&& data = BoundsData[testCaseInstanceId()];
@@ -264,9 +258,7 @@ void EasingTest::values() {
     CORRADE_COMPARE(data.function(0.75f), data.values[2]);
 }
 
-namespace {
-    constexpr Int BenchmarkStepCount = 5000;
-}
+enum: Int { BenchmarkStepCount = 5000 };
 
 void EasingTest::benchmark() {
     auto&& data = ValueData[testCaseInstanceId()];
@@ -284,6 +276,6 @@ void EasingTest::benchmark() {
     CORRADE_COMPARE_AS(result, -350.0f, TestSuite::Compare::Greater);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Animation::Test::EasingTest)

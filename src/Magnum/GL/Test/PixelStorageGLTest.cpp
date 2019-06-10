@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,7 +40,7 @@
 #include "Magnum/GL/Framebuffer.h"
 #endif
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct PixelStorageGLTest: OpenGLTester {
     explicit PixelStorageGLTest();
@@ -81,24 +81,22 @@ PixelStorageGLTest::PixelStorageGLTest() {
               });
 }
 
-namespace {
-    constexpr const char Data2D[] = {
-        /* Row length ------------------------------------------------------ */ /* Alignment */
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        /* ------------ Skip */ /* Data ------------------------------------ */ /* Alignment */
-        '\x00', '\x00', '\x00', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x00',
-        '\x00', '\x00', '\x00', '\x06', '\x07', '\x08', '\x09', '\x0a', '\x0b', '\x00',
-        '\x00', '\x00', '\x00', '\x0c', '\x0d', '\x0e', '\x0f', '\x10', '\x11', '\x00',
-    };
+constexpr const char Data2D[] = {
+    /* Row length ------------------------------------------------------ */ /* Alignment */
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    /* ------------ Skip */ /* Data ------------------------------------ */ /* Alignment */
+    '\x00', '\x00', '\x00', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x00',
+    '\x00', '\x00', '\x00', '\x06', '\x07', '\x08', '\x09', '\x0a', '\x0b', '\x00',
+    '\x00', '\x00', '\x00', '\x0c', '\x0d', '\x0e', '\x0f', '\x10', '\x11', '\x00',
+};
 
-    constexpr const char ActualData[] = {
-        '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x00', '\x00',
-        '\x06', '\x07', '\x08', '\x09', '\x0a', '\x0b', '\x00', '\x00',
-        '\x0c', '\x0d', '\x0e', '\x0f', '\x10', '\x11', '\x00', '\x00'
-    };
-}
+constexpr const char ActualData[] = {
+    '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x00', '\x00',
+    '\x06', '\x07', '\x08', '\x09', '\x0a', '\x0b', '\x00', '\x00',
+    '\x0c', '\x0d', '\x0e', '\x0f', '\x10', '\x11', '\x00', '\x00'
+};
 
 void PixelStorageGLTest::unpack2D() {
     #ifdef MAGNUM_TARGET_GLES2
@@ -128,6 +126,9 @@ void PixelStorageGLTest::unpack2D() {
     #else
     Framebuffer fb{{{}, {2, 3}}};
     fb.attachTexture(Framebuffer::ColorAttachment{0}, texture, 0);
+
+    CORRADE_EXPECT_FAIL_IF(fb.implementationColorReadFormat() != PixelFormat::RGB, "Implementation-defined framebuffer read format is not RGB, reading will fail.");
+
     fb.read(fb.viewport(), actual);
     #endif
 
@@ -163,6 +164,9 @@ void PixelStorageGLTest::pack2D() {
     #else
     Framebuffer fb{{{}, {2, 3}}};
     fb.attachTexture(Framebuffer::ColorAttachment{0}, texture, 0);
+
+    CORRADE_EXPECT_FAIL_IF(fb.implementationColorReadFormat() != PixelFormat::RGB, "Implementation-defined framebuffer read format is not RGB, reading will fail.");
+
     fb.read(fb.viewport(), image);
     #endif
 
@@ -173,26 +177,24 @@ void PixelStorageGLTest::pack2D() {
 }
 
 #ifndef MAGNUM_TARGET_GLES2
-namespace {
-    constexpr const char Data3D[] = {
-        /* Row length ------------------------------------------------------ */ /* Alignment */
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+constexpr const char Data3D[] = {
+    /* Row length ------------------------------------------------------ */ /* Alignment */
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
 
-        /* Row length ------------------------------------------------------ */ /* Alignment */
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
-        /* ------------ Skip */ /* Data ------------------------------------ */ /* Alignment */
-        '\x00', '\x00', '\x00', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x00',
-        '\x00', '\x00', '\x00', '\x06', '\x07', '\x08', '\x09', '\x0a', '\x0b', '\x00',
-        '\x00', '\x00', '\x00', '\x0c', '\x0d', '\x0e', '\x0f', '\x10', '\x11', '\x00',
+    /* Row length ------------------------------------------------------ */ /* Alignment */
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
+    /* ------------ Skip */ /* Data ------------------------------------ */ /* Alignment */
+    '\x00', '\x00', '\x00', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x00',
+    '\x00', '\x00', '\x00', '\x06', '\x07', '\x08', '\x09', '\x0a', '\x0b', '\x00',
+    '\x00', '\x00', '\x00', '\x0c', '\x0d', '\x0e', '\x0f', '\x10', '\x11', '\x00',
 
-        /* Filling to image height not needed */
-    };
-}
+    /* Filling to image height not needed */
+};
 
 void PixelStorageGLTest::unpack3D() {
     PixelStorage storage;
@@ -260,29 +262,27 @@ void PixelStorageGLTest::pack3D() {
 #endif
 
 #ifndef MAGNUM_TARGET_GLES
-namespace {
-    constexpr const UnsignedByte CompressedData2D[] = {
-        /* Skip */
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+constexpr const UnsignedByte CompressedData2D[] = {
+    /* Skip */
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-          0,  17,  17,  34,  34,  51,  51,  67,
-        232,  57,   0,   0, 213, 255, 170,   2
-    };
+      0,  17,  17,  34,  34,  51,  51,  67,
+    232,  57,   0,   0, 213, 255, 170,   2
+};
 
-    /* Just 4x4 0x00 - 0x3f compressed using RGBA DXT3 by the driver */
-    constexpr const UnsignedByte ActualCompressedData[] = {
-          0,  17,  17,  34,  34,  51,  51,  67,
-        232,  57,   0,   0, 213, 255, 170,   2,
-    };
-}
+/* Just 4x4 0x00 - 0x3f compressed using RGBA DXT3 by the driver */
+constexpr const UnsignedByte ActualCompressedData[] = {
+      0,  17,  17,  34,  34,  51,  51,  67,
+    232,  57,   0,   0, 213, 255, 170,   2,
+};
 
 void PixelStorageGLTest::unpackCompressed2D() {
     if(!Context::current().isExtensionSupported<Extensions::ARB::compressed_texture_pixel_storage>())
@@ -339,58 +339,56 @@ void PixelStorageGLTest::packCompressed2D() {
         TestSuite::Compare::Container);
 }
 
-namespace {
-    constexpr const UnsignedByte CompressedData3D[] = {
-        /* Skip image */
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+constexpr const UnsignedByte CompressedData3D[] = {
+    /* Skip image */
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-        /* Skip rows and pixels */
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+    /* Skip rows and pixels */
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
 
-          0,  17,  17,  34,  34,  51,  51,  67,
-        232,  57,   0,   0, 213, 255, 170,   2
-    };
-}
+      0,  17,  17,  34,  34,  51,  51,  67,
+    232,  57,   0,   0, 213, 255, 170,   2
+};
 
 void PixelStorageGLTest::unpackCompressed3D() {
     if(!Context::current().isExtensionSupported<Extensions::ARB::compressed_texture_pixel_storage>())
@@ -450,6 +448,6 @@ void PixelStorageGLTest::packCompressed3D() {
 }
 #endif
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::PixelStorageGLTest)

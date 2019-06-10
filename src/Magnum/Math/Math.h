@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,6 @@
  */
 
 #include <cstddef>
-#include <Corrade/configure.h>
 
 #include "Magnum/Types.h"
 
@@ -79,6 +78,7 @@ template<class> class Vector2;
 template<class> class Vector3;
 template<class> class Vector4;
 
+template<class> struct ColorHsv;
 template<class> class Color3;
 template<class> class Color4;
 

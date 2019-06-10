@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,6 @@ namespace Magnum {
 
 @todoc testing, gl tests, coverage, travis setup
 @todoc static plugins
-@todoc speeding up compilation
 
 The following guide explains basic workflow of using
 [Emscripten](http://kripken.github.io/emscripten-site/) for deploying HTML5
@@ -98,14 +97,14 @@ In case you don't have an OpenGL ES build set up yet, you need to copy
 Magnum source to the `modules/` dir in your project so it is able to find the
 WebGL libraries.
 
-Magnum provides an Emscripten application wrapper in
-@ref Platform::Sdl2Application. See its documentation for more information
-about general usage. You can also use the Emscripten APIs directly or any other
-way.
+Magnum provides Emscripten application wrappers in @ref Platform::Sdl2Application
+and @ref Platform::EmscriptenApplication. See their documentation for more
+information about general usage. You can also use the Emscripten APIs directly
+or any other way.
 
-@note The @ref Platform::Sdl2Application also contains a fully configured
-    bootstrap project that's ready to build and deploy. Check its documentation
-    for details.
+@note @ref Platform::EmscriptenApplication also contains a fully configured
+    bootstrap project that is ready to build and deploy. Check its
+    documentation for details.
 
 To target the web browser, you need to provide a HTML markup for your
 application. Template one is below. The markup references two files,
@@ -129,7 +128,7 @@ variables.
   <h1>Magnum Emscripten Application</h1>
   <div id="container">
     <div id="sizer"><div id="expander"><div id="listener">
-      <canvas id="module"></canvas>
+      <canvas id="canvas"></canvas>
       <div id="status">Initialization...</div>
       <div id="status-description"></div>
       <script src="EmscriptenApplication.js"></script>
@@ -145,7 +144,7 @@ everything can be set up directly from the HTML markup. Replace
 @cb{.jinja} {{ application }} @ce with the name of your application executable
 and adapt page title and heading as desired. You can modify all files to your
 liking, but the HTML file must contain at least
-@cb{.html} <canvas id="module"> @ce enclosed in
+@cb{.html} <canvas id="canvas"> @ce enclosed in
 @cb{.html} <div id="listener"> @ce. The JavaScript file contains event
 listeners that print loading status on the page. The status is displayed in the
 remaining two @cb{.html} <div> @ce s, if they are available. The CSS file
@@ -199,9 +198,8 @@ EGL and WebGL libraries.
 
 Windowless Magnum apps (i.e. apps that use the OpenGL context without a window)
 can be run in the browser as well using the @ref Platform::WindowlessEglApplication
-class. See its documentation for more information
-about general usage. You can also use the Emscripten APIs directly or any other
-way.
+class. See its documentation for more information about general usage. You can
+also use the Emscripten APIs directly or any other way.
 
 @note @ref Platform::WindowlessEglApplication also contains a fully configured
     bootstrap project that's ready to build and deploy. Check its documentation
@@ -229,7 +227,7 @@ and `MAGNUM_WEBAPPLICATION_CSS` CMake variables.
   <h1>Magnum Windowless Emscripten Application</h1>
   <div id="container">
     <div id="sizer"><div id="expander"><div id="listener">
-      <canvas id="module" class="hidden"></canvas>
+      <canvas id="canvas" class="hidden"></canvas>
       <pre id="log"></pre>
       <div id="status">Initialization...</div>
       <div id="status-description"></div>
@@ -330,6 +328,10 @@ Besides the canvas, there's minimal styling for @cb{.html} <h1> @ce,
 the @cb{.css} div#sizer @ce will center it, following the canvas width. If you
 need more advanced styling, check out [m.css](http://mcss.mosra.cz).
 
+@note It's also possible to modify the container CSS classes from the C++ side
+    using @ref Platform::EmscriptenApplication::setContainerCssClass() /
+    @ref Platform::Sdl2Application::setContainerCssClass().
+
 @section platforms-html5-events Controlling event behavior
 
 @subsection platforms-html5-events-keyboard Keyboard events
@@ -348,8 +350,11 @@ Module.doNotCaptureKeyboard = true;
 </script>
 @endcode
 
-The above is implicitly set for windowless apps, because these don't have any
-event loop.
+The above is implicitly set for @ref Platform::WindowlessEglApplication,
+because it does not have an event loop.
+
+@cb{.js} Module.doNotCaptureKeyboard @ce is not supported by
+@ref Platform::EmscriptenApplication.
 
 Another solution is to specify the element on which it should capture keybard
 using @cb{.js} Module.keyboardListeningElement @ce --- it requires the actual
@@ -360,12 +365,12 @@ make it receive keyboard input, you have to add a `tabindex` attribute to it
 like this:
 
 @code{.html}
-<canvas id="module" tabindex="0"></canvas>
+<canvas id="canvas" tabindex="0"></canvas>
 @endcode
 
 After that, the canvas can be focused with a @m_class{m-label m-default} **Tab**
 key. But because Emscripten eats all mouse input, the `mousedown` event won't
-be propagated to focus the canvas unlesss you do that manually:
+be propagated to focus the canvas unless you do that manually:
 
 @code{.js}
 Module.keyboardListeningElement = Module.canvas;
@@ -432,6 +437,57 @@ WebGL specification provide even more detail:
 
 -   [Differences Between WebGL and OpenGL ES 2.0](http://www.khronos.org/registry/webgl/specs/latest/1.0/#6)
 -   [Differences Between WebGL and OpenGL ES 3.0](https://www.khronos.org/registry/webgl/specs/latest/2.0/#5)
+
+@section platforms-html5-code-size Compilation time / code size tradeoffs
+
+By default, the toolchain configures the compiler and linker to use `-O3` in
+`Release` builds, together with enabling `--llvm-lto 1` for the linker. When
+deploying, ensure your `CMAKE_BUILD_TYPE` is set to `Release`, otherwise the
+generated file sizes will be huge due to the additional debug information and
+non-minified JS driver file. Also, unless you need compatibility with
+non-WebAssembly-capable browsers, ensure you're compiling with the
+`Emscripten-wasm.cmake` toolchain. Further optimizations are possible but are
+not enabled by default in the toolchain file due to the features either slowing
+down the build significantly or being very recent:
+
+-   use [`-Os`](https://emscripten.org/docs/tools_reference/emcc.html#emcc-os)
+    or [`-Oz`](https://emscripten.org/docs/tools_reference/emcc.html#emcc-oz)
+    to compile and link with optimizations for code size at the expense of
+    performance and increased compile times
+-   enable [`--closure 1`](https://emscripten.org/docs/tools_reference/emcc.html#emcc-closure)
+    for further minification of the JavaScript driver file (the @ref Audio
+    library needs at least Emscripten 1.38.21, see
+    [emscripten-core/emscripten#7558](https://github.com/emscripten-core/emscripten/pull/7558)
+    for more information) --- however, be prepared for *serious* increase in
+    compile times and memory usage of the Closure Compiler
+-   disable assertions with [`-s ASSERTIONS=0`](https://emscripten.org/docs/tools_reference/emcc.html#emcc-s-option-value)
+    (enabled by default)
+-   [`-s MINIMAL_RUNTIME=1`](https://github.com/emscripten-core/emscripten/pull/7923)
+    (new since 1.38.27) --- note that, while this leads to significant size
+    savings, it currently requires significant amount of work on the
+    application side and Magnum was not yet tested with this option enabled
+-   [`-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1`](https://github.com/emscripten-core/emscripten/pull/7977)
+    (new since 1.38.27) --- leads to minor code size savings as well
+
+On the other hand, if you need shorter compile times and don't care much about
+code size (for example when testing on the CIs), consider *removing* some of
+these flags --- especially removing `-O3` and `--llvm-lto` can result in
+significant compile speed gains.
+
+@subsection platforms-html5-code-size-server Server-side compression
+
+Servers are usually configured to apply GZip compression to plain text files
+(CSS, JS and HTML), but the WebAssembly binary is nicely compressible as well.
+With Apache, for example, adding this line to `.htaccess` will make the `*.wasm`
+files compressed on-the-fly as well:
+
+    AddOutputFilter DEFLATE wasm
+
+@todoc use .htaccess extension for the code here once Pygments know it
+
+Apart from GZip, some modern browsers support Brotli compression, which leads
+to much bigger size savings. Details in this
+[Qt blog post](https://blog.qt.io/blog/2018/11/19/getting-started-qt-webassembly/).
 
 @section platforms-html5-troubleshooting Troubleshooting
 

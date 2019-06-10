@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -131,27 +131,6 @@ class MAGNUM_GL_EXPORT AbstractObject {
 
 CORRADE_ENUMSET_OPERATORS(ObjectFlags)
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::ObjectFlag
- * @deprecated Use @ref GL::ObjectFlag instead.
- */
-typedef CORRADE_DEPRECATED("use GL::ObjectFlag instead") Magnum::GL::ObjectFlag ObjectFlag;
-
-/** @brief @copybrief GL::ObjectFlags
- * @deprecated Use @ref GL::ObjectFlags instead.
- */
-typedef CORRADE_DEPRECATED("use GL::ObjectFlags instead") Magnum::GL::ObjectFlags ObjectFlags;
-
-/** @brief @copybrief GL::AbstractObject
- * @deprecated Use @ref GL::AbstractObject instead.
- */
-typedef CORRADE_DEPRECATED("use GL::AbstractObject instead") Magnum::GL::AbstractObject AbstractObject;
-#endif
-
-}
+}}
 
 #endif

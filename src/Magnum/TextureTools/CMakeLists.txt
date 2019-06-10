@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,6 +67,10 @@ install(TARGETS MagnumTextureTools
 install(FILES ${MagnumTextureTools_HEADERS} DESTINATION ${MAGNUM_INCLUDE_INSTALL_DIR}/TextureTools)
 
 if(WITH_DISTANCEFIELDCONVERTER)
+    if(NOT TARGET_GL)
+        message(SEND_ERROR "magnum-distancefieldconverter is available only if TARGET_GL is enabled")
+    endif()
+
     add_executable(magnum-distancefieldconverter distancefieldconverter.cpp)
     target_link_libraries(magnum-distancefieldconverter PRIVATE
         Magnum

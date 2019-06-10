@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -91,14 +91,6 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
     friend Implementation::TextureState;
 
     public:
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief @copybrief CubeMapCoordinate
-         * @deprecated Use @ref CubeMapCoordinate instead.
-         */
-        typedef CORRADE_DEPRECATED("use CubeMapCoordinate instead") CubeMapCoordinate Coordinate;
-        #endif
-
         /**
          * @brief Max supported size of one side of cube map texture
          *
@@ -434,7 +426,7 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
          * @requires_es_extension OpenGL ES 3.0 or extension
          *      @gl_extension{EXT,sRGB} and
          *      @gl_extension{ANDROID,extension_pack_es31a} /
-         *      @gl_extension2{EXT,texture_sRGB_decode,texture_sRGB_decode}
+         *      @gl_extension{EXT,texture_sRGB_decode}
          * @requires_gles sRGB decode is not available in WebGL.
          */
         CubeMapTexture& setSrgbDecode(bool decode) {
@@ -653,23 +645,17 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
          * @ref imageSize(). The storage is not reallocated if it is large
          * enough to contain the new data.
          *
-         * If neither @gl_extension{ARB,get_texture_sub_image} (part of OpenGL
-         * 4.5) nor @gl_extension{EXT,direct_state_access} is available, the
-         * texture is bound before the operation (if not already). If either
-         * @gl_extension{ARB,get_texture_sub_image} or @gl_extension{ARB,robustness}
-         * is available, the operation is protected from buffer overflow.
-         * However, if @gl_extension{ARB,get_texture_sub_image} is not available
-         * and both @gl_extension{EXT,direct_state_access} and
-         * @gl_extension{ARB,robustness} are available, the robust operation is
-         * preferred over DSA.
+         * If @gl_extension{ARB,get_texture_sub_image} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
+         * already). If either @gl_extension{ARB,get_texture_sub_image} or
+         * @gl_extension{ARB,robustness} is available, the operation is
+         * protected from buffer overflow.
          * @see @fn_gl2{GetTextureLevelParameter,GetTexLevelParameter},
-         *      @fn_gl_extension{GetTextureLevelParameter,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl{GetTexLevelParameter} with @def_gl{TEXTURE_WIDTH},
          *      @def_gl{TEXTURE_HEIGHT}, then @fn_gl{PixelStore}, then
          *      @fn_gl_keyword{GetTextureSubImage},
          *      @fn_gl_extension_keyword{GetnTexImage,ARB,robustness},
-         *      @fn_gl_extension_keyword{GetTextureImage,EXT,direct_state_access},
          *      eventually @fn_gl_keyword{GetTexImage}
          * @requires_gl Texture image queries are not available in OpenGL ES or
          *      WebGL. See @ref Framebuffer::read() or @ref DebugTools::textureSubImage()
@@ -712,24 +698,18 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
          * size is taken using @ref imageSize(). The storage is not reallocated
          * if it is large enough to contain the new data.
          *
-         * If neither @gl_extension{ARB,get_texture_sub_image} (part of OpenGL
-         * 4.5) nor @gl_extension{EXT,direct_state_access} is available, the
-         * texture is bound before the operation (if not already). If either
-         * @gl_extension{ARB,get_texture_sub_image} or @gl_extension{ARB,robustness}
-         * is available, the operation is protected from buffer overflow.
-         * However, if @gl_extension{ARB,get_texture_sub_image} is not available
-         * and both @gl_extension{EXT,direct_state_access} and
-         * @gl_extension{ARB,robustness} are available, the robust operation is
-         * preferred over DSA.
+         * If @gl_extension{ARB,get_texture_sub_image} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
+         * already). If either @gl_extension{ARB,get_texture_sub_image} or
+         * @gl_extension{ARB,robustness} is available, the operation is
+         * protected from buffer overflow.
          * @see @fn_gl2{GetTextureLevelParameter,GetTexLevelParameter},
-         *      @fn_gl_extension{GetTextureLevelParameter,EXT,direct_state_access},
          *      eventually @fn_gl{GetTexLevelParameter} with
          *      @def_gl{TEXTURE_COMPRESSED_IMAGE_SIZE},
          *      @def_gl{TEXTURE_INTERNAL_FORMAT}, @def_gl{TEXTURE_WIDTH},
          *      @def_gl{TEXTURE_HEIGHT}, then @fn_gl{PixelStore}, then
          *      @fn_gl_keyword{GetCompressedTextureSubImage},
          *      @fn_gl_extension_keyword{GetnCompressedTexImage,ARB,robustness},
-         *      @fn_gl_extension_keyword{GetCompressedTextureImage,EXT,direct_state_access},
          *      eventually @fn_gl_keyword{GetCompressedTexImage}
          * @requires_gl42 Extension @gl_extension{ARB,compressed_texture_pixel_storage}
          *      for non-default @ref CompressedPixelStorage
@@ -830,9 +810,7 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
          *      WebGL. See @ref Framebuffer::read() or @ref DebugTools::textureSubImage()
          *      for possible workarounds.
          */
-        void compressedSubImage(Int level, const Range3Di& range, CompressedImage3D& image) {
-            AbstractTexture::compressedSubImage<3>(level, range, image);
-        }
+        void compressedSubImage(Int level, const Range3Di& range, CompressedImage3D& image);
 
         /** @overload
          *
@@ -858,9 +836,7 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
          *      WebGL. See @ref Framebuffer::read() or @ref DebugTools::textureSubImage()
          *      for possible workarounds.
          */
-        void compressedSubImage(Int level, const Range3Di& range, CompressedBufferImage3D& image, BufferUsage usage) {
-            AbstractTexture::compressedSubImage<3>(level, range, image, usage);
-        }
+        void compressedSubImage(Int level, const Range3Di& range, CompressedBufferImage3D& image, BufferUsage usage);
 
         /** @overload
          *
@@ -1164,7 +1140,6 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
         void MAGNUM_GL_LOCAL getLevelParameterImplementationDefault(GLint level, GLenum parameter, GLint* values);
         #ifndef MAGNUM_TARGET_GLES
         void MAGNUM_GL_LOCAL getLevelParameterImplementationDSA(GLint level, GLenum parameter, GLint* values);
-        void MAGNUM_GL_LOCAL getLevelParameterImplementationDSAEXT(GLint level, GLenum parameter, GLint* values);
         #endif
         #endif
 
@@ -1173,8 +1148,6 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
         GLint MAGNUM_GL_LOCAL getLevelCompressedImageSizeImplementationDefaultImmutableWorkaround(GLint level);
         GLint MAGNUM_GL_LOCAL getLevelCompressedImageSizeImplementationDSA(GLint level);
         GLint MAGNUM_GL_LOCAL getLevelCompressedImageSizeImplementationDSANonImmutableWorkaround(GLint level);
-        GLint MAGNUM_GL_LOCAL getLevelCompressedImageSizeImplementationDSAEXT(GLint level);
-        GLint MAGNUM_GL_LOCAL getLevelCompressedImageSizeImplementationDSAEXTImmutableWorkaround(GLint level);
         #endif
 
         #ifndef MAGNUM_TARGET_GLES
@@ -1183,12 +1156,10 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
 
         void MAGNUM_GL_LOCAL getImageImplementationDefault(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, PixelFormat format, PixelType type, std::size_t dataSize, GLvoid* data);
         void MAGNUM_GL_LOCAL getImageImplementationDSA(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, PixelFormat format, PixelType type, std::size_t dataSize, GLvoid* data);
-        void MAGNUM_GL_LOCAL getImageImplementationDSAEXT(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, PixelFormat format, PixelType type, std::size_t dataSize, GLvoid* data);
         void MAGNUM_GL_LOCAL getImageImplementationRobustness(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, PixelFormat format, PixelType type, std::size_t dataSize, GLvoid* data);
 
         void MAGNUM_GL_LOCAL getCompressedImageImplementationDefault(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, std::size_t dataSize, GLvoid* data);
         void MAGNUM_GL_LOCAL getCompressedImageImplementationDSA(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, std::size_t dataSize, GLvoid* data);
-        void MAGNUM_GL_LOCAL getCompressedImageImplementationDSAEXT(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, std::size_t dataSize, GLvoid* data);
         void MAGNUM_GL_LOCAL getCompressedImageImplementationRobustness(CubeMapCoordinate coordinate, GLint level, const Vector2i& size, std::size_t dataSize, GLvoid* data);
         #endif
 
@@ -1200,32 +1171,14 @@ class MAGNUM_GL_EXPORT CubeMapTexture: public AbstractTexture {
         void MAGNUM_GL_LOCAL subImageImplementationDefault(CubeMapCoordinate coordinate, GLint level, const Vector2i& offset, const Vector2i& size, PixelFormat format, PixelType type, const GLvoid* data);
         #ifndef MAGNUM_TARGET_GLES
         void MAGNUM_GL_LOCAL subImageImplementationDSA(CubeMapCoordinate coordinate, GLint level, const Vector2i& offset, const Vector2i& size, PixelFormat format, PixelType type, const GLvoid* data);
-        void MAGNUM_GL_LOCAL subImageImplementationDSAEXT(CubeMapCoordinate coordinate, GLint level, const Vector2i& offset, const Vector2i& size, PixelFormat format, PixelType type, const GLvoid* data);
         #endif
 
         void MAGNUM_GL_LOCAL compressedSubImageImplementationDefault(CubeMapCoordinate coordinate, GLint level, const Vector2i& offset, const Vector2i& size, CompressedPixelFormat format, const GLvoid* data, GLsizei dataSize);
         #ifndef MAGNUM_TARGET_GLES
         void MAGNUM_GL_LOCAL compressedSubImageImplementationDSA(CubeMapCoordinate coordinate, GLint level, const Vector2i& offset, const Vector2i& size, CompressedPixelFormat format, const GLvoid* data, GLsizei dataSize);
-        void MAGNUM_GL_LOCAL compressedSubImageImplementationDSAEXT(CubeMapCoordinate coordinate, GLint level, const Vector2i& offset, const Vector2i& size, CompressedPixelFormat format, const GLvoid* data, GLsizei dataSize);
         #endif
 };
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::CubeMapCoordinate
- * @deprecated Use @ref GL::CubeMapCoordinate instead.
- */
-typedef CORRADE_DEPRECATED("use GL::CubeMapCoordinate instead") Magnum::GL::CubeMapCoordinate CubeMapCoordinate;
-
-/** @brief @copybrief GL::CubeMapTexture
- * @deprecated Use @ref GL::CubeMapTexture instead.
- */
-typedef CORRADE_DEPRECATED("use GL::CubeMapTexture instead") Magnum::GL::CubeMapTexture CubeMapTexture;
-#endif
-
-}
+}}
 
 #endif

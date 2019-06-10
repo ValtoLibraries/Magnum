@@ -29,15 +29,18 @@
  * @brief Class @ref Magnum::Platform::WindowlessEglApplication, @ref Magnum::Platform::WindowlessEglContext, macro @ref MAGNUM_WINDOWLESSEGLAPPLICATION_MAIN()
  */
 
-#include <memory>
+#include "Magnum/configure.h"
+
+#ifdef MAGNUM_TARGET_GL
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <Corrade/Containers/EnumSet.h>
 /* undef Xlib nonsense to avoid conflicts */
 #undef Always
 #undef Complex
 #undef None
 #undef Status
+#include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Containers/Pointer.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/GL/OpenGL.h"
@@ -57,6 +60,10 @@ Meant to be used when there is a need to manage (multiple) GL contexts
 manually. See @ref platform-windowless-contexts for more information. If no
 other application header is included, this class is also aliased to
 @cpp Platform::WindowlessGLContext @ce.
+
+@note This class is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 class WindowlessEglContext {
     public:
@@ -434,7 +441,7 @@ class WindowlessEglApplication {
 
     private:
         WindowlessEglContext _glContext;
-        std::unique_ptr<Platform::GLContext> _context;
+        Containers::Pointer<Platform::GLContext> _context;
 };
 
 /** @hideinitializer
@@ -473,5 +480,8 @@ typedef WindowlessEglContext WindowlessGLContext;
 #endif
 
 }}
+#else
+#error this header is available only in the OpenGL build
+#endif
 
 #endif

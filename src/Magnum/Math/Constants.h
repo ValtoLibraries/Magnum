@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
  * @brief Class @ref Magnum::Math::Constants
  */
 
-#include <cmath>
+#include <Corrade/Utility/StlMath.h>
 
 #include "Magnum/Types.h"
 
@@ -40,11 +40,9 @@ namespace Magnum { namespace Math {
 
 @see @ref Magnum::Constants, @ref Magnum::Constantsd
 */
+#ifdef DOXYGEN_GENERATING_OUTPUT
 template<class T> struct Constants {
-    Constants() = delete;
-
     /* See TypeTraits for answer why these are functions and not constants. */
-    #ifdef DOXYGEN_GENERATING_OUTPUT
     /**
      * @brief @f$ \pi @f$.
      *
@@ -141,8 +139,10 @@ template<class T> struct Constants {
      * @see @ref isInf()
      */
     static constexpr T inf();
-    #endif
 };
+#else
+template<class> struct Constants;
+#endif
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 template<> struct Constants<Double> {

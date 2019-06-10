@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -34,6 +34,8 @@
 #include <initializer_list>
 #include <vector>
 #include <al.h>
+
+#include <Corrade/Containers/Containers.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Audio/Audio.h"
@@ -507,6 +509,28 @@ class MAGNUM_AUDIO_EXPORT Source {
          */
         Source& setBuffer(Buffer* buffer);
 
+        /**
+         * @brief Queue buffers
+         * @param buffers       Buffers to queue
+         * @return Reference to self (for method chaining)
+         *
+         * Changes source type to @ref Type::Streaming. The buffers must be
+         * already filled with data.
+         * @see @ref type(), @fn_al_keyword{SourceQueueBuffers}
+         */
+        Source& queueBuffers(Containers::ArrayView<Containers::Reference<Buffer>> buffers);
+
+        /**
+         * @brief Unqueue buffers
+         * @param buffers       Buffers to unqueue
+         * @return The number of unqueued buffers
+         *
+         * The unqueued buffers will be listed in the prefix of the array. Use
+         * @ref Corrade::Containers::ArrayView::prefix() to get it.
+         * @see @fn_al_keyword{SourceUnqueueBuffers}
+         */
+        std::size_t unqueueBuffers(Containers::ArrayView<Containers::Reference<Buffer>> buffers);
+
         /*@}*/
 
         /** @{ @name State management */
@@ -724,6 +748,9 @@ class MAGNUM_AUDIO_EXPORT Source {
 /** @debugoperatorclassenum{Source,Source::State} */
 MAGNUM_AUDIO_EXPORT Debug& operator<<(Debug& debug, Source::State value);
 
+/** @debugoperatorclassenum{Source,Source::Type} */
+MAGNUM_AUDIO_EXPORT Debug& operator<<(Debug& debug, Source::Type value);
+
 inline Source::Source(Source&& other): _id(other._id) {
     other._id = 0;
 }
@@ -732,6 +759,12 @@ inline Source& Source::operator=(Source&& other) {
     using std::swap;
     swap(_id, other._id);
     return *this;
+}
+
+inline auto Source::type() const -> Type {
+    ALint type;
+    alGetSourcei(_id, AL_SOURCE_TYPE, &type);
+    return Type(type);
 }
 
 inline auto Source::state() const -> State {

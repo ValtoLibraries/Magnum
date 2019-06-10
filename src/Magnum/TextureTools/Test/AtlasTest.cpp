@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,11 +25,12 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Range.h"
 #include "Magnum/TextureTools/Atlas.h"
 
-namespace Magnum { namespace TextureTools { namespace Test {
+namespace Magnum { namespace TextureTools { namespace Test { namespace {
 
 struct AtlasTest: TestSuite::Tester {
     explicit AtlasTest();
@@ -93,6 +94,6 @@ void AtlasTest::createTooSmall() {
     CORRADE_COMPARE(o.str(), "TextureTools::atlas(): requested atlas size Vector(64, 32) is too small to fit 3 Vector(25, 31) textures. Generated atlas will be empty.\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::TextureTools::Test::AtlasTest)

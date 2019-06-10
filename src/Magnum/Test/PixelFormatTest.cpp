@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,18 +25,16 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/PixelFormat.h"
 
-namespace Magnum { namespace Test {
+namespace Magnum { namespace Test { namespace {
 
 struct PixelFormatTest: TestSuite::Tester {
     explicit PixelFormatTest();
 
     void size();
-    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-    void sizeDeprecated();
-    #endif
     void sizeImplementationSpecific();
 
     void isImplementationSpecific();
@@ -60,9 +58,6 @@ struct PixelFormatTest: TestSuite::Tester {
 
 PixelFormatTest::PixelFormatTest() {
     addTests({&PixelFormatTest::size,
-              #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-              &PixelFormatTest::sizeDeprecated,
-              #endif
               &PixelFormatTest::sizeImplementationSpecific,
 
               &PixelFormatTest::isImplementationSpecific,
@@ -94,19 +89,6 @@ void PixelFormatTest::size() {
     CORRADE_COMPARE(pixelSize(PixelFormat::RGB32UI), 12);
     CORRADE_COMPARE(pixelSize(PixelFormat::RGBA32F), 16);
 }
-
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-void PixelFormatTest::sizeDeprecated() {
-    std::ostringstream out;
-    Error redirectError{&out};
-
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    pixelSize(PixelFormat::RGBA);
-    CORRADE_IGNORE_DEPRECATED_POP
-
-    CORRADE_COMPARE(out.str(), "pixelSize(): called with deprecated GL-specific format, use GL::pixelSize() instead\n");
-}
-#endif
 
 void PixelFormatTest::sizeImplementationSpecific() {
     std::ostringstream out;
@@ -211,6 +193,6 @@ void PixelFormatTest::compressedDebugImplementationSpecific() {
     CORRADE_COMPARE(out.str(), "CompressedPixelFormat::ImplementationSpecific(0xdead)\n");
 }
 
-}}
+}}}
 
 CORRADE_TEST_MAIN(Magnum::Test::PixelFormatTest)

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,13 +25,14 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Dual.h"
 #include "Magnum/Math/Quaternion.h"
 #include "Magnum/Math/Vector2.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct DualTest: Corrade::TestSuite::Tester {
     explicit DualTest();
@@ -137,6 +138,10 @@ void DualTest::constructZero() {
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Dual, ZeroInitT>::value));
     CORRADE_VERIFY((std::is_nothrow_constructible<Math::Dual<Math::Quaternion<Float>>, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Dual>::value));
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Math::Dual<Math::Quaternion<Float>>>::value));
 }
 
 void DualTest::constructNoInit() {
@@ -298,8 +303,6 @@ void DualTest::strictWeakOrdering() {
     CORRADE_VERIFY(!o(a, a));
 }
 
-namespace {
-
 template<class T> class BasicDualVec2: public Math::Dual<Math::Vector2<T>> {
     public:
         template<class ...U> constexpr BasicDualVec2(U&&... args): Math::Dual<Math::Vector2<T>>{args...} {}
@@ -311,8 +314,6 @@ template<class T> class BasicDualVec2: public Math::Dual<Math::Vector2<T>> {
 MAGNUM_DUAL_OPERATOR_IMPLEMENTATION(BasicDualVec2, Math::Vector2, T)
 
 typedef BasicDualVec2<Float> DualVec2;
-
-}
 
 void DualTest::subclassTypes() {
     const DualVec2 a;
@@ -373,6 +374,6 @@ void DualTest::debug() {
     CORRADE_COMPARE(o.str(), "Dual(2.5, -0.3)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::DualTest)

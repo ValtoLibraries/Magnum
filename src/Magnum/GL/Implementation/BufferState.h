@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,8 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 */
+
+#include <vector>
 
 #include "Magnum/GL/Buffer.h"
 
@@ -54,6 +56,7 @@ struct BufferState {
     void(*copyImplementation)(Buffer&, Buffer&, GLintptr, GLintptr, GLsizeiptr);
     #endif
     void(Buffer::*createImplementation)();
+    void(Buffer::*setTargetHintImplementation)(Buffer::TargetHint);
     void(Buffer::*getParameterImplementation)(GLenum, GLint*);
     #ifndef MAGNUM_TARGET_GLES2
     void(Buffer::*getSubDataImplementation)(GLintptr, GLsizeiptr, GLvoid*);

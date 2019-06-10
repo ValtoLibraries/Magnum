@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@ set(MagnumMath_HEADERS
     Color.h
     Complex.h
     Constants.h
+    ConfigurationValue.h
     CubicHermite.h
     Distance.h
     Dual.h
@@ -37,6 +38,7 @@ set(MagnumMath_HEADERS
     DualQuaternion.h
     Frustum.h
     Functions.h
+    FunctionsBatch.h
     Half.h
     Intersection.h
     Math.h

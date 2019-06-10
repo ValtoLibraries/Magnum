@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,14 +23,16 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
-if(Corrade_TestSuite_FOUND)
+if(WITH_TRADE)
     # Otherwise CMake complains that Corrade::PluginManager is not found, wtf
     find_package(Corrade REQUIRED PluginManager)
 
     if(CORRADE_TARGET_EMSCRIPTEN OR CORRADE_TARGET_ANDROID)
         set(DEBUGTOOLS_TEST_DIR ".")
+        set(SCREENSHOT_TEST_DIR "write")
     else()
         set(DEBUGTOOLS_TEST_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+        set(SCREENSHOT_TEST_DIR ${CMAKE_CURRENT_BINARY_DIR}/write)
     endif()
 
     # CMake before 3.8 has broken $<TARGET_FILE*> expressions for iOS (see
@@ -42,8 +44,14 @@ if(Corrade_TestSuite_FOUND)
         if(WITH_ANYIMAGEIMPORTER)
             set(ANYIMAGEIMPORTER_PLUGIN_FILENAME $<TARGET_FILE:AnyImageImporter>)
         endif()
+        if(WITH_ANYIMAGECONVERTER)
+            set(ANYIMAGECONVERTER_PLUGIN_FILENAME $<TARGET_FILE:AnyImageConverter>)
+        endif()
         if(WITH_TGAIMPORTER)
             set(TGAIMPORTER_PLUGIN_FILENAME $<TARGET_FILE:TgaImporter>)
+        endif()
+        if(WITH_TGAIMAGECONVERTER)
+            set(TGAIMAGECONVERTER_PLUGIN_FILENAME $<TARGET_FILE:TgaImageConverter>)
         endif()
 
         # First replace ${} variables, then $<> generator expressions
@@ -77,18 +85,6 @@ if(Corrade_TestSuite_FOUND)
 endif()
 
 if(TARGET_GL)
-    if(WITH_SHAPES)
-        corrade_add_test(DebugToolsCapsuleRendererTest CapsuleRendererTest.cpp LIBRARIES MagnumMathTestLib)
-        corrade_add_test(DebugToolsCylinderRendererTest CylinderRendererTest.cpp LIBRARIES MagnumMathTestLib)
-        corrade_add_test(DebugToolsLineSegmentRendererTest LineSegmentRendererTest.cpp LIBRARIES MagnumMathTestLib)
-
-        set_target_properties(
-            DebugToolsCapsuleRendererTest
-            DebugToolsCylinderRendererTest
-            DebugToolsLineSegmentRendererTest
-            PROPERTIES FOLDER "Magnum/DebugTools/Test")
-    endif()
-
     if(WITH_SCENEGRAPH)
         corrade_add_test(DebugToolsForceRendererTest ForceRendererTest.cpp LIBRARIES MagnumMathTestLib)
         set_target_properties(DebugToolsForceRendererTest PROPERTIES FOLDER "Magnum/DebugTools/Test")
@@ -102,6 +98,58 @@ if(TARGET_GL)
             corrade_add_test(DebugToolsBufferDataGLTest BufferDataGLTest.cpp LIBRARIES MagnumDebugTools MagnumOpenGLTester)
 
             set_target_properties(DebugToolsBufferDataGLTest PROPERTIES FOLDER "Magnum/DebugTools/Test")
+        endif()
+
+        if(WITH_TRADE)
+            corrade_add_test(DebugToolsScreenshotGLTest ScreenshotGLTest.cpp LIBRARIES MagnumDebugTools MagnumOpenGLTester)
+            set_target_properties(DebugToolsScreenshotGLTest PROPERTIES FOLDER "Magnum/DebugTools/Test")
+            # The configure.h file is provided for DebugToolsCompareImageTest
+            # already
+            if(NOT BUILD_PLUGINS_STATIC)
+                target_include_directories(DebugToolsScreenshotGLTest PRIVATE $<TARGET_FILE_DIR:DebugToolsCompareImageTest>)
+            else()
+                target_include_directories(DebugToolsScreenshotGLTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+                if(WITH_ANYIMAGECONVERTER)
+                    target_link_libraries(DebugToolsScreenshotGLTest PRIVATE AnyImageConverter)
+                endif()
+                if(WITH_ANYIMAGEIMPORTER)
+                    target_link_libraries(DebugToolsScreenshotGLTest PRIVATE AnyImageImporter)
+                endif()
+                if(WITH_TGAIMAGECONVERTER)
+                    target_link_libraries(DebugToolsScreenshotGLTest PRIVATE TgaImageConverter)
+                endif()
+                if(WITH_TGAIMPORTER)
+                    target_link_libraries(DebugToolsScreenshotGLTest PRIVATE TgaImporter)
+                endif()
+            endif()
+        endif()
+
+        if(WITH_SCENEGRAPH AND WITH_TRADE)
+            corrade_add_test(DebugToolsForceRendererGLTest ForceRendererGLTest.cpp
+                LIBRARIES MagnumDebugTools MagnumOpenGLTester
+                FILES ForceRenderer2D.tga ForceRenderer3D.tga)
+            corrade_add_test(DebugToolsObjectRendererGLTest ObjectRendererGLTest.cpp
+                LIBRARIES MagnumDebugTools MagnumOpenGLTester
+                FILES ObjectRenderer2D.tga ObjectRenderer3D.tga)
+            set_target_properties(
+                DebugToolsForceRendererGLTest
+                DebugToolsObjectRendererGLTest
+            PROPERTIES FOLDER "Magnum/DebugTools/Test")
+            if(NOT BUILD_PLUGINS_STATIC)
+                target_include_directories(DebugToolsForceRendererGLTest PRIVATE $<TARGET_FILE_DIR:DebugToolsCompareImageTest>)
+                target_include_directories(DebugToolsObjectRendererGLTest PRIVATE $<TARGET_FILE_DIR:DebugToolsCompareImageTest>)
+            else()
+                target_include_directories(DebugToolsForceRendererGLTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+                target_include_directories(DebugToolsObjectRendererGLTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+                if(WITH_ANYIMAGEIMPORTER)
+                    target_link_libraries(DebugToolsForceRendererGLTest PRIVATE AnyImageImporter)
+                    target_link_libraries(DebugToolsObjectRendererGLTest PRIVATE AnyImageImporter)
+                endif()
+                if(WITH_TGAIMPORTER)
+                    target_link_libraries(DebugToolsForceRendererGLTest PRIVATE TgaImporter)
+                    target_link_libraries(DebugToolsObjectRendererGLTest PRIVATE TgaImporter)
+                endif()
+            endif()
         endif()
     endif()
 endif()

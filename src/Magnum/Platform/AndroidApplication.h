@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,8 +31,8 @@
  */
 #endif
 
-#include <memory>
 #include <EGL/egl.h>
+#include <Corrade/Containers/Pointer.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Tags.h"
@@ -162,11 +162,11 @@ class AndroidApplication {
          *
          * See @ref MAGNUM_ANDROIDAPPLICATION_MAIN() for usage information.
          */
-        static void exec(android_app* state, std::unique_ptr<AndroidApplication>(*instancer)(const Arguments&));
+        static void exec(android_app* state, Containers::Pointer<AndroidApplication>(*instancer)(const Arguments&));
 
         #ifndef DOXYGEN_GENERATING_OUTPUT
-        template<class T> static std::unique_ptr<AndroidApplication> instancer(const Arguments& arguments) {
-            return std::unique_ptr<AndroidApplication>{new T{arguments}};
+        template<class T> static Containers::Pointer<AndroidApplication> instancer(const Arguments& arguments) {
+            return Containers::Pointer<AndroidApplication>{new T{arguments}};
         }
         #endif
 
@@ -207,14 +207,6 @@ class AndroidApplication {
          * with @ref create() or @ref tryCreate().
          */
         explicit AndroidApplication(const Arguments& arguments, NoCreateT);
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief @copybrief AndroidApplication(const Arguments&, NoCreateT)
-         * @deprecated Use @ref AndroidApplication(const Arguments&, NoCreateT) instead.
-         */
-        CORRADE_DEPRECATED("use AndroidApplication(const Arguments&, NoCreateT) instead") explicit AndroidApplication(const Arguments& arguments, std::nullptr_t): AndroidApplication{arguments, NoCreate} {}
-        #endif
 
         /** @brief Copying is not allowed */
         AndroidApplication(const AndroidApplication&) = delete;
@@ -266,22 +258,6 @@ class AndroidApplication {
          */
         void create();
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief create(const Configuration&, const GLConfiguration&)
-         * @deprecated Use @ref create(const Configuration&, const GLConfiguration&) instead.
-         */
-        CORRADE_DEPRECATED("use create(const Configuration&, const GLConfiguration&) instead") void createContext(const Configuration& configuration) {
-            create(configuration);
-        }
-
-        /** @brief @copybrief create()
-         * @deprecated Use @ref create() instead.
-         */
-        CORRADE_DEPRECATED("use create() instead") void createContext() {
-            create();
-        }
-        #endif
-
         /**
          * @brief Try to create context with given configuration for OpenGL context
          *
@@ -298,15 +274,6 @@ class AndroidApplication {
          * the context cannot be created, @cpp true @ce otherwise.
          */
         bool tryCreate(const Configuration& configuration);
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief tryCreate(const Configuration&, const GLConfiguration&)
-         * @deprecated Use @ref tryCreate(const Configuration&, const GLConfiguration&) instead.
-         */
-        CORRADE_DEPRECATED("use tryCreate(const Configuration&) instead") bool tryCreateContext(const Configuration& configuration) {
-            return tryCreate(configuration);
-        }
-        #endif
 
         /** @{ @name Screen handling */
 
@@ -365,11 +332,7 @@ class AndroidApplication {
         /** @copydoc Sdl2Application::redraw() */
         void redraw() { _flags |= Flag::Redraw; }
 
-    #ifdef DOXYGEN_GENERATING_OUTPUT
-    protected:
-    #else
     private:
-    #endif
         /**
          * @brief Viewport event
          *
@@ -410,11 +373,7 @@ class AndroidApplication {
 
         /** @{ @name Mouse handling */
 
-    #ifdef DOXYGEN_GENERATING_OUTPUT
-    protected:
-    #else
     private:
-    #endif
         /**
          * @brief Mouse press event
          *
@@ -458,8 +417,8 @@ class AndroidApplication {
         EGLSurface _surface;
         EGLContext _glContext;
 
-        std::unique_ptr<Platform::GLContext> _context;
-        std::unique_ptr<LogOutput> _logOutput;
+        Containers::Pointer<Platform::GLContext> _context;
+        Containers::Pointer<LogOutput> _logOutput;
 
         CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
 };
@@ -571,13 +530,6 @@ class AndroidApplication::Configuration {
             return *this;
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief GLConfiguration::setVersion()
-         * @deprecated Use @ref GLConfiguration::setVersion() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::setVersion() instead") Configuration& setVersion(GL::Version) { return *this; }
-        #endif
-
     private:
         Vector2i _size;
 };
@@ -589,6 +541,18 @@ class AndroidApplication::Configuration {
 */
 class AndroidApplication::ViewportEvent {
     public:
+        /** @brief Copying is not allowed */
+        ViewportEvent(const ViewportEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ViewportEvent(ViewportEvent&&) = delete;
+
+        /** @brief Copying is not allowed */
+        ViewportEvent& operator=(const ViewportEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ViewportEvent& operator=(ViewportEvent&&) = delete;
+
         /**
          * @brief Window size
          *
@@ -617,7 +581,7 @@ class AndroidApplication::ViewportEvent {
 
         explicit ViewportEvent(const Vector2i& windowSize): _windowSize{windowSize} {}
 
-        Vector2i _windowSize;
+        const Vector2i _windowSize;
 };
 
 /**
@@ -659,7 +623,7 @@ class AndroidApplication::InputEvent {
 
         ~InputEvent() = default;
 
-        AInputEvent* _event;
+        AInputEvent* const _event;
     #endif
 
     private:

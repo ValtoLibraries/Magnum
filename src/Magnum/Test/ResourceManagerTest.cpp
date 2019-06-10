@@ -1,8 +1,9 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
+    Copyright © 2019 Daniel Guzman <daniel.guzman85@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -29,11 +30,12 @@
 #include "Magnum/AbstractResourceLoader.h"
 #include "Magnum/ResourceManager.h"
 
-namespace Magnum { namespace Test {
+namespace Magnum { namespace Test { namespace {
 
 struct ResourceManagerTest: TestSuite::Tester {
     explicit ResourceManagerTest();
 
+    void compare();
     void state();
     void stateFallback();
     void stateDisallowed();
@@ -44,7 +46,9 @@ struct ResourceManagerTest: TestSuite::Tester {
     void defaults();
     void clear();
     void clearWhileReferenced();
+
     void loader();
+    void loaderSetNullptr();
 
     void debugResourceState();
 };
@@ -61,7 +65,8 @@ typedef Magnum::ResourceManager<Int, Data> ResourceManager;
 size_t Data::count = 0;
 
 ResourceManagerTest::ResourceManagerTest() {
-    addTests({&ResourceManagerTest::state,
+    addTests({&ResourceManagerTest::compare,
+              &ResourceManagerTest::state,
               &ResourceManagerTest::stateFallback,
               &ResourceManagerTest::stateDisallowed,
               &ResourceManagerTest::basic,
@@ -71,9 +76,42 @@ ResourceManagerTest::ResourceManagerTest() {
               &ResourceManagerTest::defaults,
               &ResourceManagerTest::clear,
               &ResourceManagerTest::clearWhileReferenced,
+
               &ResourceManagerTest::loader,
+              &ResourceManagerTest::loaderSetNullptr,
 
               &ResourceManagerTest::debugResourceState});
+}
+
+void ResourceManagerTest::compare() {
+    ResourceManager rm1;
+
+    ResourceKey resKeyA("keyA");
+    ResourceKey resKeyB("keyB");
+    rm1.set(resKeyA, 1);
+    rm1.set(resKeyB, 0);
+
+    Resource<Int> resA1 = rm1.get<Int>(resKeyA);
+    Resource<Int> resA2 = rm1.get<Int>(resKeyA);
+    Resource<Int> resB = rm1.get<Int>(resKeyB);
+
+    CORRADE_VERIFY(resA1 == resA1);
+    CORRADE_VERIFY(resA1 == resA2);
+    CORRADE_VERIFY(resA1 != resB);
+
+    Magnum::ResourceManager<Int, Float> rm2;
+    rm2.set(resKeyA, 1);
+    rm2.set(resKeyA, 1.0f);
+
+    Resource<Int> resAOther = rm2.get<Int>(resKeyA);
+    Resource<Float> resADifferentType = rm2.get<Float>(resKeyA);
+    /* Verify it checks for manager equality as well */
+    CORRADE_VERIFY(resA1 != resAOther);
+    /* If the comparison operator wouldn't be deleted, the implicit conversion
+       would kick in and then 1.0f == 1.0f, which is wrong. With the deleted
+       operator this doesn't compile. */
+    //CORRADE_VERIFY(resA1 != resADifferentType);
+    //CORRADE_VERIFY(!(resA1 == resADifferentType));
 }
 
 void ResourceManagerTest::state() {
@@ -101,7 +139,7 @@ void ResourceManagerTest::state() {
 void ResourceManagerTest::stateFallback() {
     {
         ResourceManager rm;
-        rm.setFallback(new Data);
+        rm.setFallback(Containers::pointer<Data>());
 
         Resource<Data> data = rm.get<Data>("data");
         CORRADE_VERIFY(data);
@@ -174,15 +212,15 @@ void ResourceManagerTest::basic() {
 }
 
 void ResourceManagerTest::residentPolicy() {
-    ResourceManager* rm = new ResourceManager;
+    {
+        ResourceManager rm;
 
-    rm->set("blah", new Data, ResourceDataState::Mutable, ResourcePolicy::Resident);
-    CORRADE_COMPARE(Data::count, 1);
+        rm.set("blah", Containers::pointer<Data>(), ResourceDataState::Mutable, ResourcePolicy::Resident);
+        CORRADE_COMPARE(Data::count, 1);
 
-    rm->free();
-    CORRADE_COMPARE(Data::count, 1);
-
-    delete rm;
+        rm.free();
+        CORRADE_COMPARE(Data::count, 1);
+    }
     CORRADE_COMPARE(Data::count, 0);
 }
 
@@ -192,7 +230,7 @@ void ResourceManagerTest::referenceCountedPolicy() {
     ResourceKey dataRefCountKey("dataRefCount");
 
     /* Resource is deleted after all references are removed */
-    rm.set(dataRefCountKey, new Data, ResourceDataState::Final, ResourcePolicy::ReferenceCounted);
+    rm.set(dataRefCountKey, Containers::pointer<Data>(), ResourceDataState::Final, ResourcePolicy::ReferenceCounted);
     CORRADE_COMPARE(rm.count<Data>(), 1);
     {
         Resource<Data> data = rm.get<Data>(dataRefCountKey);
@@ -205,7 +243,7 @@ void ResourceManagerTest::referenceCountedPolicy() {
 
     /* Reference counted resources which were not used once will stay loaded
        until free() is called */
-    rm.set(dataRefCountKey, new Data, ResourceDataState::Final, ResourcePolicy::ReferenceCounted);
+    rm.set(dataRefCountKey, Containers::pointer<Data>(), ResourceDataState::Final, ResourcePolicy::ReferenceCounted);
     CORRADE_COMPARE(rm.count<Data>(), 1);
     CORRADE_COMPARE(rm.state<Data>(dataRefCountKey), ResourceState::Final);
     CORRADE_COMPARE(rm.referenceCount<Data>(dataRefCountKey), 0);
@@ -223,7 +261,7 @@ void ResourceManagerTest::manualPolicy() {
 
     /* Manual free */
     {
-        rm.set(dataKey, new Data, ResourceDataState::Mutable, ResourcePolicy::Manual);
+        rm.set(dataKey, Containers::pointer<Data>(), ResourceDataState::Mutable, ResourcePolicy::Manual);
         Resource<Data> data = rm.get<Data>(dataKey);
         rm.free();
     }
@@ -234,21 +272,21 @@ void ResourceManagerTest::manualPolicy() {
     CORRADE_COMPARE(rm.count<Data>(), 0);
     CORRADE_COMPARE(Data::count, 0);
 
-    rm.set(dataKey, new Data, ResourceDataState::Mutable, ResourcePolicy::Manual);
+    rm.set(dataKey, Containers::pointer<Data>(), ResourceDataState::Mutable, ResourcePolicy::Manual);
     CORRADE_COMPARE(rm.count<Data>(), 1);
     CORRADE_COMPARE(Data::count, 1);
 }
 
 void ResourceManagerTest::defaults() {
     ResourceManager rm;
-    rm.set("data", new Data);
+    rm.set("data", Containers::pointer<Data>());
     CORRADE_COMPARE(rm.state<Data>("data"), ResourceState::Final);
 }
 
 void ResourceManagerTest::clear() {
     ResourceManager rm;
 
-    rm.set("blah", new Data);
+    rm.set("blah", Containers::pointer<Data>());
     CORRADE_COMPARE(Data::count, 1);
 
     rm.free();
@@ -281,7 +319,7 @@ void ResourceManagerTest::loader() {
             IntResourceLoader(): resource(ResourceManager::instance().get<Data>("data")) {}
 
             void load() {
-                set("hello", 773, ResourceDataState::Final, ResourcePolicy::Resident);
+                set("hello", Containers::pointer<Int>(773), ResourceDataState::Final, ResourcePolicy::Resident);
                 setNotFound("world");
             }
 
@@ -298,39 +336,85 @@ void ResourceManagerTest::loader() {
             Resource<Data> resource;
     };
 
-    auto rm = new ResourceManager;
-    auto loader = new IntResourceLoader;
-    rm->setLoader(loader);
-
     {
-        Resource<Data> data = rm->get<Data>("data");
-        Resource<Int> hello = rm->get<Int>("hello");
-        Resource<Int> world = rm->get<Int>("world");
+        ResourceManager rm;
+        Containers::Pointer<IntResourceLoader> loaderPtr{Containers::InPlaceInit};
+        IntResourceLoader& loader = *loaderPtr;
+        rm.setLoader<Int>(std::move(loaderPtr));
+
+        Resource<Data> data = rm.get<Data>("data");
+        Resource<Int> hello = rm.get<Int>("hello");
+        Resource<Int> world = rm.get<Int>("world");
         CORRADE_COMPARE(data.state(), ResourceState::NotLoaded);
         CORRADE_COMPARE(hello.state(), ResourceState::Loading);
         CORRADE_COMPARE(world.state(), ResourceState::Loading);
 
-        CORRADE_COMPARE(loader->requestedCount(), 2);
-        CORRADE_COMPARE(loader->loadedCount(), 0);
-        CORRADE_COMPARE(loader->notFoundCount(), 0);
-        CORRADE_COMPARE(loader->name(ResourceKey("hello")), "hello");
+        CORRADE_COMPARE(loader.requestedCount(), 2);
+        CORRADE_COMPARE(loader.loadedCount(), 0);
+        CORRADE_COMPARE(loader.notFoundCount(), 0);
+        CORRADE_COMPARE(loader.name(ResourceKey("hello")), "hello");
 
-        loader->load();
+        loader.load();
         CORRADE_COMPARE(hello.state(), ResourceState::Final);
         CORRADE_COMPARE(*hello, 773);
         CORRADE_COMPARE(world.state(), ResourceState::NotFound);
 
-        CORRADE_COMPARE(loader->requestedCount(), 2);
-        CORRADE_COMPARE(loader->loadedCount(), 1);
-        CORRADE_COMPARE(loader->notFoundCount(), 1);
+        CORRADE_COMPARE(loader.requestedCount(), 2);
+        CORRADE_COMPARE(loader.loadedCount(), 1);
+        CORRADE_COMPARE(loader.notFoundCount(), 1);
 
         /* Verify that the loader is deleted at proper time */
-        rm->set("data", new Data);
+        rm.set("data", Containers::pointer<Data>());
         CORRADE_COMPARE(Data::count, 1);
     }
 
-    delete rm;
     CORRADE_COMPARE(Data::count, 0);
+}
+
+void ResourceManagerTest::loaderSetNullptr() {
+    class IntResourceLoader: public AbstractResourceLoader<Int> {
+        public:
+            void load() {
+                set("hello", 1337, ResourceDataState::Final, ResourcePolicy::Resident);
+                set("world", 42, ResourceDataState::Final, ResourcePolicy::Resident);
+            }
+
+        private:
+            void doLoad(ResourceKey key) override {
+                /* Verify that calling load() with nullptr + Loading works */
+                set(key, nullptr, ResourceDataState::Loading, ResourcePolicy::Resident);
+                set("world", nullptr, ResourceDataState::Loading, ResourcePolicy::Resident);
+            }
+    };
+
+    ResourceManager rm;
+    Containers::Pointer<IntResourceLoader> loaderPtr{Containers::InPlaceInit};
+    IntResourceLoader& loader = *loaderPtr;
+    rm.setLoader<Int>(std::move(loaderPtr));
+
+    CORRADE_COMPARE(rm.state<Int>("hello"), ResourceState::NotLoaded);
+    CORRADE_COMPARE(rm.state<Int>("world"), ResourceState::NotLoaded);
+
+    /* Loading "hello" triggers a load of "world" as well */
+    Resource<Int> hello = rm.get<Int>("hello");
+    CORRADE_COMPARE(hello.state(), ResourceState::Loading);
+    CORRADE_COMPARE(rm.state<Int>("world"), ResourceState::Loading);
+    CORRADE_COMPARE(loader.requestedCount(), 1);
+    CORRADE_COMPARE(loader.loadedCount(), 0);
+    CORRADE_COMPARE(loader.notFoundCount(), 0);
+
+    /* Load the things */
+    loader.load();
+    CORRADE_COMPARE(hello.state(), ResourceState::Final);
+    CORRADE_COMPARE(*hello, 1337);
+    CORRADE_COMPARE(loader.requestedCount(), 1);
+    CORRADE_COMPARE(loader.loadedCount(), 2);
+    CORRADE_COMPARE(loader.notFoundCount(), 0);
+
+    /* World is now loaded as well as a side-effect */
+    Resource<Int> world = rm.get<Int>("world");
+    CORRADE_COMPARE(world.state(), ResourceState::Final);
+    CORRADE_COMPARE(*world, 42);
 }
 
 void ResourceManagerTest::debugResourceState() {
@@ -339,6 +423,6 @@ void ResourceManagerTest::debugResourceState() {
     CORRADE_COMPARE(out.str(), "ResourceState::Loading ResourceState(0xbe)\n");
 }
 
-}}
+}}}
 
 CORRADE_TEST_MAIN(Magnum::Test::ResourceManagerTest)

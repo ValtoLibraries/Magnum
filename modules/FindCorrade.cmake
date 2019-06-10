@@ -239,7 +239,7 @@
 #   This file is part of Corrade.
 #
 #   Copyright © 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
-#               2017, 2018 Vladimír Vondruš <mosra@centrum.cz>
+#               2017, 2018, 2019 Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the "Software"),
@@ -282,6 +282,9 @@ endif()
 # Read flags from configuration
 file(READ ${_CORRADE_CONFIGURE_FILE} _corradeConfigure)
 set(_corradeFlags
+    # WARNING: CAREFUL HERE, the string(FIND) succeeds even if a subset is
+    # found -- so e.g. looking for TARGET_GL will match TARGET_GLES2 as well.
+    # So far that's not a problem, but might become an issue for new flags.
     MSVC2015_COMPATIBILITY
     MSVC2017_COMPATIBILITY
     BUILD_DEPRECATED
@@ -387,8 +390,8 @@ foreach(_component ${Corrade_FIND_COMPONENTS})
             endif()
         endif()
 
-        # Header-only library components (CMake >= 3.0)
-        if(_component MATCHES ${_CORRADE_HEADER_ONLY_COMPONENTS} AND NOT CMAKE_VERSION VERSION_LESS 3.0.0)
+        # Header-only library components
+        if(_component MATCHES ${_CORRADE_HEADER_ONLY_COMPONENTS})
             add_library(Corrade::${_component} INTERFACE IMPORTED)
         endif()
 
@@ -406,10 +409,23 @@ foreach(_component ${Corrade_FIND_COMPONENTS})
         endif()
 
         # No special setup for Containers library
-        # No special setup for Interconnect library
+
+        # Interconnect library
+        if(_component STREQUAL Interconnect)
+            # Disable /OPT:ICF on MSVC, which merges functions with identical
+            # contents and thus breaks signal comparison
+            if(CORRADE_TARGET_WINDOWS AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+                if(CMAKE_VERSION VERSION_LESS 3.13)
+                    set_property(TARGET Corrade::${_component} PROPERTY
+                        INTERFACE_LINK_LIBRARIES "-OPT:NOICF,REF")
+                else()
+                    set_property(TARGET Corrade::${_component} PROPERTY
+                        INTERFACE_LINK_OPTIONS "/OPT:NOICF,REF")
+                endif()
+            endif()
 
         # PluginManager library
-        if(_component STREQUAL PluginManager)
+        elseif(_component STREQUAL PluginManager)
             # At least static build needs this
             if(CORRADE_TARGET_UNIX)
                 set_property(TARGET Corrade::${_component} APPEND PROPERTY

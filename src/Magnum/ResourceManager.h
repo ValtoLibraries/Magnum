@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
  */
 
 #include <unordered_map>
+#include <Corrade/Containers/Pointer.h>
 
 #include "Magnum/Resource.h"
 
@@ -217,10 +218,7 @@ Basic usage is:
 <li>
     Typedef'ing manager of desired types, creating its instance.
 
-    @code{.cpp}
-    typedef ResourceManager<Mesh, Texture2D, AbstractShaderProgram> MyResourceManager;
-    MyResourceManager manager;
-    @endcode
+    @snippet Magnum.cpp ResourceManager-typedef
 </li>
 <li>
     Filling the manager with resource data and acquiring the resources. Note
@@ -228,27 +226,12 @@ Basic usage is:
     contains the data for it, as long as the resource data are not accessed (or
     fallback is provided).
 
-    @code{.cpp}
-    MyResourceManager& manager = MyResourceManager::instance();
-    Resource<Texture2D> texture{manager.get<Texture2D>("texture")};
-    Resource<AbstractShaderProgram, MyShader> shader{manager.get<AbstractShaderProgram, MyShader>("shader")};
-    Resource<Mesh> cube{manager.get<Mesh>("cube")};
-
-    // The manager doesn't have data for the cube yet, add them
-        if(!cube) {
-        Mesh* mesh = new Mesh;
-        // ...
-        manager.set(cube.key(), mesh, ResourceDataState::Final, ResourcePolicy::Resident);
-    }
-    @endcode
+    @snippet Magnum.cpp ResourceManager-fill
 </li>
 <li>
     Using the resource data.
 
-    @code{.cpp}
-    shader->setTexture(*texture);
-    cube->draw(*shader);
-    @endcode
+    @snippet Magnum.cpp ResourceManager-use
 </li>
 <li>
     Destroying resource references and deleting manager instance when nothing
@@ -302,9 +285,7 @@ template<class... Types> class ResourceManager: private Implementation::Resource
          * can be defined to cast the type automatically when accessing the
          * data. This is commonly used for shaders, e.g.:
          *
-         * @code{.cpp}
-         * Resource<AbstractShaderProgram, MyShader> shader = manager->get<AbstractShaderProgram, MyShader>("shader");
-         * @endcode
+         * @snippet Magnum.cpp ResourceManager-get-derived
          */
         template<class T, class U = T> Resource<T, U> get(ResourceKey key) {
             return this->Implementation::ResourceManagerData<T>::template get<U>(key);
@@ -346,6 +327,12 @@ template<class... Types> class ResourceManager: private Implementation::Resource
         }
 
         /** @overload */
+        template<class T> ResourceManager<Types...>& set(ResourceKey key, Containers::Pointer<T>&& data, ResourceDataState state, ResourcePolicy policy) {
+            set(key, data.release(), state, policy);
+            return *this;
+        }
+
+        /** @overload */
         template<class U> ResourceManager<Types...>& set(ResourceKey key, U&& data, ResourceDataState state, ResourcePolicy policy) {
             return set(key, new typename std::decay<U>::type(std::forward<U>(data)), state, policy);
         }
@@ -359,6 +346,11 @@ template<class... Types> class ResourceManager: private Implementation::Resource
          */
         template<class T> ResourceManager<Types...>& set(ResourceKey key, T* data) {
             return set(key, data, ResourceDataState::Final, ResourcePolicy::Resident);
+        }
+
+        /** @overload */
+        template<class T> ResourceManager<Types...>& set(ResourceKey key, Containers::Pointer<T>&& data) {
+            return set(key, data.release());
         }
 
         /** @overload */
@@ -382,6 +374,12 @@ template<class... Types> class ResourceManager: private Implementation::Resource
          */
         template<class T> ResourceManager<Types...>& setFallback(T* data) {
             this->Implementation::ResourceManagerData<T>::setFallback(data);
+            return *this;
+        }
+
+        /** @overload */
+        template<class T> ResourceManager<Types...>& setFallback(Containers::Pointer<T>&& data) {
+            setFallback(data.release());
             return *this;
         }
 
@@ -455,6 +453,11 @@ template<class... Types> class ResourceManager: private Implementation::Resource
         template<class T> ResourceManager<Types...>& setLoader(AbstractResourceLoader<T>* loader) {
             this->Implementation::ResourceManagerData<T>::setLoader(loader);
             return *this;
+        }
+
+        /** @overload */
+        template<class T> ResourceManager<Types...>& setLoader(Containers::Pointer<AbstractResourceLoader<T>>&& loader) {
+            return setLoader(loader.release());
         }
 
     private:

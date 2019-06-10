@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,7 +40,7 @@
 #include "Magnum/GL/BufferImage.h"
 #endif
 
-namespace Magnum { namespace DebugTools { namespace Test {
+namespace Magnum { namespace DebugTools { namespace Test { namespace {
 
 struct TextureImageGLTest: GL::OpenGLTester {
     explicit TextureImageGLTest();
@@ -83,12 +83,10 @@ TextureImageGLTest::TextureImageGLTest() {
               });
 }
 
-namespace {
-    constexpr UnsignedByte Data2D[] = { 0x00, 0x01, 0x02, 0x03,
-                                        0x04, 0x05, 0x06, 0x07,
-                                        0x08, 0x09, 0x0a, 0x0b,
-                                        0x0c, 0x0d, 0x0e, 0x0f };
-}
+constexpr UnsignedByte Data2D[] = { 0x00, 0x01, 0x02, 0x03,
+                                    0x04, 0x05, 0x06, 0x07,
+                                    0x08, 0x09, 0x0a, 0x0b,
+                                    0x0c, 0x0d, 0x0e, 0x0f };
 
 void TextureImageGLTest::subImage2D() {
     GL::Texture2D texture;
@@ -199,12 +197,10 @@ void TextureImageGLTest::subImageCubeBuffer() {
 #endif
 
 #ifndef MAGNUM_TARGET_GLES2
-namespace {
-    constexpr UnsignedInt Data2DUInt[] = { 0xcafebabe,
-                                           0xdeadbeef,
-                                           0xbadf00d,
-                                           0xdeadbabe };
-}
+constexpr UnsignedInt Data2DUInt[] = { 0xcafebabe,
+                                       0xdeadbeef,
+                                       0xbadf00d,
+                                       0xdeadbabe };
 
 void TextureImageGLTest::subImage2DUInt() {
     GL::Texture2D texture;
@@ -221,16 +217,19 @@ void TextureImageGLTest::subImage2DUInt() {
         TestSuite::Compare::Container);
 }
 
-namespace {
-    constexpr Float Data2DFloat[] = { 1.0f,
-                                      3.14159f,
-                                      2.71828f,
-                                      1.41421f };
-}
+constexpr Float Data2DFloat[] = { 1.0f,
+                                  3.14159f,
+                                  2.71828f,
+                                  1.41421f };
 
 void TextureImageGLTest::subImage2DFloat() {
     GL::Texture2D texture;
-    texture.setStorage(1, GL::TextureFormat::R32F, Vector2i{2})
+    texture
+        /* If I don't set min filter, SwiftShader will return all zeros. ARM
+           Mali G71 (on Huawei P10) needs the mag filter as well. */
+        .setMinificationFilter(GL::SamplerFilter::Nearest)
+        .setMagnificationFilter(GL::SamplerFilter::Nearest)
+        .setStorage(1, GL::TextureFormat::R32F, Vector2i{2})
         .setSubImage(0, {}, ImageView2D{GL::PixelFormat::Red, GL::PixelType::Float, Vector2i{2}, Data2DFloat});
 
     Image2D image = textureSubImage(texture, 0, {{}, Vector2i{2}}, {GL::PixelFormat::Red, GL::PixelType::Float});
@@ -246,7 +245,12 @@ void TextureImageGLTest::subImage2DFloat() {
 
 void TextureImageGLTest::subImage2DFloatGeneric() {
     GL::Texture2D texture;
-    texture.setStorage(1, GL::TextureFormat::R32F, Vector2i{2})
+    texture
+        /* If I don't set min filter, SwiftShader will return all zeros. ARM
+           Mali G71 (on Huawei P10) needs the mag filter as well. */
+        .setMinificationFilter(GL::SamplerFilter::Nearest)
+        .setMagnificationFilter(GL::SamplerFilter::Nearest)
+        .setStorage(1, GL::TextureFormat::R32F, Vector2i{2})
         .setSubImage(0, {}, ImageView2D{GL::PixelFormat::Red, GL::PixelType::Float, Vector2i{2}, Data2DFloat});
 
     Image2D image = textureSubImage(texture, 0, {{}, Vector2i{2}}, {PixelFormat::R32F});
@@ -261,6 +265,6 @@ void TextureImageGLTest::subImage2DFloatGeneric() {
 }
 #endif
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::DebugTools::Test::TextureImageGLTest)

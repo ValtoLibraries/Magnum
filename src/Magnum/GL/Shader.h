@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,6 @@
  * @brief Class @ref Magnum::GL::Shader
  */
 
-#include <functional>
 #include <string>
 #include <vector>
 #include <Corrade/Containers/ArrayView.h>
@@ -498,7 +497,7 @@ class MAGNUM_GL_EXPORT Shader: public AbstractObject {
          *      @fn_gl_keyword{GetShader} with @def_gl{COMPILE_STATUS} and
          *      @def_gl{INFO_LOG_LENGTH}, @fn_gl_keyword{GetShaderInfoLog}
          */
-        static bool compile(std::initializer_list<std::reference_wrapper<Shader>> shaders);
+        static bool compile(std::initializer_list<Containers::Reference<Shader>> shaders);
 
         /**
          * @brief Constructor
@@ -610,11 +609,11 @@ class MAGNUM_GL_EXPORT Shader: public AbstractObject {
          * @brief Compile shader
          *
          * Compiles single shader. Prefer to compile multiple shaders at once
-         * using @ref compile(std::initializer_list<std::reference_wrapper<Shader>>)
+         * using @ref compile(std::initializer_list<Containers::Reference<Shader>>)
          * for improved performance, see its documentation for more
          * information.
          */
-        bool compile() { return compile({*this}); }
+        bool compile();
 
     private:
         Shader& setLabelInternal(Containers::ArrayView<const char> label);
@@ -645,17 +644,6 @@ inline Shader& Shader::operator=(Shader&& other) noexcept {
     return *this;
 }
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::Shader
- * @deprecated Use @ref GL::Shader instead.
- */
-typedef CORRADE_DEPRECATED("use GL::Shader instead") Magnum::GL::Shader Shader;
-#endif
-
-}
+}}
 
 #endif

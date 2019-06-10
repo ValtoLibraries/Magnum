@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #ifndef MAGNUM_TARGET_WEBGL
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/GL/Context.h"
 #include "Magnum/GL/Extensions.h"
@@ -36,18 +37,10 @@
 
 namespace Magnum { namespace GL {
 
-namespace {
+namespace Implementation {
 
-void
-#ifdef CORRADE_TARGET_WINDOWS
-APIENTRY
-#endif
-callbackWrapper(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-    Context::current().state().debug->messageCallback(DebugOutput::Source(source), DebugOutput::Type(type), id, DebugOutput::Severity(severity), std::string{message, std::size_t(length)}, userParam);
-}
-
-void defaultCallback(const DebugOutput::Source source, const DebugOutput::Type type, const UnsignedInt id, const DebugOutput::Severity severity, const std::string& string, const void*) {
-    Debug output;
+void defaultDebugCallback(const DebugOutput::Source source, const DebugOutput::Type type, const UnsignedInt id, const DebugOutput::Severity severity, const std::string& string, std::ostream* out) {
+    Debug output{out};
     output << "Debug output:";
 
     switch(severity) {
@@ -104,6 +97,19 @@ void defaultCallback(const DebugOutput::Source source, const DebugOutput::Type t
 
 }
 
+namespace {
+
+void
+#ifdef CORRADE_TARGET_WINDOWS
+APIENTRY
+#endif
+callbackWrapper(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+    const auto& callback = *static_cast<const Implementation::DebugState::MessageCallback*>(userParam);
+    callback.callback(DebugOutput::Source(source), DebugOutput::Type(type), id, DebugOutput::Severity(severity), std::string{message, std::size_t(length)}, callback.userParam);
+}
+
+}
+
 Int DebugOutput::maxLoggedMessages() {
     if(!Context::current().isExtensionSupported<Extensions::KHR::debug>())
         return 0;
@@ -143,7 +149,9 @@ void DebugOutput::setCallback(const Callback callback, const void* userParam) {
 }
 
 void DebugOutput::setDefaultCallback() {
-    setCallback(defaultCallback, nullptr);
+    setCallback([](DebugOutput::Source source, DebugOutput::Type type, UnsignedInt id, DebugOutput::Severity severity, const std::string& string, const void*) {
+        Implementation::defaultDebugCallback(source, type, id, severity, string, Debug::output());
+    });
 }
 
 void DebugOutput::setEnabledInternal(const GLenum source, const GLenum type, const GLenum severity, const std::initializer_list<UnsignedInt> ids, const bool enabled) {
@@ -169,12 +177,13 @@ void DebugOutput::callbackImplementationNoOp(Callback, const void*) {}
 #ifndef MAGNUM_TARGET_GLES2
 void DebugOutput::callbackImplementationKhrDesktopES32(const Callback callback, const void* userParam) {
     /* Replace the callback */
-    const Callback original = Context::current().state().debug->messageCallback;
-    Context::current().state().debug->messageCallback = callback;
+    const Callback original = Context::current().state().debug->messageCallback.callback;
+    Context::current().state().debug->messageCallback.callback = callback;
+    Context::current().state().debug->messageCallback.userParam = userParam;
 
     /* Adding callback */
     if(!original && callback)
-        glDebugMessageCallback(callbackWrapper, userParam);
+        glDebugMessageCallback(callbackWrapper,  &Context::current().state().debug->messageCallback);
 
     /* Deleting callback */
     else if(original && !callback)
@@ -185,12 +194,13 @@ void DebugOutput::callbackImplementationKhrDesktopES32(const Callback callback, 
 #ifdef MAGNUM_TARGET_GLES
 void DebugOutput::callbackImplementationKhrES(const Callback callback, const void* userParam) {
     /* Replace the callback */
-    const Callback original = Context::current().state().debug->messageCallback;
-    Context::current().state().debug->messageCallback = callback;
+    const Callback original = Context::current().state().debug->messageCallback.callback;
+    Context::current().state().debug->messageCallback.callback = callback;
+    Context::current().state().debug->messageCallback.userParam = userParam;
 
     /* Adding callback */
     if(!original && callback)
-        glDebugMessageCallbackKHR(callbackWrapper, userParam);
+        glDebugMessageCallbackKHR(callbackWrapper, &Context::current().state().debug->messageCallback);
 
     /* Deleting callback */
     else if(original && !callback)

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,7 +108,7 @@ template<UnsignedInt dimensions, class T> std::vector<std::pair<std::reference_w
 
 template<UnsignedInt dimensions, class T> void Camera<dimensions, T>::draw(DrawableGroup<dimensions, T>& group) {
     AbstractObject<dimensions, T>* scene = AbstractFeature<dimensions, T>::object().scene();
-    CORRADE_ASSERT(scene, "Camera::draw(): cannot draw when camera is not part of any scene", );
+    CORRADE_ASSERT(scene, "SceneGraph::Camera::draw(): cannot draw when camera is not part of any scene", );
 
     /* Compute camera matrix */
     AbstractFeature<dimensions, T>::object().setClean();

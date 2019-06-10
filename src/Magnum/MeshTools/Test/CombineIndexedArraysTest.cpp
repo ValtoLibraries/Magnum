@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,11 +26,12 @@
 #include <functional>
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/MeshTools/CombineIndexedArrays.h"
 
-namespace Magnum { namespace MeshTools { namespace Test {
+namespace Magnum { namespace MeshTools { namespace Test { namespace {
 
 struct CombineIndexedArraysTest: TestSuite::Tester {
     explicit CombineIndexedArraysTest();
@@ -87,6 +88,6 @@ void CombineIndexedArraysTest::indexedArrays() {
     CORRADE_COMPARE(array3, (std::vector<UnsignedInt>{6, 7}));
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::MeshTools::Test::CombineIndexedArraysTest)

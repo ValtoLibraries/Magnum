@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -143,7 +143,7 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
         Scene<Transformation>* scene();
         const Scene<Transformation>* scene() const; /**< @overload */
 
-        /** @brief Parent object or `nullptr`, if this is root object */
+        /** @brief Parent object or `nullptr`, if this is the root object */
         Object<Transformation>* parent() {
             return Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>::list();
         }
@@ -153,7 +153,7 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
             return Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>::list();
         }
 
-        /** @brief Previous sibling object or `nullptr`, if this is first object */
+        /** @brief Previous sibling object or `nullptr`, if this is the first object */
         Object<Transformation>* previousSibling() {
             return Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>::previous();
         }
@@ -163,7 +163,7 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
             return Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>::previous();
         }
 
-        /** @brief Next sibling object or `nullptr`, if this is last object */
+        /** @brief Next sibling object or `nullptr`, if this is the last object */
         Object<Transformation>* nextSibling() {
             return Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>::next();
         }
@@ -230,7 +230,7 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
         }
 
         /**
-         * @brief Transformation matrix relative to root object
+         * @brief Transformation matrix relative to the root object
          *
          * @see @ref absoluteTransformation()
          */
@@ -239,7 +239,7 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
         }
 
         /**
-         * @brief Transformation relative to root object
+         * @brief Transformation relative to the root object
          *
          * @see @ref absoluteTransformationMatrix()
          */
@@ -316,6 +316,15 @@ template<class Transformation> class Object: public AbstractObject<Transformatio
     #ifndef DOXYGEN_GENERATING_OUTPUT
     public:
         virtual bool isScene() const { return false; }
+
+        /* Since the class inherits from both in order to implement a tree,
+           the compilers complain that erase() is ambiguous (because each is
+           from a different base, *not* because both have the same signature).
+           Fixing that by bringing them both locally, then the overload works
+           because of a different signature. */
+        using Containers::LinkedList<Object<Transformation>>::erase;
+    private:
+        using Containers::LinkedListItem<Object<Transformation>, Object<Transformation>>::erase;
     #endif
 
     private:

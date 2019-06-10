@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -731,7 +731,7 @@ Combination of @ref circularIn() and @ref circularOut().
 @see @ref sineInOut()
 */
 inline Float circularInOut(Float t) {
-    if(t < 0.5f) return 0.5f*(1.0f - std::sqrt(1.0f - 4*t*t));
+    if(t < 0.5f) return 0.5f*(1.0f - std::sqrt(1.0f - 4.0f*t*t));
     return 0.5f*(1.0f + std::sqrt(-4.0f*t*t + 8.0f*t - 3.0f));
 }
 

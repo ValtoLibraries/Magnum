@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Alice Margatroid <loveoverwhelming@gmail.com>
 
@@ -45,7 +45,7 @@ WavImporter::WavImporter(PluginManager::AbstractManager& manager, const std::str
 
 auto WavImporter::doFeatures() const -> Features { return Feature::OpenData; }
 
-bool WavImporter::doIsOpened() const { return _data; }
+bool WavImporter::doIsOpened() const { return !!_data; }
 
 void WavImporter::doOpenData(Containers::ArrayView<const char> data) {
     /* Check file size */
@@ -213,19 +213,18 @@ void WavImporter::doOpenData(Containers::ArrayView<const char> data) {
     /* Copy the data */
     const char* dataChunkPtr = reinterpret_cast<const char*>(dataChunk + 1);
     _data = Containers::Array<char>(dataChunkSize);
-    std::copy(dataChunkPtr, dataChunkPtr+dataChunkSize, _data.begin());
-    return;
+    std::copy(dataChunkPtr, dataChunkPtr+dataChunkSize, _data->begin());
 }
 
-void WavImporter::doClose() { _data = nullptr; }
+void WavImporter::doClose() { _data = Containers::NullOpt; }
 
 BufferFormat WavImporter::doFormat() const { return _format; }
 
 UnsignedInt WavImporter::doFrequency() const { return _frequency; }
 
 Containers::Array<char> WavImporter::doData() {
-    Containers::Array<char> copy(_data.size());
-    std::copy(_data.begin(), _data.end(), copy.begin());
+    Containers::Array<char> copy(_data->size());
+    std::copy(_data->begin(), _data->end(), copy.begin());
     return copy;
 }
 

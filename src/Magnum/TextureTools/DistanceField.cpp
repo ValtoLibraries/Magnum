@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,8 @@
 
 #include "DistanceField.h"
 
-#include <Corrade/Utility/Format.h>
+#include <Corrade/Containers/Reference.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 
 #include "Magnum/Math/Range.h"
@@ -105,13 +106,7 @@ DistanceFieldShader::DistanceFieldShader(const UnsignedInt radius) {
 
     attachShaders({vert, frag});
 
-    /* Older GLSL doesn't have gl_VertexID, vertices must be supplied explicitly */
-    #ifndef MAGNUM_TARGET_GLES
-    if(!GL::Context::current().isVersionSupported(GL::Version::GL300))
-    #else
-    if(!GL::Context::current().isVersionSupported(GL::Version::GLES300))
-    #endif
-    {
+    if(!GL::Context::current().isExtensionSupported<GL::Extensions::MAGNUM::shader_vertex_id>()) {
         bindAttributeLocation(Position::Location, "position");
     }
 
@@ -159,12 +154,7 @@ DistanceField::DistanceField(const UnsignedInt radius): _state{new State{radius}
     _state->mesh.setPrimitive(GL::MeshPrimitive::Triangles)
         .setCount(3);
 
-    /* Older GLSL doesn't have gl_VertexID, vertices must be supplied explicitly */
-    #ifndef MAGNUM_TARGET_GLES
-    if(!GL::Context::current().isVersionSupported(GL::Version::GL300))
-    #else
-    if(!GL::Context::current().isVersionSupported(GL::Version::GLES300))
-    #endif
+    if(!GL::Context::current().isExtensionSupported<GL::Extensions::MAGNUM::shader_vertex_id>())
     {
         constexpr Vector2 triangle[] = {
             Vector2(-1.0,  1.0),

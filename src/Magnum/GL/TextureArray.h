@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -405,7 +405,7 @@ template<UnsignedInt dimensions> class TextureArray: public AbstractTexture {
          * See @ref Texture::setSrgbDecode() for more information.
          * @requires_extension Extension @gl_extension{EXT,texture_sRGB_decode}
          * @requires_es_extension Extension @gl_extension{ANDROID,extension_pack_es31a} /
-         *      @gl_extension2{EXT,texture_sRGB_decode,texture_sRGB_decode}
+         *      @gl_extension{EXT,texture_sRGB_decode}
          * @requires_gles sRGB decode is not available in WebGL.
          */
         TextureArray<dimensions>& setSrgbDecode(bool decode) {
@@ -772,15 +772,12 @@ template<UnsignedInt dimensions> class TextureArray: public AbstractTexture {
          *      @ref Trade::ImageData of the same dimension count
          * @return Reference to self (for method chaining)
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref setStorage(), @fn_gl{PixelStore}, then
          *      @fn_gl2_keyword{TextureSubImage2D,TexSubImage2D}/
          *      @fn_gl2_keyword{TextureSubImage3D,TexSubImage3D},
-         *      @fn_gl_extension_keyword{TextureSubImage2D,EXT,direct_state_access}/
-         *      @fn_gl_extension_keyword{TextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{TexSubImage2D} / @fn_gl_keyword{TexSubImage3D}
          */
@@ -808,15 +805,12 @@ template<UnsignedInt dimensions> class TextureArray: public AbstractTexture {
          *      or compressed @ref Trade::ImageData of the same dimension count
          * @return Reference to self (for method chaining)
          *
-         * If neither @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5)
-         * nor @gl_extension{EXT,direct_state_access} desktop extension is
-         * available, the texture is bound before the operation (if not
+         * If @gl_extension{ARB,direct_state_access} (part of OpenGL 4.5) is
+         * not available, the texture is bound before the operation (if not
          * already).
          * @see @ref setStorage(), @fn_gl{PixelStore}, then
          *      @fn_gl2_keyword{CompressedTextureSubImage2D,CompressedTexSubImage2D}/
          *      @fn_gl2_keyword{CompressedTextureSubImage3D,CompressedTexSubImage3D},
-         *      @fn_gl_extension_keyword{CompressedTextureSubImage2D,EXT,direct_state_access}/
-         *      @fn_gl_extension_keyword{CompressedTextureSubImage3D,EXT,direct_state_access},
          *      eventually @fn_gl{ActiveTexture}, @fn_gl{BindTexture} and
          *      @fn_gl_keyword{CompressedTexSubImage2D} / @fn_gl_keyword{CompressedTexSubImage3D}
          * @requires_gl42 Extension @gl_extension{ARB,compressed_texture_pixel_storage}
@@ -913,32 +907,7 @@ typedef TextureArray<1> Texture1DArray;
 */
 typedef TextureArray<2> Texture2DArray;
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::TextureArray
- * @deprecated Use @ref GL::TextureArray instead.
- */
-#ifndef CORRADE_MSVC2015_COMPATIBILITY /* Multiple definitions still broken */
-template<UnsignedInt dimensions> using TextureArray CORRADE_DEPRECATED_ALIAS("use GL::TextureArray instead") = Magnum::GL::TextureArray<dimensions>;
-#endif
-
-#ifndef MAGNUM_TARGET_GLES
-/** @brief @copybrief GL::Texture1DArray
- * @deprecated Use @ref GL::Texture1DArray instead.
- */
-typedef CORRADE_DEPRECATED("use GL::Texture1DArray instead") Magnum::GL::Texture1DArray Texture1DArray;
-#endif
-
-/** @brief @copybrief GL::Texture2DArray
- * @deprecated Use @ref GL::Texture2DArray instead.
- */
-typedef CORRADE_DEPRECATED("use GL::Texture2DArray instead") Magnum::GL::Texture2DArray Texture2DArray;
-#endif
-
-}
+}}
 #else
 #error this header is not available in OpenGL ES 2.0 build
 #endif

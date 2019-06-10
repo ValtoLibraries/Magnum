@@ -18,7 +18,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 #
@@ -42,11 +42,9 @@
 #
 
 # GLFW installs cmake package config files to shared/ folder which handles
-# dependencies in case GLFW is built statically. We're making an INTERFACE
-# target for it, which is supported only since CMake 3.0.
-if(NOT CMAKE_VERSION VERSION_LESS 3.0.0)
-    find_package(glfw3 CONFIG)
-endif()
+# dependencies in case GLFW is built statically. Try to find first, quietly, so
+# it doesn't print loud messages when it's not found, since that's okay.
+find_package(glfw3 CONFIG QUIET)
 
 if(TARGET glfw)
     if(NOT TARGET GLFW::GLFW)
@@ -60,6 +58,7 @@ if(TARGET glfw)
 
     # Just to make FPHSA print some meaningful location, nothing else
     get_target_property(_GLFW_INTERFACE_INCLUDE_DIRECTORIES glfw INTERFACE_INCLUDE_DIRECTORIES)
+    include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args("GLFW" DEFAULT_MSG
         _GLFW_INTERFACE_INCLUDE_DIRECTORIES)
     return()

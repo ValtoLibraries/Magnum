@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,13 +29,14 @@
  * @brief Class @ref Magnum::DebugTools::CompareImage
  */
 
-#include <memory>
-#include <vector>
+#include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/Pointer.h>
 #include <Corrade/PluginManager/PluginManager.h>
 #include <Corrade/TestSuite/Comparator.h>
+#include <Corrade/Utility/StlForwardString.h>
+#include <Corrade/Utility/StlForwardTuple.h>
 
 #include "Magnum/Magnum.h"
-#include "Magnum/GL/GL.h"
 #include "Magnum/Math/Vector2.h"
 #include "Magnum/DebugTools/visibility.h"
 #include "Magnum/Trade/Trade.h"
@@ -43,11 +44,11 @@
 namespace Magnum { namespace DebugTools {
 
 namespace Implementation {
-    MAGNUM_DEBUGTOOLS_EXPORT std::tuple<std::vector<Float>, Float, Float> calculateImageDelta(const ImageView2D& actual, const ImageView2D& expected);
+    MAGNUM_DEBUGTOOLS_EXPORT std::tuple<Containers::Array<Float>, Float, Float> calculateImageDelta(const ImageView2D& actual, const ImageView2D& expected);
 
-    MAGNUM_DEBUGTOOLS_EXPORT void printDeltaImage(Debug& out, const std::vector<Float>& delta, const Vector2i& size, Float max, Float maxThreshold, Float meanThreshold);
+    MAGNUM_DEBUGTOOLS_EXPORT void printDeltaImage(Debug& out, Containers::ArrayView<const Float> delta, const Vector2i& size, Float max, Float maxThreshold, Float meanThreshold);
 
-    MAGNUM_DEBUGTOOLS_EXPORT void printPixelDeltas(Debug& out, const std::vector<Float>& delta, const ImageView2D& actual, const ImageView2D& expected, Float maxThreshold, Float meanThreshold, std::size_t maxCount);
+    MAGNUM_DEBUGTOOLS_EXPORT void printPixelDeltas(Debug& out, Containers::ArrayView<const Float> delta, const ImageView2D& actual, const ImageView2D& expected, Float maxThreshold, Float meanThreshold, std::size_t maxCount);
 }
 
 class CompareImage;
@@ -80,13 +81,13 @@ class MAGNUM_DEBUGTOOLS_EXPORT ImageComparatorBase {
 
         enum class State: UnsignedByte;
 
-        std::unique_ptr<FileState> _fileState;
+        Containers::Pointer<FileState> _fileState;
         Float _maxThreshold, _meanThreshold;
 
         State _state{};
         const ImageView2D *_actualImage, *_expectedImage;
         Float _max, _mean;
-        std::vector<Float> _delta;
+        Containers::Array<Float> _delta;
 };
 
 }}}
@@ -99,6 +100,8 @@ namespace Corrade { namespace TestSuite {
 template<> class MAGNUM_DEBUGTOOLS_EXPORT Comparator<Magnum::DebugTools::CompareImage>: public Magnum::DebugTools::Implementation::ImageComparatorBase {
     public:
         explicit Comparator(Magnum::Float maxThreshold, Magnum::Float meanThreshold): Magnum::DebugTools::Implementation::ImageComparatorBase{nullptr, maxThreshold, meanThreshold} {}
+
+        /*implicit*/ Comparator(): Comparator{0.0f, 0.0f} {}
 
         bool operator()(const Magnum::ImageView2D& actual, const Magnum::ImageView2D& expected) {
             return Magnum::DebugTools::Implementation::ImageComparatorBase::operator()(actual, expected);
@@ -120,6 +123,8 @@ template<> class MAGNUM_DEBUGTOOLS_EXPORT Comparator<Magnum::DebugTools::Compare
     public:
         explicit Comparator(PluginManager::Manager<Magnum::Trade::AbstractImporter>* manager, Magnum::Float maxThreshold, Magnum::Float meanThreshold): Magnum::DebugTools::Implementation::ImageComparatorBase{manager, maxThreshold, meanThreshold} {}
 
+        /*implicit*/ Comparator(): Comparator{nullptr, 0.0f, 0.0f} {}
+
         bool operator()(const Magnum::ImageView2D& actual, const std::string& expected) {
             return Magnum::DebugTools::Implementation::ImageComparatorBase::operator()(actual, expected);
         }
@@ -128,6 +133,8 @@ template<> class MAGNUM_DEBUGTOOLS_EXPORT Comparator<Magnum::DebugTools::Compare
 template<> class MAGNUM_DEBUGTOOLS_EXPORT Comparator<Magnum::DebugTools::CompareFileToImage>: public Magnum::DebugTools::Implementation::ImageComparatorBase {
     public:
         explicit Comparator(PluginManager::Manager<Magnum::Trade::AbstractImporter>* manager, Magnum::Float maxThreshold, Magnum::Float meanThreshold): Magnum::DebugTools::Implementation::ImageComparatorBase{manager, maxThreshold, meanThreshold} {}
+
+        /*implicit*/ Comparator(): Comparator{nullptr, 0.0f, 0.0f} {}
 
         bool operator()(const std::string& actual, const Magnum::ImageView2D& expected) {
             return Magnum::DebugTools::Implementation::ImageComparatorBase::operator()(actual, expected);
@@ -142,7 +149,12 @@ namespace Magnum { namespace DebugTools {
 /**
 @brief Image comparator
 
-To be used with @ref Corrade::TestSuite. Basic use is really simple:
+To be used with @ref Corrade::TestSuite.
+
+@note This class is available only if Magnum is compiled with `WITH_TRADE`
+    enabled (done by default). See @ref building-features for more information.
+
+Basic use is really simple:
 
 @snippet debugtools-compareimage.cpp 0
 

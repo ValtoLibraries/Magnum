@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
 #include <Corrade/Utility/Tweakable.h>
 #endif
@@ -35,7 +36,7 @@
 #include "Magnum/Math/Vector3.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct HalfTest: Corrade::TestSuite::Tester {
     explicit HalfTest();
@@ -94,8 +95,6 @@ typedef Math::Constants<Float> Constants;
 using namespace Literals;
 
 #if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
-namespace {
-
 const struct {
     const char* name;
     const char* data;
@@ -125,8 +124,6 @@ constexpr struct {
     {"different suffix", "42.0u", Corrade::Utility::TweakableState::Recompile, /* not for double */
         "Utility::TweakableParser: 42.0u has an unexpected suffix, expected _h\n"}
 };
-
-}
 #endif
 
 HalfTest::HalfTest() {
@@ -221,8 +218,6 @@ HalfTest::HalfTest() {
     }
 }
 
-namespace {
-
 union FloatBits {
     UnsignedInt u;
     Float f;
@@ -241,8 +236,6 @@ union HalfBits {
         UnsignedShort sign:1;
     } bits;
 };
-
-}
 
 /* float_to_half_full() from https://gist.github.com/rygorous/2156668,
    originally from ISPC */
@@ -571,6 +564,9 @@ void HalfTest::constructDefault() {
 
     CORRADE_VERIFY((std::is_nothrow_default_constructible<Half>::value));
     CORRADE_VERIFY((std::is_nothrow_constructible<Half, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Half>::value));
 }
 
 void HalfTest::constructValue() {
@@ -708,6 +704,6 @@ void HalfTest::tweakableError() {
 }
 #endif
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::HalfTest)

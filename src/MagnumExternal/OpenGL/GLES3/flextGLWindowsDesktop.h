@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include <Corrade/Utility/VisibilityMacros.h>
 
 #include "Magnum/configure.h"
+#include "Magnum/GL/GL.h"
 
 /* Defensive include guards */
 
@@ -54,7 +55,7 @@
 extern "C" {
 #endif
 
-void flextGLInit();
+void flextGLInit(Magnum::GL::Context& context);
 
 /* Function declaration macros */
 
@@ -90,25 +91,20 @@ typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
 typedef unsigned int GLbitfield;
 typedef void GLvoid;
-typedef short GLshort;
+typedef khronos_uint8_t GLubyte;
 typedef int GLint;
-typedef unsigned short GLushort;
 typedef unsigned int GLuint;
 typedef int GLsizei;
+typedef khronos_float_t GLfloat;
 typedef char GLchar;
-typedef unsigned short GLhalf;
+typedef khronos_uint16_t GLhalf;
+typedef khronos_intptr_t GLintptr;
+typedef khronos_ssize_t GLsizeiptr;
+typedef khronos_int64_t GLint64;
+typedef khronos_uint64_t GLuint64;
 typedef struct __GLsync *GLsync;
 typedef void (APIENTRY *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
 typedef void (APIENTRY *GLDEBUGPROCKHR)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-typedef khronos_int8_t GLbyte;
-typedef khronos_uint8_t GLubyte;
-typedef khronos_float_t GLfloat;
-typedef khronos_float_t GLclampf;
-typedef khronos_int32_t GLfixed;
-typedef khronos_int64_t GLint64;
-typedef khronos_uint64_t GLuint64;
-typedef khronos_intptr_t GLintptr;
-typedef khronos_ssize_t GLsizeiptr;
 
 /* Enums */
 

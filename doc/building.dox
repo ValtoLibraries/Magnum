@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2018 Jonathan Hale <squareys@googlemail.com>
 
@@ -59,8 +59,10 @@ The easiest way to install Magnum is to use one of the ready-made packages for
 your platform of choice. See @ref building-manual if you want to have more
 control and @ref building-cross for cross-compiling to other platforms.
 
+-   @ref building-packages-hunter
 -   @ref building-packages-vcpkg
 -   @ref building-packages-arch
+-   @ref building-packages-msys
 -   @ref building-packages-deb
 -   @ref building-packages-gentoo
 -   @ref building-packages-brew
@@ -73,6 +75,13 @@ plugins for image, audio and 3D model formats are maintained in the
 physics libraries is provided by @ref building-integration "Integration libraries"
 and other extra features are in the @ref building-extras "Extra libraries".
 Various examples are provided by the @ref building-examples "Example repository".
+
+@subsection building-packages-hunter Hunter package
+
+Starting from version 2019.01, stable releases of Magnum are available in the
+[Hunter](https://hunter.sh) CMake-driven package manager. See the
+[magnum package documentation](https://docs.hunter.sh/en/latest/packages/pkg/magnum.html)
+for details.
 
 @subsection building-packages-vcpkg Vcpkg packages on Windows
 
@@ -184,28 +193,50 @@ There are also ArchLinux packages for @ref building-plugins-packages-arch "Magnu
 @ref building-extras-packages-arch "Magnum Extras" and
 @ref building-examples-packages-arch "Magnum Examples".
 
-@subsection building-packages-deb Packages for Debian, Ubuntu and derivatives
+@subsection building-packages-msys MSYS2 packages
 
-Prebuilt packages of the latest stable version for Ubuntu 14.04, 16.04 and
-18.04 are available through a PPA. To install packages related to Magnum and
-Corrade, you can add the repository and then install the packages with the
-following commands:
+[MSYS2](https://www.msys2.org/) package for the latest stable release is
+mantained in the official repos. Installing is as simple as this:
 
 @code{.sh}
-sudo add-apt-repository ppa:chrome/magnum.graphics
-sudo apt-get update
-sudo apt-get install magnum magnum-dev
+pacman -S mingw-w64-x86_64-magnum # or mingw-w64-i686-magnum
 @endcode
 
-For more information about these packages, please visit
-[the PPA page](https://launchpad.net/~chrome/+archive/ubuntu/magnum.graphics).
+Similarly to ArchLinux, there is one package in the `package/msys/magnum`
+directory, which will download and package latest stable release; and then a
+development `PKGBUILD` in `package/msys`, allowing you to package and install
+the currently checked out source tree. Both depend on a corresponding
+@ref building-corrade-packages-msys "Corrade MSYS2 package". Example usage:
 
-To build your own package, the `package/debian/` directory contains all files
-needed for building Debian packages. You need the
-@ref building-corrade-packages-deb "Corrade Debian package" installed and in
-addition also the `dpkg-dev` and `debhelper` packages. Building is easy, just
-change directory to package root, link or copy `package/debian` directory there
-and run `dpkg-buildpackage`:
+@code{.sh}
+git clone git://github.com/mosra/magnum && cd magnum
+cd package/msys
+makepkg -fp PKGBUILD
+@endcode
+
+The above works in a 32/64bit MinGW shell, from a MSYS shell the equivalent
+command is
+
+@code{.sh}
+makepkg-mingw -fp PKGBUILD
+@endcode
+
+@m_class{m-noindent}
+
+which will build both a 32bit and a 64bit version. See the
+[MSYS2 Wiki](https://github.com/msys2/msys2/wiki/Creating-Packages) for more
+information.
+
+There are also MSYS2 packages for @ref building-plugins-packages-msys "Magnum Plugins"
+and @ref building-integration-packages-msys "Magnum Integration".
+
+@subsection building-packages-deb Packages for Debian, Ubuntu and derivatives
+
+The `package/debian/` directory contains all files needed for building Debian
+packages. You need the @ref building-corrade-packages-deb "Corrade Debian package"
+installed and in addition also the `dpkg-dev` and `debhelper` packages.
+Building is easy, just change directory to package root, link or copy
+`package/debian` directory there and run `dpkg-buildpackage`:
 
 @code{.sh}
 git clone git://github.com/mosra/magnum && cd magnum
@@ -239,7 +270,7 @@ build and install Magnum like this:
 @code{.sh}
 git clone git://github.com/mosra/magnum && cd magnum
 cd package/gentoo
-sudo ebuild dev-libs/magnum/magnum-99999.ebuild manifest clean merge
+sudo ebuild dev-libs/magnum/magnum-9999.ebuild manifest clean merge
 @endcode
 
 If you want to pass additional flags to CMake or
@@ -454,27 +485,24 @@ information. See also @ref corrade-cmake and @ref Corrade/Corrade.h for
 related info for the Corrade library.
 
 By default the engine is built with nearly everything except the @ref Audio
-and @ref Shapes libraries, plugins, command-line utilities and application
-libraries (see below). Using the following `WITH_*` CMake options you can
-specify which parts will be built and which not:
+library, plugins, command-line utilities and application libraries (see below).
+Using the following `WITH_*` CMake options you can specify which parts will be
+built and which not:
 
 -   `WITH_AUDIO` --- Build the @ref Audio library. Depends on
     [OpenAL](https://www.openal.org/), not built by default.
 -   `WITH_DEBUGTOOLS` --- Build the @ref DebugTools library.
 -   `WITH_GL` --- Build the @ref GL library. Enabled automatically if
-    `WITH_SHADERS` or `WITH_TEXT` is enabled.
+    `WITH_SHADERS` is enabled.
 -   `WITH_MESHTOOLS` --- Build the @ref MeshTools library. Enables also
     building of the Trade library.
 -   `WITH_PRIMITIVES` --- Build the @ref Primitives library. Enables also
     building of the Trade library.
--   `WITH_SCENEGRAPH` --- Build the @ref SceneGraph library. Enabled
-    automatically if `WITH_SHAPES` is enabled.
+-   `WITH_SCENEGRAPH` --- Build the @ref SceneGraph library
 -   `WITH_SHADERS` --- Build the @ref Shaders library. Enables also building of
     the GL library.
--   `WITH_SHAPES` @m_class{m-label m-danger} **deprecated** --- Build the
-    @ref Shapes library. Enables also building of the SceneGraph library.
 -   `WITH_TEXT` --- Build the @ref Text library. Enables also building of
-    the TextureTools and GL libraries.
+    the TextureTools library.
 -   `WITH_TEXTURETOOLS` --- Build the @ref TextureTools library. Enabled
     automatically if `WITH_TEXT` or `WITH_DISTANCEFIELDCONVERTER` is enabled.
 -   `WITH_TRADE` --- Build the @ref Trade library.
@@ -498,16 +526,15 @@ going to build any of the @ref example-index "examples", you'll need it.
     @ref Platform::AndroidApplication "AndroidApplication" library. Available
     only on @ref CORRADE_TARGET_ANDROID "Android". Enables also building of the
     GL library.
+-   `WITH_EMSCRIPTENAPPLICATION` --- Build the
+    @ref Platform::EmscriptenApplication "EmscriptenApplication" library.
+    Available only on @ref CORRADE_TARGET_EMSCRIPTEN "Emscripten".
 -   `WITH_GLFWAPPLICATION` --- Build the
     @ref Platform::GlfwApplication "GlfwApplication" library. Depends on
     [GLFW](http://glfw.org).
--   `WITH_GLUTAPPLICATION` @m_class{m-label m-danger} **deprecated** --- Build
-    the @ref Platform::GlutApplication "GlutApplication" library. Depends on
-    [GLUT](http://freeglut.sourceforge.net/). Enables also building of the GL
-    library.
 -   `WITH_GLXAPPLICATION` --- Build the
     @ref Platform::GlxApplication "GlxApplication" library. Depends on **X11**.
-    Enables also building of the GL library.
+    Requires `TARGET_GL` to be enabled.
 -   `WITH_SDL2APPLICATION` --- Build the
     @ref Platform::Sdl2Application "Sdl2Application" library. Depends on
     [SDL2](http://www.libsdl.org).
@@ -516,43 +543,43 @@ going to build any of the @ref example-index "examples", you'll need it.
     building of the GL library.
 -   `WITH_WINDOWLESSCGLAPPLICATION` --- Build the
     @ref Platform::WindowlessCglApplication "WindowlessCglApplication" library.
-    Enables also building of the GL library.
+    Requires `TARGET_GL` to be enabled.
 -   `WITH_WINDOWLESSEGLAPPLICATION` --- Build the
     @ref Platform::WindowlessEglApplication "WindowlessEglApplication" library.
-    Enables also building of the GL library.
+    Requires `TARGET_GL` to be enabled.
 -   `WITH_WINDOWLESSGLXAPPLICATION` --- Build the
     @ref Platform::WindowlessGlxApplication "WindowlessGlxApplication" library.
-    Enables also building of the GL library.
+    Requires `TARGET_GL` to be enabled.
 -   `WITH_WINDOWLESSIOSAPPLICATION` --- Build the
     @ref Platform::WindowlessIosApplication "WindowlessIosApplication" library.
-    Enables also building of the GL library.
+    Requires `TARGET_GL` to be enabled.
 -   `WITH_WINDOWLESSWGLAPPLICATION` --- Build the
     @ref Platform::WindowlessWglApplication "WindowlessWglApplication" library.
-    Enables also building of the GL library.
+    Requires `TARGET_GL` to be enabled.
 -   `WITH_WINDOWLESSWINDOWSEGLAPPLICATION` --- Build the
     @ref Platform::WindowlessWindowsEglApplication "WindowlessWindowsEglApplication"
-    library. Enables also building of the GL library.
+    library. Requires `TARGET_GL` to be enabled.
 
 None of the context libraries is built by default. Similarly to the application
 libraries, they are always built as static. You need them only if you chose to
 not use any of the application libraries above (see @ref platform-custom for
 more information):
 
--   `WITH_CGLCONTEXT` --- Build the CGL context handling library. Enables also
-    building of the GL library.
--   `WITH_EGLCONTEXT` --- Build the EGL context handling library. Enables also
-    building of the GL library.
--   `WITH_GLXCONTEXT` --- Build the GLX context handling library. Enables also
-    building of the GL library.
--   `WITH_WGLCONTEXT` --- Build the WGL context handling library. Enables also
-    building of the GL library.
+-   `WITH_CGLCONTEXT` --- Build the CGL context handling library. Requires
+    `TARGET_GL` to be enabled.
+-   `WITH_EGLCONTEXT` --- Build the EGL context handling library. Requires
+    `TARGET_GL` to be enabled.
+-   `WITH_GLXCONTEXT` --- Build the GLX context handling library. Requires
+    `TARGET_GL` to be enabled.
+-   `WITH_WGLCONTEXT` --- Build the WGL context handling library. Requires
+    `TARGET_GL` to be enabled.
 
 There are also extensions to @ref Corrade::TestSuite::Tester for testing GPU
 code:
 
--   `WITH_OPENGLTESTER` --- The @ref GL::OpenGLTester class. Enables also
-    building of the GL library and one of the windowless application libraries
-    based on the target platform.
+-   `WITH_OPENGLTESTER` --- The @ref GL::OpenGLTester class. Requires
+    `TARGET_GL` to be enabled; enables building of one of the windowless
+    application libraries based on the target platform.
 
 Magnum also contains a set of dependency-less plugins for importing essential
 file formats. Additional plugins are provided in a separate plugin repository,
@@ -570,7 +597,8 @@ default.
     plugin. Enables also building of the @ref Trade library.
 -   `WITH_MAGNUMFONT` --- Build the @ref Text::MagnumFont "MagnumFont" plugin.
     Enables also building of the @ref Text library and the
-    @ref Trade::TgaImporter "TgaImporter" plugin.
+    @ref Trade::TgaImporter "TgaImporter" plugin. Requires `TARGET_GL` to be
+    enabled.
 -   `WITH_MAGNUMFONTCONVERTER` --- Build the
     @ref Text::MagnumFontConverter "MagnumFontConverter" plugin. Enables also
     building of the @ref Text library and the
@@ -589,8 +617,8 @@ There are also a few command-line utilities, also all disabled by default:
 
 -   `WITH_GL_INFO` --- Build the @ref magnum-gl-info "magnum-gl-info"
     executable, which provides information about the engine OpenGL
-    capabilities. Enables building of one of the windowless application
-    libraries based on the target platform.
+    capabilities. Requires `TARGET_GL` to be enabled; enables building of one
+    of the windowless application libraries based on the target platform.
 -   `WITH_AL_INFO` --- Build the @ref magnum-al-info "magnum-al-info"
     executable, which provides information about the engine OpenAL
     capabilities.
@@ -598,12 +626,13 @@ There are also a few command-line utilities, also all disabled by default:
     @ref magnum-distancefieldconverter "magnum-distancefieldconverter"
     executable for converting black&white images to distance field textures.
     Enables also building of the @ref TextureTools library. Available only on
-    desktop GL. Enables building of one of the windowless application libraries
-    based on the target platform.
+    desktop GL. Requires `TARGET_GL` to be enabled; enables building of one of
+    the windowless application libraries based on the target platform.
 -   `WITH_FONTCONVERTER` --- Build the @ref magnum-fontconverter "magnum-fontconverter"
     executable for converting fonts of different formats. Enables also building
-    of the @ref Text library. Available only on desktop GL. Enables building of
-    one of the windowless application libraries based on the target platform.
+    of the @ref Text library. Available only on desktop GL. Requires
+    `TARGET_GL` to be enabled; enables building of one of the windowless
+    application libraries based on the target platform.
 -   `WITH_IMAGECONVERTER` --- Build the @ref magnum-imageconverter "magnum-imageconverter"
     executable for converting images of different formats.
 
@@ -697,11 +726,12 @@ documentation will be either in `build/doc-mcss/` or `build/doc-public/`.
 
 Magnum is able to run on the ANGLE OpenGL-to-D3D translator. Download the code
 from https://github.com/MSOpenTech/angle and use the provided Visual Studio
-solution to build it. Put the resulting `libGLESv2`/`libEGL` libraries and
-`GLES2`/`GLES3`/`EGL` includes to a location where CMake can find them or set
-`CMAKE_PREFIX_PATH` accordingly. ANGLE supports only OpenGL ES, thus you need
-to enable `TARGET_GLES`. The engine is built for OpenGL ES 2.0 by default,
-switch to 3.0 by disabling `TARGET_GLES2`.
+solution to build it. Alternatively, you can get an up-to-date version from any
+browser distribution --- both Firefox and all Chromium-based browsers ship with
+it. Put the `libGLESv2`/`libEGL` libraries to a location where CMake can find
+them or set `CMAKE_PREFIX_PATH` accordingly. ANGLE supports only OpenGL ES,
+thus you need to enable `TARGET_GLES`. The engine is built for OpenGL ES 2.0 by
+default, switch to 3.0 by disabling `TARGET_GLES2`.
 
 @code{.bat}
 mkdir build-angle && cd build-angle

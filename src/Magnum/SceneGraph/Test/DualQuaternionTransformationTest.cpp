@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,11 +25,12 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/SceneGraph/DualQuaternionTransformation.h"
 #include "Magnum/SceneGraph/Scene.h"
 
-namespace Magnum { namespace SceneGraph { namespace Test {
+namespace Magnum { namespace SceneGraph { namespace Test { namespace {
 
 typedef Object<DualQuaternionTransformation> Object3D;
 typedef Scene<DualQuaternionTransformation> Scene3D;
@@ -197,6 +198,6 @@ void DualQuaternionTransformationTest::normalizeRotation() {
     CORRADE_COMPARE(o.transformationMatrix(), Matrix4::rotationX(Deg(17.0f)));
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::SceneGraph::Test::DualQuaternionTransformationTest)

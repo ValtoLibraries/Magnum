@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,20 +25,14 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-
-#include "Magnum/configure.h"
-
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-/* So we don't need to care about the deprecated (Compressed)PixelFormat values */
-#undef MAGNUM_TARGET_GL
-#endif
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Mesh.h"
 #include "Magnum/PixelFormat.h"
 #include "Magnum/Sampler.h"
 #include "Magnum/Vk/Enums.h"
 
-namespace Magnum { namespace Vk { namespace Test {
+namespace Magnum { namespace Vk { namespace Test { namespace {
 
 /* Tests MeshView as well */
 
@@ -401,6 +395,6 @@ void EnumsTest::mapVkSamplerAddressModeInvalid() {
         "Vk::vkSamplerAddressMode(): invalid wrapping SamplerWrapping(0x123)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Vk::Test::EnumsTest)

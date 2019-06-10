@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,12 +25,13 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/SceneGraph/Animable.h"
 #include "Magnum/SceneGraph/AnimableGroup.h"
 #include "Magnum/SceneGraph/MatrixTransformation3D.h"
 
-namespace Magnum { namespace SceneGraph { namespace Test {
+namespace Magnum { namespace SceneGraph { namespace Test { namespace {
 
 struct AnimableTest: TestSuite::Tester {
     explicit AnimableTest();
@@ -383,6 +384,6 @@ void AnimableTest::debug() {
     CORRADE_COMPARE(o.str(), "SceneGraph::AnimationState::Running SceneGraph::AnimationState(0xbe)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::SceneGraph::Test::AnimableTest)

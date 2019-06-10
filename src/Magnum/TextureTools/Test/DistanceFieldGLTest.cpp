@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,16 +48,18 @@
 
 #include "configure.h"
 
-namespace Magnum { namespace TextureTools { namespace Test {
+namespace Magnum { namespace TextureTools { namespace Test { namespace {
 
 struct DistanceFieldGLTest: GL::OpenGLTester {
     explicit DistanceFieldGLTest();
 
     void test();
+    #ifndef MAGNUM_TARGET_WEBGL
     void benchmark();
+    #endif
 
     private:
-        PluginManager::Manager<Trade::AbstractImporter> _manager;
+        PluginManager::Manager<Trade::AbstractImporter> _manager{"nonexistent"};
         std::string _testDir;
 };
 
@@ -70,8 +72,10 @@ DistanceFieldGLTest::DistanceFieldGLTest() {
 
     /* Load the plugin directly from the build tree. Otherwise it's either
        static and already loaded or not present in the build tree */
-    #if defined(ANYIMAGEIMPORTER_PLUGIN_FILENAME) && defined(TGAIMPORTER_PLUGIN_FILENAME)
+    #ifdef ANYIMAGEIMPORTER_PLUGIN_FILENAME
     CORRADE_INTERNAL_ASSERT(_manager.load(ANYIMAGEIMPORTER_PLUGIN_FILENAME) & PluginManager::LoadState::Loaded);
+    #endif
+    #ifdef TGAIMPORTER_PLUGIN_FILENAME
     CORRADE_INTERNAL_ASSERT(_manager.load(TGAIMPORTER_PLUGIN_FILENAME) & PluginManager::LoadState::Loaded);
     #endif
 
@@ -91,7 +95,7 @@ DistanceFieldGLTest::DistanceFieldGLTest() {
 }
 
 void DistanceFieldGLTest::test() {
-    std::unique_ptr<Trade::AbstractImporter> importer;
+    Containers::Pointer<Trade::AbstractImporter> importer;
     if(!(importer = _manager.loadAndInstantiate("TgaImporter")))
         CORRADE_SKIP("TgaImporter plugin not found.");
 
@@ -192,7 +196,8 @@ void DistanceFieldGLTest::test() {
     /* In some cases actualOutputImage might have GL-specific format,
        reinterpret as R8Unorm for the comparison to work */
     if(actualOutputImage->format() == pixelFormatWrap(GL::PixelFormat::Red)) {
-        actualOutputImage = Image2D{actualOutputImage->storage(), PixelFormat::R8Unorm, actualOutputImage->size(), actualOutputImage->release()};
+        const Vector2i imageSize = actualOutputImage->size();
+        actualOutputImage = Image2D{actualOutputImage->storage(), PixelFormat::R8Unorm, imageSize, actualOutputImage->release()};
     }
     #endif
 
@@ -207,7 +212,12 @@ void DistanceFieldGLTest::test() {
 
 #ifndef MAGNUM_TARGET_WEBGL
 void DistanceFieldGLTest::benchmark() {
-    std::unique_ptr<Trade::AbstractImporter> importer;
+    #ifdef MAGNUM_TARGET_GLES
+    if(!GL::Context::current().isExtensionSupported<GL::Extensions::EXT::disjoint_timer_query>())
+        CORRADE_SKIP(GL::Extensions::EXT::disjoint_timer_query::string() + std::string{" is not supported, can't benchmark"});
+    #endif
+
+    Containers::Pointer<Trade::AbstractImporter> importer;
     if(!(importer = _manager.loadAndInstantiate("TgaImporter")))
         CORRADE_SKIP("TgaImporter plugin not found.");
 
@@ -279,6 +289,6 @@ void DistanceFieldGLTest::benchmark() {
 }
 #endif
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::TextureTools::Test::DistanceFieldGLTest)

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
 #include "Magnum/Math/Packing.h"
 #include "Magnum/Math/Vector3.h"
 
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct PackingTest: Corrade::TestSuite::Tester {
     explicit PackingTest();
@@ -40,14 +40,20 @@ struct PackingTest: Corrade::TestSuite::Tester {
     void unpackSigned();
     void packUnsigned();
     void packSigned();
-    void reunpackUnsinged();
-    void reunpackSinged();
+    void reunpackUnsigned();
+    void reunpackSigned();
     void unpackTypeDeduction();
+
+    void pack8bitRoundtrip();
+    void pack16bitRoundtrip();
 
     /* Half (un)pack functions are tested and benchmarked in HalfTest.cpp,
        because there's involved comparison and benchmarks to ground truth */
 };
 
+using namespace Literals;
+
+typedef Math::Rad<Float> Rad;
 typedef Math::Vector3<Float> Vector3;
 typedef Math::Vector3<UnsignedByte> Vector3ub;
 typedef Math::Vector3<Byte> Vector3b;
@@ -59,9 +65,12 @@ PackingTest::PackingTest() {
               &PackingTest::unpackSigned,
               &PackingTest::packUnsigned,
               &PackingTest::packSigned,
-              &PackingTest::reunpackUnsinged,
-              &PackingTest::reunpackSinged,
+              &PackingTest::reunpackUnsigned,
+              &PackingTest::reunpackSigned,
               &PackingTest::unpackTypeDeduction});
+
+    addRepeatedTests({&PackingTest::pack8bitRoundtrip}, 256);
+    addRepeatedTests({&PackingTest::pack16bitRoundtrip}, 65536);
 }
 
 void PackingTest::bitMax() {
@@ -90,7 +99,7 @@ void PackingTest::unpackUnsigned() {
     CORRADE_COMPARE((Math::unpack<Double, UnsignedInt>(0)), 0.0);
     CORRADE_COMPARE((Math::unpack<Double, UnsignedInt>(std::numeric_limits<UnsignedInt>::max())), 1.0);
 
-    #ifndef MAGNUM_TARGET_WEBGL
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
     CORRADE_COMPARE((Math::unpack<long double, UnsignedLong>(0)), 0.0);
     CORRADE_COMPARE((Math::unpack<long double, UnsignedLong>(std::numeric_limits<UnsignedLong>::max())), 1.0);
     #endif
@@ -110,6 +119,10 @@ void PackingTest::unpackUnsigned() {
     /* Vector overloads */
     CORRADE_COMPARE(Math::unpack<Vector3>(Vector3ub(0, 127, 255)), Vector3(0.0f, 0.498039f, 1.0f));
     CORRADE_COMPARE((Math::unpack<Vector3, 6>(Vector3ub(0, 31, 63))), Vector3(0.0f, 0.492063f, 1.0f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE((Math::unpack<Rad, UnsignedShort>(8191)), 0.124987_radf);
+    CORRADE_COMPARE((Math::unpack<Rad, 14>(8191u)), 0.499969_radf);
 }
 
 void PackingTest::unpackSigned() {
@@ -127,7 +140,7 @@ void PackingTest::unpackSigned() {
     CORRADE_COMPARE((Math::unpack<Double, Int>(0)), 0.0);
     CORRADE_COMPARE((Math::unpack<Double, Int>(std::numeric_limits<Int>::max())), 1.0);
 
-    #ifndef MAGNUM_TARGET_WEBGL
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
     CORRADE_COMPARE((Math::unpack<long double, Long>(std::numeric_limits<Long>::min())), -1.0);
     CORRADE_COMPARE((Math::unpack<long double, Long>(0)), 0.0);
     CORRADE_COMPARE((Math::unpack<long double, Long>(std::numeric_limits<Long>::max())), 1.0);
@@ -143,44 +156,60 @@ void PackingTest::unpackSigned() {
     /* Vector overloads */
     CORRADE_COMPARE(Math::unpack<Vector3>(Vector3b(0, -127, 64)), Vector3(0.0f, -1.0f, 0.503937f));
     CORRADE_COMPARE((Math::unpack<Vector3, 6>(Vector3b(0, -31, 16))), Vector3(0.0f, -1.0f, 0.516129f));
+
+    /* Wrapped types */
+    CORRADE_COMPARE((Math::unpack<Rad, Short>(8191)), 0.249977_radf);
+    CORRADE_COMPARE((Math::unpack<Rad, 14>(8191)), 1.0_radf);
 }
 
 void PackingTest::packUnsigned() {
+    /* Close extremes should work too */
     CORRADE_COMPARE(Math::pack<UnsignedByte>(0.0f), 0);
+    CORRADE_COMPARE(Math::pack<UnsignedByte>(0.0000001f), 0);
     CORRADE_COMPARE(Math::pack<UnsignedByte>(0.4357f), 111);
+    CORRADE_COMPARE(Math::pack<UnsignedByte>(0.5f), 128);
     CORRADE_COMPARE(Math::pack<UnsignedByte>(1.0f), 255);
+    CORRADE_COMPARE(Math::pack<UnsignedByte>(0.9999999f), 255);
 
     CORRADE_COMPARE(Math::pack<UnsignedShort>(0.0f), 0);
-    CORRADE_COMPARE(Math::pack<UnsignedShort>(1.0f), std::numeric_limits<UnsignedShort>::max());
+    CORRADE_COMPARE(Math::pack<UnsignedShort>(0.000001f), 0);
+    CORRADE_COMPARE(Math::pack<UnsignedShort>(0.4357f), 28554);
+    CORRADE_COMPARE(Math::pack<UnsignedShort>(0.5f), 32768);
+    CORRADE_COMPARE(Math::pack<UnsignedShort>(1.0f), 65535);
+    CORRADE_COMPARE(Math::pack<UnsignedShort>(0.999999f), 65535);
 
     CORRADE_COMPARE(Math::pack<UnsignedInt>(0.0), 0);
     CORRADE_COMPARE(Math::pack<UnsignedInt>(1.0), std::numeric_limits<UnsignedInt>::max());
 
-    #ifndef MAGNUM_TARGET_WEBGL
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
     CORRADE_COMPARE(Math::pack<UnsignedLong>(0.0l), 0);
     {
-        #if defined(_MSC_VER) || (defined(CORRADE_TARGET_ANDROID) && !__LP64__)
-        CORRADE_EXPECT_FAIL("Long double (de)normalization is broken on MSVC and 32-bit Android.");
+        #ifdef _MSC_VER
+        CORRADE_EXPECT_FAIL("Long double (de)normalization is broken on MSVC.");
         #endif
         CORRADE_COMPARE(Math::pack<UnsignedLong>(1.0l), std::numeric_limits<UnsignedLong>::max());
     }
     #endif
 
-    CORRADE_COMPARE(Math::pack<UnsignedShort>(0.33f), 21626);
+    CORRADE_COMPARE(Math::pack<UnsignedShort>(0.33f), 21627);
     CORRADE_COMPARE(Math::pack<UnsignedShort>(0.66f), 43253);
 
     /* Bits */
-    CORRADE_COMPARE((Math::pack<UnsignedShort>(0.5f)), 32767);
-    CORRADE_COMPARE((Math::pack<UnsignedShort, 14>(0.5f)), 8191);
+    CORRADE_COMPARE((Math::pack<UnsignedShort>(0.5f)), 32768);
+    CORRADE_COMPARE((Math::pack<UnsignedShort, 14>(0.5f)), 8192);
 
     /* Vector overloads */
-    CORRADE_COMPARE(Math::pack<Vector3ub>(Vector3(0.0f, 0.5f, 1.0f)), Vector3ub(0, 127, 255));
-    CORRADE_COMPARE((Math::pack<Vector3ub, 6>(Vector3(0.0f, 0.5f, 1.0f))), Vector3ub(0, 31, 63));
+    CORRADE_COMPARE(Math::pack<Vector3ub>(Vector3(0.0f, 0.5f, 1.0f)), Vector3ub(0, 128, 255));
+    CORRADE_COMPARE((Math::pack<Vector3ub, 6>(Vector3(0.0f, 0.5f, 1.0f))), Vector3ub(0, 32, 63));
+
+    /* Wrapped types */
+    CORRADE_COMPARE((Math::pack<UnsignedShort>(0.5_degf)), 32768);
+    CORRADE_COMPARE((Math::pack<UnsignedShort, 14>(0.5_degf)), 8192);
 }
 
 void PackingTest::packSigned() {
     CORRADE_COMPARE(Math::pack<Byte>(-1.0f), -127);
-    CORRADE_COMPARE(Math::pack<Byte>(-0.732f), -92);
+    CORRADE_COMPARE(Math::pack<Byte>(-0.732f), -93);
     CORRADE_COMPARE(Math::pack<Byte>(0.0f), 0);
     CORRADE_COMPARE(Math::pack<Byte>(0.1357f), 17);
     CORRADE_COMPARE(Math::pack<Byte>(1.0f), 127);
@@ -213,16 +242,19 @@ void PackingTest::packSigned() {
     CORRADE_COMPARE(Math::pack<Short>(0.66f), 21626);
 
     /* Bits */
-    CORRADE_COMPARE((Math::pack<Short>(-0.5f)), -16383);
-    CORRADE_COMPARE((Math::pack<Short, 14>(-0.5f)), -4095);
+    CORRADE_COMPARE((Math::pack<Short>(-0.5f)), -16384);
+    CORRADE_COMPARE((Math::pack<Short, 14>(-0.5f)), -4096);
 
     /* Vector overloads */
-    CORRADE_COMPARE(Math::pack<Vector3b>(Vector3(0.0f, -1.0f, 0.5f)), Vector3b(0, -127, 63));
-    CORRADE_COMPARE((Math::pack<Vector3b, 6>(Vector3(0.0f, -1.0f, 0.5f))), Vector3b(0, -31, 15));
+    CORRADE_COMPARE(Math::pack<Vector3b>(Vector3(0.0f, -1.0f, 0.5f)), Vector3b(0, -127, 64));
+    CORRADE_COMPARE((Math::pack<Vector3b, 6>(Vector3(0.0f, -1.0f, 0.5f))), Vector3b(0, -31, 16));
 
+    /* Wrapped types */
+    CORRADE_COMPARE((Math::pack<Short>(-0.5_degf)), -16384);
+    CORRADE_COMPARE((Math::pack<Short, 14>(-0.5_degf)), -4096);
 }
 
-void PackingTest::reunpackUnsinged() {
+void PackingTest::reunpackUnsigned() {
     CORRADE_COMPARE(Math::unpack<Float>(Math::pack<UnsignedByte>(0.0f)), 0.0f);
     CORRADE_COMPARE(Math::unpack<Float>(Math::pack<UnsignedByte>(1.0f)), 1.0f);
 
@@ -232,18 +264,18 @@ void PackingTest::reunpackUnsinged() {
     CORRADE_COMPARE(Math::unpack<Double>(Math::pack<UnsignedInt>(0.0)), 0.0);
     CORRADE_COMPARE(Math::unpack<Double>(Math::pack<UnsignedInt>(1.0)), 1.0);
 
-    #ifndef MAGNUM_TARGET_WEBGL
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
     CORRADE_COMPARE(Math::unpack<long double>(Math::pack<UnsignedLong>(0.0l)), 0.0l);
     {
-        #if defined(_MSC_VER) || (defined(CORRADE_TARGET_ANDROID) && !__LP64__)
-        CORRADE_EXPECT_FAIL("Long double (de)normalization is broken on MSVC and 32-bit Android.");
+        #ifdef _MSC_VER
+        CORRADE_EXPECT_FAIL("Long double (de)normalization is broken on MSVC.");
         #endif
         CORRADE_COMPARE(Math::unpack<long double>(Math::pack<UnsignedLong>(1.0l)), 1.0l);
     }
     #endif
 }
 
-void PackingTest::reunpackSinged() {
+void PackingTest::reunpackSigned() {
     CORRADE_COMPARE(Math::unpack<Float>(Math::pack<Byte>(-1.0f)), -1.0f);
     CORRADE_COMPARE(Math::unpack<Float>(Math::pack<Byte>(0.0f)), 0.0f);
     CORRADE_COMPARE(Math::unpack<Float>(Math::pack<Byte>(1.0f)), 1.0f);
@@ -256,7 +288,7 @@ void PackingTest::reunpackSinged() {
     CORRADE_COMPARE(Math::unpack<Double>(Math::pack<Int>(0.0)), 0.0);
     CORRADE_COMPARE(Math::unpack<Double>(Math::pack<Int>(1.0)), 1.0);
 
-    #ifndef MAGNUM_TARGET_WEBGL
+    #ifndef CORRADE_TARGET_EMSCRIPTEN
     CORRADE_COMPARE(Math::unpack<long double>(Math::pack<Long>(-1.0l)), -1.0l);
     CORRADE_COMPARE(Math::unpack<long double>(Math::pack<Long>(0.0l)), 0.0l);
     {
@@ -279,6 +311,14 @@ void PackingTest::unpackTypeDeduction() {
     CORRADE_COMPARE((Math::unpack<Float, Byte>('\x7F')), 1.0f);
 }
 
-}}}
+void PackingTest::pack8bitRoundtrip() {
+    CORRADE_COMPARE(Math::pack<UnsignedByte>(Math::unpack<Float, UnsignedByte>(testCaseRepeatId())), testCaseRepeatId());
+}
+
+void PackingTest::pack16bitRoundtrip() {
+    CORRADE_COMPARE(Math::pack<UnsignedShort>(Math::unpack<Float, UnsignedShort>(testCaseRepeatId())), testCaseRepeatId());
+}
+
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::PackingTest)

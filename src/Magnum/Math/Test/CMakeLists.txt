@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 corrade_add_test(MathBoolVectorTest BoolVectorTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathConstantsTest ConstantsTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathFunctionsTest FunctionsTest.cpp LIBRARIES MagnumMathTestLib)
+corrade_add_test(MathFunctionsBatchTest FunctionsBatchTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathHalfTest HalfTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathPackingTest PackingTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathTagsTest TagsTest.cpp LIBRARIES MagnumMathTestLib)
@@ -63,6 +64,7 @@ corrade_add_test(MathIntersectionBenchmark IntersectionBenchmark.cpp LIBRARIES M
 
 corrade_add_test(MathInterpolationBenchmark InterpolationBenchmark.cpp LIBRARIES MagnumMathTestLib)
 
+corrade_add_test(MathConfigurationValueTest ConfigurationValueTest.cpp LIBRARIES MagnumMathTestLib)
 corrade_add_test(MathStrictWeakOrderingTest StrictWeakOrderingTest.cpp LIBRARIES MagnumMathTestLib)
 
 set_property(TARGET
@@ -73,6 +75,7 @@ set_property(TARGET
     MathComplexTest
     MathCubicHermiteTest
     MathDualComplexTest
+    MathFrustumTest
     MathQuaternionTest
     MathDualQuaternionTest
 
@@ -119,5 +122,6 @@ set_target_properties(
     MathIntersectionTest
     MathIntersectionBenchmark
 
+    MathConfigurationValueTest
     MathStrictWeakOrderingTest
     PROPERTIES FOLDER "Magnum/Math/Test")

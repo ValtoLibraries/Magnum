@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -263,7 +263,7 @@ template<class T, class K
          *
          * Equivalent to calling @ref advance(T) for each item in @p players.
          */
-        static void advance(T time, std::initializer_list<std::reference_wrapper<Player<T, K>>> players);
+        static void advance(T time, std::initializer_list<Containers::Reference<Player<T, K>>> players);
 
         /** @brief Constructor */
         explicit Player();

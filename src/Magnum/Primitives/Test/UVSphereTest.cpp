@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,7 @@
 #include "Magnum/Primitives/UVSphere.h"
 #include "Magnum/Trade/MeshData3D.h"
 
-namespace Magnum { namespace Primitives { namespace Test {
+namespace Magnum { namespace Primitives { namespace Test { namespace {
 
 struct UVSphereTest: TestSuite::Tester {
     explicit UVSphereTest();
@@ -184,6 +184,6 @@ void UVSphereTest::wireframe() {
     }), TestSuite::Compare::Container);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Primitives::Test::UVSphereTest)

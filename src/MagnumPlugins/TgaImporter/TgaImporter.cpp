@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,8 +28,9 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <Corrade/Utility/Endianness.h>
 #include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/Optional.h>
+#include <Corrade/Utility/Endianness.h>
 
 #include "Magnum/PixelFormat.h"
 #include "Magnum/Math/Swizzle.h"
@@ -52,6 +53,18 @@ bool TgaImporter::doIsOpened() const { return _in; }
 void TgaImporter::doClose() { _in = nullptr; }
 
 void TgaImporter::doOpenData(const Containers::ArrayView<const char> data) {
+    /* Because here we're copying the data and using the _in to check if file
+       is opened, having them nullptr would mean openData() would fail without
+       any error message. It's not possible to do this check on the importer
+       side, because empty file is valid in some formats (OBJ or glTF). We also
+       can't do the full import here because then doImage2D() would need to
+       copy the imported data instead anyway. This way it'll also work nicely
+       with a future openMemory(). */
+    if(data.empty()) {
+        Error{} << "Trade::TgaImporter::openData(): the file is empty";
+        return;
+    }
+
     _in = Containers::Array<char>{data.size()};
     std::copy(data.begin(), data.end(), _in.begin());
 }

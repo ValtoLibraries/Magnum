@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/String.h>
 
 namespace Magnum { namespace Audio {
@@ -47,13 +48,20 @@ void AnyImporter::doClose() { _in = nullptr; }
 void AnyImporter::doOpenFile(const std::string& filename) {
     CORRADE_INTERNAL_ASSERT(manager());
 
+    /** @todo lowercase only the extension, once Directory::split() is done */
+    const std::string normalized = Utility::String::lowercase(filename);
+
     /* Detect type from extension */
     std::string plugin;
-    if(Utility::String::endsWith(filename, ".ogg"))
+    if(Utility::String::endsWith(normalized, ".aac"))
+        plugin = "AacAudioImporter";
+    else if(Utility::String::endsWith(normalized, ".mp3"))
+        plugin = "Mp3AudioImporter";
+    else if(Utility::String::endsWith(normalized, ".ogg"))
         plugin = "VorbisAudioImporter";
-    else if(Utility::String::endsWith(filename, ".wav"))
+    else if(Utility::String::endsWith(normalized, ".wav"))
         plugin = "WavAudioImporter";
-    else if(Utility::String::endsWith(filename, ".flac"))
+    else if(Utility::String::endsWith(normalized, ".flac"))
         plugin = "FlacAudioImporter";
     else {
         Error() << "Audio::AnyImporter::openFile(): cannot determine type of file" << filename;
@@ -68,7 +76,7 @@ void AnyImporter::doOpenFile(const std::string& filename) {
 
     /* Try to open the file (error output should be printed by the plugin
        itself) */
-    std::unique_ptr<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
+    Containers::Pointer<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
     if(!importer->openFile(filename)) return;
 
     /* Success, save the instance */

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 */
 
 #include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Utility/StlForwardTuple.h>
 
 #include "Magnum/Tags.h"
 #include "Magnum/GL/AbstractObject.h"
@@ -459,18 +460,7 @@ inline GLuint TransformFeedback::release() {
     return id;
 }
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::TransformFeedback
- * @deprecated Use @ref GL::TransformFeedback instead.
- */
-typedef CORRADE_DEPRECATED("use GL::TransformFeedback instead") Magnum::GL::TransformFeedback TransformFeedback;
-#endif
-
-}
+}}
 #else
 #error this header is not available in OpenGL ES 2.0 build
 #endif

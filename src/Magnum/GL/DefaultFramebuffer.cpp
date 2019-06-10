@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,21 +35,9 @@
 #include "Magnum/Math/Color.h"
 #endif
 
-namespace Magnum {
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Variable defined in Magnum/DefaultFramebuffer.h */
-MAGNUM_GL_EXPORT GL::DefaultFramebuffer& defaultFramebuffer = GL::defaultFramebuffer;
-#endif
-
-namespace GL {
+namespace Magnum { namespace GL {
 
 DefaultFramebuffer defaultFramebuffer;
-
-DefaultFramebuffer::DefaultFramebuffer() {
-    _id = 0;
-    _flags |= ObjectFlag::Created;
-}
 
 DefaultFramebuffer::Status DefaultFramebuffer::checkStatus(const FramebufferTarget target) {
     return Status((this->*Context::current().state().framebuffer->checkStatusImplementation)(target));

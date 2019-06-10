@@ -4,7 +4,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 #include <Corrade/Utility/VisibilityMacros.h>
 
 #include "Magnum/configure.h"
+#include "Magnum/GL/GL.h"
 
 /* Defensive include guards */
 
@@ -64,7 +65,7 @@ extern "C" {
 
 #ifndef DOXYGEN_GENERATING_OUTPUT /* So the macro names are preserved in the docs */
 
-void flextGLInit();
+void flextGLInit(Magnum::GL::Context& context);
 
 /* Function declaration macros */
 
@@ -93,6 +94,15 @@ void flextGLInit();
 #define GLAPI extern
 #endif
 
+/* GL version defines. Needs to be done to avoid conflicting definitions with
+   other GL headers (such as qopengl.h in Qt, which has different definition
+   for GLsizei and GLintptr on Windows) */
+@for cat,_ in functions:
+@if cat.startswith('VERSION_'):
+#define GL_@cat 1
+@endif
+@end
+
 /* Data types */
 
 @passthru
@@ -107,17 +117,10 @@ void flextGLInit();
 
 /* GL_@cat */
 
-    @if cat in ['VERSION_1_0', 'VERSION_1_1']:
-        @for f in funcs:
-GLAPI FLEXTGL_EXPORT @f.returntype APIENTRY gl@f.name\
-(@f.param_type_list_string());
-        @end
-    @else:
-        @for f in funcs:
+    @for f in funcs:
 GLAPI FLEXTGL_EXPORT @f.returntype\
 (APIENTRY *flextgl@f.name)(@f.param_type_list_string());
 #define gl@f.name flextgl@f.name
-        @end
     @end
 @end
 @end

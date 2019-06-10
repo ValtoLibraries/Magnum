@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Alice Margatroid <loveoverwhelming@gmail.com>
 
@@ -28,18 +28,19 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 
 #include "Magnum/Audio/AbstractImporter.h"
 
 #include "configure.h"
 
-namespace Magnum { namespace Audio { namespace Test {
+namespace Magnum { namespace Audio { namespace Test { namespace {
 
 struct WavImporterTest: TestSuite::Tester {
     explicit WavImporterTest();
 
-    void wrongSize();
+    void empty();
     void wrongSignature();
     void unsupportedFormat();
     void unsupportedChannelCount();
@@ -48,6 +49,8 @@ struct WavImporterTest: TestSuite::Tester {
     void invalidLength();
     void invalidDataChunk();
     void invalidFactChunk();
+
+    void zeroSamples();
 
     void mono4();
     void mono8();
@@ -77,7 +80,7 @@ struct WavImporterTest: TestSuite::Tester {
 };
 
 WavImporterTest::WavImporterTest() {
-    addTests({&WavImporterTest::wrongSize,
+    addTests({&WavImporterTest::empty,
               &WavImporterTest::wrongSignature,
               &WavImporterTest::unsupportedFormat,
               &WavImporterTest::unsupportedChannelCount,
@@ -86,6 +89,8 @@ WavImporterTest::WavImporterTest() {
               &WavImporterTest::invalidLength,
               &WavImporterTest::invalidDataChunk,
               &WavImporterTest::invalidFactChunk,
+
+              &WavImporterTest::zeroSamples,
 
               &WavImporterTest::mono4,
               &WavImporterTest::mono8,
@@ -117,20 +122,22 @@ WavImporterTest::WavImporterTest() {
     #endif
 }
 
-void WavImporterTest::wrongSize() {
+void WavImporterTest::empty() {
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+
     std::ostringstream out;
     Error redirectError{&out};
-
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
-    CORRADE_VERIFY(!importer->openData(Containers::Array<char>(43)));
-    CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): the file is too short: 43 bytes\n");
+    char a{};
+    /* Explicitly checking non-null but empty view */
+    CORRADE_VERIFY(!importer->openData({&a, 0}));
+    CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): the file is too short: 0 bytes\n");
 }
 
 void WavImporterTest::wrongSignature() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "wrongSignature.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): the file signature is invalid\n");
 }
@@ -139,7 +146,7 @@ void WavImporterTest::unsupportedFormat() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "unsupportedFormat.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): unsupported format Audio::WavAudioFormat::AdPcm\n");
 }
@@ -148,7 +155,7 @@ void WavImporterTest::unsupportedChannelCount() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "unsupportedChannelCount.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): PCM with unsupported channel count 6 with 8 bits per sample\n");
 }
@@ -157,7 +164,7 @@ void WavImporterTest::invalidPadding() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "invalidPadding.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): the file has improper size, expected 66 but got 73\n");
 }
@@ -166,7 +173,7 @@ void WavImporterTest::invalidLength() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "invalidLength.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): the file has improper size, expected 160844 but got 80444\n");
 }
@@ -175,13 +182,13 @@ void WavImporterTest::invalidDataChunk() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "invalidDataChunk.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): the file contains no data chunk\n");
 }
 
 void WavImporterTest::invalidFactChunk() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "invalidFactChunk.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::Mono16);
@@ -194,17 +201,27 @@ void WavImporterTest::invalidFactChunk() {
         TestSuite::Compare::Container<Containers::ArrayView<const char>>);
 }
 
+void WavImporterTest::zeroSamples() {
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+
+    /* No error should happen, it should just give an empty buffer back */
+    CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "zeroSamples.wav")));
+    CORRADE_COMPARE(importer->format(), BufferFormat::Mono16);
+    CORRADE_COMPARE(importer->frequency(), 22050);
+    CORRADE_VERIFY(importer->data().empty());
+}
+
 void WavImporterTest::mono4() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "mono4.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): unsupported format Audio::WavAudioFormat::AdPcm\n");
 }
 
 void WavImporterTest::mono8() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "mono8.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::Mono8);
@@ -217,7 +234,7 @@ void WavImporterTest::mono8() {
 }
 
 void WavImporterTest::mono8junk() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "mono8junk.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::Mono8);
@@ -229,7 +246,7 @@ void WavImporterTest::mono8junk() {
 }
 
 void WavImporterTest::mono8ALaw() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "mono8ALaw.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::MonoALaw);
@@ -243,7 +260,7 @@ void WavImporterTest::mono8ALaw() {
 }
 
 void WavImporterTest::mono8MuLaw() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "mono8MuLaw.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::MonoMuLaw);
@@ -257,7 +274,7 @@ void WavImporterTest::mono8MuLaw() {
 }
 
 void WavImporterTest::mono16() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "mono16.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::Mono16);
@@ -273,13 +290,13 @@ void WavImporterTest::stereo4() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo4.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): unsupported format Audio::WavAudioFormat::AdPcm\n");
 }
 
 void WavImporterTest::stereo8() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo8.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::Stereo8);
@@ -292,7 +309,7 @@ void WavImporterTest::stereo8() {
 }
 
 void WavImporterTest::stereo8ALaw() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo8ALaw.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::StereoALaw);
@@ -306,7 +323,7 @@ void WavImporterTest::stereo8ALaw() {
 }
 
 void WavImporterTest::stereo8MuLaw() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo8MuLaw.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::StereoMuLaw);
@@ -323,13 +340,13 @@ void WavImporterTest::stereo12() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo12.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): PCM with unsupported channel count 2 with 12 bits per sample\n");
 }
 
 void WavImporterTest::stereo16() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo16.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::Stereo16);
@@ -344,7 +361,7 @@ void WavImporterTest::stereo24() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo24.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): PCM with unsupported channel count 2 with 24 bits per sample\n");
 }
@@ -353,13 +370,13 @@ void WavImporterTest::stereo32() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo32.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): PCM with unsupported channel count 2 with 32 bits per sample\n");
 }
 
 void WavImporterTest::mono32f() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "mono32f.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::MonoFloat);
@@ -373,7 +390,7 @@ void WavImporterTest::mono32f() {
 }
 
 void WavImporterTest::stereo32f() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo32f.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::StereoFloat);
@@ -387,7 +404,7 @@ void WavImporterTest::stereo32f() {
 }
 
 void WavImporterTest::stereo64f() {
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "stereo64f.wav")));
 
     CORRADE_COMPARE(importer->format(), BufferFormat::StereoDouble);
@@ -407,7 +424,7 @@ void WavImporterTest::surround51Channel16() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "surround51Channel16.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): unsupported format Audio::WavAudioFormat::Extensible\n");
 }
@@ -416,11 +433,11 @@ void WavImporterTest::surround71Channel24() {
     std::ostringstream out;
     Error redirectError{&out};
 
-    std::unique_ptr<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
+    Containers::Pointer<AbstractImporter> importer = _manager.instantiate("WavAudioImporter");
     CORRADE_VERIFY(!importer->openFile(Utility::Directory::join(WAVAUDIOIMPORTER_TEST_DIR, "surround71Channel24.wav")));
     CORRADE_COMPARE(out.str(), "Audio::WavImporter::openData(): unsupported format Audio::WavAudioFormat::Extensible\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Audio::Test::WavImporterTest)

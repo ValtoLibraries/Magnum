@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,10 +38,6 @@
 #include "Magnum/MeshTools/visibility.h"
 
 namespace Magnum { namespace MeshTools {
-
-namespace Implementation {
-    MAGNUM_MESHTOOLS_EXPORT std::vector<UnsignedInt> combineIndexArrays(const std::reference_wrapper<std::vector<UnsignedInt>>* begin, const std::reference_wrapper<std::vector<UnsignedInt>>* end);
-}
 
 /**
 @brief Combine index arrays
@@ -85,14 +81,10 @@ This function calls @ref combineIndexArrays(const std::vector<UnsignedInt>&, Uns
 internally. See also @ref combineIndexedArrays() which does the vertex data
 reordering automatically.
 */
-inline std::vector<UnsignedInt> combineIndexArrays(const std::vector<std::reference_wrapper<std::vector<UnsignedInt>>>& arrays) {
-    return Implementation::combineIndexArrays(&arrays[0], &arrays[0] + arrays.size());
-}
+MAGNUM_MESHTOOLS_EXPORT std::vector<UnsignedInt> combineIndexArrays(const std::vector<std::reference_wrapper<std::vector<UnsignedInt>>>& arrays);
 
 /** @overload */
-inline std::vector<UnsignedInt> combineIndexArrays(std::initializer_list<std::reference_wrapper<std::vector<UnsignedInt>>> arrays) {
-    return Implementation::combineIndexArrays(arrays.begin(), arrays.end());
-}
+MAGNUM_MESHTOOLS_EXPORT std::vector<UnsignedInt> combineIndexArrays(std::initializer_list<std::reference_wrapper<std::vector<UnsignedInt>>> arrays);
 
 /**
 @brief Combine interleaved index arrays

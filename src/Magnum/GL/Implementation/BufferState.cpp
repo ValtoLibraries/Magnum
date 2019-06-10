@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -107,24 +107,11 @@ BufferState::BufferState(Context& context, std::vector<std::string>& extensions)
         copyImplementation = &Buffer::copyImplementationDSA;
         getParameterImplementation = &Buffer::getParameterImplementationDSA;
         getSubDataImplementation = &Buffer::getSubDataImplementationDSA;
-        dataImplementation = &Buffer::dataImplementationDSA;
         subDataImplementation = &Buffer::subDataImplementationDSA;
         mapImplementation = &Buffer::mapImplementationDSA;
         mapRangeImplementation = &Buffer::mapRangeImplementationDSA;
         flushMappedRangeImplementation = &Buffer::flushMappedRangeImplementationDSA;
         unmapImplementation = &Buffer::unmapImplementationDSA;
-    } else if(context.isExtensionSupported<Extensions::EXT::direct_state_access>()) {
-        extensions.emplace_back(Extensions::EXT::direct_state_access::string());
-
-        copyImplementation = &Buffer::copyImplementationDSAEXT;
-        getParameterImplementation = &Buffer::getParameterImplementationDSAEXT;
-        getSubDataImplementation = &Buffer::getSubDataImplementationDSAEXT;
-        dataImplementation = &Buffer::dataImplementationDSAEXT;
-        subDataImplementation = &Buffer::subDataImplementationDSAEXT;
-        mapImplementation = &Buffer::mapImplementationDSAEXT;
-        mapRangeImplementation = &Buffer::mapRangeImplementationDSAEXT;
-        flushMappedRangeImplementation = &Buffer::flushMappedRangeImplementationDSAEXT;
-        unmapImplementation = &Buffer::unmapImplementationDSAEXT;
     } else
     #endif
     {
@@ -135,7 +122,6 @@ BufferState::BufferState(Context& context, std::vector<std::string>& extensions)
         #ifndef MAGNUM_TARGET_GLES
         getSubDataImplementation = &Buffer::getSubDataImplementationDefault;
         #endif
-        dataImplementation = &Buffer::dataImplementationDefault;
         subDataImplementation = &Buffer::subDataImplementationDefault;
         #ifndef MAGNUM_TARGET_WEBGL
         mapImplementation = &Buffer::mapImplementationDefault;
@@ -181,6 +167,35 @@ BufferState::BufferState(Context& context, std::vector<std::string>& extensions)
         dataImplementation = &Buffer::dataImplementationDefault;
     }
     #endif
+
+    #if defined(MAGNUM_TARGET_GLES) && !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
+    if((context.detectedDriver() & Context::DetectedDriver::SwiftShader) &&
+      !context.isDriverWorkaroundDisabled("swiftshader-broken-xfb-buffer-binding-target"))
+    {
+        setTargetHintImplementation = &Buffer::setTargetHintImplementationSwiftShader;
+    } else
+    #endif
+    {
+        setTargetHintImplementation = &Buffer::setTargetHintImplementationDefault;
+    }
+
+    #ifndef MAGNUM_TARGET_GLES
+    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>()) {
+        #ifdef CORRADE_TARGET_WINDOWS
+        if((context.detectedDriver() & Context::DetectedDriver::IntelWindows) &&
+           !context.isDriverWorkaroundDisabled("intel-windows-buggy-dsa-bufferdata-for-index-buffers"))
+        {
+            dataImplementation = &Buffer::dataImplementationDSAIntelWindows;
+        } else
+        #endif
+        {
+            dataImplementation = &Buffer::dataImplementationDSA;
+        }
+    } else
+    #endif
+    {
+        dataImplementation = &Buffer::dataImplementationDefault;
+    }
 
     #ifdef MAGNUM_TARGET_GLES
     static_cast<void>(context);

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,10 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <tuple>
+#include <Corrade/Containers/Reference.h>
+#include <Corrade/Utility/DebugStl.h>
+
 #include "Magnum/Image.h"
 #include "Magnum/GL/AbstractShaderProgram.h"
 #include "Magnum/GL/Buffer.h"
@@ -40,7 +44,7 @@
 #include "Magnum/GL/TransformFeedback.h"
 #include "Magnum/Math/Vector2.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct TransformFeedbackGLTest: OpenGLTester {
     explicit TransformFeedbackGLTest();
@@ -65,8 +69,6 @@ struct TransformFeedbackGLTest: OpenGLTester {
     #endif
 };
 
-namespace {
-
 #ifndef MAGNUM_TARGET_GLES
 enum: std::size_t { DrawDataCount = 4 };
 
@@ -84,8 +86,6 @@ const struct {
     {"streamInstanced", 1, 5, 0, 6, 30}
 };
 #endif
-
-}
 
 TransformFeedbackGLTest::TransformFeedbackGLTest() {
     addTests({&TransformFeedbackGLTest::construct,
@@ -212,8 +212,6 @@ void TransformFeedbackGLTest::label() {
 }
 #endif
 
-namespace {
-
 constexpr const Vector2 inputData[] = {
     {0.0f, 0.0f},
     {-1.0f, 1.0f}
@@ -257,8 +255,6 @@ XfbShader::XfbShader() {
     bindAttributeLocation(Input::Location, "inputData");
     setTransformFeedbackOutputs({"outputData"}, TransformFeedbackBufferMode::SeparateAttributes);
     CORRADE_INTERNAL_ASSERT_OUTPUT(link());
-}
-
 }
 
 void TransformFeedbackGLTest::attachBase() {
@@ -355,8 +351,6 @@ void TransformFeedbackGLTest::attachRange() {
     #endif
 }
 
-namespace {
-
 struct XfbMultiShader: AbstractShaderProgram {
     typedef Attribute<0, Vector2> Input;
 
@@ -397,8 +391,6 @@ XfbMultiShader::XfbMultiShader() {
     bindAttributeLocation(Input::Location, "inputData");
     setTransformFeedbackOutputs({"output1", "output2"}, TransformFeedbackBufferMode::SeparateAttributes);
     CORRADE_INTERNAL_ASSERT_OUTPUT(link());
-}
-
 }
 
 void TransformFeedbackGLTest::attachBases() {
@@ -720,6 +712,6 @@ void TransformFeedbackGLTest::draw() {
 }
 #endif
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::TransformFeedbackGLTest)

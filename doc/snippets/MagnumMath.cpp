@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,10 +28,13 @@
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Math/Color.h"
+#include "Magnum/Math/FunctionsBatch.h"
 #include "Magnum/Math/Bezier.h"
 #include "Magnum/Math/CubicHermite.h"
+#include "Magnum/Math/Distance.h"
 #include "Magnum/Math/DualComplex.h"
 #include "Magnum/Math/DualQuaternion.h"
+#include "Magnum/Math/Frustum.h"
 #include "Magnum/Math/Half.h"
 #include "Magnum/Math/Range.h"
 #include "Magnum/Math/Algorithms/GramSchmidt.h"
@@ -110,7 +113,7 @@ static_cast<void>(b);
 /* [matrix-vector-construct-color-hue] */
 auto green = Color3::green();           // {0.0f, 1.0f, 0.0f}
 auto cyan = Color4::cyan(0.5f, 0.95f);  // {0.5f, 1.0f, 1.0f, 0.95f}
-auto fadedRed = Color3::fromHsv(219.0_degf, 0.50f, 0.57f);
+auto fadedRed = Color3::fromHsv({219.0_degf, 0.50f, 0.57f});
 /* [matrix-vector-construct-color-hue] */
 static_cast<void>(green);
 static_cast<void>(cyan);
@@ -280,7 +283,7 @@ static_cast<void>(min);
 static_cast<void>(max);
 
 /* [matrix-vector-operations-compare] */
-Math::BoolVector<3> largerOrEqual = a >= b;     // {false, true, true}
+BoolVector3 largerOrEqual = a >= b;             // {false, true, true}
 bool anySmaller = (a < b).any();                // true
 bool allLarger = (a > b).all();                 // false
 /* [matrix-vector-operations-compare] */
@@ -311,14 +314,18 @@ mat = Matrix3x2::fromVector(vec);
 }
 
 {
+Deg value;
 /* [matrix-vector-operations-functions-scalar] */
 std::pair<Int, Int> minmax = Math::minmax(24, -5);  // -5, 24
 Int a = Math::lerp(0, 360, 0.75f);                  // 270
 auto b = Math::pack<UnsignedByte>(0.89f);           // 226
+
+Deg c = Math::clamp(value, 25.0_degf, 55.0_degf);
 /* [matrix-vector-operations-functions-scalar] */
 static_cast<void>(minmax);
 static_cast<void>(a);
 static_cast<void>(b);
+static_cast<void>(c);
 }
 
 {
@@ -691,6 +698,17 @@ static_cast<void>(tan2);
 }
 
 {
+Vector3 epsilon;
+/* [BoolVector-boolean] */
+Vector3 a, b;
+
+if(!(b < a - epsilon || a + epsilon < b)) {
+    // b is around a
+}
+/* [BoolVector-boolean] */
+}
+
+{
 /* [Color3-pack] */
 Color3 a{1.0f, 0.5f, 0.75f};
 auto b = Math::pack<Color3ub>(a); // b == {255, 127, 191}
@@ -713,15 +731,6 @@ Color3 b = 0xff3366_srgbf;
 /* [Color3-fromSrgb-int] */
 static_cast<void>(a);
 static_cast<void>(b);
-}
-
-{
-Color3 color;
-/* [Color3-toHsv] */
-Deg hue;
-Float saturation, value;
-std::tie(hue, saturation, value) = color.toHsv();
-/* [Color3-toHsv] */
 }
 
 {
@@ -765,20 +774,26 @@ static_cast<void>(rgba);
 }
 
 {
-Color4 color;
-/* [Color4-toHsv] */
-Deg hue;
-Float saturation, value;
-std::tie(hue, saturation, value) = color.toHsv();
-/* [Color4-toHsv] */
-}
-
-{
 /* [Color4-toSrgbAlpha] */
 Color4 color;
 Math::Vector4<UnsignedByte> srgbAlpha = color.toSrgbAlpha<UnsignedByte>();
 /* [Color4-toSrgbAlpha] */
 static_cast<void>(srgbAlpha);
+}
+
+{
+/* [Color3-debug] */
+Debug{Debug::Flag::Color} << 0xdcdcdc_rgb << 0xa5c9ea_rgb << 0x3bd267_rgb
+    << 0xc7cf2f_rgb << 0xcd3431_rgb << 0x2f83cc_rgb << 0x747474_rgb;
+/* [Color3-debug] */
+}
+
+{
+/* [Color4-debug] */
+Debug{Debug::Flag::Color}
+    << 0x3bd26700_rgba << 0x3bd26733_rgba << 0x3bd26766_rgba
+    << 0x3bd26799_rgba << 0x3bd267cc_rgba << 0x3bd267ff_rgba;
+/* [Color4-debug] */
 }
 
 {
@@ -858,6 +873,58 @@ static_cast<void>(endPoint);
 }
 
 {
+/* [Dual-conversion] */
+Math::Dual<Float> floatingPoint{1.3f, 2.7f};
+Math::Dual<Byte> integral{floatingPoint}; // {1, 2}
+/* [Dual-conversion] */
+}
+
+[](const Vector3& point){
+Frustum frustum;
+/* [Frustum-range] */
+for(Vector4 plane: frustum)
+    if(Math::Distance::pointPlaneScaled(point, plane) < 0.0f) return false;
+return true;
+/* [Frustum-range] */
+}({});
+
+{
+/* [div] */
+Int quotient, remainder;
+std::tie(quotient, remainder) = Math::div(57, 6); // {9, 3}
+/* [div] */
+}
+
+{
+/* [div-equivalent] */
+Int quotient = 57/6;
+Int remainder = 57%6;
+/* [div-equivalent] */
+static_cast<void>(quotient);
+static_cast<void>(remainder);
+}
+
+{
+Float value{}, min{}, max{};
+/* [clamp] */
+Math::min(Math::max(value, min), max)
+/* [clamp] */
+;
+}
+
+{
+Float a{};
+/* [lerpInverted-map] */
+Deg b = Math::lerp(5.0_degf, 15.0_degf,
+    Math::lerpInverted(-1.0f, 1.0f, a));
+Deg bClamped = Math::lerp(5.0_degf, 15.0_degf, Math::clamp(
+    Math::lerpInverted(-1.0f, 1.0f, a), 0.0f, 1.0f));
+/* [lerpInverted-map] */
+static_cast<void>(b);
+static_cast<void>(bClamped);
+}
+
+{
 /* [Half-usage] */
 using namespace Math::Literals;
 
@@ -875,6 +942,78 @@ Vector3 b{a};                                // converts to 32-bit floats
 Debug{} << a;                                // prints {3.14159, -1.4142, 1.618}
 Debug{} << Math::Vector3<UnsignedShort>{a};  // prints {16968, 48552, 15993}
 /* [Half-usage-vector] */
+}
+
+{
+Rad angle{};
+typedef Float T;
+/* [Intersection-tanAngleSqPlusOne] */
+T tanAngleSqPlusOne = Math::pow<2>(Math::tan(angle*T(0.5))) + T(1);
+/* [Intersection-tanAngleSqPlusOne] */
+static_cast<void>(tanAngleSqPlusOne);
+}
+
+{
+Rad angle{};
+typedef Float T;
+/* [Intersection-sinAngle-tanAngle] */
+T sinAngle = Math::sin(angle*T(0.5));
+T tanAngle = Math::tan(angle*T(0.5));
+/* [Intersection-sinAngle-tanAngle] */
+static_cast<void>(sinAngle);
+static_cast<void>(tanAngle);
+}
+
+{
+Rad angle{};
+typedef Float T;
+/* [Intersection-sinAngle-tanAngleSqPlusOne] */
+T sinAngle = Math::sin(angle*T(0.5));
+T tanAngleSqPlusOne = Math::pow<2>(Math::tan(angle*T(0.5))) + T(1);
+/* [Intersection-sinAngle-tanAngleSqPlusOne] */
+static_cast<void>(sinAngle);
+static_cast<void>(tanAngleSqPlusOne);
+}
+
+{
+/* [Matrix-conversion] */
+Matrix2x2 floatingPoint{Vector2{1.3f, 2.7f}, Vector2{-15.0f, 7.0f}};
+Math::Matrix2x2<Byte> integral{floatingPoint}; // {{1, 2}, {-15, 7}}
+/* [Matrix-conversion] */
+}
+
+{
+/* [unpack-template-explicit] */
+// Literal type is (signed) char, but we assumed unsigned char, a != 1.0f
+Float a = Math::unpack<Float>('\xFF');
+
+// b = 1.0f
+Float b = Math::unpack<Float, UnsignedByte>('\xFF');
+/* [unpack-template-explicit] */
+static_cast<void>(a);
+static_cast<void>(b);
+}
+
+{
+/* [unpack] */
+Float a = Math::unpack<Float, UnsignedShort>(8191);     // 0.124987f
+Float b = Math::unpack<Float, UnsignedShort, 14>(8191); // 0.499969f
+Float c = Math::unpack<Float, 14>(8191u);               // 0.499969f
+Float d = Math::unpack<Float, 14>(8191);                // 1.0f
+/* [unpack] */
+static_cast<void>(a);
+static_cast<void>(b);
+static_cast<void>(c);
+static_cast<void>(d);
+}
+
+{
+/* [pack] */
+auto a = Math::pack<UnsignedShort>(0.5f);     // 32767
+auto b = Math::pack<UnsignedShort, 14>(0.5f); // 8191
+/* [pack] */
+static_cast<void>(a);
+static_cast<void>(b);
 }
 
 {
@@ -907,12 +1046,99 @@ static_cast<void>(filterArea);
 }
 
 {
+/* [Range-conversion] */
+Range2D floatingPoint{{1.3f, 2.7f}, {-15.0f, 7.0f}};
+Range2Di integral{floatingPoint}; // {{1, 2}, {-15, 7}}
+/* [Range-conversion] */
+}
+
+{
+/* [RectangularMatrix-conversion] */
+Math::RectangularMatrix<4, 1, Float> floatingPoint{1.3f, 2.7f, -15.0f, 7.0f};
+Math::RectangularMatrix<4, 1, Byte> integral{floatingPoint}; // {1, 2, -15, 7}
+/* [RectangularMatrix-conversion] */
+}
+
+{
+/* [RectangularMatrix-access] */
+Matrix4x3 m;
+Float a = m[2][1];
+/* [RectangularMatrix-access] */
+static_cast<void>(a);
+}
+
+{
 /* [StrictWeakOrdering] */
 std::set<Vector2, Math::StrictWeakOrdering> mySet;
 std::map<Vector4, Int, Math::StrictWeakOrdering> myMap;
 /* [StrictWeakOrdering] */
 static_cast<void>(myMap);
 static_cast<void>(mySet);
+}
+
+{
+/* [swizzle] */
+Vector4i original(-1, 2, 3, 4);
+
+auto vec = Math::swizzle<'w', '1', '0', 'x', 'y', 'z'>(original);
+        // vec == { 4, 1, 0, -1, 2, 3 }
+/* [swizzle] */
+static_cast<void>(vec);
+}
+
+{
+Float a{}, b{};
+/* [TypeTraits-equalsZero] */
+Math::TypeTraits<Float>::equals(a, b);
+Math::TypeTraits<Float>::equalsZero(a - b,
+    Math::max(Math::abs(a), Math::abs(b)));
+/* [TypeTraits-equalsZero] */
+}
+
+{
+/* [Vector-conversion] */
+Vector4 floatingPoint{1.3f, 2.7f, -15.0f, 7.0f};
+Vector4i integral{floatingPoint}; // {1, 2, -15, 7}
+/* [Vector-conversion] */
+}
+
+{
+Vector2 vec;
+Float length{};
+/* [Vector-resized] */
+vec*(vec.lengthInverted()*length) // the parentheses are important
+/* [Vector-resized] */
+;
+}
+
+{
+/* [Vector2-xAxis] */
+Matrix3::translation(Vector2::xAxis(5.0f));
+        // same as Matrix3::translation({5.0f, 0.0f});
+/* [Vector2-xAxis] */
+}
+
+{
+/* [Vector2-xScale] */
+Matrix3::scaling(Vector2::xScale(-2.0f));
+        // same as Matrix3::scaling({-2.0f, 1.0f});
+/* [Vector2-xScale] */
+}
+
+{
+/* [Vector3-xAxis] */
+Matrix4::translation(Vector3::xAxis(5.0f));
+        // same as Matrix4::translation({5.0f, 0.0f, 0.0f});
+Matrix4::rotation(30.0_degf, Vector3::xAxis());
+        // same as Matrix4::rotation(30.0_degf, {1.0f, 0.0f, 0.0f});
+/* [Vector3-xAxis] */
+}
+
+{
+/* [Vector3-xScale] */
+Matrix4::scaling(Vector3::xScale(-2.0f));
+        // same as Matrix4::scaling({-2.0f, 1.0f, 1.0f});
+/* [Vector3-xScale] */
 }
 
 }

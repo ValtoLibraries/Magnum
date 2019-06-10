@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 
 #include "MagnumFontConverter.h"
 
+#include <algorithm>
 #include <sstream>
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Utility/Configuration.h>
@@ -32,8 +33,9 @@
 
 #include "Magnum/Image.h"
 #include "Magnum/PixelFormat.h"
-#include "Magnum/Text/GlyphCache.h"
+#include "Magnum/Math/ConfigurationValue.h"
 #include "Magnum/Text/AbstractFont.h"
+#include "Magnum/Text/AbstractGlyphCache.h"
 #include "MagnumPlugins/TgaImageConverter/TgaImageConverter.h"
 
 namespace Magnum { namespace Text {
@@ -46,7 +48,12 @@ auto MagnumFontConverter::doFeatures() const -> Features {
     return Feature::ExportFont|Feature::ConvertData|Feature::MultiFile;
 }
 
-std::vector<std::pair<std::string, Containers::Array<char>>> MagnumFontConverter::doExportFontToData(AbstractFont& font, GlyphCache& cache, const std::string& filename, const std::u32string& characters) const {
+std::vector<std::pair<std::string, Containers::Array<char>>> MagnumFontConverter::doExportFontToData(AbstractFont& font, AbstractGlyphCache& cache, const std::string& filename, const std::u32string& characters) const {
+    if(!(cache.features() & GlyphCacheFeature::ImageDownload)) {
+        Error{} << "Text::MagnumFontConverter::exportFontToData(): passed glyph cache doesn't support image download";
+        return {};
+    }
+
     Utility::Configuration configuration;
 
     configuration.setValue("version", 1);
@@ -58,12 +65,22 @@ std::vector<std::pair<std::string, Containers::Array<char>>> MagnumFontConverter
     configuration.setValue("descent", font.descent());
     configuration.setValue("lineHeight", font.lineHeight());
 
-    /* Compress glyph IDs so the glyphs are in consecutive array, glyph 0
+    /* Get the glyphs and sort them for predictable output */
+    std::vector<std::pair<UnsignedInt, std::pair<Vector2i, Range2Di>>> sortedGlyphs;
+    for(const std::pair<UnsignedInt, std::pair<Vector2i, Range2Di>>& glyph: cache)
+        sortedGlyphs.emplace_back(glyph);
+    std::sort(sortedGlyphs.begin(), sortedGlyphs.end(),
+        [](const std::pair<UnsignedInt, std::pair<Vector2i, Range2Di>>& a,
+           const std::pair<UnsignedInt, std::pair<Vector2i, Range2Di>>& b) {
+            return a.first < b.first;
+        });
+
+    /* Compress glyph IDs so the glyphs are in a consecutive array, glyph 0
        should stay at position 0 */
     std::unordered_map<UnsignedInt, UnsignedInt> glyphIdMap;
     glyphIdMap.reserve(cache.glyphCount());
     glyphIdMap.emplace(0, 0);
-    for(const std::pair<UnsignedInt, std::pair<Vector2i, Range2Di>>& glyph: cache)
+    for(const std::pair<UnsignedInt, std::pair<Vector2i, Range2Di>>& glyph: sortedGlyphs)
         glyphIdMap.emplace(glyph.first, glyphIdMap.size());
 
     /** @todo Save only glyphs contained in @p characters */
@@ -102,9 +119,7 @@ std::vector<std::pair<std::string, Containers::Array<char>>> MagnumFontConverter
     std::copy(confStr.begin(), confStr.end(), confData.begin());
 
     /* Save cache image */
-    Image2D image{PixelFormat::R8Unorm};
-    cache.texture().image(0, image);
-    auto tgaData = Trade::TgaImageConverter().exportToData(image);
+    auto tgaData = Trade::TgaImageConverter().exportToData(cache.image());
 
     std::vector<std::pair<std::string, Containers::Array<char>>> out;
     out.emplace_back(filename + ".conf", std::move(confData));
@@ -115,4 +130,4 @@ std::vector<std::pair<std::string, Containers::Array<char>>> MagnumFontConverter
 }}
 
 CORRADE_PLUGIN_REGISTER(MagnumFontConverter, Magnum::Text::MagnumFontConverter,
-    "cz.mosra.magnum.Text.AbstractFontConverter/0.1.2")
+    "cz.mosra.magnum.Text.AbstractFontConverter/0.2")

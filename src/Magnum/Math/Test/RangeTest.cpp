@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,8 +25,9 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
+#include "Magnum/Math/FunctionsBatch.h"
 #include "Magnum/Math/Range.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
 
@@ -93,7 +94,7 @@ template<> struct RangeConverter<3, Float, Box> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct RangeTest: Corrade::TestSuite::Tester {
     explicit RangeTest();
@@ -141,7 +142,6 @@ struct RangeTest: Corrade::TestSuite::Tester {
     void subclass();
 
     void debug();
-    void configuration();
 };
 
 typedef Math::Range1D<Float> Range1D;
@@ -193,8 +193,7 @@ RangeTest::RangeTest() {
               &RangeTest::subclassTypes,
               &RangeTest::subclass,
 
-              &RangeTest::debug,
-              &RangeTest::configuration});
+              &RangeTest::debug});
 }
 
 void RangeTest::construct() {
@@ -232,6 +231,11 @@ void RangeTest::constructDefault() {
     CORRADE_VERIFY((std::is_nothrow_constructible<Range1Di, ZeroInitT>::value));
     CORRADE_VERIFY((std::is_nothrow_constructible<Range2Di, ZeroInitT>::value));
     CORRADE_VERIFY((std::is_nothrow_constructible<Range3Di, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Range1Di>::value));
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Range2Di>::value));
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Range3Di>::value));
 }
 
 void RangeTest::constructNoInit() {
@@ -887,17 +891,6 @@ void RangeTest::debug() {
     CORRADE_COMPARE(o.str(), "Range({34, 23}, {47, 30})\n");
 }
 
-void RangeTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Range2D rect({3.0f, 3.125f}, {9.0f, 9.55f});
-    std::string value("3 3.125 9 9.55");
-
-    c.setValue("rectangle", rect);
-    CORRADE_COMPARE(c.value("rectangle"), value);
-    CORRADE_COMPARE(c.value<Range2D>("rectangle"), rect);
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::RangeTest)

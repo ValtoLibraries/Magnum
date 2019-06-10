@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,11 +47,13 @@ Curious about what was added or improved recently? Check out the
 The best way to get started is to read the thorough
 @ref getting-started "guide to download, build, install and start using Magnum"
 in your project. There is also a complete @ref building documentation --- we
-provide packages for many platforms, including Windows, Linux and macOS.
+provide packages for many platforms, including Windows, Linux and macOS. After
+that, there are various @ref example-index "tutorials and examples" and a
+complete @ref features "feature guide" explaining all aspects of the library.
 
-After that, there are various @ref example-index "tutorials and examples"
-and a complete @ref features "feature guide" explaining all aspects of the
-library.
+Apart from that, various Magnum functionality is available through
+@ref singles "single-header libraries". Just download a file, @cpp #include @ce
+it in your project and you're ready to go! No buildsystem wrangling needed.
 
 @section mainpage-contact Contact & support
 
@@ -82,7 +84,7 @@ project website for further information.
 Magnum is licensed under the MIT/Expat license:
 
 >
->   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+>   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 >             Vladimír Vondruš &lt;mosra@centrum.cz&gt; and contributors
 >
 >   Permission is hereby granted, free of charge, to any person obtaining a

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Jonathan Hale <squareys@googlemail.com>
 
@@ -25,8 +25,10 @@
 */
 
 #include <sstream>
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Frustum.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -61,7 +63,7 @@ template<> struct FrustumConverter<Float, Frstm> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct FrustumTest: Corrade::TestSuite::Tester {
     explicit FrustumTest();
@@ -75,6 +77,7 @@ struct FrustumTest: Corrade::TestSuite::Tester {
     void convert();
 
     void data();
+    void rangeFor();
 
     void compare();
 
@@ -98,6 +101,7 @@ FrustumTest::FrustumTest() {
               &FrustumTest::convert,
 
               &FrustumTest::data,
+              &FrustumTest::rangeFor,
 
               &FrustumTest::compare,
 
@@ -120,8 +124,12 @@ void FrustumTest::construct() {
         planes[2], planes[3],
         planes[4], planes[5]};
 
-    CORRADE_COMPARE_AS(frustum.planes(), Corrade::Containers::arrayView(planes),
-                       Corrade::TestSuite::Compare::Container);
+    CORRADE_COMPARE(frustum[0], planes[0]);
+    CORRADE_COMPARE(frustum[1], planes[1]);
+    CORRADE_COMPARE(frustum[2], planes[2]);
+    CORRADE_COMPARE(frustum[3], planes[3]);
+    CORRADE_COMPARE(frustum[4], planes[4]);
+    CORRADE_COMPARE(frustum[5], planes[5]);
 
     CORRADE_VERIFY((std::is_nothrow_constructible<Frustum, Vector4, Vector4, Vector4, Vector4, Vector4, Vector4>::value));
 }
@@ -142,6 +150,9 @@ void FrustumTest::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Frustum>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Frustum, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, Frustum>::value));
 }
 
 void FrustumTest::constructNoInit() {
@@ -269,7 +280,7 @@ void FrustumTest::data() {
     #if !defined(__GNUC__) || __GNUC__*100 + __GNUC_MINOR__ >= 500
     constexpr
     #endif
-    Vector4 right = a.planes()[1];
+    Vector4 right = a.cbegin()[1];
     CORRADE_COMPARE(right, (Vector4{-1.0f, 0.0f, 0.0f, 1.0f}));
 
     constexpr Vector4 bottom = a[2];
@@ -278,11 +289,34 @@ void FrustumTest::data() {
     constexpr Vector4 near = a.near();
     CORRADE_COMPARE(near, (Vector4{0.0f, 0.0f, 1.0f, 1.0f}));
 
+    #if !defined(CORRADE_MSVC2015_COMPATIBILITY) && (!defined(__GNUC__) || __GNUC__*100 + __GNUC_MINOR__ >= 500)
+    constexpr
+    #endif
+    Vector4 far = *(a.cend() - 1);
+    CORRADE_COMPARE(far, (Vector4{0.0f, 0.0f, -1.0f, 1.0f}));
+
     #ifndef CORRADE_MSVC2015_COMPATIBILITY /* Apparently dereferencing pointer is verboten */
     constexpr
     #endif
     Float b = *a.data();
     CORRADE_COMPARE(b, 1.0f);
+
+    std::ostringstream out;
+    Error redirectError{&out};
+    a[6];
+    CORRADE_COMPARE(out.str(), "Math::Frustum::operator[](): index 6 out of range\n");
+}
+
+void FrustumTest::rangeFor() {
+    Frustum a;
+    Vector4 sum{3.0f};
+    Int i = 0;
+    for(const Vector4& plane: a) {
+        ++i;
+        sum *= plane;
+    }
+    CORRADE_COMPARE(i, 6);
+    CORRADE_COMPARE(sum, (Vector4{0.0f, 0.0f, 0.0f, 3.0f}));
 }
 
 void FrustumTest::compare() {
@@ -368,6 +402,6 @@ void FrustumTest::debug() {
                                "        {7, -8, 9, 0.6})\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::FrustumTest)

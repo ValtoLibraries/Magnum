@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/DualQuaternion.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -53,7 +53,7 @@ template<> struct DualQuaternionConverter<Float, DualQuat> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct DualQuaternionTest: Corrade::TestSuite::Tester {
     explicit DualQuaternionTest();
@@ -102,7 +102,6 @@ struct DualQuaternionTest: Corrade::TestSuite::Tester {
     void strictWeakOrdering();
 
     void debug();
-    void configuration();
 };
 
 typedef Math::Deg<Float> Deg;
@@ -164,8 +163,7 @@ DualQuaternionTest::DualQuaternionTest() {
 
               &DualQuaternionTest::strictWeakOrdering,
 
-              &DualQuaternionTest::debug,
-              &DualQuaternionTest::configuration});
+              &DualQuaternionTest::debug});
 }
 
 void DualQuaternionTest::construct() {
@@ -203,6 +201,9 @@ void DualQuaternionTest::constructIdentity() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<DualQuaternion>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<DualQuaternion, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, DualQuaternion>::value));
 }
 
 void DualQuaternionTest::constructZero() {
@@ -210,6 +211,9 @@ void DualQuaternionTest::constructZero() {
     CORRADE_COMPARE(a, DualQuaternion({{0.0f, 0.0f, 0.0f}, 0.0f}, {{0.0f, 0.0f, 0.0f}, 0.0f}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<DualQuaternion, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, DualQuaternion>::value));
 }
 
 void DualQuaternionTest::constructNoInit() {
@@ -348,15 +352,13 @@ void DualQuaternionTest::normalized() {
     CORRADE_COMPARE(a.normalized(), b);
 }
 
-namespace {
-    template<class> struct NormalizedIterativeData;
-    template<> struct NormalizedIterativeData<Float> {
-        static Math::Vector3<Float> translation() { return {10000.0f, -50.0f, 20000.0f}; }
-    };
-    template<> struct NormalizedIterativeData<Double> {
-        static Math::Vector3<Double> translation() { return {10000000000000.0, -500.0, 20000000000000.0}; }
-    };
-}
+template<class> struct NormalizedIterativeData;
+template<> struct NormalizedIterativeData<Float> {
+    static Math::Vector3<Float> translation() { return {10000.0f, -50.0f, 20000.0f}; }
+};
+template<> struct NormalizedIterativeData<Double> {
+    static Math::Vector3<Double> translation() { return {10000000000000.0, -500.0, 20000000000000.0}; }
+};
 
 template<class T> void DualQuaternionTest::normalizedIterative() {
     setTestCaseName(std::string{"normalizedIterative<"} + TypeTraits<T>::name() + ">");
@@ -647,25 +649,6 @@ void DualQuaternionTest::debug() {
     CORRADE_COMPARE(o.str(), "DualQuaternion({{1, 2, 3}, -4}, {{0.5, -3.1, 3.3}, 2})\n");
 }
 
-void DualQuaternionTest::configuration() {
-    Corrade::Utility::Configuration c;
-
-    DualQuaternion a{{{3.0f, 3.125f, 9.0f}, 9.55f}, {{-1.2f, 0.3f, 1.1f}, 92.05f}};
-    std::string value{"3 3.125 9 9.55 -1.2 0.3 1.1 92.05"};
-
-    c.setValue("dualquat", a);
-    CORRADE_COMPARE(c.value("dualquat"), value);
-    CORRADE_COMPARE(c.value<DualQuaternion>("dualquat"), a);
-
-    /* Underflow */
-    c.setValue("underflow", "2.1 8.9");
-    CORRADE_COMPARE(c.value<DualQuaternion>("underflow"), (DualQuaternion{{{2.1f, 8.9f, 0.0f}, 0.0f}, {{0.0f, 0.0f, 0.0f}, 0.0f}}));
-
-    /* Overflow */
-    c.setValue("overflow", "2 1 8 9 16 33 -1 5 2 10");
-    CORRADE_COMPARE(c.value<DualQuaternion>("overflow"), (DualQuaternion{{{2.0f, 1.0f, 8.0f}, 9.0f}, {{16.0f, 33.0f, -1.0f}, 5.0f}}));
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::DualQuaternionTest)

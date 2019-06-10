@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,24 +53,36 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
         extensions.push_back(Extensions::OES::vertex_array_object::string());
         #endif
 
-        createImplementation = &Mesh::createImplementationVAO;
-        moveConstructImplementation = &Mesh::moveConstructImplementationVAO;
-        moveAssignImplementation = &Mesh::moveAssignImplementationVAO;
-        destroyImplementation = &Mesh::destroyImplementationVAO;
-
         #ifndef MAGNUM_TARGET_GLES
-        if(context.isExtensionSupported<Extensions::EXT::direct_state_access>()) {
-            extensions.emplace_back(Extensions::EXT::direct_state_access::string());
+        if(context.isExtensionSupported<Extensions::ARB::direct_state_access>()) {
+            extensions.emplace_back(Extensions::ARB::direct_state_access::string());
 
-            attributePointerImplementation = &Mesh::attributePointerImplementationDSAEXT;
+            /* Intel Windows drivers are ... special */
+            #ifdef CORRADE_TARGET_WINDOWS
+            if((context.detectedDriver() & Context::DetectedDriver::IntelWindows) &&
+               !context.isDriverWorkaroundDisabled("intel-windows-broken-dsa-integer-vertex-attributes"))
+            {
+                attributePointerImplementation = &Mesh::attributePointerImplementationVAODSAIntelWindows;
+            } else
+            #endif
+            {
+                attributePointerImplementation = &Mesh::attributePointerImplementationVAODSA;
+            }
+
+            createImplementation = &Mesh::createImplementationVAODSA;
+            bindIndexBufferImplementation = &Mesh::bindIndexBufferImplementationVAODSA;
         } else
         #endif
         {
+            createImplementation = &Mesh::createImplementationVAO;
             attributePointerImplementation = &Mesh::attributePointerImplementationVAO;
+            bindIndexBufferImplementation = &Mesh::bindIndexBufferImplementationVAO;
         }
 
+        moveConstructImplementation = &Mesh::moveConstructImplementationVAO;
+        moveAssignImplementation = &Mesh::moveAssignImplementationVAO;
+        destroyImplementation = &Mesh::destroyImplementationVAO;
         acquireVertexBufferImplementation = &Mesh::acquireVertexBufferImplementationVAO;
-        bindIndexBufferImplementation = &Mesh::bindIndexBufferImplementationVAO;
         bindVAOImplementation = &Mesh::bindVAOImplementationVAO;
         bindImplementation = &Mesh::bindImplementationVAO;
         unbindImplementation = &Mesh::unbindImplementationVAO;
@@ -87,14 +99,6 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
         bindVAOImplementation = &Mesh::bindVAOImplementationDefault;
         bindImplementation = &Mesh::bindImplementationDefault;
         unbindImplementation = &Mesh::unbindImplementationDefault;
-    }
-    #endif
-
-    #ifndef MAGNUM_TARGET_GLES
-    /* DSA create implementation (other cases handled above) */
-    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>() && context.isExtensionSupported<Extensions::ARB::vertex_array_object>()) {
-        extensions.emplace_back(Extensions::ARB::direct_state_access::string());
-        createImplementation = &Mesh::createImplementationVAODSA;
     }
     #endif
 
@@ -120,14 +124,20 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
         drawElementsInstancedImplementation = &Mesh::drawElementsInstancedImplementationANGLE;
     }
     #ifndef MAGNUM_TARGET_WEBGL
-    else if(context.isExtensionSupported<Extensions::EXT::draw_instanced>()) {
-        extensions.push_back(Extensions::EXT::draw_instanced::string());
+    else if(context.isExtensionSupported<Extensions::EXT::instanced_arrays>() ||
+            context.isExtensionSupported<Extensions::EXT::draw_instanced>()) {
+        extensions.push_back(context.isExtensionSupported<Extensions::EXT::instanced_arrays>() ?
+            Extensions::EXT::instanced_arrays::string() :
+            Extensions::EXT::draw_instanced::string());
 
         drawArraysInstancedImplementation = &Mesh::drawArraysInstancedImplementationEXT;
         drawElementsInstancedImplementation = &Mesh::drawElementsInstancedImplementationEXT;
 
-    } else if(context.isExtensionSupported<Extensions::NV::draw_instanced>()) {
-        extensions.push_back(Extensions::NV::draw_instanced::string());
+    } else if(context.isExtensionSupported<Extensions::NV::instanced_arrays>() ||
+              context.isExtensionSupported<Extensions::NV::draw_instanced>()) {
+        extensions.push_back(context.isExtensionSupported<Extensions::NV::instanced_arrays>() ?
+            Extensions::NV::instanced_arrays::string() :
+            Extensions::NV::draw_instanced::string());
 
         drawArraysInstancedImplementation = &Mesh::drawArraysInstancedImplementationNV;
         drawElementsInstancedImplementation = &Mesh::drawElementsInstancedImplementationNV;
@@ -140,12 +150,12 @@ MeshState::MeshState(Context& context, ContextState& contextState, std::vector<s
     #endif
 
     #ifndef MAGNUM_TARGET_GLES
-    /* Partial EXT_DSA implementation of vertex attrib divisor */
-    if(context.isExtensionSupported<Extensions::EXT::direct_state_access>()) {
-        if(glVertexArrayVertexAttribDivisorEXT)
-            vertexAttribDivisorImplementation = &Mesh::vertexAttribDivisorImplementationDSAEXT;
-        else vertexAttribDivisorImplementation = &Mesh::vertexAttribDivisorImplementationVAO;
-    } else vertexAttribDivisorImplementation = nullptr;
+    if(context.isExtensionSupported<Extensions::ARB::direct_state_access>())
+        vertexAttribDivisorImplementation = &Mesh::vertexAttribDivisorImplementationVAODSA;
+    else if(context.isExtensionSupported<Extensions::ARB::vertex_array_object>())
+        vertexAttribDivisorImplementation = &Mesh::vertexAttribDivisorImplementationVAO;
+    else
+        vertexAttribDivisorImplementation = nullptr;
     #elif defined(MAGNUM_TARGET_GLES2)
     /* Instanced arrays implementation on ES2 */
     if(context.isExtensionSupported<Extensions::ANGLE::instanced_arrays>()) {

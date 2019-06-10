@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 
 #include <cstdint>
 
+#include "Corrade/configure.h"
 #include "Magnum/configure.h"
 
 namespace Magnum {
@@ -42,7 +43,7 @@ typedef std::uint16_t UnsignedShort;
 typedef std::int16_t Short;
 typedef std::uint32_t UnsignedInt;
 typedef std::int32_t Int;
-#ifndef MAGNUM_TARGET_WEBGL
+#ifndef CORRADE_TARGET_EMSCRIPTEN
 typedef std::uint64_t UnsignedLong;
 typedef std::int64_t Long;
 #endif

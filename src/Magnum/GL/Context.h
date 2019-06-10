@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,13 +30,15 @@
  */
 
 #include <cstdlib>
-#include <array>
-#include <bitset>
 #include <vector>
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/Containers/Pointer.h>
+#include <Corrade/Containers/StaticArray.h>
+#include <Corrade/Utility/StlForwardString.h>
 
 #include "Magnum/Magnum.h"
+#include "Magnum/Math/BoolVector.h"
 #include "Magnum/Tags.h"
 #include "Magnum/GL/GL.h"
 #include "Magnum/GL/OpenGL.h"
@@ -44,8 +46,6 @@
 #include "Magnum/GL/visibility.h"
 
 namespace Magnum {
-
-namespace Platform { class GLContext; }
 
 namespace GL {
 
@@ -58,9 +58,9 @@ namespace Implementation {
             #ifndef MAGNUM_TARGET_GLES
             192
             #elif !defined(MAGNUM_TARGET_WEBGL)
-            128
+            144
             #else
-            24
+            32
             #endif
     };
 }
@@ -78,7 +78,7 @@ about OpenGL extensions.
 class MAGNUM_GL_EXPORT Extension {
     public:
         /** @brief All extensions for given OpenGL version */
-        static const std::vector<Extension>& extensions(Version version);
+        static Containers::ArrayView<const Extension> extensions(Version version);
 
         /** @brief Internal unique extension index */
         constexpr std::size_t index() const { return _index; }
@@ -92,13 +92,15 @@ class MAGNUM_GL_EXPORT Extension {
         /** @brief Extension string */
         constexpr const char* string() const { return _string; }
 
+    #ifndef DOXYGEN_GENERATING_OUTPUT
+    constexpr Extension(std::size_t index, Version requiredVersion, Version coreVersion, const char* string): _index{index}, _requiredVersion{requiredVersion}, _coreVersion{coreVersion}, _string{string} {}
+    #endif
+
     private:
         std::size_t _index;
         Version _requiredVersion;
         Version _coreVersion;
         const char* _string;
-
-        constexpr Extension(std::size_t index, Version requiredVersion, Version coreVersion, const char* string): _index(index), _requiredVersion(requiredVersion), _coreVersion(coreVersion), _string(string) {}
 };
 
 /**
@@ -121,6 +123,7 @@ either from the `Platform::*Application` classes or from the
 @code{.sh}
 <application> [--magnum-help] [--magnum-disable-workarounds LIST]
               [--magnum-disable-extensions LIST]
+              [--magnum-gpu-validation off|on]
               [--magnum-log default|quiet|verbose] ...
 @endcode
 
@@ -129,9 +132,13 @@ Arguments:
 -   `...` --- main application arguments (see `-h` or `--help` for details)
 -   `--magnum-help` --- display this help message and exit
 -   `--magnum-disable-workarounds LIST` --- driver workarounds to disable (see
-    @ref opengl-workarounds for detailed info) (environment: `MAGNUM_DISABLE_WORKAROUNDS`)
+    @ref opengl-workarounds for detailed info) (environment:
+    `MAGNUM_DISABLE_WORKAROUNDS`)
 -   `--magnum-disable-extensions LIST` --- OpenGL extensions to disable
     (environment: `MAGNUM_DISABLE_EXTENSIONS`)
+-   `--magnum-gpu-validation off|on` --- GPU validation using
+    @gl_extension{KHR,debug}, if present (environment:
+    `MAGNUM_GPU_VALIDATION`) (default: `off`)
 -   `--magnum-log default|quiet|verbose` --- console logging
     (environment: `MAGNUM_LOG`) (default: `default`)
 
@@ -147,7 +154,7 @@ class MAGNUM_GL_EXPORT Context {
          * @brief Context flag
          *
          * @see @ref Flags, @ref flags(),
-         *      @ref Platform::Sdl2Application::Configuration::setFlags() "Platform::*Application::Configuration::setFlags()"
+         *      @ref Platform::Sdl2Application::GLConfiguration::setFlags() "Platform::*Application::GLConfiguration::setFlags()"
          * @m_enum_values_as_keywords
          * @requires_gles Context flags are not available in WebGL.
          */
@@ -156,7 +163,7 @@ class MAGNUM_GL_EXPORT Context {
              * Debug context
              * @requires_gl43 Extension @gl_extension{KHR,debug}
              * @requires_gles32 Extension @gl_extension{ANDROID,extension_pack_es31a} /
-             *      @gl_extension2{KHR,debug,debug}
+             *      @gl_extension{KHR,debug}
              */
             #ifndef MAGNUM_TARGET_GLES2
             Debug = GL_CONTEXT_FLAG_DEBUG_BIT,
@@ -177,7 +184,7 @@ class MAGNUM_GL_EXPORT Context {
             /**
              * Context without error reporting
              * @requires_gl46 Extension @gl_extension{KHR,no_error}
-             * @requires_es_extension Extension @gl_extension2{KHR,no_error,no_error}
+             * @requires_es_extension Extension @gl_extension{KHR,no_error}
              */
             #ifndef MAGNUM_TARGET_GLES
             NoError = GL_CONTEXT_FLAG_NO_ERROR_BIT,
@@ -309,30 +316,18 @@ class MAGNUM_GL_EXPORT Context {
              *      intentionally hide most of the driver information.
              */
             Amd = 1 << 0,
-
-            #ifdef MAGNUM_BUILD_DEPRECATED
-            /** @copydoc DetectedDriver::Amd
-             * @deprecated Use @ref DetectedDriver::Amd instead.
-             */
-            AMD CORRADE_DEPRECATED_ENUM("use DetectedDriver::Amd instead") = UnsignedShort(DetectedDriver::Amd),
-            #endif
             #endif
 
-            #ifdef MAGNUM_TARGET_GLES
+            #if defined(MAGNUM_TARGET_GLES) || defined(DOXYGEN_GENERATING_OUTPUT)
             /**
              * OpenGL ES implementation by ANGLE (translated to D3D), used by
              * browsers on Windows for WebGL. As the WebGL specification
              * explicitly disallows exposing driver information to the
-             * application, this check cannot be done reliably.
+             * application, this check cannot be done reliably. See also
+             * @ref DetectedDriver::SwiftShader.
+             * @requires_gles ANGLE doesn't support desktop OpenGL contexts.
              */
             Angle = 1 << 1,
-
-            #ifdef MAGNUM_BUILD_DEPRECATED
-            /** @copydoc DetectedDriver::Angle
-             * @deprecated Use @ref DetectedDriver::Angle instead.
-             */
-            ProbablyAngle CORRADE_DEPRECATED_ENUM("use DetectedDriver::Angle instead") = UnsignedShort(DetectedDriver::Angle),
-            #endif
             #endif
 
             #ifndef MAGNUM_TARGET_WEBGL
@@ -357,9 +352,7 @@ class MAGNUM_GL_EXPORT Context {
              *      intentionally hide most of the driver information.
              */
             NVidia = 1 << 4,
-            #endif
 
-            #ifndef MAGNUM_TARGET_WEBGL
             /**
              * VMware guest GL driver SVGA3D, implemented using Mesa, both
              * Windows and Linux guests. See https://www.mesa3d.org/vmware-guest.html
@@ -368,7 +361,28 @@ class MAGNUM_GL_EXPORT Context {
              * @requires_gles Not detectable on WebGL, as browsers
              *      intentionally hide most of the driver information.
              */
-            Svga3D = 1 << 5
+            Svga3D = 1 << 5,
+
+            #if defined(MAGNUM_TARGET_GLES) || defined(DOXYGEN_GENERATING_OUTPUT)
+            /**
+             * [SwiftShader](https://github.com/google/swiftshader) software
+             * renderer for OpenGL ES. Usually used by browsers in cases where
+             * a GPU isn't available. See also @ref DetectedDriver::Angle.
+             * @requires_gles SwiftShader doesn't support desktop OpenGL
+             *      contexts. Not detectable on WebGL, as browsers
+             *      intentionally hide most of the driver information.
+             */
+            SwiftShader = 1 << 6,
+            #endif
+            #endif
+
+            #if defined(CORRADE_TARGET_ANDROID) || defined(DOXYGEN_GENERATING_OUTPUT)
+            /**
+             * ARM Mali drivers on OpenGL ES.
+             * @partialsupport Available only on
+             *      @ref CORRADE_TARGET_ANDROID "Android".
+             */
+            ArmMali = 1 << 7
             #endif
         };
 
@@ -411,11 +425,6 @@ class MAGNUM_GL_EXPORT Context {
 
         /** @brief Move assignment is not allowed */
         Context& operator=(Context&&) = delete;
-
-        #if defined(MAGNUM_BUILD_DEPRECATED) && !defined(DOXYGEN_GENERATING_OUTPUT)
-        CORRADE_DEPRECATED("Context::current() returns reference now") Context* operator->() { return this; }
-        CORRADE_DEPRECATED("Context::current() returns reference now") operator Context*() { return this; }
-        #endif
 
         /**
          * @brief OpenGL version
@@ -548,8 +557,9 @@ class MAGNUM_GL_EXPORT Context {
         /**
          * @brief Whether given extension is supported
          *
-         * Extensions usable with this function are listed in @ref Extensions
-         * namespace in header @ref Extensions.h. Example usage:
+         * Extensions usable with this function are listed in the
+         * @ref Extensions namespace in the @ref Extensions.h header and in the
+         * @ref opengl-support "OpenGL support tables". Example usage:
          *
          * @snippet MagnumGL.cpp Context-isExtensionSupported
          *
@@ -654,25 +664,39 @@ class MAGNUM_GL_EXPORT Context {
     #ifdef DOXYGEN_GENERATING_OUTPUT
     private:
     #endif
-        bool isDriverWorkaroundDisabled(const std::string& workaround);
+        bool isDriverWorkaroundDisabled(const char* workaround);
         Implementation::State& state() { return *_state; }
 
         /* This function is called from MeshState constructor, which means the
            state() pointer is not ready yet so we have to pass it directly */
         MAGNUM_GL_LOCAL bool isCoreProfileInternal(Implementation::ContextState& state);
 
+    #ifdef DOXYGEN_GENERATING_OUTPUT
     private:
-        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
-        friend Implementation::ContextState;
-        friend Platform::GLContext;
-        #endif
-
-        explicit Context(NoCreateT, Int argc, const char** argv, void functionLoader());
-        explicit Context(NoCreateT, Utility::Arguments&& args, Int argc, const char** argv, void functionLoader()): Context{NoCreate, args, argc, argv, functionLoader} {}
-        explicit Context(NoCreateT, Utility::Arguments& args, Int argc, const char** argv, void functionLoader());
+    #else
+    protected:
+    #endif
+        /* Made protected so it's possible to test the NoCreate constructor and
+           also not needed to friend Platform::GLContext. */
+        explicit Context(NoCreateT, Int argc, const char** argv, void functionLoader(Context&));
+        explicit Context(NoCreateT, Utility::Arguments&& args, Int argc, const char** argv, void functionLoader(Context&)): Context{NoCreate, args, argc, argv, functionLoader} {}
+        explicit Context(NoCreateT, Utility::Arguments& args, Int argc, const char** argv, void functionLoader(Context&));
 
         bool tryCreate();
         void create();
+
+    private:
+        #ifndef DOXYGEN_GENERATING_OUTPUT /* https://bugzilla.gnome.org/show_bug.cgi?id=776986 */
+        friend Implementation::ContextState;
+        #endif
+
+        enum class InternalFlag: UnsignedByte {
+            DisplayInitializationLog = 1 << 0,
+            GpuValidation = 1 << 1
+        };
+        typedef Containers::EnumSet<InternalFlag> InternalFlags;
+        CORRADE_ENUMSET_FRIEND_OPERATORS(InternalFlags)
+
         void disableDriverWorkaround(const std::string& workaround);
 
         /* Defined in Implementation/driverSpecific.cpp */
@@ -683,24 +707,24 @@ class MAGNUM_GL_EXPORT Context {
         MAGNUM_GL_LOCAL bool isCoreProfileImplementationNV();
         #endif
 
-        void(*_functionLoader)(){};
+        void(*_functionLoader)(Context&){};
         Version _version;
         #ifndef MAGNUM_TARGET_WEBGL
         Flags _flags;
         #endif
 
-        std::array<Version, Implementation::ExtensionCount> _extensionRequiredVersion;
-        std::bitset<Implementation::ExtensionCount> _extensionStatus;
+        Containers::StaticArray<Implementation::ExtensionCount, Version> _extensionRequiredVersion;
+        Math::BoolVector<Implementation::ExtensionCount> _extensionStatus;
         std::vector<Extension> _supportedExtensions;
 
-        Implementation::State* _state;
+        Containers::Pointer<Implementation::State> _state;
 
         Containers::Optional<DetectedDrivers> _detectedDrivers;
 
         /* True means known and disabled, false means known */
         std::vector<std::pair<std::string, bool>> _driverWorkarounds;
         std::vector<std::string> _disabledExtensions;
-        bool _displayInitializationLog;
+        InternalFlags _internalFlags;
 };
 
 #ifndef MAGNUM_TARGET_WEBGL
@@ -708,6 +732,7 @@ CORRADE_ENUMSET_OPERATORS(Context::Flags)
 #endif
 CORRADE_ENUMSET_OPERATORS(Context::DetectedDrivers)
 CORRADE_ENUMSET_OPERATORS(Context::States)
+CORRADE_ENUMSET_OPERATORS(Context::InternalFlags)
 
 #ifndef MAGNUM_TARGET_WEBGL
 /** @debugoperatorclassenum{Context,Context::Flag} */
@@ -780,36 +805,6 @@ Example usage:
     } while(0)
 #endif
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::Extension
- * @deprecated Use @ref GL::Extension instead.
- */
-typedef CORRADE_DEPRECATED("use GL::Extension instead") Magnum::GL::Extension Extension;
-
-/** @brief @copybrief GL::Context
- * @deprecated Use @ref GL::Context instead.
- */
-typedef CORRADE_DEPRECATED("use GL::Context instead") Magnum::GL::Context Context;
-
-/** @brief @copybrief MAGNUM_ASSERT_GL_VERSION_SUPPORTED()
- * @deprecated Use @ref MAGNUM_ASSERT_GL_VERSION_SUPPORTED()
- */
-#define MAGNUM_ASSERT_VERSION_SUPPORTED(version) \
-    CORRADE_DEPRECATED_MACRO(MAGNUM_ASSERT_VERSION_SUPPORTED(), "use MAGNUM_ASSERT_GL_VERSION_SUPPORTED() instead") \
-    MAGNUM_ASSERT_GL_VERSION_SUPPORTED(version)
-
-/** @brief @copybrief MAGNUM_ASSERT_GL_EXTENSION_SUPPORTED()
- * @deprecated Use @ref MAGNUM_ASSERT_GL_EXTENSION_SUPPORTED()
- */
-#define MAGNUM_ASSERT_EXTENSION_SUPPORTED(extension) \
-    CORRADE_DEPRECATED_MACRO(MAGNUM_ASSERT_EXTENSION_SUPPORTED(), "use MAGNUM_ASSERT_GL_EXTENSION_SUPPORTED() instead") \
-    MAGNUM_ASSERT_GL_EXTENSION_SUPPORTED(extension)
-#endif
-
-}
+}}
 
 #endif

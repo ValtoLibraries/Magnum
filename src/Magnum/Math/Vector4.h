@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,21 +59,18 @@ template<class T> class Vector4: public Vector<4, T> {
                     3 < otherSize ? a[3] : w};
         }
 
+        /**
+         * @brief Default constructor
+         *
+         * Equivalent to @ref Vector4(ZeroInitT).
+         */
+        constexpr /*implicit*/ Vector4() noexcept: Vector<4, T>{ZeroInit} {}
+
         /** @copydoc Vector::Vector(ZeroInitT) */
-        constexpr /*implicit*/ Vector4(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector<4, T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Vector4(ZeroInitT) noexcept: Vector<4, T>{ZeroInit} {}
 
         /** @copydoc Vector::Vector(NoInitT) */
-        explicit Vector4(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector<4, T>{NoInit}
-            #endif
-            {}
+        explicit Vector4(NoInitT) noexcept: Vector<4, T>{NoInit} {}
 
         /** @copydoc Vector::Vector(T) */
         constexpr explicit Vector4(T value) noexcept: Vector<4, T>(value) {}
@@ -110,64 +107,64 @@ template<class T> class Vector4: public Vector<4, T> {
          *
          * @see @ref r()
          */
-        T& x() { return (*this)[0]; }
-        constexpr T x() const { return (*this)[0]; }    /**< @overload */
+        T& x() { return Vector<4, T>::_data[0]; }
+        constexpr T x() const { return Vector<4, T>::_data[0]; } /**< @overload */
 
         /**
          * @brief Y component
          *
          * @see @ref g()
          */
-        T& y() { return (*this)[1]; }
-        constexpr T y() const { return (*this)[1]; }    /**< @overload */
+        T& y() { return Vector<4, T>::_data[1]; }
+        constexpr T y() const { return Vector<4, T>::_data[1]; } /**< @overload */
 
         /**
          * @brief Z component
          *
          * @see @ref b()
          */
-        T& z() { return (*this)[2]; }
-        constexpr T z() const { return (*this)[2]; }    /**< @overload */
+        T& z() { return Vector<4, T>::_data[2]; }
+        constexpr T z() const { return Vector<4, T>::_data[2]; } /**< @overload */
 
         /**
          * @brief W component
          *
          * @see @ref a()
          */
-        T& w() { return (*this)[3]; }
-        constexpr T w() const { return (*this)[3]; }    /**< @overload */
+        T& w() { return Vector<4, T>::_data[3]; }
+        constexpr T w() const { return Vector<4, T>::_data[3]; } /**< @overload */
 
         /**
          * @brief R component
          *
          * Equivalent to @ref x().
          */
-        T& r() { return x(); }
-        constexpr T r() const { return x(); }           /**< @overload */
+        T& r() { return Vector<4, T>::_data[0]; }
+        constexpr T r() const { return Vector<4, T>::_data[0]; } /**< @overload */
 
         /**
          * @brief G component
          *
          * Equivalent to @ref y().
          */
-        T& g() { return y(); }
-        constexpr T g() const { return y(); }           /**< @overload */
+        T& g() { return Vector<4, T>::_data[1]; }
+        constexpr T g() const { return Vector<4, T>::_data[1]; } /**< @overload */
 
         /**
          * @brief B component
          *
          * Equivalent to @ref z().
          */
-        T& b() { return z(); }
-        constexpr T b() const { return z(); }           /**< @overload */
+        T& b() { return Vector<4, T>::_data[2]; }
+        constexpr T b() const { return Vector<4, T>::_data[2]; } /**< @overload */
 
         /**
          * @brief A component
          *
          * Equivalent to @ref w().
          */
-        T& a() { return w(); }
-        constexpr T a() const { return w(); }           /**< @overload */
+        T& a() { return Vector<4, T>::_data[3]; }
+        constexpr T a() const { return Vector<4, T>::_data[3]; } /**< @overload */
 
         /**
          * @brief XYZ part of the vector
@@ -176,7 +173,9 @@ template<class T> class Vector4: public Vector<4, T> {
          * @see @ref swizzle(), @ref rgb()
          */
         Vector3<T>& xyz() { return Vector3<T>::from(Vector<4, T>::data()); }
-        constexpr const Vector3<T> xyz() const { return {x(), y(), z()}; } /**< @overload */
+        constexpr const Vector3<T> xyz() const {
+            return {Vector<4, T>::_data[0], Vector<4, T>::_data[1], Vector<4, T>::_data[2]};
+        } /**< @overload */
 
         /**
          * @brief RGB part of the vector
@@ -185,8 +184,10 @@ template<class T> class Vector4: public Vector<4, T> {
          * Equivalent to @ref xyz().
          * @see @ref swizzle()
          */
-        Vector3<T>& rgb() { return xyz(); }
-        constexpr const Vector3<T> rgb() const { return xyz(); } /**< @overload */
+        Vector3<T>& rgb() { return Vector3<T>::from(Vector<4, T>::data()); }
+        constexpr const Vector3<T> rgb() const {
+            return {Vector<4, T>::_data[0], Vector<4, T>::_data[1], Vector<4, T>::_data[2]};
+        } /**< @overload */
 
         /**
          * @brief XY part of the vector
@@ -195,7 +196,9 @@ template<class T> class Vector4: public Vector<4, T> {
          * @see @ref swizzle()
          */
         Vector2<T>& xy() { return Vector2<T>::from(Vector<4, T>::data()); }
-        constexpr const Vector2<T> xy() const { return {x(), y()}; } /**< @overload */
+        constexpr const Vector2<T> xy() const {
+            return {Vector<4, T>::_data[0], Vector<4, T>::_data[1]};
+        } /**< @overload */
 
         MAGNUM_VECTOR_SUBCLASS_IMPLEMENTATION(4, Vector4)
 };
@@ -258,11 +261,6 @@ namespace Implementation {
     template<class T> struct StrictWeakOrdering<Vector4<T>>: StrictWeakOrdering<Vector<4, T>> {};
 }
 
-}}
-
-namespace Corrade { namespace Utility {
-    /** @configurationvalue{Magnum::Math::Vector4} */
-    template<class T> struct ConfigurationValue<Magnum::Math::Vector4<T>>: public ConfigurationValue<Magnum::Math::Vector<4, T>> {};
 }}
 
 #endif

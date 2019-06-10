@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Bezier.h"
 #include "Magnum/Math/CubicHermite.h"
@@ -32,8 +33,7 @@
 #include "Magnum/Math/Vector2.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
 
-
-namespace Magnum { namespace Math { namespace Test {
+namespace Magnum { namespace Math { namespace Test { namespace {
 
 struct CubicHermiteTest: Corrade::TestSuite::Tester {
     explicit CubicHermiteTest();
@@ -339,6 +339,9 @@ void CubicHermiteTest::constructZeroScalar() {
     CORRADE_COMPARE(b, (CubicHermite1D{0.0f, 0.0f, 0.0f}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<CubicHermite1D, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, CubicHermite1D>::value));
 }
 
 void CubicHermiteTest::constructZeroVector() {
@@ -349,6 +352,9 @@ void CubicHermiteTest::constructZeroVector() {
     CORRADE_COMPARE(b, (CubicHermite2D{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<CubicHermite2D, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, CubicHermite2D>::value));
 }
 
 void CubicHermiteTest::constructZeroComplex() {
@@ -359,6 +365,9 @@ void CubicHermiteTest::constructZeroComplex() {
     CORRADE_COMPARE(b, (CubicHermiteComplex{{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<CubicHermiteComplex, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, CubicHermiteComplex>::value));
 }
 
 void CubicHermiteTest::constructZeroQuaternion() {
@@ -375,6 +384,9 @@ void CubicHermiteTest::constructZeroQuaternion() {
         {{0.0f, 0.0f, 0.0f}, 0.0f}}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<CubicHermiteQuaternion, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, CubicHermiteQuaternion>::value));
 }
 
 void CubicHermiteTest::constructIdentityScalar() {
@@ -393,6 +405,9 @@ void CubicHermiteTest::constructIdentityComplex() {
     CORRADE_COMPARE(b, (CubicHermiteComplex{{0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f}}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<CubicHermiteComplex, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, CubicHermiteComplex>::value));
 }
 
 void CubicHermiteTest::constructIdentityQuaternion() {
@@ -409,6 +424,9 @@ void CubicHermiteTest::constructIdentityQuaternion() {
         {{0.0f, 0.0f, 0.0f}, 0.0f}}));
 
     CORRADE_VERIFY((std::is_nothrow_constructible<CubicHermiteComplex, IdentityInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<IdentityInitT, CubicHermiteQuaternion>::value));
 }
 
 void CubicHermiteTest::constructNoInitScalar() {
@@ -1181,6 +1199,6 @@ void CubicHermiteTest::debugQuaternion() {
     CORRADE_COMPARE(out.str(), "CubicHermite(Quaternion({2, 1.5, 0.3}, 1.1), Quaternion({3, 0.1, 2.3}, 0.7), Quaternion({-1, 0, 0.3}, 0.4))\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::CubicHermiteTest)

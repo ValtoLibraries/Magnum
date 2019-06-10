@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -57,13 +57,13 @@ Encapsulates runtime information about OpenAL extension, such as name string,
 minimal required OpenAL version and version in which the extension was adopted
 to core.
 
-See also @ref Audio::Extensions namespace, which contain compile-time information
-about OpenAL extensions.
+See also the @ref Audio::Extensions namespace, which contain compile-time
+information about OpenAL extensions.
 */
 class MAGNUM_AUDIO_EXPORT Extension {
     public:
         /** @brief All OpenAL extensions */
-        static const std::vector<Extension>& extensions();
+        static Containers::ArrayView<const Extension> extensions();
 
         /** @brief Internal unique extension index */
         constexpr std::size_t index() const { return _index; }
@@ -71,12 +71,14 @@ class MAGNUM_AUDIO_EXPORT Extension {
         /** @brief Extension string */
         constexpr const char* string() const { return _string; }
 
+        #ifndef DOXYGEN_GENERATING_OUTPUT
+        constexpr Extension(std::size_t index, const char* string): _index{index}, _string{string} {}
+        #endif
+
     private:
         /* MSVC seems to have problems with const members */
         std::size_t _index;
         const char* _string;
-
-        constexpr Extension(std::size_t index, const char* string): _index(index), _string(string) {}
 };
 
 /**
@@ -193,11 +195,6 @@ class MAGNUM_AUDIO_EXPORT Context {
         /** @brief Move assignment is not allowed */
         Context& operator=(Context&& other) = delete;
 
-        #if defined(MAGNUM_BUILD_DEPRECATED) && !defined(DOXYGEN_GENERATING_OUTPUT)
-        CORRADE_DEPRECATED("Audio::Context::current() returns reference now") Context* operator->() { return this; }
-        CORRADE_DEPRECATED("Audio::Context::current() returns reference now") operator Context*() { return this; }
-        #endif
-
         /**
          * @brief Complete the context setup and exit on failure
          *
@@ -246,13 +243,6 @@ class MAGNUM_AUDIO_EXPORT Context {
          * @requires_al_extension @alc_extension{SOFT,HRTF}
          */
         std::string hrtfSpecifierString() const;
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief hrtfSpecifierString()
-         * @deprecated Use @ref hrtfSpecifierString() instead.
-         */
-        CORRADE_DEPRECATED("use hrtfSpecifierString() instead") std::string hrtfSpecifier() const { return hrtfSpecifierString(); }
-        #endif
 
         /**
          * @brief Device specifier string

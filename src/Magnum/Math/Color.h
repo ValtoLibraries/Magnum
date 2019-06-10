@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,45 +29,43 @@
  * @brief Class @ref Magnum::Math::Color3, @ref Magnum::Math::Color4, literal @link Magnum::Math::Literals::operator""_rgb() @endlink, @link Magnum::Math::Literals::operator""_rgba() @endlink, @link Magnum::Math::Literals::operator""_rgbf() @endlink, @link Magnum::Math::Literals::operator""_rgbaf() @endlink, @link Magnum::Math::Literals::operator""_srgb() @endlink, @link Magnum::Math::Literals::operator""_srgba() @endlink, @link Magnum::Math::Literals::operator""_srgbf() @endlink, @link Magnum::Math::Literals::operator""_srgbaf() @endlink
  */
 
-#include <tuple>
-
 #include "Magnum/Math/Matrix.h"
 #include "Magnum/Math/Packing.h"
 #include "Magnum/Math/Vector4.h"
+
+#ifdef MAGNUM_BUILD_DEPRECATED
+#include <tuple> /** @todo remove when Color[34]::Hsv is removed */
+#endif
 
 namespace Magnum { namespace Math {
 
 namespace Implementation {
 
 /* Convert color from HSV */
-template<class T> typename std::enable_if<std::is_floating_point<T>::value, Color3<T>>::type fromHsv(const typename Color3<T>::Hsv& hsv) {
-    Deg<T> hue;
-    T saturation, value;
-    std::tie(hue, saturation, value) = hsv;
-
+template<class T> typename std::enable_if<std::is_floating_point<T>::value, Color3<T>>::type fromHsv(ColorHsv<T> hsv) {
     /* Remove repeats */
-    hue -= floor(T(hue)/T(360))*Deg<T>(360);
-    if(hue < Deg<T>(0)) hue += Deg<T>(360);
+    hsv.hue -= floor(T(hsv.hue)/T(360))*Deg<T>(360);
+    if(hsv.hue < Deg<T>(0)) hsv.hue += Deg<T>(360);
 
-    int h = int(T(hue)/T(60)) % 6;
-    T f = T(hue)/T(60) - h;
+    int h = int(T(hsv.hue)/T(60)) % 6;
+    T f = T(hsv.hue)/T(60) - h;
 
-    T p = value * (T(1) - saturation);
-    T q = value * (T(1) - f*saturation);
-    T t = value * (T(1) - (T(1) - f)*saturation);
+    T p = hsv.value * (T(1) - hsv.saturation);
+    T q = hsv.value * (T(1) - f*hsv.saturation);
+    T t = hsv.value * (T(1) - (T(1) - f)*hsv.saturation);
 
     switch(h) {
-        case 0: return {value, t, p};
-        case 1: return {q, value, p};
-        case 2: return {p, value, t};
-        case 3: return {p, q, value};
-        case 4: return {t, p, value};
-        case 5: return {value, p, q};
+        case 0: return {hsv.value, t, p};
+        case 1: return {q, hsv.value, p};
+        case 2: return {p, hsv.value, t};
+        case 3: return {p, q, hsv.value};
+        case 4: return {t, p, hsv.value};
+        case 5: return {hsv.value, p, q};
         default: CORRADE_ASSERT_UNREACHABLE(); /* LCOV_EXCL_LINE */
     }
 }
-template<class T> inline typename std::enable_if<std::is_integral<T>::value, Color3<T>>::type fromHsv(const typename Color3<T>::Hsv& hsv) {
-    return pack<Color3<T>>(fromHsv<typename Color3<T>::FloatingPointType>(hsv));
+template<class T> inline typename std::enable_if<std::is_integral<T>::value, Color3<T>>::type fromHsv(const ColorHsv<typename TypeTraits<T>::FloatingPointType>& hsv) {
+    return pack<Color3<T>>(fromHsv<typename TypeTraits<T>::FloatingPointType>(hsv));
 }
 
 /* Internal hue computing function */
@@ -114,14 +112,14 @@ template<class T> inline typename Color3<T>::FloatingPointType value(typename st
 }
 
 /* Convert color to HSV */
-template<class T> inline typename Color3<T>::Hsv toHsv(typename std::enable_if<std::is_floating_point<T>::value, const Color3<T>&>::type color) {
+template<class T> inline ColorHsv<T> toHsv(typename std::enable_if<std::is_floating_point<T>::value, const Color3<T>&>::type color) {
     T max = color.max();
     T delta = max - color.min();
 
-    return typename Color3<T>::Hsv(hue<typename Color3<T>::FloatingPointType>(color, max, delta), max != T(0) ? delta/max : T(0), max);
+    return ColorHsv<T>{hue<typename Color3<T>::FloatingPointType>(color, max, delta), max != T(0) ? delta/max : T(0), max};
 }
-template<class T> inline typename Color3<T>::Hsv toHsv(typename std::enable_if<std::is_integral<T>::value, const Color3<T>&>::type color) {
-    return toHsv<typename Color3<T>::FloatingPointType>(unpack<Color3<typename Color3<T>::FloatingPointType>>(color));
+template<class T> inline ColorHsv<typename TypeTraits<T>::FloatingPointType> toHsv(typename std::enable_if<std::is_integral<T>::value, const Color3<T>&>::type color) {
+    return toHsv<typename TypeTraits<T>::FloatingPointType>(unpack<Color3<typename TypeTraits<T>::FloatingPointType>>(color));
 }
 
 /* sRGB -> RGB conversion */
@@ -248,6 +246,20 @@ range @f$ [0.0, 1.0] @f$.
 template<class T> class Color3: public Vector3<T> {
     public:
         /**
+         * @brief Corresponding floating-point type
+         *
+         * For HSV and other color spaces.
+         */
+        typedef typename TypeTraits<T>::FloatingPointType FloatingPointType;
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief ColorHsv
+         * @deprecated Use @ref ColorHsv instead.
+         */
+        typedef CORRADE_DEPRECATED("use ColorHsv instead") std::tuple<Deg<FloatingPointType>, FloatingPointType, FloatingPointType> Hsv;
+        #endif
+
+        /**
          * @brief Red color
          *
          * Convenience alternative to e.g. @cpp Color3{red, 0.0f, 0.0f} @ce.
@@ -314,34 +326,24 @@ template<class T> class Color3: public Vector3<T> {
         }
 
         /**
-         * @brief Corresponding floating-point type
-         *
-         * For HSV and other color spaces.
-         */
-        typedef typename TypeTraits<T>::FloatingPointType FloatingPointType;
-
-        /**
-         * @brief Type for storing HSV color space values
-         *
-         * Hue in range @f$ [0.0, 360.0] @f$, saturation and value in range
-         * @f$ [0.0, 1.0] @f$.
-         */
-        typedef std::tuple<Deg<FloatingPointType>, FloatingPointType, FloatingPointType> Hsv;
-
-        /**
          * @brief Create RGB color from HSV representation
          * @param hsv   Color in HSV color space
          *
          * Hue can overflow the range @f$ [0.0, 360.0] @f$.
          * @see @ref toHsv()
          */
-        static Color3<T> fromHsv(const Hsv& hsv) {
+        static Color3<T> fromHsv(const ColorHsv<FloatingPointType>& hsv) {
             return Implementation::fromHsv<T>(hsv);
         }
-        /** @overload */
-        static Color3<T> fromHsv(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value) {
-            return fromHsv(std::make_tuple(hue, saturation, value));
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief fromHsv(const ColorHsv<FloatingPointType>&)
+         * @deprecated Use @ref fromHsv(const ColorHsv<FloatingPointType>&) instead.
+         */
+        static CORRADE_DEPRECATED("use fromHsv(const ColorHsv<FloatingPointType>&) instead") Color3<T> fromHsv(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value) {
+            return fromHsv({hue, saturation, value});
         }
+        #endif
 
         /**
          * @brief Create linear RGB color from sRGB representation
@@ -426,22 +428,19 @@ template<class T> class Color3: public Vector3<T> {
         /**
          * @brief Default constructor
          *
+         * Equivalent to @ref Color3(ZeroInitT).
+         */
+        constexpr /*implicit*/ Color3() noexcept: Vector3<T>{ZeroInit} {}
+
+        /**
+         * @brief Construct a zero color
+         *
          * All components are set to zero.
          */
-        constexpr /*implicit*/ Color3(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector3<T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Color3(ZeroInitT) noexcept: Vector3<T>{ZeroInit} {}
 
         /** @copydoc Vector::Vector(NoInitT) */
-        explicit Color3(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector3<T>{NoInit}
-            #endif
-            {}
+        explicit Color3(NoInitT) noexcept: Vector3<T>{NoInit} {}
 
         /**
          * @brief Gray constructor
@@ -482,13 +481,9 @@ template<class T> class Color3: public Vector3<T> {
         /**
          * @brief Convert to HSV representation
          *
-         * Example usage:
-         *
-         * @snippet MagnumMath.cpp Color3-toHsv
-         *
          * @see @ref hue(), @ref saturation(), @ref value(), @ref fromHsv()
          */
-        Hsv toHsv() const {
+        ColorHsv<FloatingPointType> toHsv() const {
             return Implementation::toHsv<T>(*this);
         }
 
@@ -616,8 +611,12 @@ class Color4: public Vector4<T> {
         /** @copydoc Color3::FloatingPointType */
         typedef typename Color3<T>::FloatingPointType FloatingPointType;
 
-        /** @copydoc Color3::Hsv */
-        typedef typename Color3<T>::Hsv Hsv;
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief ColorHsv
+         * @deprecated Use @ref ColorHsv instead.
+         */
+        typedef CORRADE_DEPRECATED("use ColorHsv instead") std::tuple<Deg<FloatingPointType>, FloatingPointType, FloatingPointType> Hsv;
+        #endif
 
         /**
          * @brief Red color
@@ -689,13 +688,18 @@ class Color4: public Vector4<T> {
          * Hue can overflow the range @f$ [0.0, 360.0] @f$.
          * @see @ref toHsv()
          */
-        static Color4<T> fromHsv(const Hsv& hsv, T a = Implementation::fullChannel<T>()) {
+        static Color4<T> fromHsv(const ColorHsv<FloatingPointType>& hsv, T a = Implementation::fullChannel<T>()) {
             return Color4<T>(Implementation::fromHsv<T>(hsv), a);
         }
-        /** @overload */
-        static Color4<T> fromHsv(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value, T alpha = Implementation::fullChannel<T>()) {
-            return fromHsv(std::make_tuple(hue, saturation, value), alpha);
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /** @brief @copybrief fromHsv(const ColorHsv<FloatingPointType>&, T)
+         * @deprecated Use @ref fromHsv(const ColorHsv<FloatingPointType>&, T) instead.
+         */
+        static CORRADE_DEPRECATED("use fromHsv(const ColorHsv<FloatingPointType>&, T) instead") Color4<T> fromHsv(Deg<FloatingPointType> hue, FloatingPointType saturation, FloatingPointType value, T alpha = Implementation::fullChannel<T>()) {
+            return fromHsv({hue, saturation, value}, alpha);
         }
+        #endif
 
         /**
          * @brief Create linear RGBA color from sRGB + alpha representation
@@ -826,25 +830,19 @@ class Color4: public Vector4<T> {
         /**
          * @brief Default constructor
          *
+         * Equivalent to @ref Color4(ZeroInitT).
+         */
+        constexpr /*implicit*/ Color4() noexcept: Vector4<T>{ZeroInit} {}
+
+        /**
+         * @brief Construct a zero color
+         *
          * All components are set to zero.
          */
-        constexpr /*implicit*/ Color4() noexcept: Vector4<T>(T(0), T(0), T(0), T(0)) {}
-
-        /** @copydoc Vector::Vector(ZeroInitT) */
-        constexpr explicit Color4(ZeroInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector4<T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Color4(ZeroInitT) noexcept: Vector4<T>{ZeroInit} {}
 
         /** @copydoc Vector::Vector(NoInitT) */
-        explicit Color4(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Vector4<T>{NoInit}
-            #endif
-            {}
+        explicit Color4(NoInitT) noexcept: Vector4<T>{NoInit} {}
 
         /**
          * @copydoc Color3::Color3(T)
@@ -899,13 +897,11 @@ class Color4: public Vector4<T> {
          * @brief Convert to HSV representation
          *
          * The alpha channel is not subject to any conversion, so it is
-         * ignored. Example usage:
-         *
-         * @snippet MagnumMath.cpp Color4-toHsv
-         *
-         * @see @ref hue(), @ref saturation(), @ref value(), @ref fromHsv()
+         * ignored.
+         * @see @ref hue(), @ref saturation(), @ref value(), @ref a(),
+         *      @ref fromHsv()
          */
-        Hsv toHsv() const {
+        ColorHsv<FloatingPointType> toHsv() const {
             return Implementation::toHsv<T>(Vector4<T>::rgb());
         }
 
@@ -1024,6 +1020,107 @@ template<class T> inline Vector3<T> xyYToXyz(const Vector3<T>& xyY) {
 template<class T> inline Vector3<T> xyzToXyY(const Vector3<T>& xyz) {
     return {xyz.xy()/xyz.sum(), xyz.y()};
 }
+
+/**
+@brief HSV color
+
+Storage-only type with just the usual constructors and (non-)equality
+comparison.
+@see @ref Color3::fromHsv(), @ref Color3::toHsv(), @ref Color4::fromHsv(),
+    @ref Color4::toHsv()
+*/
+template<class T> struct ColorHsv {
+    /**
+     * @brief Default constructor
+     *
+     * Equivalent to @ref ColorHsv(ZeroInitT).
+     */
+    constexpr /*implicit*/ ColorHsv() noexcept: hue{}, saturation{}, value{} {}
+
+    /**
+     * @brief Construct a zero color
+     *
+     * All members are set to zero.
+     */
+    constexpr explicit ColorHsv(ZeroInitT) noexcept: hue{}, saturation{}, value{} {}
+
+    /** @brief Construct without initializing the contents */
+    explicit ColorHsv(NoInitT) noexcept: hue{NoInit} /* and the others not */ {}
+
+    /** @brief Constructor */
+    constexpr /*implicit*/ ColorHsv(Deg<T> hue, T saturation, T value) noexcept: hue{hue}, saturation{saturation}, value{value} {}
+
+    /**
+     * @brief Construct from different type
+     *
+     * Performs only default casting on the values, no rounding or
+     * anything else.
+     */
+    template<class U> constexpr explicit ColorHsv(const ColorHsv<U>& other) noexcept: hue{other.hue}, saturation{T(other.saturation)}, value{T(other.value)} {}
+
+    #ifdef MAGNUM_BUILD_DEPRECATED
+    /**
+     * @brief Construct from @ref Color3::Hsv
+     * @deprecated Use @ref ColorHsv instead of @ref Color3::Hsv
+     */
+    constexpr CORRADE_DEPRECATED("use ColorHsv instead of Color3::Hsv") /*implicit*/ ColorHsv(std::tuple<Deg<T>, T, T> hsv) noexcept:
+        hue{std::get<0>(hsv)}, saturation{std::get<1>(hsv)}, value{std::get<2>(hsv)} {}
+
+    /**
+     * @brief Convert to @ref Color3::Hsv
+     * @deprecated Use @ref ColorHsv instead of @ref Color3::Hsv
+     */
+    constexpr CORRADE_DEPRECATED("use ColorHsv instead of Color3::Hsv") /*implicit*/ operator std::tuple<Deg<T>, T, T>() const {
+        return std::make_tuple(hue, saturation, value);
+    }
+
+    /** @overload */ /* for std::tie() */
+    CORRADE_DEPRECATED("use ColorHsv instead of Color3::Hsv") /*implicit*/ operator std::tuple<Deg<T>&, T&, T&>() {
+        return std::tuple<Deg<T>&, T&, T&>{hue, saturation, value};
+    }
+
+    /** @overload */ /* for std::tie() */
+    constexpr CORRADE_DEPRECATED("use ColorHsv instead of Color3::Hsv") /*implicit*/ operator std::tuple<const Deg<T>&, const T&, const T&>() const {
+        return std::tuple<const Deg<T>&, const T&, const T&>{hue, saturation, value};
+    }
+    #endif
+
+    /** @brief Equality comparison */
+    bool operator==(const ColorHsv<T>& other) const {
+        return hue == other.hue &&
+            TypeTraits<T>::equals(saturation, other.saturation) &&
+            TypeTraits<T>::equals(value, other.value);
+    }
+
+    /** @brief Non-equality comparison */
+    bool operator!=(const ColorHsv<T>& other) const {
+        return !operator==(other);
+    }
+
+    /** @brief Hue, in range @f$ [0.0, 360.0] @f$ */
+    Deg<T> hue;
+
+    /** @brief Saturation, in range @f$ [0.0, 1.0] @f$ */
+    T saturation;
+
+    /** @brief Value, in range @f$ [0.0, 1.0] @f$ */
+    T value;
+};
+
+#ifndef CORRADE_NO_DEBUG
+/** @debugoperator{ColorHsv} */
+template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const ColorHsv<T>& value) {
+    return debug << "ColorHsv(" << Corrade::Utility::Debug::nospace << value.hue
+        << Corrade::Utility::Debug::nospace << "," << value.saturation
+        << Corrade::Utility::Debug::nospace << "," << value.value
+        << Corrade::Utility::Debug::nospace << ")";
+}
+
+/* Explicit instantiation for commonly used types */
+#ifndef DOXYGEN_GENERATING_OUTPUT
+extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const ColorHsv<Float>&);
+#endif
+#endif
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 MAGNUM_VECTORn_OPERATOR_IMPLEMENTATION(4, Color4)
@@ -1191,21 +1288,76 @@ inline Color4<Float> operator "" _srgbaf(unsigned long long value) {
 
 }
 
+#ifndef CORRADE_NO_DEBUG
 /**
 @debugoperator{Color3}
 
-Prints the value as hex color (e.g. @cb{.shell-session} #ff33aa @ce). Other
-underlying types are handled by @ref operator<<(Corrade::Utility::Debug&, const Vector<size, T>&).
+If @ref Corrade::Utility::Debug::Flag::Color is enabled or
+@ref Corrade::Utility::Debug::color was set immediately before, prints the
+value as an ANSI 24bit color escape sequence using two successive Unicode block
+characters (to have it roughly square). To preserve at least some information
+when text is copied, the square consists of one of the five
+@cb{.shell-session} ░▒▓█ @ce shades, however the color is set for both
+foreground and background so the actual block character is indistinguishable
+when seen on a terminal.
+
+If @ref Corrade::Utility::Debug::Flag::Color is enabled and
+@ref Corrade::Utility::Debug::Flag::DisableColors is set, only the shaded
+character is used, without any ANSI color escape sequence.
+
+If @ref Corrade::Utility::Debug::Flag::Color is not enabled, the value is
+printed as a hex color (e.g. @cb{.shell-session} #ff33aa @ce). Other underlying
+types are handled by @ref operator<<(Corrade::Utility::Debug&, const Vector<size, T>&).
+
+For example, the following snippet:
+
+@snippet MagnumMath.cpp Color3-debug
+
+<b></b>
+
+@m_class{m-noindent}
+
+prints the following on terminals that support it:
+
+@include MathColor3-debug.ansi
 */
 MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Color3<UnsignedByte>& value);
 
 /**
 @debugoperator{Color4}
 
-Prints the value as hex color (e.g. @cb{.shell-session} #9933aaff @ce). Other
+If @ref Corrade::Utility::Debug::Flag::Color is enabled or
+@ref Corrade::Utility::Debug::color was set immediately before, prints the
+value as an ANSI 24bit color escape sequence using two successive Unicode block
+characters (to have it roughly square). To preserve at least some information
+when text is copied, the square consists of one of the five
+@cb{.shell-session} ░▒▓█ @ce shades. The square shade is calculated as a
+product of @ref Color4::value() and @ref Color4::a(). If calculated color value
+is less than alpha, the colored square has the color set for both background
+and foreground, otherwise the background is left at the default.
+
+If @ref Corrade::Utility::Debug::Flag::Color is enabled and
+@ref Corrade::Utility::Debug::Flag::DisableColors is set, only the shaded
+character is used, without any ANSI color escape sequence.
+
+If @ref Corrade::Utility::Debug::Flag::Color is not enabled, the value is
+printed as a hex color (e.g. @cb{.shell-session} #ff33aaff @ce). Other
 underlying types are handled by @ref operator<<(Corrade::Utility::Debug&, const Vector<size, T>&).
+
+For example, the following snippet:
+
+@snippet MagnumMath.cpp Color4-debug
+
+<b></b>
+
+@m_class{m-noindent}
+
+prints the following on terminals that support it:
+
+@include MathColor4-debug.ansi
 */
 MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Color4<UnsignedByte>& value);
+#endif
 
 namespace Implementation {
     template<class T> struct TypeForSize<3, Color3<T>> { typedef Color3<T> Type; };
@@ -1221,13 +1373,7 @@ namespace Implementation {
 
 namespace Corrade { namespace Utility {
 
-/** @configurationvalue{Magnum::Color3} */
-template<class T> struct ConfigurationValue<Magnum::Math::Color3<T>>: ConfigurationValue<Magnum::Math::Vector<3, T>> {};
-
-/** @configurationvalue{Magnum::Color4} */
-template<class T> struct ConfigurationValue<Magnum::Math::Color4<T>>: ConfigurationValue<Magnum::Math::Vector<4, T>> {};
-
-#if defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN)
+#if !defined(CORRADE_NO_TWEAKABLE) && (defined(DOXYGEN_GENERATING_OUTPUT) || defined(CORRADE_TARGET_UNIX) || (defined(CORRADE_TARGET_WINDOWS) && !defined(CORRADE_TARGET_WINDOWS_RT)) || defined(CORRADE_TARGET_EMSCRIPTEN))
 /**
 @tweakableliteral{Magnum::Math::Color3}
 

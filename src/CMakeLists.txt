@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,9 +35,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC
     string(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-# Emscripten needs special flag to use WebGL 2
-if(CORRADE_TARGET_EMSCRIPTEN AND NOT TARGET_GLES2)
-    # TODO: give me INTERFACE_LINK_OPTIONS or something, please
+# Emscripten needs special flag to use WebGL 2. If we are on CMake 3.13 and up,
+# `-s USE_WEBGL2=1` linker option is propagated from FindOpenGLES3.cmake
+# already. If not (and the GL library is used), we need to modify the global
+# CMAKE_EXE_LINKER_FLAGS.
+if(CORRADE_TARGET_EMSCRIPTEN AND CMAKE_VERSION VERSION_LESS 3.13 AND WITH_GL AND NOT TARGET_GLES2)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_WEBGL2=1")
 endif()
 
@@ -56,4 +58,4 @@ add_subdirectory(Magnum)
 add_subdirectory(MagnumPlugins)
 
 # Magnum include dir for superprojects
-set(MAGNUM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+set(MAGNUM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "" FORCE)

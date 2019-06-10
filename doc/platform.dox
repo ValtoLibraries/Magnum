@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -144,8 +144,8 @@ this:
 @snippet MagnumPlatform.cpp configuration
 
 However, sometimes you would need to configure the application based on some
-configuration file or system introspection. In that case you can pass `nullptr`
-instead of @ref Platform::Sdl2Application::Configuration "Configuration"
+configuration file or system introspection. In that case you can pass
+@ref NoCreate instead of @ref Platform::Sdl2Application::Configuration "Configuration"
 instance and then specify it later with @ref Platform::Sdl2Application::create() "create()":
 
 @snippet MagnumPlatform.cpp createcontext
@@ -197,9 +197,9 @@ because dynamic function pointer loading is not available on these.
 
 For example, when you create the OpenGL context using GLX, you need to find
 `GlxContext` component, and link to `Magnum::GlxContext` target. Similarly to
-application libraries, you can also use generic `Magnum::Context` target,
-providing you requested only one `*Context` component in the @cmake find_package() @ce
-call. Complete example:
+application libraries, you can also use the generic `Magnum::GLContext` target,
+providing you requested only one `*Context` component in the
+@cmake find_package() @ce call. Complete example:
 
 @code{.cmake}
 find_package(Magnum REQUIRED GlxContext)
@@ -207,7 +207,7 @@ find_package(Magnum REQUIRED GlxContext)
 add_executable(myapplication MyCustomApplication.cpp)
 target_link_libraries(myapplication
     Magnum::Magnum
-    Magnum::Context)
+    Magnum::GLContext)
 @endcode
 
 @section platform-windowless-contexts Manually managing windowless contexts

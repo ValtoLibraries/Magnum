@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,12 +23,15 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Arguments.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/PluginManager/Manager.h>
 
 #include "Magnum/Image.h"
 #include "Magnum/PixelFormat.h"
+#include "Magnum/Math/ConfigurationValue.h"
 #include "Magnum/Math/Range.h"
 #include "Magnum/GL/Renderer.h"
 #include "Magnum/GL/Texture.h"
@@ -123,6 +126,9 @@ This will open monochrome `logo-src.png` image using any plugin that can open
 PNG files and converts it to 256x256 distance field `logo.png` using any plugin
 that can write PNG files.
 
+@note This executable is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 
 namespace TextureTools {
@@ -146,7 +152,7 @@ DistanceFieldConverter::DistanceFieldConverter(const Arguments& arguments): Plat
         .addNamedArgument("output-size").setHelp("output-size", "size of output image", "\"X Y\"")
         .addNamedArgument("radius").setHelp("radius", "distance field computation radius", "N")
         .addSkippedPrefix("magnum", "engine-specific options")
-        .setHelp("Converts red channel of an image to distance field representation.")
+        .setGlobalHelp("Converts red channel of an image to distance field representation.")
         .parse(arguments.argc, arguments.argv);
 
     createContext();
@@ -157,14 +163,14 @@ int DistanceFieldConverter::exec() {
     PluginManager::Manager<Trade::AbstractImporter> importerManager{
         args.value("plugin-dir").empty() ? std::string{} :
         Utility::Directory::join(args.value("plugin-dir"), Trade::AbstractImporter::pluginSearchPaths()[0])};
-    std::unique_ptr<Trade::AbstractImporter> importer = importerManager.loadAndInstantiate(args.value("importer"));
+    Containers::Pointer<Trade::AbstractImporter> importer = importerManager.loadAndInstantiate(args.value("importer"));
     if(!importer) return 1;
 
     /* Load converter plugin */
     PluginManager::Manager<Trade::AbstractImageConverter> converterManager{
         args.value("plugin-dir").empty() ? std::string{} :
         Utility::Directory::join(args.value("plugin-dir"), Trade::AbstractImageConverter::pluginSearchPaths()[0])};
-    std::unique_ptr<Trade::AbstractImageConverter> converter = converterManager.loadAndInstantiate(args.value("converter"));
+    Containers::Pointer<Trade::AbstractImageConverter> converter = converterManager.loadAndInstantiate(args.value("converter"));
     if(!converter) return 2;
 
     /* Open input file */

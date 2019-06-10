@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,14 +24,15 @@
 */
 
 namespace Magnum {
-/** @page types Type system
-@brief Type aliases, naming and compatibility with OpenGL and GLSL types.
+/** @page types Math type system
+@brief Type aliases, naming and compatibility with OpenGL, Vulkan and GLSL types.
 
 @tableofcontents
 @m_footernavigation
+@m_keyword{Type system,,}
 
-The root @ref Magnum namespace defines a few aliases for essential types. See
-its documentation for more information about usage with CMake.
+The root @ref Magnum namespace defines a few aliases for essential math types.
+See its documentation for more information about usage.
 
 @section types-builtin Builtin types
 
@@ -68,7 +69,7 @@ underlying type.
 
 | Magnum vector type                             | Equivalent GLSL type      |
 | ---------------------------------------------- | ------------------------- |
-| @ref Math::BoolVector "Math::BoolVector<2>", @ref Math::BoolVector "Math::BoolVector<3>", @ref Math::BoolVector "Math::BoolVector<4>" | @glsl bvec2 @ce, @glsl bvec3 @ce, @glsl bvec4 @ce |
+| @ref BoolVector2, @ref BoolVector3, @ref BoolVector4 | @glsl bvec2 @ce, @glsl bvec3 @ce, @glsl bvec4 @ce |
 | @ref Vector2, @ref Vector3, @ref Color3, @ref Vector4, @ref Color4 | @glsl vec2 @ce, @glsl vec3 @ce, @glsl vec4 @ce |
 | @ref Vector2ui, @ref Vector3ui, @ref Vector4ui | @glsl uvec2 @ce, @glsl uvec3 @ce, @glsl uvec4 @ce |
 | @ref Vector2i, @ref Vector3i, @ref Vector4i    | @glsl ivec2 @ce, @glsl ivec3 @ce, @glsl ivec4 @ce |
@@ -205,5 +206,29 @@ explicit:
 Example:
 
 @snippet MagnumMath.cpp types-literals-init
+
+@section types-thirdparty-integration Integration with types from 3rd party APIs
+
+To simplify the workflow when interacting with 3rd party APIs, all Magnum math
+types can be made explicitly convertible to and from types coming from external
+libraries. Currently, various Magnum libraries provide these conversion, see
+documentation of each `Integration.h` header for details:
+
+-   Math-related Vulkan structures --- @ref Magnum/Vk/Integration.h, part of
+    the @ref Vk library
+-   All Eigen types --- @ref Magnum/EigenIntegration/Integration.h and
+    @ref Magnum/EigenIntegration/GeometryIntegration.h, part of the
+    @ref EigenIntegration library
+-   All GLM types --- @ref Magnum/GlmIntegration/Integration.h,
+    @ref Magnum/GlmIntegration/GtcIntegration.h and
+    @ref Magnum/GlmIntegration/GtxIntegration.h, part of the
+    @ref GlmIntegration library
+-   Bullet Physics math types --- @ref Magnum/BulletIntegration/Integration.h,
+    part of the @ref BulletIntegration library
+-   Oculus VR SDK math types -- @ref Magnum/OvrIntegration/Integration.h, part
+    of the @ref OvrIntegration library
+-   Dear ImGui math types --- @ref Magnum/ImGuiIntegration/Integration.h, part
+    of the @ref ImGuiIntegration library
+
 */
 }

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,7 +40,8 @@ void viewportEvent(ViewportEvent& event) override {
 
 /* [DefaultFramebuffer-usage-clear] */
 void drawEvent() override {
-    GL::defaultFramebuffer.clear(GL::FramebufferClear::Color|GL::FramebufferClear::Depth);
+    GL::defaultFramebuffer.clear(GL::FramebufferClear::Color|
+                                 GL::FramebufferClear::Depth);
 
     // ...
 }
@@ -54,7 +55,9 @@ GL::Framebuffer framebuffer;
 /* [Framebuffer-usage-draw] */
 void drawEvent() override {
     GL::defaultFramebuffer.clear(GL::FramebufferClear::Color);
-    framebuffer.clear(GL::FramebufferClear::Color|GL::FramebufferClear::Depth|GL::FramebufferClear::Stencil);
+    framebuffer.clear(GL::FramebufferClear::Color|
+                      GL::FramebufferClear::Depth|
+                      GL::FramebufferClear::Stencil);
 
     framebuffer.bind();
     // ...

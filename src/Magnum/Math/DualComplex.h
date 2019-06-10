@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -105,31 +105,24 @@ template<class T> class DualComplex: public Dual<Complex<T>> {
         /**
          * @brief Default constructor
          *
+         * Equivalent to @ref DualComplex(IdentityInitT).
+         */
+        constexpr /*implicit*/ DualComplex() noexcept: Dual<Complex<T>>({}, {T(0), T(0)}) {}
+
+        /**
+         * @brief Identity constructor
+         *
          * Creates unit dual complex number. @f[
          *      \hat c = (0 + i1) + \epsilon (0 + i0)
          * @f]
          */
-        #ifdef DOXYGEN_GENERATING_OUTPUT
-        constexpr /*implicit*/ DualComplex(IdentityInitT = IdentityInit) noexcept;
-        #else
-        constexpr /*implicit*/ DualComplex(IdentityInitT = IdentityInit) noexcept: Dual<Complex<T>>({}, {T(0), T(0)}) {}
-        #endif
+        constexpr explicit DualComplex(IdentityInitT) noexcept: Dual<Complex<T>>({}, {T(0), T(0)}) {}
 
         /** @brief Construct zero-initialized dual complex number */
-        constexpr explicit DualComplex(ZeroInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Dual<Complex<T>>{Complex<T>{ZeroInit}, Complex<T>{ZeroInit}}
-            #endif
-            {}
+        constexpr explicit DualComplex(ZeroInitT) noexcept: Dual<Complex<T>>{Complex<T>{ZeroInit}, Complex<T>{ZeroInit}} {}
 
         /** @brief Construct without initializing the contents */
-        explicit DualComplex(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Dual<Complex<T>>{NoInit}
-            #endif
-            {}
+        explicit DualComplex(NoInitT) noexcept: Dual<Complex<T>>{NoInit} {}
 
         /**
          * @brief Construct dual complex number from real and dual part
@@ -150,11 +143,7 @@ template<class T> class DualComplex: public Dual<Complex<T>> {
          *      \hat c = (0 + i1) + \epsilon(v_x + iv_y)
          * @f]
          */
-        #ifdef DOXYGEN_GENERATING_OUTPUT
-        constexpr explicit DualComplex(const Vector2<T>& vector) noexcept;
-        #else
         constexpr explicit DualComplex(const Vector2<T>& vector) noexcept: Dual<Complex<T>>({}, Complex<T>(vector)) {}
-        #endif
 
         /**
          * @brief Construct dual complex number from another of different type
@@ -162,12 +151,7 @@ template<class T> class DualComplex: public Dual<Complex<T>> {
          * Performs only default casting on the values, no rounding or anything
          * else.
          */
-        template<class U> constexpr explicit DualComplex(const DualComplex<U>& other) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Dual<Complex<T>>{other}
-            #endif
-            {}
+        template<class U> constexpr explicit DualComplex(const DualComplex<U>& other) noexcept: Dual<Complex<T>>{other} {}
 
         /** @brief Construct dual complex number from external representation */
         template<class U, class V = decltype(Implementation::DualComplexConverter<T, U>::from(std::declval<U>()))> constexpr explicit DualComplex(const U& other): DualComplex{Implementation::DualComplexConverter<T, U>::from(other)} {}
@@ -369,6 +353,7 @@ template<class T> class DualComplex: public Dual<Complex<T>> {
 
 MAGNUM_DUAL_OPERATOR_IMPLEMENTATION(DualComplex, Vector2, T)
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{DualComplex} */
 template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const DualComplex<T>& value) {
     return debug << "DualComplex({" << Corrade::Utility::Debug::nospace
@@ -384,32 +369,11 @@ template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& d
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const DualComplex<Float>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const DualComplex<Double>&);
 #endif
+#endif
 
 namespace Implementation {
     template<class T> struct StrictWeakOrdering<DualComplex<T>>: StrictWeakOrdering<Dual<Complex<T>>> {};
 }
-
-}}
-
-namespace Corrade { namespace Utility {
-
-/** @configurationvalue{Magnum::Math::DualComplex} */
-template<class T> struct ConfigurationValue<Magnum::Math::DualComplex<T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes elements separated with spaces */
-    static std::string toString(const Magnum::Math::DualComplex<T>& value, ConfigurationValueFlags flags) {
-        return ConfigurationValue<Magnum::Math::Vector<4, T>>::toString(reinterpret_cast<const Magnum::Math::Vector<4, T>&>(value), flags);
-    }
-
-    /** @brief Reads elements separated with whitespace */
-    static Magnum::Math::DualComplex<T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
-        const Magnum::Math::Vector<4, T> value = ConfigurationValue<Magnum::Math::Vector<4, T>>::fromString(stringValue, flags);
-        return reinterpret_cast<const Magnum::Math::DualComplex<T>&>(value);
-    }
-};
-
-/* No explicit instantiation needed, as Vector<4, T> is instantiated already */
 
 }}
 

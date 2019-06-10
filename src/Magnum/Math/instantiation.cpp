@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 */
 
 #include "Magnum/Math/Bezier.h"
+#include "Magnum/Math/ConfigurationValue.h"
 #include "Magnum/Math/CubicHermite.h"
 #include "Magnum/Math/DualComplex.h"
 #include "Magnum/Math/DualQuaternion.h"
@@ -124,6 +125,8 @@ template Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Dua
 
 template Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Quaternion<Float>&);
 template Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Quaternion<Double>&);
+
+template Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const ColorHsv<Float>&);
 
 /* Check proper size of GL types */
 static_assert(sizeof(Vector<2, Float>) == 8, "Improper size of 2-element Float vector");

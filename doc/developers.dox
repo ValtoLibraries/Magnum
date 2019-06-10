@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -122,8 +122,8 @@ required to follow them to the point.
         support)
 13. Mention the library in `doc/changelog.dox` (or similar files in other
     repos)
-14. Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+14. @ref building-doc "Build documentation":
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings
     -   eyeball the namespace and directory docs, fix suspicious things, look
         also in the building and cmake docs
@@ -307,8 +307,8 @@ in inverse.
     more information.
 6.  Mention the new functionality in `doc/changelog.dox` (and similar files in
     other repos)
-7.  Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+7.  @ref building-doc "Build documentation":
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings
     -   eyeball the relevant docs and fix suspicious things
 8.  Build a coverage build (`package/archlinux/PKGBUILD-coverage`), or abuse
@@ -328,8 +328,8 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
 3.  Add a test for it to corresponding file, verify the test gets actually run
 4.  Mention the new functionality in `doc/changelog.dox` (and similar files in
     other repos)
-5.  Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+5.  @ref building-doc "Build documentation":
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings
     -   eyeball the relevant docs and fix suspicious things
 6.  Build a coverage build (`package/archlinux/PKGBUILD-coverage`), or abuse
@@ -354,8 +354,8 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
 5.  Populate it, see @ref coding-style for more information
 6.  Mention the new page in `doc/changelog.dox` (and similar files in other
     repos)
-7.  Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+7.  @ref building-doc "Build documentation":
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings
     -   eyeball the relevant docs and fix suspicious things
 8.  Push to `master`
@@ -399,8 +399,8 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
 7.  Upon verifying the above, start updating dependent code
 8.  Mention the deprecated API in the deprecation section of `doc/changelog.dox`
     (and similar files in other repos)
-9.  Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+9.  @ref building-doc "Build documentation":
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings
     -   eyeball the relevant docs and fix suspicious things
 10.  Push to a temporary branch (e.g., `next`)
@@ -474,8 +474,8 @@ in inverse --- but usually @ref developers-deprecation "deprecate first".
     remove relevant deprecated files and update `CMakeLists.txt`
 3.  Mention the removed API in the compatibility section of `doc/changelog.dox`
     (or similar files in other repos)
-4.  Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+4.  @ref building-doc "Build documentation":
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings --- sometimes it happens that a
         deprecated API is still being referenced
 5.  Push to a temporary branch (e.g., `next`)
@@ -603,8 +603,8 @@ unless it doesn't affect public API at all.
     possibly to multiple places
 9.  Update relevant extension support in tables in `doc/opengl-support.dox`
 10. Mention the new stuff in `doc/changelog.dox`
-11. Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+11. @ref building-doc "Build documentation":
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings
     -   eyeball the relevant docs and fix suspicious things
 12. Build and test for relevant platforms locally (as the public CI can't test
@@ -790,7 +790,7 @@ inverse.
 1.  (Optionally) remove `build/doc-public` to get rid of stale files
 2.  Verify there are no untracked files, modifications or branches different
     than `master` checked out that could mess up the docs
-3.  Run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-public`,
+3.  Run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-public`,
     look for suspicious warnings
 4.  Upload contents of `build/doc-public/html/` to `doc/magnum-new/` and remove
     `doc/magnum-old/` if any
@@ -810,8 +810,8 @@ inverse.
 5.  Add the contributor to `CREDITS.md`, if not already there
 6.  Update `doc/changelog.dox` (and similar files in other repos), if not
     already done
-7.  Build documentation:
-    -   run [dox2html5.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
+7.  @ref building-doc "Build documentation:
+    -   run [doxygen.py](http://mcss.mosra.cz/doxygen/) on `Doxyfile-mcss`
         and verify there are no new warnings
     -   eyeball the relevant docs and fix suspicious things
 8.  Push to a temporary branch (e.g., `next`)
@@ -834,8 +834,8 @@ inverse.
     them up
     -   Don't forget about the bootstrap repository and toolchains as well
 6.  Go through merged PRs (and the *most important* issues) and add new people
-    to `CREDITS.md` and https://magnum.graphics/about/, if they are not there
-    yet
+    to `dox/credits.md` (and similar files in other repositories) and
+    https://magnum.graphics/about/, if they are not there yet
 7.  Update changelog for the next release:
     -   change section names for the latest release from `latest` to `20XY-ab`
     -   change the title from `Changes since 20XY.aa` to `20XY.ab`
@@ -853,13 +853,19 @@ inverse.
 11. Push all new changes to a temporary branch (e.g., `next`), don't forget the
     `ports` branch in examples
 12. Wait for the CIs to get green
-13. Tag a new version using @cb{.sh} git tag -a v20XY.ab @ce, say just
+13. Update `conanfile.py` in all projects that have it with a new version ---
+    this *has to be* done before the version is tagged.
+14. Update Debian package changelog in `package/debian/changelog`, copypasting
+    the last entry, updating it and using @cb{.sh} date -R @ce for a date ---
+    again, this *should be* done before the version is tagged so stable
+    releases in PPAs can be done directly from the tag with no extra patching
+15. Tag a new version using @cb{.sh} git tag -a v20XY.ab @ce, say just
     `Version 20XY.ab` as a message
-14. Push the tag, verify that the CIs are still green
+16. Push the tag, verify that the CIs are still green
     -   to GitLab as well
-15. Update the Corrade and Magnum tagfiles on the website using the
+17. Update the Corrade and Magnum tagfiles on the website using the
     freshly-built *public* docs
-16. Write a release announcement for the blog
+18. Write a release announcement for the blog
     -   highlight the most prominent features, mention detailed blog posts
         about them, if any
     -   reference detailed changelogs for all projects at the end
@@ -867,8 +873,8 @@ inverse.
     -   create some fancy eye-catchy cover image featuring nice screenshots of
         new functionality
     -   add release annoucement link under the button on front page
-17. Publish the release announcement, verify it looks correct
-18. Advertise the release announcement, preferrably Monday 5 PM, never Friday
+19. Publish the release announcement, verify it looks correct
+20. Advertise the release announcement, preferrably Monday 5 PM, never Friday
     or weekends
     -   come up with some 100-character-long extended title
     -   Twitter (extended title + url and some hashtags), first dry-run the
@@ -883,9 +889,9 @@ inverse.
     -   send an e-mail to companies and universities on the private list
     -   add a message to the Gitter chat (title as heading, cover image,
         summary in a blockquote and "read more" link, `@` contributors)
-19. Reference Twitter, Reddit, Hacker News and mailing list in a "Discussion"
+21. Reference Twitter, Reddit, Hacker News and mailing list in a "Discussion"
     note at the end of the article, reupload that change
-20. Update versions of ArchLinux AUR packages:
+22. Update versions of ArchLinux AUR packages:
     -   run `makepkg` in `package/archlinux/magnum*-git`, verify it builds and
         says correct version, ideally with `r0` at the ennd
     -   copy the updated `PKGBUILD` to the AUR package repo, run
@@ -893,15 +899,12 @@ inverse.
     -   commit the updated `PKGBUILD` and `.SRCINFO`, push
     -   after pushing all, verify that the version is updated in the AUR web
         interface as well
-21. Update Debian package changelog in `package/debian/changelog`, copypasting
-    the last entry, updating it and using the Git tag date+time for it (note
-    that the date format is slightly different)
-22. Update Homebrew package versions
-23. Ask someone to update the Ubuntu PPA
-24. Ask someone to update Vcpkg packages
-25. Close the 20XY.ab GitHub milestone
-26. Add link to the release notes to the tag on GitHub
-27. Have a drink and take two days off
+23. Update Homebrew package versions
+24. Ask someone to update the Ubuntu PPA
+25. Ask someone to update Vcpkg packages
+26. Close the 20XY.ab GitHub milestone
+27. Add link to the release notes to the tag on GitHub
+28. Have a drink and take two days off
 
 */
 }

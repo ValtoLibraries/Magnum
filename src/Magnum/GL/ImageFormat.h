@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -309,23 +309,7 @@ enum class ImageFormat: GLenum {
     #endif
 };
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::ImageAccess
- * @deprecated Use @ref GL::ImageAccess instead.
- */
-typedef CORRADE_DEPRECATED("use GL::ImageAccess instead") Magnum::GL::ImageAccess ImageAccess;
-
-/** @brief @copybrief GL::ImageFormat
- * @deprecated Use @ref GL::ImageFormat instead.
- */
-typedef CORRADE_DEPRECATED("use GL::ImageFormat instead") Magnum::GL::ImageFormat ImageFormat;
-#endif
-
-}
+}}
 #else
 #error this header is not available in OpenGL ES 2.0 and WebGL build
 #endif

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,8 +30,93 @@
 
 #include "Magnum/Platform/Implementation/OpenGLFunctionLoader.h"
 
-void flextGLInit() {
+#ifdef MAGNUM_PLATFORM_USE_EGL
+#include <cstring>
+#include <EGL/egl.h>
+#include "Magnum/GL/Context.h"
+#endif
+
+void flextGLInit(Magnum::GL::Context& context) {
     Magnum::Platform::Implementation::OpenGLFunctionLoader loader;
+
+    #ifdef MAGNUM_PLATFORM_USE_EGL
+    {
+        /* EGL contexts on NVidia 390 drivers don't have correct statically
+           linked GL 1.0 and 1.1 functions (such as glGetString()) and one has
+           to retrieve them explicitly using eglGetProcAddress(). */
+        EGLDisplay display = eglGetCurrentDisplay();
+        const char* vendor = eglQueryString(display, EGL_VENDOR);
+        if(std::strcmp(vendor, "NVIDIA") == 0 && !context.isDriverWorkaroundDisabled("nv-egl-incorrect-gl11-function-pointers")) {
+
+            /* GL_VERSION_1_0 */
+            flextglBlendFunc = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum)>(loader.load("glBlendFunc"));
+            flextglClear = reinterpret_cast<void(APIENTRY*)(GLbitfield)>(loader.load("glClear"));
+            flextglClearColor = reinterpret_cast<void(APIENTRY*)(GLfloat, GLfloat, GLfloat, GLfloat)>(loader.load("glClearColor"));
+            flextglClearDepth = reinterpret_cast<void(APIENTRY*)(GLdouble)>(loader.load("glClearDepth"));
+            flextglClearStencil = reinterpret_cast<void(APIENTRY*)(GLint)>(loader.load("glClearStencil"));
+            flextglColorMask = reinterpret_cast<void(APIENTRY*)(GLboolean, GLboolean, GLboolean, GLboolean)>(loader.load("glColorMask"));
+            flextglCullFace = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glCullFace"));
+            flextglDepthFunc = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glDepthFunc"));
+            flextglDepthMask = reinterpret_cast<void(APIENTRY*)(GLboolean)>(loader.load("glDepthMask"));
+            flextglDepthRange = reinterpret_cast<void(APIENTRY*)(GLdouble, GLdouble)>(loader.load("glDepthRange"));
+            flextglDisable = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glDisable"));
+            flextglDrawBuffer = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glDrawBuffer"));
+            flextglEnable = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glEnable"));
+            flextglFinish = reinterpret_cast<void(APIENTRY*)(void)>(loader.load("glFinish"));
+            flextglFlush = reinterpret_cast<void(APIENTRY*)(void)>(loader.load("glFlush"));
+            flextglFrontFace = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glFrontFace"));
+            flextglGetBooleanv = reinterpret_cast<void(APIENTRY*)(GLenum, GLboolean *)>(loader.load("glGetBooleanv"));
+            flextglGetDoublev = reinterpret_cast<void(APIENTRY*)(GLenum, GLdouble *)>(loader.load("glGetDoublev"));
+            flextglGetError = reinterpret_cast<GLenum(APIENTRY*)(void)>(loader.load("glGetError"));
+            flextglGetFloatv = reinterpret_cast<void(APIENTRY*)(GLenum, GLfloat *)>(loader.load("glGetFloatv"));
+            flextglGetIntegerv = reinterpret_cast<void(APIENTRY*)(GLenum, GLint *)>(loader.load("glGetIntegerv"));
+            flextglGetString = reinterpret_cast<const GLubyte *(APIENTRY*)(GLenum)>(loader.load("glGetString"));
+            flextglGetTexImage = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLenum, GLenum, void *)>(loader.load("glGetTexImage"));
+            flextglGetTexLevelParameterfv = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLenum, GLfloat *)>(loader.load("glGetTexLevelParameterfv"));
+            flextglGetTexLevelParameteriv = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLenum, GLint *)>(loader.load("glGetTexLevelParameteriv"));
+            flextglGetTexParameterfv = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLfloat *)>(loader.load("glGetTexParameterfv"));
+            flextglGetTexParameteriv = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint *)>(loader.load("glGetTexParameteriv"));
+            flextglHint = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum)>(loader.load("glHint"));
+            flextglIsEnabled = reinterpret_cast<GLboolean(APIENTRY*)(GLenum)>(loader.load("glIsEnabled"));
+            flextglLineWidth = reinterpret_cast<void(APIENTRY*)(GLfloat)>(loader.load("glLineWidth"));
+            flextglLogicOp = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glLogicOp"));
+            flextglPixelStoref = reinterpret_cast<void(APIENTRY*)(GLenum, GLfloat)>(loader.load("glPixelStoref"));
+            flextglPixelStorei = reinterpret_cast<void(APIENTRY*)(GLenum, GLint)>(loader.load("glPixelStorei"));
+            flextglPointSize = reinterpret_cast<void(APIENTRY*)(GLfloat)>(loader.load("glPointSize"));
+            flextglPolygonMode = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum)>(loader.load("glPolygonMode"));
+            flextglReadBuffer = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glReadBuffer"));
+            flextglReadPixels = reinterpret_cast<void(APIENTRY*)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, void *)>(loader.load("glReadPixels"));
+            flextglScissor = reinterpret_cast<void(APIENTRY*)(GLint, GLint, GLsizei, GLsizei)>(loader.load("glScissor"));
+            flextglStencilFunc = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLuint)>(loader.load("glStencilFunc"));
+            flextglStencilMask = reinterpret_cast<void(APIENTRY*)(GLuint)>(loader.load("glStencilMask"));
+            flextglStencilOp = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum)>(loader.load("glStencilOp"));
+            flextglTexImage1D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLint, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glTexImage1D"));
+            flextglTexImage2D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glTexImage2D"));
+            flextglTexParameterf = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLfloat)>(loader.load("glTexParameterf"));
+            flextglTexParameterfv = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, const GLfloat *)>(loader.load("glTexParameterfv"));
+            flextglTexParameteri = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint)>(loader.load("glTexParameteri"));
+            flextglTexParameteriv = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, const GLint *)>(loader.load("glTexParameteriv"));
+            flextglViewport = reinterpret_cast<void(APIENTRY*)(GLint, GLint, GLsizei, GLsizei)>(loader.load("glViewport"));
+
+            /* GL_VERSION_1_1 */
+            flextglBindTexture = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint)>(loader.load("glBindTexture"));
+            flextglCopyTexImage1D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLint)>(loader.load("glCopyTexImage1D"));
+            flextglCopyTexImage2D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLsizei, GLint)>(loader.load("glCopyTexImage2D"));
+            flextglCopyTexSubImage1D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLint, GLint, GLint, GLsizei)>(loader.load("glCopyTexSubImage1D"));
+            flextglCopyTexSubImage2D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei)>(loader.load("glCopyTexSubImage2D"));
+            flextglDeleteTextures = reinterpret_cast<void(APIENTRY*)(GLsizei, const GLuint *)>(loader.load("glDeleteTextures"));
+            flextglDrawArrays = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLsizei)>(loader.load("glDrawArrays"));
+            flextglDrawElements = reinterpret_cast<void(APIENTRY*)(GLenum, GLsizei, GLenum, const void *)>(loader.load("glDrawElements"));
+            flextglGenTextures = reinterpret_cast<void(APIENTRY*)(GLsizei, GLuint *)>(loader.load("glGenTextures"));
+            flextglIsTexture = reinterpret_cast<GLboolean(APIENTRY*)(GLuint)>(loader.load("glIsTexture"));
+            flextglPolygonOffset = reinterpret_cast<void(APIENTRY*)(GLfloat, GLfloat)>(loader.load("glPolygonOffset"));
+            flextglTexSubImage1D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLint, GLsizei, GLenum, GLenum, const void *)>(loader.load("glTexSubImage1D"));
+            flextglTexSubImage2D = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void *)>(loader.load("glTexSubImage2D"));
+        }
+    }
+    #else
+    static_cast<void>(context);
+    #endif
 
     /* GL_ARB_ES3_2_compatibility */
     flextglPrimitiveBoundingBoxARB = reinterpret_cast<void(APIENTRY*)(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat)>(loader.load("glPrimitiveBoundingBoxARB"));
@@ -83,263 +168,6 @@ void flextGLInit() {
     flextglInsertEventMarkerEXT = reinterpret_cast<void(APIENTRY*)(GLsizei, const GLchar *)>(loader.load("glInsertEventMarkerEXT"));
     flextglPopGroupMarkerEXT = reinterpret_cast<void(APIENTRY*)(void)>(loader.load("glPopGroupMarkerEXT"));
     flextglPushGroupMarkerEXT = reinterpret_cast<void(APIENTRY*)(GLsizei, const GLchar *)>(loader.load("glPushGroupMarkerEXT"));
-
-    /* GL_EXT_direct_state_access */
-    flextglBindMultiTextureEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLuint)>(loader.load("glBindMultiTextureEXT"));
-    flextglCheckNamedFramebufferStatusEXT = reinterpret_cast<GLenum(APIENTRY*)(GLuint, GLenum)>(loader.load("glCheckNamedFramebufferStatusEXT"));
-    flextglClearNamedBufferDataEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLenum, const void *)>(loader.load("glClearNamedBufferDataEXT"));
-    flextglClearNamedBufferSubDataEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLsizeiptr, GLsizeiptr, GLenum, GLenum, const void *)>(loader.load("glClearNamedBufferSubDataEXT"));
-    flextglClientAttribDefaultEXT = reinterpret_cast<void(APIENTRY*)(GLbitfield)>(loader.load("glClientAttribDefaultEXT"));
-    flextglCompressedMultiTexImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLsizei, GLint, GLsizei, const void *)>(loader.load("glCompressedMultiTexImage1DEXT"));
-    flextglCompressedMultiTexImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const void *)>(loader.load("glCompressedMultiTexImage2DEXT"));
-    flextglCompressedMultiTexImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLsizei, GLsizei, GLsizei, GLint, GLsizei, const void *)>(loader.load("glCompressedMultiTexImage3DEXT"));
-    flextglCompressedMultiTexSubImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLsizei, GLenum, GLsizei, const void *)>(loader.load("glCompressedMultiTexSubImage1DEXT"));
-    flextglCompressedMultiTexSubImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const void *)>(loader.load("glCompressedMultiTexSubImage2DEXT"));
-    flextglCompressedMultiTexSubImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLsizei, const void *)>(loader.load("glCompressedMultiTexSubImage3DEXT"));
-    flextglCompressedTextureImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLsizei, GLint, GLsizei, const void *)>(loader.load("glCompressedTextureImage1DEXT"));
-    flextglCompressedTextureImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const void *)>(loader.load("glCompressedTextureImage2DEXT"));
-    flextglCompressedTextureImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLsizei, GLsizei, GLsizei, GLint, GLsizei, const void *)>(loader.load("glCompressedTextureImage3DEXT"));
-    flextglCompressedTextureSubImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLsizei, GLenum, GLsizei, const void *)>(loader.load("glCompressedTextureSubImage1DEXT"));
-    flextglCompressedTextureSubImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLsizei, const void *)>(loader.load("glCompressedTextureSubImage2DEXT"));
-    flextglCompressedTextureSubImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLsizei, const void *)>(loader.load("glCompressedTextureSubImage3DEXT"));
-    flextglCopyMultiTexImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLint)>(loader.load("glCopyMultiTexImage1DEXT"));
-    flextglCopyMultiTexImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLsizei, GLint)>(loader.load("glCopyMultiTexImage2DEXT"));
-    flextglCopyMultiTexSubImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLint, GLint, GLsizei)>(loader.load("glCopyMultiTexSubImage1DEXT"));
-    flextglCopyMultiTexSubImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei)>(loader.load("glCopyMultiTexSubImage2DEXT"));
-    flextglCopyMultiTexSubImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei)>(loader.load("glCopyMultiTexSubImage3DEXT"));
-    flextglCopyTextureImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLint)>(loader.load("glCopyTextureImage1DEXT"));
-    flextglCopyTextureImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLsizei, GLint)>(loader.load("glCopyTextureImage2DEXT"));
-    flextglCopyTextureSubImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei)>(loader.load("glCopyTextureSubImage1DEXT"));
-    flextglCopyTextureSubImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei)>(loader.load("glCopyTextureSubImage2DEXT"));
-    flextglCopyTextureSubImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLint, GLint, GLsizei, GLsizei)>(loader.load("glCopyTextureSubImage3DEXT"));
-    flextglDisableClientStateIndexedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint)>(loader.load("glDisableClientStateIndexedEXT"));
-    flextglDisableClientStateiEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint)>(loader.load("glDisableClientStateiEXT"));
-    flextglDisableIndexedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint)>(loader.load("glDisableIndexedEXT"));
-    flextglDisableVertexArrayAttribEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint)>(loader.load("glDisableVertexArrayAttribEXT"));
-    flextglDisableVertexArrayEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum)>(loader.load("glDisableVertexArrayEXT"));
-    flextglEnableClientStateIndexedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint)>(loader.load("glEnableClientStateIndexedEXT"));
-    flextglEnableClientStateiEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint)>(loader.load("glEnableClientStateiEXT"));
-    flextglEnableIndexedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint)>(loader.load("glEnableIndexedEXT"));
-    flextglEnableVertexArrayAttribEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint)>(loader.load("glEnableVertexArrayAttribEXT"));
-    flextglEnableVertexArrayEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum)>(loader.load("glEnableVertexArrayEXT"));
-    flextglFlushMappedNamedBufferRangeEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLintptr, GLsizeiptr)>(loader.load("glFlushMappedNamedBufferRangeEXT"));
-    flextglFramebufferDrawBufferEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum)>(loader.load("glFramebufferDrawBufferEXT"));
-    flextglFramebufferDrawBuffersEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLsizei, const GLenum *)>(loader.load("glFramebufferDrawBuffersEXT"));
-    flextglFramebufferReadBufferEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum)>(loader.load("glFramebufferReadBufferEXT"));
-    flextglGenerateMultiTexMipmapEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum)>(loader.load("glGenerateMultiTexMipmapEXT"));
-    flextglGenerateTextureMipmapEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum)>(loader.load("glGenerateTextureMipmapEXT"));
-    flextglGetBooleanIndexedvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, GLboolean *)>(loader.load("glGetBooleanIndexedvEXT"));
-    flextglGetCompressedMultiTexImageEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, void *)>(loader.load("glGetCompressedMultiTexImageEXT"));
-    flextglGetCompressedTextureImageEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, void *)>(loader.load("glGetCompressedTextureImageEXT"));
-    flextglGetDoubleIndexedvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, GLdouble *)>(loader.load("glGetDoubleIndexedvEXT"));
-    flextglGetDoublei_vEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, GLdouble *)>(loader.load("glGetDoublei_vEXT"));
-    flextglGetFloatIndexedvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, GLfloat *)>(loader.load("glGetFloatIndexedvEXT"));
-    flextglGetFloati_vEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, GLfloat *)>(loader.load("glGetFloati_vEXT"));
-    flextglGetFramebufferParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint *)>(loader.load("glGetFramebufferParameterivEXT"));
-    flextglGetIntegerIndexedvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, GLint *)>(loader.load("glGetIntegerIndexedvEXT"));
-    flextglGetMultiTexEnvfvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLfloat *)>(loader.load("glGetMultiTexEnvfvEXT"));
-    flextglGetMultiTexEnvivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLint *)>(loader.load("glGetMultiTexEnvivEXT"));
-    flextglGetMultiTexGendvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLdouble *)>(loader.load("glGetMultiTexGendvEXT"));
-    flextglGetMultiTexGenfvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLfloat *)>(loader.load("glGetMultiTexGenfvEXT"));
-    flextglGetMultiTexGenivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLint *)>(loader.load("glGetMultiTexGenivEXT"));
-    flextglGetMultiTexImageEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLenum, void *)>(loader.load("glGetMultiTexImageEXT"));
-    flextglGetMultiTexLevelParameterfvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLfloat *)>(loader.load("glGetMultiTexLevelParameterfvEXT"));
-    flextglGetMultiTexLevelParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLenum, GLint *)>(loader.load("glGetMultiTexLevelParameterivEXT"));
-    flextglGetMultiTexParameterIivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLint *)>(loader.load("glGetMultiTexParameterIivEXT"));
-    flextglGetMultiTexParameterIuivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLuint *)>(loader.load("glGetMultiTexParameterIuivEXT"));
-    flextglGetMultiTexParameterfvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLfloat *)>(loader.load("glGetMultiTexParameterfvEXT"));
-    flextglGetMultiTexParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLint *)>(loader.load("glGetMultiTexParameterivEXT"));
-    flextglGetNamedBufferParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint *)>(loader.load("glGetNamedBufferParameterivEXT"));
-    flextglGetNamedBufferPointervEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, void **)>(loader.load("glGetNamedBufferPointervEXT"));
-    flextglGetNamedBufferSubDataEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLintptr, GLsizeiptr, void *)>(loader.load("glGetNamedBufferSubDataEXT"));
-    flextglGetNamedFramebufferAttachmentParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLint *)>(loader.load("glGetNamedFramebufferAttachmentParameterivEXT"));
-    flextglGetNamedFramebufferParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint *)>(loader.load("glGetNamedFramebufferParameterivEXT"));
-    flextglGetNamedProgramLocalParameterIivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLint *)>(loader.load("glGetNamedProgramLocalParameterIivEXT"));
-    flextglGetNamedProgramLocalParameterIuivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLuint *)>(loader.load("glGetNamedProgramLocalParameterIuivEXT"));
-    flextglGetNamedProgramLocalParameterdvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLdouble *)>(loader.load("glGetNamedProgramLocalParameterdvEXT"));
-    flextglGetNamedProgramLocalParameterfvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLfloat *)>(loader.load("glGetNamedProgramLocalParameterfvEXT"));
-    flextglGetNamedProgramStringEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, void *)>(loader.load("glGetNamedProgramStringEXT"));
-    flextglGetNamedProgramivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLint *)>(loader.load("glGetNamedProgramivEXT"));
-    flextglGetNamedRenderbufferParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint *)>(loader.load("glGetNamedRenderbufferParameterivEXT"));
-    flextglGetPointerIndexedvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, void **)>(loader.load("glGetPointerIndexedvEXT"));
-    flextglGetPointeri_vEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLuint, void **)>(loader.load("glGetPointeri_vEXT"));
-    flextglGetTextureImageEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLenum, void *)>(loader.load("glGetTextureImageEXT"));
-    flextglGetTextureLevelParameterfvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLfloat *)>(loader.load("glGetTextureLevelParameterfvEXT"));
-    flextglGetTextureLevelParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLenum, GLint *)>(loader.load("glGetTextureLevelParameterivEXT"));
-    flextglGetTextureParameterIivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLint *)>(loader.load("glGetTextureParameterIivEXT"));
-    flextglGetTextureParameterIuivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLuint *)>(loader.load("glGetTextureParameterIuivEXT"));
-    flextglGetTextureParameterfvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLfloat *)>(loader.load("glGetTextureParameterfvEXT"));
-    flextglGetTextureParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLint *)>(loader.load("glGetTextureParameterivEXT"));
-    flextglGetVertexArrayIntegeri_vEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLenum, GLint *)>(loader.load("glGetVertexArrayIntegeri_vEXT"));
-    flextglGetVertexArrayIntegervEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint *)>(loader.load("glGetVertexArrayIntegervEXT"));
-    flextglGetVertexArrayPointeri_vEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLenum, void **)>(loader.load("glGetVertexArrayPointeri_vEXT"));
-    flextglGetVertexArrayPointervEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, void **)>(loader.load("glGetVertexArrayPointervEXT"));
-    flextglIsEnabledIndexedEXT = reinterpret_cast<GLboolean(APIENTRY*)(GLenum, GLuint)>(loader.load("glIsEnabledIndexedEXT"));
-    flextglMapNamedBufferEXT = reinterpret_cast<void *(APIENTRY*)(GLuint, GLenum)>(loader.load("glMapNamedBufferEXT"));
-    flextglMapNamedBufferRangeEXT = reinterpret_cast<void *(APIENTRY*)(GLuint, GLintptr, GLsizeiptr, GLbitfield)>(loader.load("glMapNamedBufferRangeEXT"));
-    flextglMatrixFrustumEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble)>(loader.load("glMatrixFrustumEXT"));
-    flextglMatrixLoadIdentityEXT = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glMatrixLoadIdentityEXT"));
-    flextglMatrixLoadTransposedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLdouble *)>(loader.load("glMatrixLoadTransposedEXT"));
-    flextglMatrixLoadTransposefEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLfloat *)>(loader.load("glMatrixLoadTransposefEXT"));
-    flextglMatrixLoaddEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLdouble *)>(loader.load("glMatrixLoaddEXT"));
-    flextglMatrixLoadfEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLfloat *)>(loader.load("glMatrixLoadfEXT"));
-    flextglMatrixMultTransposedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLdouble *)>(loader.load("glMatrixMultTransposedEXT"));
-    flextglMatrixMultTransposefEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLfloat *)>(loader.load("glMatrixMultTransposefEXT"));
-    flextglMatrixMultdEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLdouble *)>(loader.load("glMatrixMultdEXT"));
-    flextglMatrixMultfEXT = reinterpret_cast<void(APIENTRY*)(GLenum, const GLfloat *)>(loader.load("glMatrixMultfEXT"));
-    flextglMatrixOrthoEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble)>(loader.load("glMatrixOrthoEXT"));
-    flextglMatrixPopEXT = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glMatrixPopEXT"));
-    flextglMatrixPushEXT = reinterpret_cast<void(APIENTRY*)(GLenum)>(loader.load("glMatrixPushEXT"));
-    flextglMatrixRotatedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLdouble, GLdouble, GLdouble, GLdouble)>(loader.load("glMatrixRotatedEXT"));
-    flextglMatrixRotatefEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLfloat, GLfloat, GLfloat, GLfloat)>(loader.load("glMatrixRotatefEXT"));
-    flextglMatrixScaledEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLdouble, GLdouble, GLdouble)>(loader.load("glMatrixScaledEXT"));
-    flextglMatrixScalefEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLfloat, GLfloat, GLfloat)>(loader.load("glMatrixScalefEXT"));
-    flextglMatrixTranslatedEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLdouble, GLdouble, GLdouble)>(loader.load("glMatrixTranslatedEXT"));
-    flextglMatrixTranslatefEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLfloat, GLfloat, GLfloat)>(loader.load("glMatrixTranslatefEXT"));
-    flextglMultiTexBufferEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLuint)>(loader.load("glMultiTexBufferEXT"));
-    flextglMultiTexCoordPointerEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLint, GLenum, GLsizei, const void *)>(loader.load("glMultiTexCoordPointerEXT"));
-    flextglMultiTexEnvfEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLfloat)>(loader.load("glMultiTexEnvfEXT"));
-    flextglMultiTexEnvfvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLfloat *)>(loader.load("glMultiTexEnvfvEXT"));
-    flextglMultiTexEnviEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLint)>(loader.load("glMultiTexEnviEXT"));
-    flextglMultiTexEnvivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLint *)>(loader.load("glMultiTexEnvivEXT"));
-    flextglMultiTexGendEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLdouble)>(loader.load("glMultiTexGendEXT"));
-    flextglMultiTexGendvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLdouble *)>(loader.load("glMultiTexGendvEXT"));
-    flextglMultiTexGenfEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLfloat)>(loader.load("glMultiTexGenfEXT"));
-    flextglMultiTexGenfvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLfloat *)>(loader.load("glMultiTexGenfvEXT"));
-    flextglMultiTexGeniEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLint)>(loader.load("glMultiTexGeniEXT"));
-    flextglMultiTexGenivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLint *)>(loader.load("glMultiTexGenivEXT"));
-    flextglMultiTexImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glMultiTexImage1DEXT"));
-    flextglMultiTexImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glMultiTexImage2DEXT"));
-    flextglMultiTexImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glMultiTexImage3DEXT"));
-    flextglMultiTexParameterIivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLint *)>(loader.load("glMultiTexParameterIivEXT"));
-    flextglMultiTexParameterIuivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLuint *)>(loader.load("glMultiTexParameterIuivEXT"));
-    flextglMultiTexParameterfEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLfloat)>(loader.load("glMultiTexParameterfEXT"));
-    flextglMultiTexParameterfvEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLfloat *)>(loader.load("glMultiTexParameterfvEXT"));
-    flextglMultiTexParameteriEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, GLint)>(loader.load("glMultiTexParameteriEXT"));
-    flextglMultiTexParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLenum, const GLint *)>(loader.load("glMultiTexParameterivEXT"));
-    flextglMultiTexRenderbufferEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLuint)>(loader.load("glMultiTexRenderbufferEXT"));
-    flextglMultiTexSubImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLsizei, GLenum, GLenum, const void *)>(loader.load("glMultiTexSubImage1DEXT"));
-    flextglMultiTexSubImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void *)>(loader.load("glMultiTexSubImage2DEXT"));
-    flextglMultiTexSubImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLenum, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLenum, const void *)>(loader.load("glMultiTexSubImage3DEXT"));
-    flextglNamedBufferDataEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLsizeiptr, const void *, GLenum)>(loader.load("glNamedBufferDataEXT"));
-    flextglNamedBufferStorageEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLsizeiptr, const void *, GLbitfield)>(loader.load("glNamedBufferStorageEXT"));
-    flextglNamedBufferSubDataEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLintptr, GLsizeiptr, const void *)>(loader.load("glNamedBufferSubDataEXT"));
-    flextglNamedCopyBufferSubDataEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLintptr, GLintptr, GLsizeiptr)>(loader.load("glNamedCopyBufferSubDataEXT"));
-    flextglNamedFramebufferParameteriEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint)>(loader.load("glNamedFramebufferParameteriEXT"));
-    flextglNamedFramebufferRenderbufferEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLuint)>(loader.load("glNamedFramebufferRenderbufferEXT"));
-    flextglNamedFramebufferTexture1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLuint, GLint)>(loader.load("glNamedFramebufferTexture1DEXT"));
-    flextglNamedFramebufferTexture2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLuint, GLint)>(loader.load("glNamedFramebufferTexture2DEXT"));
-    flextglNamedFramebufferTexture3DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLuint, GLint, GLint)>(loader.load("glNamedFramebufferTexture3DEXT"));
-    flextglNamedFramebufferTextureEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLint)>(loader.load("glNamedFramebufferTextureEXT"));
-    flextglNamedFramebufferTextureFaceEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLint, GLenum)>(loader.load("glNamedFramebufferTextureFaceEXT"));
-    flextglNamedFramebufferTextureLayerEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLint, GLint)>(loader.load("glNamedFramebufferTextureLayerEXT"));
-    flextglNamedProgramLocalParameter4dEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLdouble, GLdouble, GLdouble, GLdouble)>(loader.load("glNamedProgramLocalParameter4dEXT"));
-    flextglNamedProgramLocalParameter4dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, const GLdouble *)>(loader.load("glNamedProgramLocalParameter4dvEXT"));
-    flextglNamedProgramLocalParameter4fEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLfloat, GLfloat, GLfloat, GLfloat)>(loader.load("glNamedProgramLocalParameter4fEXT"));
-    flextglNamedProgramLocalParameter4fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, const GLfloat *)>(loader.load("glNamedProgramLocalParameter4fvEXT"));
-    flextglNamedProgramLocalParameterI4iEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLint, GLint, GLint, GLint)>(loader.load("glNamedProgramLocalParameterI4iEXT"));
-    flextglNamedProgramLocalParameterI4ivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, const GLint *)>(loader.load("glNamedProgramLocalParameterI4ivEXT"));
-    flextglNamedProgramLocalParameterI4uiEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLuint, GLuint, GLuint, GLuint)>(loader.load("glNamedProgramLocalParameterI4uiEXT"));
-    flextglNamedProgramLocalParameterI4uivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, const GLuint *)>(loader.load("glNamedProgramLocalParameterI4uivEXT"));
-    flextglNamedProgramLocalParameters4fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLsizei, const GLfloat *)>(loader.load("glNamedProgramLocalParameters4fvEXT"));
-    flextglNamedProgramLocalParametersI4ivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLsizei, const GLint *)>(loader.load("glNamedProgramLocalParametersI4ivEXT"));
-    flextglNamedProgramLocalParametersI4uivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint, GLsizei, const GLuint *)>(loader.load("glNamedProgramLocalParametersI4uivEXT"));
-    flextglNamedProgramStringEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLsizei, const void *)>(loader.load("glNamedProgramStringEXT"));
-    flextglNamedRenderbufferStorageEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLsizei, GLsizei)>(loader.load("glNamedRenderbufferStorageEXT"));
-    flextglNamedRenderbufferStorageMultisampleCoverageEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLsizei, GLsizei, GLenum, GLsizei, GLsizei)>(loader.load("glNamedRenderbufferStorageMultisampleCoverageEXT"));
-    flextglNamedRenderbufferStorageMultisampleEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLsizei, GLenum, GLsizei, GLsizei)>(loader.load("glNamedRenderbufferStorageMultisampleEXT"));
-    flextglProgramUniform1dEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLdouble)>(loader.load("glProgramUniform1dEXT"));
-    flextglProgramUniform1dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLdouble *)>(loader.load("glProgramUniform1dvEXT"));
-    flextglProgramUniform1fEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLfloat)>(loader.load("glProgramUniform1fEXT"));
-    flextglProgramUniform1fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLfloat *)>(loader.load("glProgramUniform1fvEXT"));
-    flextglProgramUniform1iEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLint)>(loader.load("glProgramUniform1iEXT"));
-    flextglProgramUniform1ivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLint *)>(loader.load("glProgramUniform1ivEXT"));
-    flextglProgramUniform1uiEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLuint)>(loader.load("glProgramUniform1uiEXT"));
-    flextglProgramUniform1uivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLuint *)>(loader.load("glProgramUniform1uivEXT"));
-    flextglProgramUniform2dEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLdouble, GLdouble)>(loader.load("glProgramUniform2dEXT"));
-    flextglProgramUniform2dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLdouble *)>(loader.load("glProgramUniform2dvEXT"));
-    flextglProgramUniform2fEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLfloat, GLfloat)>(loader.load("glProgramUniform2fEXT"));
-    flextglProgramUniform2fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLfloat *)>(loader.load("glProgramUniform2fvEXT"));
-    flextglProgramUniform2iEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLint, GLint)>(loader.load("glProgramUniform2iEXT"));
-    flextglProgramUniform2ivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLint *)>(loader.load("glProgramUniform2ivEXT"));
-    flextglProgramUniform2uiEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLuint, GLuint)>(loader.load("glProgramUniform2uiEXT"));
-    flextglProgramUniform2uivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLuint *)>(loader.load("glProgramUniform2uivEXT"));
-    flextglProgramUniform3dEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLdouble, GLdouble, GLdouble)>(loader.load("glProgramUniform3dEXT"));
-    flextglProgramUniform3dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLdouble *)>(loader.load("glProgramUniform3dvEXT"));
-    flextglProgramUniform3fEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLfloat, GLfloat, GLfloat)>(loader.load("glProgramUniform3fEXT"));
-    flextglProgramUniform3fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLfloat *)>(loader.load("glProgramUniform3fvEXT"));
-    flextglProgramUniform3iEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLint, GLint, GLint)>(loader.load("glProgramUniform3iEXT"));
-    flextglProgramUniform3ivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLint *)>(loader.load("glProgramUniform3ivEXT"));
-    flextglProgramUniform3uiEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLuint, GLuint, GLuint)>(loader.load("glProgramUniform3uiEXT"));
-    flextglProgramUniform3uivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLuint *)>(loader.load("glProgramUniform3uivEXT"));
-    flextglProgramUniform4dEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLdouble, GLdouble, GLdouble, GLdouble)>(loader.load("glProgramUniform4dEXT"));
-    flextglProgramUniform4dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLdouble *)>(loader.load("glProgramUniform4dvEXT"));
-    flextglProgramUniform4fEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLfloat, GLfloat, GLfloat, GLfloat)>(loader.load("glProgramUniform4fEXT"));
-    flextglProgramUniform4fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLfloat *)>(loader.load("glProgramUniform4fvEXT"));
-    flextglProgramUniform4iEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLint, GLint, GLint, GLint)>(loader.load("glProgramUniform4iEXT"));
-    flextglProgramUniform4ivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLint *)>(loader.load("glProgramUniform4ivEXT"));
-    flextglProgramUniform4uiEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLuint, GLuint, GLuint, GLuint)>(loader.load("glProgramUniform4uiEXT"));
-    flextglProgramUniform4uivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, const GLuint *)>(loader.load("glProgramUniform4uivEXT"));
-    flextglProgramUniformMatrix2dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix2dvEXT"));
-    flextglProgramUniformMatrix2fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix2fvEXT"));
-    flextglProgramUniformMatrix2x3dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix2x3dvEXT"));
-    flextglProgramUniformMatrix2x3fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix2x3fvEXT"));
-    flextglProgramUniformMatrix2x4dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix2x4dvEXT"));
-    flextglProgramUniformMatrix2x4fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix2x4fvEXT"));
-    flextglProgramUniformMatrix3dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix3dvEXT"));
-    flextglProgramUniformMatrix3fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix3fvEXT"));
-    flextglProgramUniformMatrix3x2dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix3x2dvEXT"));
-    flextglProgramUniformMatrix3x2fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix3x2fvEXT"));
-    flextglProgramUniformMatrix3x4dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix3x4dvEXT"));
-    flextglProgramUniformMatrix3x4fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix3x4fvEXT"));
-    flextglProgramUniformMatrix4dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix4dvEXT"));
-    flextglProgramUniformMatrix4fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix4fvEXT"));
-    flextglProgramUniformMatrix4x2dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix4x2dvEXT"));
-    flextglProgramUniformMatrix4x2fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix4x2fvEXT"));
-    flextglProgramUniformMatrix4x3dvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLdouble *)>(loader.load("glProgramUniformMatrix4x3dvEXT"));
-    flextglProgramUniformMatrix4x3fvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLsizei, GLboolean, const GLfloat *)>(loader.load("glProgramUniformMatrix4x3fvEXT"));
-    flextglPushClientAttribDefaultEXT = reinterpret_cast<void(APIENTRY*)(GLbitfield)>(loader.load("glPushClientAttribDefaultEXT"));
-    flextglTextureBufferEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLuint)>(loader.load("glTextureBufferEXT"));
-    flextglTextureBufferRangeEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLuint, GLintptr, GLsizeiptr)>(loader.load("glTextureBufferRangeEXT"));
-    flextglTextureImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glTextureImage1DEXT"));
-    flextglTextureImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glTextureImage2DEXT"));
-    flextglTextureImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const void *)>(loader.load("glTextureImage3DEXT"));
-    flextglTexturePageCommitmentEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLboolean)>(loader.load("glTexturePageCommitmentEXT"));
-    flextglTextureParameterIivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, const GLint *)>(loader.load("glTextureParameterIivEXT"));
-    flextglTextureParameterIuivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, const GLuint *)>(loader.load("glTextureParameterIuivEXT"));
-    flextglTextureParameterfEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLfloat)>(loader.load("glTextureParameterfEXT"));
-    flextglTextureParameterfvEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, const GLfloat *)>(loader.load("glTextureParameterfvEXT"));
-    flextglTextureParameteriEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, GLint)>(loader.load("glTextureParameteriEXT"));
-    flextglTextureParameterivEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLenum, const GLint *)>(loader.load("glTextureParameterivEXT"));
-    flextglTextureRenderbufferEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLuint)>(loader.load("glTextureRenderbufferEXT"));
-    flextglTextureStorage1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLsizei, GLenum, GLsizei)>(loader.load("glTextureStorage1DEXT"));
-    flextglTextureStorage2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLsizei, GLenum, GLsizei, GLsizei)>(loader.load("glTextureStorage2DEXT"));
-    flextglTextureStorage2DMultisampleEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLboolean)>(loader.load("glTextureStorage2DMultisampleEXT"));
-    flextglTextureStorage3DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLsizei)>(loader.load("glTextureStorage3DEXT"));
-    flextglTextureStorage3DMultisampleEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLsizei, GLenum, GLsizei, GLsizei, GLsizei, GLboolean)>(loader.load("glTextureStorage3DMultisampleEXT"));
-    flextglTextureSubImage1DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLsizei, GLenum, GLenum, const void *)>(loader.load("glTextureSubImage1DEXT"));
-    flextglTextureSubImage2DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void *)>(loader.load("glTextureSubImage2DEXT"));
-    flextglTextureSubImage3DEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLenum, const void *)>(loader.load("glTextureSubImage3DEXT"));
-    flextglUnmapNamedBufferEXT = reinterpret_cast<GLboolean(APIENTRY*)(GLuint)>(loader.load("glUnmapNamedBufferEXT"));
-    flextglVertexArrayBindVertexBufferEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLuint, GLintptr, GLsizei)>(loader.load("glVertexArrayBindVertexBufferEXT"));
-    flextglVertexArrayColorOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayColorOffsetEXT"));
-    flextglVertexArrayEdgeFlagOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLsizei, GLintptr)>(loader.load("glVertexArrayEdgeFlagOffsetEXT"));
-    flextglVertexArrayFogCoordOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayFogCoordOffsetEXT"));
-    flextglVertexArrayIndexOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayIndexOffsetEXT"));
-    flextglVertexArrayMultiTexCoordOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLenum, GLint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayMultiTexCoordOffsetEXT"));
-    flextglVertexArrayNormalOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayNormalOffsetEXT"));
-    flextglVertexArraySecondaryColorOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArraySecondaryColorOffsetEXT"));
-    flextglVertexArrayTexCoordOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayTexCoordOffsetEXT"));
-    flextglVertexArrayVertexAttribBindingEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLuint)>(loader.load("glVertexArrayVertexAttribBindingEXT"));
-    flextglVertexArrayVertexAttribDivisorEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLuint)>(loader.load("glVertexArrayVertexAttribDivisorEXT"));
-    flextglVertexArrayVertexAttribFormatEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLint, GLenum, GLboolean, GLuint)>(loader.load("glVertexArrayVertexAttribFormatEXT"));
-    flextglVertexArrayVertexAttribIFormatEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLint, GLenum, GLuint)>(loader.load("glVertexArrayVertexAttribIFormatEXT"));
-    flextglVertexArrayVertexAttribIOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLuint, GLint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayVertexAttribIOffsetEXT"));
-    flextglVertexArrayVertexAttribLFormatEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLint, GLenum, GLuint)>(loader.load("glVertexArrayVertexAttribLFormatEXT"));
-    flextglVertexArrayVertexAttribLOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLuint, GLint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayVertexAttribLOffsetEXT"));
-    flextglVertexArrayVertexAttribOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLuint, GLint, GLenum, GLboolean, GLsizei, GLintptr)>(loader.load("glVertexArrayVertexAttribOffsetEXT"));
-    flextglVertexArrayVertexBindingDivisorEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLuint)>(loader.load("glVertexArrayVertexBindingDivisorEXT"));
-    flextglVertexArrayVertexOffsetEXT = reinterpret_cast<void(APIENTRY*)(GLuint, GLuint, GLint, GLenum, GLsizei, GLintptr)>(loader.load("glVertexArrayVertexOffsetEXT"));
 
     /* GL_GREMEDY_string_marker */
     flextglStringMarkerGREMEDY = reinterpret_cast<void(APIENTRY*)(GLsizei, const void *)>(loader.load("glStringMarkerGREMEDY"));

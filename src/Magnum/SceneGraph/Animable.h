@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -103,7 +103,7 @@ use @ref Timeline for that, see its documentation for more information.
 @ref AnimableGroup is optimized for case when no animation is running --- it
 just puts itself to rest and waits until some animation changes its state to
 @ref AnimationState::Running again. If you put animations which are not
-pernamently running into separate group, they will not be traversed every time
+permanently running into separate group, they will not be traversed every time
 the @ref AnimableGroup::step() gets called, saving precious frame time.
 
 @section SceneGraph-Animable-explicit-specializations Explicit template specializations

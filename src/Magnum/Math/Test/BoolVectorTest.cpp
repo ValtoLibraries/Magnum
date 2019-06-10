@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/BoolVector.h"
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -49,7 +50,7 @@ template<> struct BoolVectorConverter<3, BVec3> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct BoolVectorTest: Corrade::TestSuite::Tester {
     explicit BoolVectorTest();
@@ -73,6 +74,7 @@ struct BoolVectorTest: Corrade::TestSuite::Tester {
 
     void bitInverse();
     void bitAndOrXor();
+    void booleanOperationEquivalents();
 
     void strictWeakOrdering();
 
@@ -105,6 +107,7 @@ BoolVectorTest::BoolVectorTest() {
 
               &BoolVectorTest::bitInverse,
               &BoolVectorTest::bitAndOrXor,
+              &BoolVectorTest::booleanOperationEquivalents,
 
               &BoolVectorTest::strictWeakOrdering,
 
@@ -126,6 +129,9 @@ void BoolVectorTest::constructDefault() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<BoolVector19>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<BoolVector19, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, BoolVector19>::value));
 }
 
 void BoolVectorTest::constructNoInit() {
@@ -192,6 +198,7 @@ void BoolVectorTest::convert() {
 }
 
 void BoolVectorTest::data() {
+    /* 0b00001000, 0b00000011, 0b100 */
     constexpr BoolVector19 a(0x08, 0x03, 0x04);
 
     CORRADE_VERIFY(!a[0] && !a[1] && !a[2]);
@@ -248,11 +255,15 @@ void BoolVectorTest::compareUndefined() {
 }
 
 void BoolVectorTest::convertBool() {
-    /* The ! operation should *just work* using the bool conversion operator */
     CORRADE_VERIFY(BoolVector19(0xff, 0xff, 0x07));
-    CORRADE_VERIFY(!BoolVector19(0xff, 0xff, 0x04));
-    CORRADE_VERIFY(!BoolVector19(0x00, 0x00, 0x00));
-    CORRADE_VERIFY(!!BoolVector19(0xff, 0xff, 0xff));
+    CORRADE_VERIFY(!bool(BoolVector19(0xff, 0xff, 0x04)));
+    CORRADE_VERIFY(!bool(BoolVector19(0x00, 0x00, 0x00)));
+    CORRADE_VERIFY(BoolVector19(0xff, 0xff, 0xff));
+
+    /* Using ! before and after bool conversion will produce a different
+       result -- first is equivalent to !a.all(), while second is (~a).all() */
+    CORRADE_COMPARE(!bool(BoolVector19(0xff, 0xff, 0x04)), true);
+    CORRADE_COMPARE(bool(!BoolVector19(0xff, 0xff, 0x04)), false);
 
     /* Implicit conversion is not allowed */
     CORRADE_VERIFY(!(std::is_convertible<BoolVector19, bool>::value));
@@ -284,6 +295,7 @@ void BoolVectorTest::any() {
 
 void BoolVectorTest::bitInverse() {
     CORRADE_COMPARE(~BoolVector19(0xa5, 0x5f, 0x03), BoolVector19(0x5a, 0xa0, 0x04));
+    CORRADE_COMPARE(!BoolVector19(0xa5, 0x5f, 0x03), BoolVector19(0x5a, 0xa0, 0x04));
 }
 
 void BoolVectorTest::bitAndOrXor() {
@@ -291,8 +303,21 @@ void BoolVectorTest::bitAndOrXor() {
     BoolVector19 b(0x37, 0xf3, 0x06);
 
     CORRADE_COMPARE(a & b, BoolVector19(0x25, 0x53, 0x02));
+    CORRADE_COMPARE(a && b, BoolVector19(0x25, 0x53, 0x02));
+
     CORRADE_COMPARE(a | b, BoolVector19(0xb7, 0xff, 0x07));
+    CORRADE_COMPARE(a || b, BoolVector19(0xb7, 0xff, 0x07));
+
     CORRADE_COMPARE(a ^ b, BoolVector19(0x92, 0xac, 0x05));
+}
+
+void BoolVectorTest::booleanOperationEquivalents() {
+    Math::BoolVector<2> a{0x3};
+    Math::BoolVector<2> b{0x2};
+
+    CORRADE_COMPARE(!(a || b), !a && !b);
+    CORRADE_COMPARE(!(a || b), ~(a | b));
+    CORRADE_COMPARE(!a && !b, ~a & ~b);
 }
 
 void BoolVectorTest::strictWeakOrdering() {
@@ -314,7 +339,7 @@ void BoolVectorTest::strictWeakOrdering() {
 
     CORRADE_VERIFY(!o(a, a));
 
-    // check uninitialized padding reads
+    /* Check uninitialized padding reads */
     a.set(8, true);
     a.set(10, true);
     b = a;
@@ -330,11 +355,12 @@ void BoolVectorTest::strictWeakOrdering() {
 void BoolVectorTest::debug() {
     std::ostringstream o;
 
+    /* 0b00100101 0b01010011 0b010 */
     Debug(&o) << BoolVector19(0x25, 0x53, 0x02);
 
-    CORRADE_COMPARE(o.str(), "BoolVector(10100100 11001010 010)\n");
+    CORRADE_COMPARE(o.str(), "BoolVector(0b00100101, 0b01010011, 0b010)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::BoolVectorTest)

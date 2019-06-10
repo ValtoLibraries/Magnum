@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -160,38 +160,6 @@ constexpr bool isVersionES(Version) { return true; }
 /** @debugoperatorenum{Version} */
 MAGNUM_GL_EXPORT Debug& operator<<(Debug& debug, Version value);
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::Version
- * @deprecated Use @ref GL::Version instead.
- */
-typedef CORRADE_DEPRECATED("use GL::Version instead") Magnum::GL::Version Version;
-
-#ifdef DOXYGEN_GENERATING_OUTPUT
-/** @brief @copybrief GL::version(Int, Int)
- * @deprecated Use @ref GL::version(Int, Int) instead.
- */
-constexpr CORRADE_DEPRECATED("use GL::version() instead") GL::Version version(Int major, Int minor);
-
-/** @brief @copybrief GL::version(GL::Version)
- * @deprecated Use @ref GL::version(GL::Version) instead.
- */
-CORRADE_DEPRECATED("use GL::version() instead") std::pair<Int, Int> version(GL::Version version);
-
-/** @brief @copybrief GL::isVersionES()
- * @deprecated Use @ref GL::isVersionES() instead.
- */
-constexpr CORRADE_DEPRECATED("use GL::isVersionES() instead") bool isVersionES(GL::Version version);
-#else
-/* Defining the functions here again would cause ambiguity due to ADL */
-using GL::version;
-using GL::isVersionES;
-#endif
-#endif
-
-}
+}}
 
 #endif

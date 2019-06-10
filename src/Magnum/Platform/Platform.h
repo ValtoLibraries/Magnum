@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,10 +31,6 @@
 
 #include "Magnum/configure.h"
 
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-#include <Corrade/Utility/Macros.h>
-#endif
-
 namespace Magnum { namespace Platform {
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
@@ -43,10 +39,6 @@ template<class> class BasicScreenedApplication;
 
 #ifdef MAGNUM_TARGET_GL
 class GLContext;
-
-#if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL)
-typedef CORRADE_DEPRECATED("use Platform::GLContext instead") GLContext Context;
-#endif
 #endif
 #endif
 

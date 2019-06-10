@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,8 +25,10 @@
 
 #include "AnyImageImporter.h"
 
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/String.h>
 
 #include "Magnum/Trade/ImageData.h"
@@ -50,54 +52,57 @@ void AnyImageImporter::doClose() {
 void AnyImageImporter::doOpenFile(const std::string& filename) {
     CORRADE_INTERNAL_ASSERT(manager());
 
+    /** @todo lowercase only the extension, once Directory::split() is done */
+    const std::string normalized = Utility::String::lowercase(filename);
+
     /* Detect type from extension */
     std::string plugin;
-    if(Utility::String::endsWith(filename, ".bmp"))
+    if(Utility::String::endsWith(normalized, ".bmp"))
         plugin = "BmpImporter";
-    else if(Utility::String::endsWith(filename, ".dds"))
+    else if(Utility::String::endsWith(normalized, ".dds"))
         plugin = "DdsImporter";
-    else if(Utility::String::endsWith(filename, ".exr"))
+    else if(Utility::String::endsWith(normalized, ".exr"))
         plugin = "OpenExrImporter";
-    else if(Utility::String::endsWith(filename, ".gif"))
+    else if(Utility::String::endsWith(normalized, ".gif"))
         plugin = "GifImporter";
-    else if(Utility::String::endsWith(filename, ".hdr"))
+    else if(Utility::String::endsWith(normalized, ".hdr"))
         plugin = "HdrImporter";
-    else if(Utility::String::endsWith(filename, ".jpg") ||
-            Utility::String::endsWith(filename, ".jpeg") ||
-            Utility::String::endsWith(filename, ".jpe") )
+    else if(Utility::String::endsWith(normalized, ".jpg") ||
+            Utility::String::endsWith(normalized, ".jpeg") ||
+            Utility::String::endsWith(normalized, ".jpe"))
         plugin = "JpegImporter";
-    else if(Utility::String::endsWith(filename, ".jp2"))
+    else if(Utility::String::endsWith(normalized, ".jp2"))
         plugin = "Jpeg2000Importer";
-    else if(Utility::String::endsWith(filename, ".mng"))
+    else if(Utility::String::endsWith(normalized, ".mng"))
         plugin = "MngImporter";
-    else if(Utility::String::endsWith(filename, ".pbm"))
+    else if(Utility::String::endsWith(normalized, ".pbm"))
         plugin = "PbmImporter";
-    else if(Utility::String::endsWith(filename, ".pcx"))
+    else if(Utility::String::endsWith(normalized, ".pcx"))
         plugin = "PcxImporter";
-    else if(Utility::String::endsWith(filename, ".pgm"))
+    else if(Utility::String::endsWith(normalized, ".pgm"))
         plugin = "PgmImporter";
-    else if(Utility::String::endsWith(filename, ".pic"))
+    else if(Utility::String::endsWith(normalized, ".pic"))
         plugin = "PicImporter";
-    else if(Utility::String::endsWith(filename, ".pnm"))
+    else if(Utility::String::endsWith(normalized, ".pnm"))
         plugin = "PnmImporter";
-    else if(Utility::String::endsWith(filename, ".png"))
+    else if(Utility::String::endsWith(normalized, ".png"))
         plugin = "PngImporter";
-    else if(Utility::String::endsWith(filename, ".ppm"))
+    else if(Utility::String::endsWith(normalized, ".ppm"))
         plugin = "PpmImporter";
-    else if(Utility::String::endsWith(filename, ".psd"))
+    else if(Utility::String::endsWith(normalized, ".psd"))
         plugin = "PsdImporter";
-    else if(Utility::String::endsWith(filename, ".sgi") ||
-            Utility::String::endsWith(filename, ".bw") ||
-            Utility::String::endsWith(filename, ".rgb") ||
-            Utility::String::endsWith(filename, ".rgba"))
+    else if(Utility::String::endsWith(normalized, ".sgi") ||
+            Utility::String::endsWith(normalized, ".bw") ||
+            Utility::String::endsWith(normalized, ".rgb") ||
+            Utility::String::endsWith(normalized, ".rgba"))
         plugin = "SgiImporter";
-    else if(Utility::String::endsWith(filename, ".tif") ||
-            Utility::String::endsWith(filename, ".tiff"))
+    else if(Utility::String::endsWith(normalized, ".tif") ||
+            Utility::String::endsWith(normalized, ".tiff"))
         plugin = "TiffImporter";
-    else if(Utility::String::endsWith(filename, ".tga") ||
-            Utility::String::endsWith(filename, ".vda") ||
-            Utility::String::endsWith(filename, ".icb") ||
-            Utility::String::endsWith(filename, ".vst"))
+    else if(Utility::String::endsWith(normalized, ".tga") ||
+            Utility::String::endsWith(normalized, ".vda") ||
+            Utility::String::endsWith(normalized, ".icb") ||
+            Utility::String::endsWith(normalized, ".vst"))
         plugin = "TgaImporter";
     else {
         Error() << "Trade::AnyImageImporter::openFile(): cannot determine type of file" << filename;
@@ -112,7 +117,7 @@ void AnyImageImporter::doOpenFile(const std::string& filename) {
 
     /* Try to open the file (error output should be printed by the plugin
        itself) */
-    std::unique_ptr<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
+    Containers::Pointer<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
     if(!importer->openFile(filename)) return;
 
     /* Success, save the instance */
@@ -180,7 +185,7 @@ void AnyImageImporter::doOpenData(Containers::ArrayView<const char> data) {
 
     /* Try to open the file (error output should be printed by the plugin
        itself) */
-    std::unique_ptr<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
+    Containers::Pointer<AbstractImporter> importer = static_cast<PluginManager::Manager<AbstractImporter>*>(manager())->instantiate(plugin);
     if(!importer->openData(data)) return;
 
     /* Success, save the instance */

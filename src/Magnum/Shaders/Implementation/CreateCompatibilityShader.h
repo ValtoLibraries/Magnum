@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,6 +51,11 @@ inline GL::Shader createCompatibilityShader(const Utility::Resource& rs, GL::Ver
         shader.addSource("#define DISABLE_GL_ARB_shading_language_420pack\n");
     if(GL::Context::current().isExtensionDisabled<GL::Extensions::ARB::explicit_uniform_location>(version))
         shader.addSource("#define DISABLE_GL_ARB_explicit_uniform_location\n");
+    #endif
+
+    #ifndef MAGNUM_TARGET_GLES2
+    if(type == GL::Shader::Type::Vertex && GL::Context::current().isExtensionDisabled<GL::Extensions::MAGNUM::shader_vertex_id>(version))
+        shader.addSource("#define DISABLE_GL_MAGNUM_shader_vertex_id\n");
     #endif
 
     /* My Android emulator (running on NVidia) doesn't define GL_ES

@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,13 +23,12 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+add_subdirectory(KHR)
+
 if(NOT TARGET_GLES)
     add_subdirectory(GL)
+elseif(TARGET_GLES2)
+    add_subdirectory(GLES2)
 else()
-    add_subdirectory(KHR)
-    if(TARGET_GLES2)
-        add_subdirectory(GLES2)
-    else()
-        add_subdirectory(GLES3)
-    endif()
+    add_subdirectory(GLES3)
 endif()

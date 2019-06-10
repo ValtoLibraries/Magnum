@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -198,51 +198,37 @@ template<class T> class Matrix3: public Matrix3x3<T> {
         /**
          * @brief Default constructor
          *
-         * Creates identity matrix. @p value allows you to specify value on
-         * diagonal.
+         * Equivalent to @ref Matrix3(IdentityInitT, T).
          */
-        constexpr /*implicit*/ Matrix3(IdentityInitT = IdentityInit, T value = T{1}) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Matrix3x3<T>{IdentityInit, value}
-            #endif
-            {}
+        constexpr /*implicit*/ Matrix3() noexcept: Matrix3x3<T>{IdentityInit, T(1)} {}
+
+        /**
+         * @brief Construct an identity matrix
+         *
+         * The @p value allows you to specify value on diagonal.
+         */
+        constexpr explicit Matrix3(IdentityInitT, T value = T{1}) noexcept: Matrix3x3<T>{IdentityInit, value} {}
 
         /** @copydoc Matrix::Matrix(ZeroInitT) */
-        constexpr explicit Matrix3(ZeroInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Matrix3x3<T>{ZeroInit}
-            #endif
-            {}
+        constexpr explicit Matrix3(ZeroInitT) noexcept: Matrix3x3<T>{ZeroInit} {}
 
         /** @copydoc Matrix::Matrix(NoInitT) */
-        constexpr explicit Matrix3(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Matrix3x3<T>{NoInit}
-            #endif
-            {}
+        constexpr explicit Matrix3(NoInitT) noexcept: Matrix3x3<T>{NoInit} {}
 
-        /** @brief Construct matrix from column vectors */
+        /** @brief Construct from column vectors */
         constexpr /*implicit*/ Matrix3(const Vector3<T>& first, const Vector3<T>& second, const Vector3<T>& third) noexcept: Matrix3x3<T>(first, second, third) {}
 
-        /** @brief Construct matrix with one value for all elements */
-        constexpr explicit Matrix3(T value) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Matrix3x3<T>{value}
-            #endif
-            {}
+        /** @brief Construct with one value for all elements */
+        constexpr explicit Matrix3(T value) noexcept: Matrix3x3<T>{value} {}
 
         /** @copydoc Matrix::Matrix(const RectangularMatrix<size, size, U>&) */
         template<class U> constexpr explicit Matrix3(const RectangularMatrix<3, 3, U>& other) noexcept: Matrix3x3<T>(other) {}
 
-        /** @brief Construct matrix from external representation */
+        /** @brief Construct from external representation */
         template<class U, class V = decltype(Implementation::RectangularMatrixConverter<3, 3, T, U>::from(std::declval<U>()))> constexpr explicit Matrix3(const U& other) noexcept: Matrix3x3<T>(Implementation::RectangularMatrixConverter<3, 3, T, U>::from(other)) {}
 
         /**
-         * @brief Construct matrix by slicing or expanding another of a different size
+         * @brief Construct by slicing or expanding a matrix of a different size
          *
          * If the other matrix is larger, takes only the first @cpp size @ce
          * columns and rows from it; if the other matrix is smaller, it's
@@ -254,7 +240,7 @@ template<class T> class Matrix3: public Matrix3x3<T> {
         constexpr /*implicit*/ Matrix3(const RectangularMatrix<3, 3, T>& other) noexcept: Matrix3x3<T>(other) {}
 
         /**
-         * @brief Check whether the matrix represents rigid transformation
+         * @brief Check whether the matrix represents a rigid transformation
          *
          * Rigid transformation consists only of rotation and translation (i.e.
          * no scaling or projection).
@@ -292,7 +278,7 @@ template<class T> class Matrix3: public Matrix3x3<T> {
         }
 
         /**
-         * @brief 2D rotation and scaling part of the matrix
+         * @brief 2D rotation and shear part of the matrix
          *
          * Normalized upper-left 2x2 part of the matrix. Assuming the following
          * matrix, with the upper-left 2x2 part represented by column vectors
@@ -442,7 +428,7 @@ template<class T> class Matrix3: public Matrix3x3<T> {
         }
 
         /**
-         * @brief Non-uniform scaling part of the matrix, squared
+         * @brief Non-uniform scaling part of the matrix
          *
          * Length of vectors in upper-left 2x2 part of the matrix. Use the
          * faster alternative @ref scalingSquared() where possible. Assuming
@@ -616,7 +602,7 @@ template<class T> class Matrix3: public Matrix3x3<T> {
         Matrix3<T> invertedRigid() const;
 
         /**
-         * @brief Transform 2D vector with the matrix
+         * @brief Transform a 2D vector with the matrix
          *
          * Unlike in @ref transformPoint(), translation is not involved in the
          * transformation. @f[
@@ -631,7 +617,7 @@ template<class T> class Matrix3: public Matrix3x3<T> {
         }
 
         /**
-         * @brief Transform 2D point with the matrix
+         * @brief Transform a 2D point with the matrix
          *
          * Unlike in @ref transformVector(), translation is also involved in
          * the transformation. @f[
@@ -696,11 +682,6 @@ namespace Implementation {
     template<class T> struct StrictWeakOrdering<Matrix3<T>>: StrictWeakOrdering<RectangularMatrix<3, 3, T>> {};
 }
 
-}}
-
-namespace Corrade { namespace Utility {
-    /** @configurationvalue{Magnum::Math::Matrix3} */
-    template<class T> struct ConfigurationValue<Magnum::Math::Matrix3<T>>: public ConfigurationValue<Magnum::Math::Matrix3x3<T>> {};
 }}
 
 #endif

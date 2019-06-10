@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,7 @@
 #include "Magnum/GL/OpenGLTester.h"
 #include "Magnum/Text/DistanceFieldGlyphCache.h"
 
-namespace Magnum { namespace Text { namespace Test {
+namespace Magnum { namespace Text { namespace Test { namespace {
 
 struct DistanceFieldGlyphCacheGLTest: GL::OpenGLTester {
     explicit DistanceFieldGlyphCacheGLTest();
@@ -47,6 +47,6 @@ void DistanceFieldGlyphCacheGLTest::initialize() {
     #endif
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Text::Test::DistanceFieldGlyphCacheGLTest)

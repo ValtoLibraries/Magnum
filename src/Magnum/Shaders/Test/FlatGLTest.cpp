@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,7 +24,8 @@
 */
 
 #include <sstream>
-#include <Corrade/Utility/Format.h>
+#include <Corrade/Utility/DebugStl.h>
+#include <Corrade/Utility/FormatStl.h>
 
 #include "Magnum/ImageView.h"
 #include "Magnum/PixelFormat.h"
@@ -33,7 +34,7 @@
 #include "Magnum/GL/OpenGLTester.h"
 #include "Magnum/Shaders/Flat.h"
 
-namespace Magnum { namespace Shaders { namespace Test {
+namespace Magnum { namespace Shaders { namespace Test { namespace {
 
 struct FlatGLTest: GL::OpenGLTester {
     explicit FlatGLTest();
@@ -49,8 +50,6 @@ struct FlatGLTest: GL::OpenGLTester {
     template<UnsignedInt dimensions> void setAlphaMaskNotEnabled();
 };
 
-namespace {
-
 constexpr struct {
     const char* name;
     Flat2D::Flags flags;
@@ -58,8 +57,6 @@ constexpr struct {
     {"", {}},
     {"textured", Flat2D::Flag::Textured}
 };
-
-}
 
 FlatGLTest::FlatGLTest() {
     addInstancedTests<FlatGLTest>({
@@ -173,6 +170,6 @@ template<UnsignedInt dimensions> void FlatGLTest::setAlphaMaskNotEnabled() {
         "Shaders::Flat::setAlphaMask(): the shader was not created with alpha mask enabled\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Shaders::Test::FlatGLTest)

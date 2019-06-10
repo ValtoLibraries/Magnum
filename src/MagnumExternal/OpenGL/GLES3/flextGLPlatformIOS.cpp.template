@@ -2,7 +2,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,18 +27,18 @@
 #include "flextGL.h"
 
 @for category,funcs in functions:
-@if funcs and category not in ['ES_VERSION_2_0', 'ES_VERSION_3_0']:
+@if funcs and category not in ['ES_VERSION_2_0', 'ES_VERSION_3_0', 'ES_VERSION_3_1', 'ES_VERSION_3_2']:
 @for f in funcs:
 #undef gl@f.name
 @end
 @end
 @end
 
-#include <ES3/glext.h>
+#include <OpenGLES/ES3/glext.h>
 
-void flextGLInit() {
+void flextGLInit(Magnum::GL::Context&) {
     @for category,funcs in functions:
-    @if funcs and category not in ['ES_VERSION_2_0', 'ES_VERSION_3_0']:
+    @if funcs and category not in ['ES_VERSION_2_0', 'ES_VERSION_3_0', 'ES_VERSION_3_1', 'ES_VERSION_3_2']:
 
     /* GL_@category */
     #if GL_@category

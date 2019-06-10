@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,8 +29,12 @@
  * @brief Class @ref Magnum::Platform::AbstractXApplication
  */
 
-#include <memory>
+#include "Magnum/configure.h"
+
+#ifdef MAGNUM_TARGET_GL
+#include <string>
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Containers/Pointer.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -59,6 +63,10 @@ Supports keyboard and mouse handling. See @ref platform for brief introduction.
 
 @note Not meant to be used directly, see the @ref GlxApplication and
     @ref XEglApplication subclasses instead.
+
+@note This class is available only if Magnum is compiled with
+    @ref MAGNUM_TARGET_GL enabled (done by default). See @ref building-features
+    for more information.
 */
 class AbstractXApplication {
     public:
@@ -136,22 +144,6 @@ class AbstractXApplication {
          */
         void create();
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief create(const Configuration&, const GLConfiguration&)
-         * @deprecated Use @ref create(const Configuration&, const GLConfiguration&) instead.
-         */
-        CORRADE_DEPRECATED("use create(const Configuration&, const GLConfiguration&) instead") void createContext(const Configuration& configuration) {
-            create(configuration);
-        }
-
-        /** @brief @copybrief create()
-         * @deprecated Use @ref create() instead.
-         */
-        CORRADE_DEPRECATED("use create() instead") void createContext() {
-            create();
-        }
-        #endif
-
         /**
          * @brief Try to create context with given configuration for OpenGL context
          *
@@ -168,15 +160,6 @@ class AbstractXApplication {
          * the context cannot be created, @cpp true @ce otherwise.
          */
         bool tryCreate(const Configuration& configuration);
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief tryCreate(const Configuration&, const GLConfiguration&)
-         * @deprecated Use @ref tryCreate(const Configuration&, const GLConfiguration&) instead.
-         */
-        CORRADE_DEPRECATED("use tryCreate(const Configuration&) instead") bool tryCreateContext(const Configuration& configuration) {
-            return tryCreate(configuration);
-        }
-        #endif
 
         /** @{ @name Screen handling */
 
@@ -207,11 +190,7 @@ class AbstractXApplication {
         /** @copydoc Sdl2Application::redraw() */
         void redraw() { _flags |= Flag::Redraw; }
 
-    #ifdef DOXYGEN_GENERATING_OUTPUT
-    protected:
-    #else
     private:
-    #endif
         /**
          * @brief Viewport event
          *
@@ -284,8 +263,8 @@ class AbstractXApplication {
         Window _window{};
         Atom _deleteWindow{};
 
-        std::unique_ptr<Implementation::AbstractContextHandler<GLConfiguration, Display*, VisualID, Window>> _contextHandler;
-        std::unique_ptr<Platform::GLContext> _context;
+        Containers::Pointer<Implementation::AbstractContextHandler<GLConfiguration, Display*, VisualID, Window>> _contextHandler;
+        Containers::Pointer<Platform::GLContext> _context;
 
         /** @todo Get this from the created window */
         Vector2i _windowSize;
@@ -360,27 +339,9 @@ class AbstractXApplication::Configuration {
             return *this;
         }
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief GLConfiguration::version()
-         * @deprecated Use @ref GLConfiguration::version() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::version() instead") GL::Version version() const { return _version; }
-
-        /** @brief @copybrief GLConfiguration::setVersion()
-         * @deprecated Use @ref GLConfiguration::setVersion() instead.
-         */
-        CORRADE_DEPRECATED("use GLConfiguration::setVersion() instead") Configuration& setVersion(GL::Version version) {
-            _version = version;
-            return *this;
-        }
-        #endif
-
     private:
         std::string _title;
         Vector2i _size;
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        GL::Version _version;
-        #endif
 };
 
 /**
@@ -390,6 +351,18 @@ class AbstractXApplication::Configuration {
 */
 class AbstractXApplication::ViewportEvent {
     public:
+        /** @brief Copying is not allowed */
+        ViewportEvent(const ViewportEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ViewportEvent(ViewportEvent&&) = delete;
+
+        /** @brief Copying is not allowed */
+        ViewportEvent& operator=(const ViewportEvent&) = delete;
+
+        /** @brief Moving is not allowed */
+        ViewportEvent& operator=(ViewportEvent&&) = delete;
+
         /**
          * @brief Window size
          *
@@ -411,7 +384,7 @@ class AbstractXApplication::ViewportEvent {
 
         explicit ViewportEvent(const Vector2i& size): _size{size} {}
 
-        Vector2i _size;
+        const Vector2i _size;
 };
 
 /**
@@ -655,5 +628,8 @@ class AbstractXApplication::MouseMoveEvent: public AbstractXApplication::InputEv
 };
 
 }}
+#else
+#error this header is available only in the OpenGL build
+#endif
 
 #endif

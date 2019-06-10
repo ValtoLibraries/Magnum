@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 */
 
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Image.h"
 #include "Magnum/GL/Context.h"
@@ -50,7 +51,7 @@
 #include "Magnum/GL/RectangleTexture.h"
 #endif
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct FramebufferGLTest: OpenGLTester {
     explicit FramebufferGLTest();
@@ -160,9 +161,36 @@ struct FramebufferGLTest: OpenGLTester {
     void blit();
     #endif
 
+    void implementationColorReadFormat();
+
     #if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     private:
         TextureFormat rgbaFormatES2, depthStencilFormatES2;
+    #endif
+};
+
+constexpr struct {
+    const char* name;
+    RenderbufferFormat renderbufferFormat;
+    PixelFormat expectedFormat;
+    PixelType expectedType;
+} ImplementationColorReadFormatData[]{
+    {"classic",
+        #if !defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_WEBGL)
+        RenderbufferFormat::RGBA8,
+        #else
+        RenderbufferFormat::RGBA4,
+        #endif
+        PixelFormat::RGBA,
+        #if !defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_WEBGL)
+        PixelType::UnsignedByte
+        #else
+        GL::PixelType::UnsignedShort4444
+        #endif
+        },
+    #ifndef MAGNUM_TARGET_GLES2
+    {"integer", RenderbufferFormat::RG32UI, PixelFormat::RGInteger, PixelType::UnsignedInt},
+    {"float", RenderbufferFormat::RGBA16F, PixelFormat::RGBA, PixelType::HalfFloat}
     #endif
 };
 
@@ -272,6 +300,8 @@ FramebufferGLTest::FramebufferGLTest() {
               &FramebufferGLTest::blit
               #endif
               });
+
+    addInstancedTests({&FramebufferGLTest::implementationColorReadFormat}, Containers::arraySize(ImplementationColorReadFormatData));
 
     #if defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
     if(Context::current().isExtensionSupported<Extensions::EXT::texture_storage>()) {
@@ -1022,12 +1052,15 @@ void FramebufferGLTest::multipleColorOutputs() {
     Renderbuffer depth;
     depth.setStorage(RenderbufferFormat::DepthComponent16, Vector2i(128));
 
+    /* According to EXT_draw_buffers, the <i>th value in <bufs> has to be
+       either COLOR_ATTACHMENT<i>_EXT or NONE, so watch out -- list them in
+       order. */
     Framebuffer framebuffer({{}, Vector2i(128)});
-    framebuffer.attachTexture(Framebuffer::ColorAttachment(0), color1, 0)
-               .attachTexture(Framebuffer::ColorAttachment(1), color2, 0)
+    framebuffer.attachTexture(Framebuffer::ColorAttachment(0), color2, 0)
+               .attachTexture(Framebuffer::ColorAttachment(1), color1, 0)
                .attachRenderbuffer(Framebuffer::BufferAttachment::Depth, depth)
-               .mapForDraw({{0, Framebuffer::ColorAttachment(1)},
-                            {1, Framebuffer::ColorAttachment(0)},
+               .mapForDraw({{0, Framebuffer::ColorAttachment(0)},
+                            {1, Framebuffer::ColorAttachment(1)},
                             {2, Framebuffer::DrawAttachment::None}});
 
     #if !(defined(MAGNUM_TARGET_GLES2) && defined(MAGNUM_TARGET_WEBGL))
@@ -1368,12 +1401,12 @@ void FramebufferGLTest::invalidateSub() {
 }
 #endif
 
-namespace {
-    const auto DataStorage = PixelStorage{}.setSkip({0, 16, 0});
-    const std::size_t DataOffset = 16*8;
-}
+const auto DataStorage = PixelStorage{}.setSkip({0, 16, 0});
+const std::size_t DataOffset = 16*8;
 
 void FramebufferGLTest::read() {
+    using namespace Math::Literals;
+
     #ifndef MAGNUM_TARGET_GLES
     if(!Context::current().isExtensionSupported<Extensions::ARB::framebuffer_object>())
         CORRADE_SKIP(Extensions::ARB::framebuffer_object::string() + std::string(" is not available."));
@@ -1423,7 +1456,14 @@ void FramebufferGLTest::read() {
     CORRADE_COMPARE(framebuffer.checkStatus(FramebufferTarget::Read), Framebuffer::Status::Complete);
     CORRADE_COMPARE(framebuffer.checkStatus(FramebufferTarget::Draw), Framebuffer::Status::Complete);
 
-    Renderer::setClearColor(Math::unpack<Color4>(Color4ub(128, 64, 32, 17)));
+    #ifndef MAGNUM_TARGET_GLES2
+    Renderer::setClearColor(0x80402011_rgbaf);
+    #else
+    /* Using only RGBA4, supply less precision. This has to be one on the input
+       because SwiftShader stores RGBA4 as RGBA8 internally, thus preserving
+       the full precision of the input. */
+    Renderer::setClearColor(0x88442211_rgbaf);
+    #endif
     Renderer::setClearDepth(Math::unpack<Float, UnsignedShort>(48352));
     Renderer::setClearStencil(67);
     framebuffer.clear(FramebufferClear::Color|FramebufferClear::Depth|FramebufferClear::Stencil);
@@ -1434,7 +1474,11 @@ void FramebufferGLTest::read() {
     MAGNUM_VERIFY_NO_GL_ERROR();
     CORRADE_COMPARE(colorImage.size(), Vector2i(8, 16));
     CORRADE_COMPARE(colorImage.data().size(), (DataOffset + 8*16)*sizeof(Color4ub));
-    CORRADE_COMPARE(colorImage.data<Color4ub>()[DataOffset], Color4ub(128, 64, 32, 17));
+    #ifndef MAGNUM_TARGET_GLES2
+    CORRADE_COMPARE(colorImage.data<Color4ub>()[DataOffset], 0x80402011_rgba);
+    #else /* using only RGBA4, less precision */
+    CORRADE_COMPARE(colorImage.data<Color4ub>()[DataOffset], 0x88442211_rgba);
+    #endif
 
     #ifndef MAGNUM_TARGET_WEBGL
     #ifdef MAGNUM_TARGET_GLES
@@ -1523,16 +1567,14 @@ void FramebufferGLTest::readBuffer() {
 }
 #endif
 
-namespace {
-    constexpr char StorageData[]{
-        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
-        0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
-        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
-    };
+constexpr char StorageData[]{
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+    0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
+};
 
-    constexpr char ZeroStorage[4*4*4*6]{};
-}
+constexpr char ZeroStorage[4*4*4*6]{};
 
 #ifndef MAGNUM_TARGET_GLES
 void FramebufferGLTest::copyImageTexture1D() {
@@ -2096,6 +2138,27 @@ void FramebufferGLTest::blit() {
 }
 #endif
 
-}}}
+void FramebufferGLTest::implementationColorReadFormat() {
+    auto&& data = ImplementationColorReadFormatData[testCaseInstanceId()];
+    setTestCaseDescription(data.name);
+
+    Renderbuffer color;
+    color.setStorage(data.renderbufferFormat, {32, 32});
+    Framebuffer framebuffer{{{}, {32, 32}}};
+    framebuffer.attachRenderbuffer(Framebuffer::ColorAttachment{0}, color);
+
+    PixelFormat format = framebuffer.implementationColorReadFormat();
+    PixelType type = framebuffer.implementationColorReadType();
+
+    #ifdef CORRADE_TARGET_WINDOWS
+    CORRADE_EXPECT_FAIL_IF((Context::current().detectedDriver() & Context::DetectedDriver::IntelWindows) && data.renderbufferFormat != RenderbufferFormat::RGBA8,
+        "Framebuffer format queries on Intel Windows drivers are broken beyond repair for any non-trivial value.");
+    #endif
+    MAGNUM_VERIFY_NO_GL_ERROR();
+    CORRADE_COMPARE(format, data.expectedFormat);
+    CORRADE_COMPARE(type, data.expectedType);
+}
+
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::FramebufferGLTest)

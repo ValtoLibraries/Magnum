@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,12 +24,13 @@
 */
 
 #include <numeric>
+#include <vector>
 #include <Corrade/TestSuite/Tester.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Math/Algorithms/KahanSum.h"
 
-namespace Magnum { namespace Math { namespace Algorithms { namespace Test {
+namespace Magnum { namespace Math { namespace Algorithms { namespace Test { namespace {
 
 struct KahanSumTest: TestSuite::Tester {
     explicit KahanSumTest();
@@ -51,8 +52,6 @@ KahanSumTest::KahanSumTest() {
     addBenchmarks({&KahanSumTest::accumulate100k,
                    &KahanSumTest::kahan100k}, 50);
 }
-
-namespace {
 
 /* Custom iterator class to avoid allocating half a gigabyte for hundred
    million values */
@@ -83,8 +82,6 @@ template<class T> struct Iterator
         T _value{};
         std::size_t _i{};
 };
-
-}
 
 void KahanSumTest::floats() {
     Iterator<Float> begin{1.0f};
@@ -165,6 +162,6 @@ void KahanSumTest::kahan100k() {
     CORRADE_COMPARE(Float(a), 100000.0f);
 }
 
-}}}}
+}}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Algorithms::Test::KahanSumTest)

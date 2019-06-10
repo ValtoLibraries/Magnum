@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -305,10 +305,9 @@ for a high-level overview.
     imported data
 -   @ref MeshTools::interleaveInto() for interleaving data into existing
     buffer
--   @ref Shapes::Shape::collision() function as complement to
-    @ref Shapes::Shape::collides()
--   @ref Platform::GlutApplication::KeyEvent finally has more complete key
-    support
+-   `Shapes::Shape::collision()` function as complement to
+    `Shapes::Shape::collides()`
+-   `Platform::GlutApplication::KeyEvent` finally has more complete key support
 -   @ref Math::Range::data() function, useful when querying range values from
     GL
 -   Support for specifying context flags using
@@ -333,8 +332,8 @@ for a high-level overview.
     [mosra/magnum#20](https://github.com/mosra/magnum/issues/20),
     [mosra/magnum#45](https://github.com/mosra/magnum/issues/18))
 -   @ref Platform::Sdl2Application is now used everywhere (documentation,
-    tutorials, examples) by default, replacing @ref Platform::GlutApplication.
-    The GLUT application is still available, though. See
+    tutorials, examples) by default, replacing `Platform::GlutApplication`. The
+    GLUT application is still available, though. See
     [mosra/magnum#39](https://github.com/mosra/magnum/issues/39).
 -   The need for compiler compatibility mode is now automatically detected by
     CMake to avoid strange compilation errors later
@@ -500,7 +499,7 @@ No dependency changes in this release.
 -   Ability to request context version in all windowed
     @ref Platform::Sdl2Application "Platform::*Application" classes
 -   Mouse wheel support in @cpp Platform::NaClApplication::MouseEvent @ce
--   No-op @ref Platform::GlutApplication::keyReleaseEvent() and
+-   No-op `Platform::GlutApplication::keyReleaseEvent()` and
     @cpp Platform::NaClApplication::Configuration::setTitle() @ce functions to
     preserve source compatibility with other application classes.
 -   @ref SceneGraph::Drawable::drawables() function as a non-ambiguous
@@ -667,13 +666,12 @@ for a high-level overview.
     by @ref magnum-gl-info "magnum-info" utility.
 -   @cpp Context::isExtensionSupported() @ce is now able to query extension
     availability on particular GLSL version
--   Using @ref std::unique_ptr and C++1y @cpp std::optional @ce for resources
+-   Using @ref std::unique_ptr and C++1y @ref std::optional for resources
     returned from @ref Trade::AbstractImporter for better usability and to
     avoid accidental memory leaks
 -   New translation-only transformation in @ref SceneGraph supporting also
     purely integral coordinates, useful e.g. for UI or 2D platformers.
--   Detailed collision queries and new @ref Shapes::InvertedSphere "InvertedSphere"
-    shape in Shapes library
+-   Detailed collision queries and new `InvertedSphere` shape in Shapes library
 -   Texture support in @ref Shaders::Flat
 -   Mouse button queries in @ref Platform::Sdl2Application::MouseMoveEvent "Platform::*Application::MouseMoveEvent"
 

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,7 @@ int main() {
 #pragma GCC diagnostic ignored "-Wdollar-in-identifier-extension"
 std::string title;
 EM_ASM_({document.getElementById('title').innerHTML =
-    Pointer_stringify($0, $1)}, title.data(), title.size());
+    UTF8ToString($0)}, title.data());
 #pragma GCC diagnostic pop
 /* [emasm-dollar] */
 }

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -101,19 +101,6 @@ these are defined:
 The @c \@glsl command expands to <tt>\@cb{.glsl}</tt>, making it possible to
 have inline highlighted GLSL code snippets, similarly to @c \@cpp and @c \@cmake.
 
-@subsubsection coding-style-documentation-commands-collisionoperator Shape collision operators
-
-Out-of-class operators for collision and collision occurence in Shapes
-namespace should be marked with @c \@collisionoperator and @c \@collisionoccurenceoperator,
-e.g.:
-
-@snippet coding-style.h collisionoperator
-
-They will appear as related functions within documentation of class for which
-the operator is implemented (not of class in which the operator is
-implemented), thus efficiently connecting the two classes together in the
-documentation.
-
 @subsubsection coding-style-documentation-commands-extension Links to OpenGL, Vulkan and OpenAL extensions
 
 If an OpenGL extension is referenced in the documentation, it should be done
@@ -203,7 +190,7 @@ are the same as in @c \@gl_extension command. It produced link to extension
 specification, with function name as link text:
 
 <blockquote>
-@fn_gl_extension{NamedCopyBufferSubData,EXT,direct_state_access}
+@fn_gl_extension{LabelObject,EXT,debug_label}
 </blockquote>
 
 For Vulkan, the commands are @c \@fn_vk, @c \@type_vk and @c \@def_vk. Example:

@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,10 @@
 #   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #   DEALINGS IN THE SOFTWARE.
 #
+
+if(NOT WITH_GL)
+    message(SEND_ERROR "Shaders are available only if WITH_GL is enabled")
+endif()
 
 corrade_add_resource(MagnumShaders_RCS resources.conf)
 set_target_properties(MagnumShaders_RCS-dependencies PROPERTIES FOLDER "Magnum/Shaders")

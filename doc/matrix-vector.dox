@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -241,10 +241,14 @@ reinterpret the matrix as vector and do the operation on it (and vice versa):
 
 @snippet MagnumMath.cpp matrix-vector-operations-functions-componentwise
 
-Note that all component-wise functions in @ref Math namespace work also for
-scalars:
+Note that all component-wise functions in the @ref Math namespace work also for
+scalars --- and on the special @ref Deg / @ref Rad types too.
 
 @snippet MagnumMath.cpp matrix-vector-operations-functions-scalar
+
+For types with units the only exception are power functions such as
+@ref Math::pow() or @ref Math::log() --- the resulting unit of such an
+operation can't be represented and thus those work only on unitless types.
 
 @section matrix-vector-column-major Matrices are column-major and vectors are columns
 
@@ -275,5 +279,9 @@ implications and it may differ from what is common in mathematics:
     to operate with transposed matrices or use the slower non-transposed
     alternative of the algorithm.
 </li></ul>
+
+Note that the @ref Corrade::Utility::Debug utility always prints the matrices
+in the expected layout --- rows are rows and columns are columns. You are
+encouraged to use it for data visualization purposes.
 */
 }

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,13 +26,14 @@
 #include <sstream>
 #include <Corrade/Containers/Array.h>
 #include <Corrade/TestSuite/Compare/Container.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/PixelFormat.h"
 #include "Magnum/GL/BufferImage.h"
 #include "Magnum/GL/PixelFormat.h"
 #include "Magnum/GL/OpenGLTester.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct BufferImageGLTest: OpenGLTester {
     explicit BufferImageGLTest();
@@ -606,6 +607,6 @@ void BufferImageGLTest::releaseCompressed() {
     CORRADE_COMPARE(b.id(), id);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::BufferImageGLTest)

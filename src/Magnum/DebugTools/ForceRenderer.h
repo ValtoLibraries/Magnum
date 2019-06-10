@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,8 +68,16 @@ class ForceRendererOptions {
             return *this;
         }
 
-        /** @brief Scale of rendered arrow */
-        constexpr Float scale() const { return _size; }
+        /** @brief Size of rendered arrow */
+        constexpr Float size() const { return _size; }
+
+        #ifdef MAGNUM_BUILD_DEPRECATED
+        /**
+         * @brief @copybrief size()
+         * @deprecated Use @ref size() instead.
+         */
+        constexpr CORRADE_DEPRECATED("use size() instead") Float scale() const { return _size; }
+        #endif
 
         /**
          * @brief Set scale of rendered arrow
@@ -97,16 +105,7 @@ See @ref debug-tools-renderers for more information.
 
 Example code:
 
-@code{.cpp}
-DebugTools::ResourceManager::instance().set("my", DebugTools::ForceRendererOptions()
-    .setScale(5.0f)
-    .setColor(Color3::fromHSV(120.0_degf, 1.0f, 0.7f));
-
-// Create debug renderer for given object, use "my" options for it
-Object3D* object;
-Vector3 force;
-new DebugTools::ForceRenderer2D(object, {0.3f, 1.5f, -0.7f}, &force, "my", debugDrawables);
-@endcode
+@snippet MagnumDebugTools-gl.cpp ForceRenderer
 
 @note This class is available only if Magnum is compiled with
     @ref MAGNUM_TARGET_GL "TARGET_GL" and `WITH_SCENEGRAPH` enabled (done by
@@ -149,7 +148,6 @@ template<UnsignedInt dimensions> class MAGNUM_DEBUGTOOLS_EXPORT ForceRenderer: p
         Resource<ForceRendererOptions> _options;
         Resource<GL::AbstractShaderProgram, Shaders::Flat<dimensions>> _shader;
         Resource<GL::Mesh> _mesh;
-        Resource<GL::Buffer> _vertexBuffer, _indexBuffer;
 };
 
 /** @brief Two-dimensional force renderer */

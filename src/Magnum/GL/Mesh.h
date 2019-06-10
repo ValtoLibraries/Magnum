@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -280,7 +280,7 @@ and @fn_gl_keyword{UseProgram}. Mesh limits and implementation-defined values
 (such as @ref maxElementIndex()) are cached, so repeated queries don't result
 in repeated @fn_gl{Get} calls.
 
-If @gl_extension{EXT,direct_state_access} desktop extension and VAOs are
+If @gl_extension{ARB,direct_state_access} desktop extension and VAOs are
 available, DSA functions are used for specifying attribute locations to avoid
 unnecessary calls to @fn_gl{BindBuffer} and @fn_gl{BindVertexArray}. See
 documentation of @ref addVertexBuffer() for more information.
@@ -294,14 +294,6 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
     friend Implementation::MeshState;
 
     public:
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief MeshIndexType
-         * @deprecated Use @ref Magnum::MeshIndexType or @ref GL::MeshIndexType
-         *      instead.
-         */
-        typedef CORRADE_DEPRECATED("use MeshIndexType instead") Magnum::MeshIndexType IndexType;
-        #endif
-
         #ifndef MAGNUM_TARGET_GLES2
         /**
          * @brief Max supported index value
@@ -348,13 +340,6 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
          * @requires_webgl20 Ranged element draw is not supported in WebGL 1.0.
          */
         static Int maxElementsVertices();
-        #endif
-
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /** @brief @copybrief meshIndexTypeSize()
-         * @deprecated Use @ref meshIndexTypeSize() instead.
-         */
-        static CORRADE_DEPRECATED("use meshIndexTypeSize() instead") std::size_t indexSize(Magnum::MeshIndexType type);
         #endif
 
         /**
@@ -526,14 +511,6 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
          */
         UnsignedInt indexTypeSize() const;
 
-        #ifdef MAGNUM_BUILD_DEPRECATED
-        /**
-         * @brief Index size
-         * @deprecated Use @ref indexTypeSize() instead.
-         */
-        CORRADE_DEPRECATED("use indexTypeSize() instead") std::size_t indexSize() const { return indexTypeSize(); }
-        #endif
-
         /** @brief Primitive type */
         MeshPrimitive primitive() const { return _primitive; }
 
@@ -618,7 +595,9 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
          * @requires_gl42 Extension @gl_extension{ARB,transform_feedback_instanced}
          *      if using @ref draw(AbstractShaderProgram&, TransformFeedback&, UnsignedInt)
          * @requires_gles30 Extension @gl_extension{ANGLE,instanced_arrays},
-         *      @gl_extension2{EXT,draw_instanced,draw_instanced} or
+         *      @gl_extension{EXT,instanced_arrays},
+         *      @gl_extension{EXT,draw_instanced},
+         *      @gl_extension{NV,instanced_arrays},
          *      @gl_extension{NV,draw_instanced} in OpenGL ES 2.0.
          * @requires_webgl20 Extension @webgl_extension{ANGLE,instanced_arrays}
          *      in WebGL 1.0.
@@ -697,8 +676,10 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
          *      @ref setCount(), @fn_gl_keyword{BindVertexArray},
          *      @fn_gl_keyword{EnableVertexAttribArray}, @fn_gl{BindBuffer},
          *      @fn_gl_keyword{VertexAttribPointer} or
-         *      @fn_gl_extension{EnableVertexArrayAttrib,EXT,direct_state_access},
-         *      @fn_gl_extension_keyword{VertexArrayVertexAttribOffset,EXT,direct_state_access}
+         *      @fn_gl2{EnableVertexArrayAttrib,EnableVertexAttribArray},
+         *      @fn_gl2{VertexArrayAttribFormat,VertexAttribFormat},
+         *      @fn_gl2{VertexArrayAttribBinding,VertexAttribBinding} and
+         *      @fn_gl2{VertexArrayVertexBuffer,BindVertexBuffer}
          * @requires_gles In WebGL the data must be properly aligned (e.g. all
          *      float data must start at addresses divisible by four). Also the
          *      maximum stride of attribute data must be at most 255 bytes.
@@ -729,9 +710,11 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
          *      @fn_gl{BindVertexArray}, @fn_gl_keyword{EnableVertexAttribArray},
          *      @fn_gl{BindBuffer}, @fn_gl_keyword{VertexAttribPointer},
          *      @fn_gl_keyword{VertexAttribDivisor} or
-         *      @fn_gl_extension_keyword{EnableVertexArrayAttrib,EXT,direct_state_access},
-         *      @fn_gl_extension_keyword{VertexArrayVertexAttribOffset,EXT,direct_state_access},
-         *      @fn_gl_extension_keyword{VertexArrayVertexAttribDivisor,EXT,direct_state_access}
+         *      @fn_gl2{EnableVertexArrayAttrib,EnableVertexAttribArray},
+         *      @fn_gl2{VertexArrayAttribFormat,VertexAttribFormat},
+         *      @fn_gl2{VertexArrayAttribBinding,VertexAttribBinding},
+         *      @fn_gl2{VertexArrayVertexBuffer,BindVertexBuffer} and
+         *      @fn_gl2{VertexArrayBindingDivisor,VertexBindingDivisor}
          * @requires_gl33 Extension @gl_extension{ARB,instanced_arrays}
          * @requires_gles30 Extension @gl_extension{ANGLE,instanced_arrays},
          *      @gl_extension{EXT,instanced_arrays} or
@@ -926,7 +909,7 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
          * @see @ref setCount(), @ref setInstanceCount(),
          *      @ref draw(AbstractShaderProgram&, TransformFeedback&, UnsignedInt),
          *      @ref MeshView::draw(AbstractShaderProgram&),
-         *      @ref MeshView::draw(AbstractShaderProgram&, std::initializer_list<std::reference_wrapper<MeshView>>),
+         *      @ref MeshView::draw(AbstractShaderProgram&, std::initializer_list<Containers::Reference<MeshView>>),
          *      @fn_gl_keyword{UseProgram}, @fn_gl_keyword{EnableVertexAttribArray},
          *      @fn_gl{BindBuffer}, @fn_gl_keyword{VertexAttribPointer},
          *      @fn_gl_keyword{DisableVertexAttribArray} or @fn_gl_keyword{BindVertexArray},
@@ -944,8 +927,10 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
          * @requires_gl42 Extension @gl_extension{ARB,base_instance} if
          *      @ref baseInstance() is not `0`.
          * @requires_gles30 Extension @gl_extension{ANGLE,instanced_arrays},
-         *      @gl_extension{EXT,instanced_arrays} or
-         *      @gl_extension{NV,instanced_arrays} in OpenGL ES 2.0 if
+         *      @gl_extension{EXT,instanced_arrays},
+         *      @gl_extension{EXT,draw_instanced},
+         *      @gl_extension{NV,instanced_arrays},
+         *      @gl_extension{NV,draw_instanced} in OpenGL ES 2.0 if
          *      @ref instanceCount() is more than `1`.
          * @requires_webgl20 Extension @webgl_extension{ANGLE,instanced_arrays}
          *      in WebGL 1.0 if @ref instanceCount() is more than `1`.
@@ -1103,13 +1088,16 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
         void MAGNUM_GL_LOCAL attributePointerImplementationDefault(AttributeLayout&& attribute);
         void MAGNUM_GL_LOCAL attributePointerImplementationVAO(AttributeLayout&& attribute);
         #ifndef MAGNUM_TARGET_GLES
-        void MAGNUM_GL_LOCAL attributePointerImplementationDSAEXT(AttributeLayout&& attribute);
+        void MAGNUM_GL_LOCAL attributePointerImplementationVAODSA(AttributeLayout&& attribute);
+        #ifdef CORRADE_TARGET_WINDOWS
+        void MAGNUM_GL_LOCAL attributePointerImplementationVAODSAIntelWindows(AttributeLayout&& attribute);
+        #endif
         #endif
         void MAGNUM_GL_LOCAL vertexAttribPointer(AttributeLayout& attribute);
 
         #ifndef MAGNUM_TARGET_GLES
         void MAGNUM_GL_LOCAL vertexAttribDivisorImplementationVAO(GLuint index, GLuint divisor);
-        void MAGNUM_GL_LOCAL vertexAttribDivisorImplementationDSAEXT(GLuint index, GLuint divisor);
+        void MAGNUM_GL_LOCAL vertexAttribDivisorImplementationVAODSA(GLuint index, GLuint divisor);
         #elif defined(MAGNUM_TARGET_GLES2)
         void MAGNUM_GL_LOCAL vertexAttribDivisorImplementationANGLE(GLuint index, GLuint divisor);
         #ifndef MAGNUM_TARGET_WEBGL
@@ -1124,6 +1112,9 @@ class MAGNUM_GL_EXPORT Mesh: public AbstractObject {
 
         void MAGNUM_GL_LOCAL bindIndexBufferImplementationDefault(Buffer&);
         void MAGNUM_GL_LOCAL bindIndexBufferImplementationVAO(Buffer& buffer);
+        #ifndef MAGNUM_TARGET_GLES
+        void MAGNUM_GL_LOCAL bindIndexBufferImplementationVAODSA(Buffer& buffer);
+        #endif
 
         void MAGNUM_GL_LOCAL bindImplementationDefault();
         void MAGNUM_GL_LOCAL bindImplementationVAO();
@@ -1184,17 +1175,6 @@ inline GLuint Mesh::release() {
     return id;
 }
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::Mesh
- * @deprecated Use @ref GL::Mesh instead.
- */
-typedef CORRADE_DEPRECATED("use GL::Mesh instead") Magnum::GL::Mesh Mesh;
-#endif
-
-}
+}}
 
 #endif

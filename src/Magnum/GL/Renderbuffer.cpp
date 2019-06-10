@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -148,11 +148,6 @@ void Renderbuffer::storageImplementationDefault(RenderbufferFormat internalForma
 void Renderbuffer::storageImplementationDSA(const RenderbufferFormat internalFormat, const Vector2i& size) {
     glNamedRenderbufferStorage(_id, GLenum(internalFormat), size.x(), size.y());
 }
-
-void Renderbuffer::storageImplementationDSAEXT(RenderbufferFormat internalFormat, const Vector2i& size) {
-    _flags |= ObjectFlag::Created;
-    glNamedRenderbufferStorageEXT(_id, GLenum(internalFormat), size.x(), size.y());
-}
 #endif
 
 #ifndef MAGNUM_TARGET_GLES2
@@ -175,11 +170,6 @@ void Renderbuffer::storageMultisampleImplementationNV(const GLsizei samples, con
 #ifndef MAGNUM_TARGET_GLES
 void Renderbuffer::storageMultisampleImplementationDSA(const GLsizei samples, const RenderbufferFormat internalFormat, const Vector2i& size) {
     glNamedRenderbufferStorageMultisample(_id, samples, GLenum(internalFormat), size.x(), size.y());
-}
-
-void Renderbuffer::storageMultisampleImplementationDSAEXT(GLsizei samples, RenderbufferFormat internalFormat, const Vector2i& size) {
-    _flags |= ObjectFlag::Created;
-    glNamedRenderbufferStorageMultisampleEXT(_id, samples, GLenum(internalFormat), size.x(), size.y());
 }
 #endif
 

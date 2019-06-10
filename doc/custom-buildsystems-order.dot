@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,7 +45,6 @@ digraph "Magnum library dependency order" {
     MagnumPrimitives [label="Magnum\nPrimitives" class="m-info"]
     MagnumSceneGraph [label="Magnum\nSceneGraph" class="m-info"]
     MagnumShaders [label="Magnum\nShaders" class="m-info"]
-    MagnumShapes [label="Magnum\nShapes" class="m-dim"]
     MagnumText [label="Magnum\nText" class="m-info"]
     MagnumTextureTools [label="Magnum\nTextureTools" class="m-info"]
     MagnumTrade [label="Magnum\nTrade" class="m-info"]
@@ -71,12 +70,12 @@ digraph "Magnum library dependency order" {
     MagnumDebugTools -> MagnumMeshTools [style=dotted]
     MagnumDebugTools -> MagnumPrimitives [style=dotted]
     MagnumDebugTools -> MagnumShaders [style=dotted]
-    MagnumDebugTools -> MagnumShapes [style=dotted class="m-dim"]
     MagnumDebugTools -> MagnumSceneGraph [style=dotted]
 
     MagnumGL -> Magnum
 
-    MagnumMeshTools -> Magnum
+    MagnumMeshTools -> MagnumTrade
+    MagnumMeshTools -> MagnumGL [style=dotted]
 
     MagnumOpenGLTester -> MagnumWindowlessApplication
 
@@ -86,10 +85,8 @@ digraph "Magnum library dependency order" {
 
     MagnumShaders -> MagnumGL
 
-    MagnumShapes -> MagnumSceneGraph [class="m-dim"]
-
     MagnumText -> MagnumTextureTools
-    MagnumText -> MagnumGL
+    MagnumText -> MagnumGL [style=dotted]
 
     MagnumTextureTools -> Magnum
     MagnumTextureTools -> MagnumGL [style=dotted]

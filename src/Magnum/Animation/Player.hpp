@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,8 +31,8 @@
 
 #include "Player.h"
 
-#include <functional>
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/Containers/Reference.h>
 
 namespace Magnum { namespace Animation {
 
@@ -71,7 +71,7 @@ template<class T, class K> struct Player<T, K>::Track  {
 };
 #endif
 
-template<class T, class K> void Player<T, K>::advance(const T time, const std::initializer_list<std::reference_wrapper<Player<T, K>>> players) {
+template<class T, class K> void Player<T, K>::advance(const T time, const std::initializer_list<Containers::Reference<Player<T, K>>> players) {
     for(Player<T, K>& p: players) p.advance(time);
 }
 
@@ -239,7 +239,9 @@ template<class T, class K> Containers::Optional<std::pair<UnsignedInt, K>> playe
        iteration. If we exceeded play count, stop the animation and give out
        value at duration end. */
     } else {
-        std::tie(playIteration, key) = scaler(timeToUse, duration);
+        const std::pair<UnsignedInt, K> scaled = scaler(timeToUse, duration);
+        playIteration = scaled.first;
+        key = scaled.second;
         if(playCount && playIteration >= playCount) {
             if(state != State::Paused) state = State::Stopped;
             /* Don't reset the startTime to disambiguate between explicitly
@@ -255,14 +257,17 @@ template<class T, class K> Containers::Optional<std::pair<UnsignedInt, K>> playe
 }
 
 template<class T, class K> std::pair<UnsignedInt, K> Player<T, K>::elapsed(const T time) const {
+    const K duration = _duration.size();
+
     /* Get the elapsed time. This is an immutable query, so make copies of the
        (otherwise to be modified) internal state. */
-    T startTime = _startTime;
-    T pauseTime = _stopPauseTime;
-    State state = _state;
-    const K duration = _duration.size();
-    const Containers::Optional<std::pair<UnsignedInt, K>> elapsed = Implementation::playerElapsed(duration, _playCount, _scaler, time, startTime, pauseTime, state);
-    if(elapsed) return *elapsed;
+    {
+        T startTime = _startTime;
+        T pauseTime = _stopPauseTime;
+        State state = _state;
+        const Containers::Optional<std::pair<UnsignedInt, K>> elapsed = Implementation::playerElapsed(duration, _playCount, _scaler, time, startTime, pauseTime, state);
+        if(elapsed) return *elapsed;
+    }
 
     /* If not advancing, the animation can be paused -- calculate the iteration
        index and keyframe at which it was paused if the duration is nonzero. If

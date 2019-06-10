@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,16 +29,11 @@
  * @brief Class @ref Magnum::Trade::AbstractImageConverter
  */
 
-#include <Corrade/Containers/Optional.h>
 #include <Corrade/PluginManager/AbstractManagingPlugin.h>
 
 #include "Magnum/Magnum.h"
 #include "Magnum/Trade/Trade.h"
 #include "Magnum/Trade/visibility.h"
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-#include "MagnumExternal/Optional/OptionalWrapper.h"
-#endif
 
 namespace Magnum { namespace Trade {
 
@@ -233,11 +228,7 @@ class MAGNUM_TRADE_EXPORT AbstractImageConverter: public PluginManager::Abstract
          */
         bool exportToFile(const ImageData2D& image, const std::string& filename);
 
-    #ifndef DOXYGEN_GENERATING_OUTPUT
     private:
-    #else
-    protected:
-    #endif
         /** @brief Implementation of @ref features() */
         virtual Features doFeatures() const = 0;
 

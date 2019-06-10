@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,11 +25,12 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Vector3.h"
 #include "Magnum/MeshTools/FlipNormals.h"
 
-namespace Magnum { namespace MeshTools { namespace Test {
+namespace Magnum { namespace MeshTools { namespace Test { namespace {
 
 struct FlipNormalsTest: TestSuite::Tester {
     explicit FlipNormalsTest();
@@ -75,6 +76,6 @@ void FlipNormalsTest::flipNormals() {
                                                    -Vector3::zAxis()}));
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::MeshTools::Test::FlipNormalsTest)

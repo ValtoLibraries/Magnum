@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,7 +46,7 @@ endif()
 # Use folders for nice tree in Visual Studio and XCode
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/modules/")
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/modules/" ${CMAKE_MODULE_PATH})
 
 # Find Corrade first so we can check on the target
 find_package(Corrade REQUIRED Utility)
@@ -63,8 +63,6 @@ endif()
 
 cmake_dependent_option(TARGET_GLES2 "Build for OpenGL ES 2 / WebGL 1.0" ON "TARGET_GLES" OFF)
 cmake_dependent_option(TARGET_DESKTOP_GLES "Build for OpenGL ES on desktop" OFF "TARGET_GLES" OFF)
-cmake_dependent_option(TARGET_HEADLESS "Build command-line utilities for use on a headless machines" OFF "WITH_GL" OFF)
-cmake_dependent_option(TARGET_VK "Build libraries with Vulkan interoperability" ON "WITH_VK" OFF)
 
 # Magnum GL Info (currently only using GLX/CGL/EGL on *nix, WGL/EGL on Windows
 # and EGL on Emscripten)
@@ -91,7 +89,7 @@ option(WITH_ANYIMAGECONVERTER "Build AnyImageConverter plugin" OFF)
 option(WITH_ANYSCENEIMPORTER "Build AnySceneImporter plugin" OFF)
 option(WITH_WAVAUDIOIMPORTER "Build WavAudioImporter plugin" OFF)
 option(WITH_MAGNUMFONT "Build MagnumFont plugin" OFF)
-cmake_dependent_option(WITH_MAGNUMFONTCONVERTER "Build MagnumFontConverter plugin" OFF "NOT TARGET_GLES" OFF)
+option(WITH_MAGNUMFONTCONVERTER "Build MagnumFontConverter plugin" OFF)
 option(WITH_OBJIMPORTER "Build ObjImporter plugin" OFF)
 cmake_dependent_option(WITH_TGAIMAGECONVERTER "Build TgaImageConverter plugin" OFF "NOT WITH_MAGNUMFONTCONVERTER" ON)
 cmake_dependent_option(WITH_TGAIMPORTER "Build TgaImporter plugin" OFF "NOT WITH_MAGNUMFONT" ON)
@@ -100,16 +98,16 @@ cmake_dependent_option(WITH_TGAIMPORTER "Build TgaImporter plugin" OFF "NOT WITH
 cmake_dependent_option(WITH_AUDIO "Build Audio library" OFF "NOT WITH_AL_INFO;NOT WITH_ANYAUDIOIMPORTER;NOT WITH_WAVAUDIOIMPORTER" ON)
 option(WITH_DEBUGTOOLS "Build DebugTools library" ON)
 cmake_dependent_option(WITH_MESHTOOLS "Build MeshTools library" ON "NOT WITH_OBJIMPORTER" ON)
-option(WITH_SHAPES "Build Shapes library" OFF)
-cmake_dependent_option(WITH_SCENEGRAPH "Build SceneGraph library" ON "NOT WITH_SHAPES" ON)
+option(WITH_SCENEGRAPH "Build SceneGraph library" ON)
 option(WITH_SHADERS "Build Shaders library" ON)
 cmake_dependent_option(WITH_TEXT "Build Text library" ON "NOT WITH_FONTCONVERTER;NOT WITH_MAGNUMFONT;NOT WITH_MAGNUMFONTCONVERTER" ON)
 cmake_dependent_option(WITH_TEXTURETOOLS "Build TextureTools library" ON "NOT WITH_TEXT;NOT WITH_DISTANCEFIELDCONVERTER" ON)
 cmake_dependent_option(WITH_TRADE "Build Trade library" ON "NOT WITH_MESHTOOLS;NOT WITH_PRIMITIVES;NOT WITH_IMAGECONVERTER;NOT WITH_ANYIMAGEIMPORTER;NOT WITH_ANYIMAGECONVERTER;NOT WITH_ANYSCENEIMPORTER;NOT WITH_OBJIMPORTER;NOT WITH_TGAIMAGECONVERTER;NOT WITH_TGAIMPORTER" ON)
-cmake_dependent_option(WITH_GL "Build GL library" ON "NOT WITH_SHADERS;NOT WITH_TEXT;NOT WITH_GL_INFO;NOT WITH_ANDROIDAPPLICATION;NOT WITH_WINDOWLESSIOSAPPLICATION;NOT WITH_CGLCONTEXT;NOT WITH_GLXAPPLICATION;NOT WITH_GLXCONTEXT;NOT WITH_XEGLAPPLICATION;NOT WITH_WINDOWLESSWGLAPPLICATION;NOT WITH_GLXCONTEXT;NOT WITH_XEGLAPPLICATION;NOT WITH_WINDOWLESSWGLAPPLICATION;NOT WITH_WGLCONTEXT;NOT WITH_WINDOWLESSWINDOWSEGLAPPLICATION;NOT WITH_GLUTAPPLICATION;NOT WITH_DISTANCEFIELDCONVERTER;NOT WITH_FONTCONVERTER;NOT WITH_IMAGECONVERTER" ON)
+cmake_dependent_option(WITH_GL "Build GL library" ON "NOT WITH_SHADERS;NOT WITH_GL_INFO;NOT WITH_ANDROIDAPPLICATION;NOT WITH_WINDOWLESSIOSAPPLICATION;NOT WITH_CGLCONTEXT;NOT WITH_GLXAPPLICATION;NOT WITH_GLXCONTEXT;NOT WITH_XEGLAPPLICATION;NOT WITH_WINDOWLESSWGLAPPLICATION;NOT WITH_WGLCONTEXT;NOT WITH_WINDOWLESSWINDOWSEGLAPPLICATION;NOT WITH_DISTANCEFIELDCONVERTER" ON)
 option(WITH_PRIMITIVES "Builf Primitives library" ON)
 option(WITH_VK "Build Vk library" OFF)
 
+cmake_dependent_option(TARGET_HEADLESS "Build command-line utilities for use on a headless machines" OFF "WITH_GL" OFF)
 cmake_dependent_option(TARGET_GL "Build libraries with OpenGL interoperability" ON "WITH_GL" OFF)
 cmake_dependent_option(TARGET_VK "Build libraries with Vulkan interoperability" ON "WITH_VK" OFF)
 
@@ -117,12 +115,16 @@ cmake_dependent_option(TARGET_VK "Build libraries with Vulkan interoperability" 
 cmake_dependent_option(WITH_AL_INFO "Build magnum-al-info utility" OFF "WITH_AUDIO" OFF)
 
 # EGL context and windowless EGL application, available everywhere
-cmake_dependent_option(WITH_WINDOWLESSEGLAPPLICATION "Build WindowlessEglApplication library" OFF "NOT TARGET_GLES OR TARGET_DESKTOP_GLES OR NOT WITH_GL_INFO" ON)
+cmake_dependent_option(WITH_WINDOWLESSEGLAPPLICATION "Build WindowlessEglApplication library" OFF "NOT TARGET_GLES OR TARGET_DESKTOP_GLES OR NOT WITH_GL_INFO;NOT TARGET_HEADLESS" ON)
 option(WITH_EGLCONTEXT "Build EglContext library" OFF)
 
 # Android-specific application libraries
 if(CORRADE_TARGET_ANDROID)
     option(WITH_ANDROIDAPPLICATION "Build AndroidApplication library" OFF)
+
+# Emscripten-specific application libraries
+elseif(CORRADE_TARGET_EMSCRIPTEN)
+    option(WITH_EMSCRIPTENAPPLICATION "Build EmscriptenApplication library" OFF)
 
 # iOS-specific application libraries
 elseif(CORRADE_TARGET_IOS)
@@ -155,7 +157,6 @@ endif()
 # Platform-independent (almost) application libraries
 if(NOT CORRADE_TARGET_ANDROID)
     option(WITH_GLFWAPPLICATION "Build GlfwApplication library" OFF)
-    cmake_dependent_option(WITH_GLUTAPPLICATION "Build GlutApplication library" OFF "NOT TARGET_GLES" OFF)
     option(WITH_SDL2APPLICATION "Build Sdl2Application library" OFF)
 endif()
 
@@ -178,7 +179,7 @@ option(BUILD_STATIC "Build static libraries (default are shared)" OFF)
 option(BUILD_STATIC_PIC "Build static libraries and plugins with position-independent code" ON)
 option(BUILD_PLUGINS_STATIC "Build static plugins (default are dynamic)" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
-cmake_dependent_option(BUILD_GL_TESTS "Build unit tests for OpenGL code" OFF "BUILD_TESTS" OFF)
+cmake_dependent_option(BUILD_GL_TESTS "Build unit tests for OpenGL code" OFF "BUILD_TESTS;TARGET_GL" OFF)
 cmake_dependent_option(BUILD_AL_TESTS "Build unit tests for OpenAL code" ON "BUILD_TESTS;WITH_AUDIO" OFF)
 if(BUILD_TESTS)
     find_package(Corrade REQUIRED TestSuite)
@@ -215,13 +216,28 @@ endif()
 # Check dependencies
 if(WITH_GL)
     if(NOT TARGET_GLES OR TARGET_DESKTOP_GLES)
-        set(OpenGL_GL_PREFERENCE GLVND) # since CMake 3.11
+        # OpenGL library preference. Prefer to use GLVND, since that's the
+        # better approach nowadays, but allow the users to override it from
+        # outside in case it is broken for some reason (Nvidia drivers in
+        # Debian's testing (Buster) -- reported on 2019-04-09).
+        if(NOT CMAKE_VERSION VERSION_LESS 3.10 AND NOT OpenGL_GL_PREFERENCE)
+            set(OpenGL_GL_PREFERENCE GLVND)
+        endif()
         find_package(OpenGL REQUIRED)
     elseif(TARGET_GLES2)
         find_package(OpenGLES2 REQUIRED)
     else()
         find_package(OpenGLES3 REQUIRED)
     endif()
+else()
+    if(TARGET_GL)
+        message(FATAL_ERROR "WITH_GL is OFF but TARGET_GL is enabled. Hmm.")
+    endif()
+    # These are implicitly enabled for embedded platforms, disable them all for
+    # consistency
+    set(TARGET_GLES OFF)
+    set(TARGET_GLES2 OFF)
+    set(TARGET_DESKTOP_GLES OFF)
 endif()
 
 # Configuration variables (saved later to configure.h)
@@ -235,13 +251,13 @@ if(TARGET_GLES)
     else()
         set(MAGNUM_TARGET_GLES3 1)
     endif()
-endif()
-if(CORRADE_TARGET_EMSCRIPTEN)
-    set(TARGET_WEBGL 1)
-    set(MAGNUM_TARGET_WEBGL 1)
-endif()
-if(TARGET_DESKTOP_GLES)
-    set(MAGNUM_TARGET_DESKTOP_GLES 1)
+    if(CORRADE_TARGET_EMSCRIPTEN)
+        set(TARGET_WEBGL 1)
+        set(MAGNUM_TARGET_WEBGL 1)
+    endif()
+    if(TARGET_DESKTOP_GLES)
+        set(MAGNUM_TARGET_DESKTOP_GLES 1)
+    endif()
 endif()
 if(TARGET_HEADLESS)
     set(MAGNUM_TARGET_HEADLESS 1)
@@ -290,6 +306,14 @@ if(NOT BUILD_STATIC)
     set(SHARED_OR_STATIC SHARED)
 else()
     set(SHARED_OR_STATIC STATIC)
+endif()
+
+# If we're in a CMake subproject, find_package(Magnum) will be looking for
+# these when targeting Emscripten, so supply their in-source location
+if(CORRADE_TARGET_EMSCRIPTEN AND NOT PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(MAGNUM_EMSCRIPTENAPPLICATION_JS ${PROJECT_SOURCE_DIR}/src/Magnum/Platform/EmscriptenApplication.js CACHE INTERNAL "" FORCE)
+    set(MAGNUM_WINDOWLESSEMSCRIPTENAPPLICATION_JS ${PROJECT_SOURCE_DIR}/src/Magnum/Platform/WindowlessEmscriptenApplication.js CACHE INTERNAL "" FORCE)
+    set(MAGNUM_WEBAPPLICATION_CSS ${PROJECT_SOURCE_DIR}/src/Magnum/Platform/WebApplication.css CACHE INTERNAL "" FORCE)
 endif()
 
 # Installation paths
@@ -373,7 +397,7 @@ set(MAGNUM_PLUGINS_AUDIOIMPORTER_DEBUG_DIR ${MAGNUM_PLUGINS_DEBUG_DIR}/audioimpo
 set(MAGNUM_PLUGINS_AUDIOIMPORTER_RELEASE_DIR ${MAGNUM_PLUGINS_RELEASE_DIR}/audioimporters)
 
 # Library version
-set(MAGNUM_LIBRARY_VERSION 2.1)
+set(MAGNUM_LIBRARY_VERSION 2.2)
 set(MAGNUM_LIBRARY_SOVERSION 2)
 
 add_subdirectory(modules)

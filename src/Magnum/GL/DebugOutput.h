@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -369,6 +369,13 @@ class MAGNUM_GL_EXPORT DebugOutput {
          * OpenGL ES 3.2 is not supported and @gl_extension{KHR,debug} desktop or
          * ES extension (covered also by @gl_extension{ANDROID,extension_pack_es31a})
          * is not available, this function does nothing.
+         *
+         * @attention The function is not necessarily called from the same
+         *      thread as the one that caused the message to appear --- in
+         *      particular, you can't assume the @ref GL::Context will be
+         *      present in the callback context. It might work on some drivers,
+         *      but not on others.
+         *
          * @see @ref setDefaultCallback(),
          *      @ref Renderer::Feature::DebugOutputSynchronous,
          *      @fn_gl_keyword{DebugMessageCallback}
@@ -805,28 +812,12 @@ class MAGNUM_GL_EXPORT DebugGroup {
 /** @debugoperatorclassenum{DebugGroup,DebugGroup::Source} */
 MAGNUM_GL_EXPORT Debug& operator<<(Debug& debug, DebugGroup::Source value);
 
+/* Exposed for testing */
+namespace Implementation {
+    MAGNUM_GL_EXPORT void defaultDebugCallback(DebugOutput::Source source, DebugOutput::Type type, UnsignedInt id, DebugOutput::Severity severity, const std::string& string, std::ostream* output);
 }
 
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::DebugOutput
- * @deprecated Use @ref GL::DebugOutput instead.
- */
-typedef CORRADE_DEPRECATED("use GL::DebugOutput instead") Magnum::GL::DebugOutput DebugOutput;
-
-/** @brief @copybrief GL::DebugMessage
- * @deprecated Use @ref GL::DebugMessage instead.
- */
-typedef CORRADE_DEPRECATED("use GL::DebugMessage instead") Magnum::GL::DebugMessage DebugMessage;
-
-/** @brief @copybrief GL::DebugGroup
- * @deprecated Use @ref GL::DebugGroup instead.
- */
-typedef CORRADE_DEPRECATED("use GL::DebugGroup instead") Magnum::GL::DebugGroup DebugGroup;
-#endif
-
-}
+}}
 #else
 #error this header is not available in WebGL build
 #endif

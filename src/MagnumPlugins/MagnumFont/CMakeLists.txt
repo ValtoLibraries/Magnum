@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,12 @@
 #   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #   DEALINGS IN THE SOFTWARE.
 #
+
+if(NOT TARGET_GL)
+    # TODO: remove (and update all other docs) when we have better
+    # createGlyphCache() APIs
+    message(SEND_ERROR "MagnumFont is available only if TARGET_GL is enabled")
+endif()
 
 find_package(Corrade REQUIRED PluginManager)
 
@@ -53,12 +59,10 @@ install(FILES MagnumFont.h ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 # Automatic static plugin import
 if(BUILD_PLUGINS_STATIC)
     install(FILES importStaticPlugin.cpp DESTINATION ${MAGNUM_PLUGINS_INCLUDE_INSTALL_DIR}/MagnumFont)
-    if(NOT CMAKE_VERSION VERSION_LESS 3.1)
-        target_sources(MagnumFont INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/importStaticPlugin.cpp)
-    endif()
+    target_sources(MagnumFont INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/importStaticPlugin.cpp)
 endif()
 
-if(BUILD_GL_TESTS)
+if(BUILD_TESTS)
     add_subdirectory(Test)
 endif()
 

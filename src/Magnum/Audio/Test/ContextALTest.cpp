@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -29,7 +29,7 @@
 #include "Magnum/Audio/Extensions.h"
 #include "Magnum/Audio/Context.h"
 
-namespace Magnum { namespace Audio { namespace Test {
+namespace Magnum { namespace Audio { namespace Test { namespace {
 
 struct ContextALTest: TestSuite::Tester {
     explicit ContextALTest();
@@ -87,6 +87,6 @@ void ContextALTest::isExtensionEnabled() {
     CORRADE_VERIFY(Context::current().isExtensionSupported<Extensions::ALC::EXT::ENUMERATION>());
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Audio::Test::ContextALTest)

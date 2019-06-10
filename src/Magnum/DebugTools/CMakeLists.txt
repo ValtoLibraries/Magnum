@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,9 @@ set(MagnumDebugTools_GracefulAssert_SRCS )
 
 set(MagnumDebugTools_HEADERS
     DebugTools.h
-    Profiler.h)
+    Profiler.h
+
+    visibility.h)
 
 # Header files to display in project view of IDEs only
 set(MagnumDebugTools_PRIVATE_HEADERS )
@@ -38,12 +40,13 @@ set(MagnumDebugTools_PRIVATE_HEADERS )
 if(TARGET_GL)
     list(APPEND MagnumDebugTools_SRCS
         ResourceManager.cpp
+        Screenshot.cpp
         TextureImage.cpp)
 
     list(APPEND MagnumDebugTools_HEADERS
         ResourceManager.h
-        TextureImage.h
-        visibility.h)
+        Screenshot.h
+        TextureImage.h)
 
     if(MAGNUM_TARGET_GLES AND NOT MAGNUM_TARGET_GLES2)
         corrade_add_resource(MagnumDebugTools_RESOURCES resources.conf)
@@ -70,47 +73,11 @@ if(TARGET_GL)
         list(APPEND MagnumDebugTools_PRIVATE_HEADERS
             Implementation/ForceRendererTransformation.h)
     endif()
-
-    if(WITH_SHAPES)
-        if(NOT MAGNUM_BUILD_DEPRECATED)
-            message(FATAL_ERROR "Shapes are scheduled for removal and not available if BUILD_DEPRECATED is disabled. See the docs for alternatives.")
-        endif()
-
-        list(APPEND MagnumDebugTools_SRCS
-            ShapeRenderer.cpp
-
-            Implementation/AbstractBoxRenderer.cpp
-            Implementation/AbstractShapeRenderer.cpp
-            Implementation/AxisAlignedBoxRenderer.cpp
-            Implementation/BoxRenderer.cpp
-            Implementation/CapsuleRenderer.cpp
-            Implementation/CylinderRenderer.cpp
-            Implementation/LineSegmentRenderer.cpp
-            Implementation/PointRenderer.cpp
-            Implementation/SphereRenderer.cpp)
-
-        list(APPEND MagnumDebugTools_HEADERS
-            ShapeRenderer.h)
-
-        list(APPEND MagnumDebugTools_PRIVATE_HEADERS
-            Implementation/AbstractBoxRenderer.h
-            Implementation/AbstractShapeRenderer.h
-            Implementation/AxisAlignedBoxRenderer.h
-            Implementation/BoxRenderer.h
-            Implementation/CapsuleRenderer.h
-            Implementation/CapsuleRendererTransformation.h
-            Implementation/CylinderRenderer.h
-            Implementation/CylinderRendererTransformation.h
-            Implementation/LineSegmentRenderer.h
-            Implementation/LineSegmentRendererTransformation.h
-            Implementation/PointRenderer.h
-            Implementation/SphereRenderer.h)
-    endif()
 endif()
 
 # Build the TestSuite-related functionality only if it is present
 find_package(Corrade COMPONENTS TestSuite)
-if(Corrade_TestSuite_FOUND)
+if(Corrade_TestSuite_FOUND AND WITH_TRADE)
     list(APPEND MagnumDebugTools_GracefulAssert_SRCS
         CompareImage.cpp)
 
@@ -148,7 +115,7 @@ elseif(BUILD_STATIC_PIC)
     set_target_properties(MagnumDebugTools PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 target_link_libraries(MagnumDebugTools PUBLIC Magnum)
-if(Corrade_TestSuite_FOUND)
+if(Corrade_TestSuite_FOUND AND WITH_TRADE)
     target_link_libraries(MagnumDebugTools PUBLIC
         Corrade::TestSuite
         MagnumTrade)
@@ -156,15 +123,10 @@ endif()
 if(TARGET_GL)
     target_link_libraries(MagnumDebugTools PUBLIC MagnumGL)
     if(WITH_SCENEGRAPH)
-        target_link_libraries(MagnumDebugTools PUBLIC MagnumSceneGraph)
-    endif()
-    if(WITH_SHAPES)
-        target_link_libraries(MagnumDebugTools PUBLIC MagnumShapes)
-    endif()
-    if(WITH_SCENEGRAPH OR WITH_SHAPES)
         target_link_libraries(MagnumDebugTools PUBLIC
             MagnumMeshTools
             MagnumPrimitives
+            MagnumSceneGraph
             MagnumShaders)
     endif()
 endif()
@@ -189,7 +151,7 @@ if(BUILD_TESTS)
         set_target_properties(MagnumDebugToolsTestLib PROPERTIES POSITION_INDEPENDENT_CODE ON)
     endif()
     target_link_libraries(MagnumDebugToolsTestLib PUBLIC Magnum)
-    if(Corrade_TestSuite_FOUND)
+    if(Corrade_TestSuite_FOUND AND WITH_TRADE)
         target_link_libraries(MagnumDebugToolsTestLib PUBLIC
             Corrade::TestSuite
             MagnumTrade)
@@ -197,15 +159,10 @@ if(BUILD_TESTS)
     if(TARGET_GL)
         target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumGL)
         if(WITH_SCENEGRAPH)
-            target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumSceneGraph)
-        endif()
-        if(WITH_SHAPES)
-            target_link_libraries(MagnumDebugToolsTestLib PUBLIC MagnumShapes)
-        endif()
-        if(WITH_SCENEGRAPH OR WITH_SHAPES)
             target_link_libraries(MagnumDebugToolsTestLib PUBLIC
                 MagnumMeshTools
                 MagnumPrimitives
+                MagnumSceneGraph
                 MagnumShaders)
         endif()
     endif()

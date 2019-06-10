@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/String.h>
 
 #include "Magnum/Trade/ImageData.h"
@@ -46,24 +47,27 @@ auto AnyImageConverter::doFeatures() const -> Features {
 bool AnyImageConverter::doExportToFile(const ImageView2D& image, const std::string& filename) {
     CORRADE_INTERNAL_ASSERT(manager());
 
+    /** @todo lowercase only the extension, once Directory::split() is done */
+    const std::string normalized = Utility::String::lowercase(filename);
+
     /* Detect type from extension */
     std::string plugin;
-    if(Utility::String::endsWith(filename, ".bmp"))
+    if(Utility::String::endsWith(normalized, ".bmp"))
         plugin = "BmpImageConverter";
-    else if(Utility::String::endsWith(filename, ".exr"))
+    else if(Utility::String::endsWith(normalized, ".exr"))
         plugin = "OpenExrImageConverter";
-    else if(Utility::String::endsWith(filename, ".hdr"))
+    else if(Utility::String::endsWith(normalized, ".hdr"))
         plugin = "HdrImageConverter";
-    else if(Utility::String::endsWith(filename, ".jpg") ||
-            Utility::String::endsWith(filename, ".jpeg") ||
-            Utility::String::endsWith(filename, ".jpe"))
+    else if(Utility::String::endsWith(normalized, ".jpg") ||
+            Utility::String::endsWith(normalized, ".jpeg") ||
+            Utility::String::endsWith(normalized, ".jpe"))
         plugin = "JpegImageConverter";
-    else if(Utility::String::endsWith(filename, ".png"))
+    else if(Utility::String::endsWith(normalized, ".png"))
         plugin = "PngImageConverter";
-    else if(Utility::String::endsWith(filename, ".tga") ||
-            Utility::String::endsWith(filename, ".vda") ||
-            Utility::String::endsWith(filename, ".icb") ||
-            Utility::String::endsWith(filename, ".vst"))
+    else if(Utility::String::endsWith(normalized, ".tga") ||
+            Utility::String::endsWith(normalized, ".vda") ||
+            Utility::String::endsWith(normalized, ".icb") ||
+            Utility::String::endsWith(normalized, ".vst"))
         plugin = "TgaImageConverter";
     else {
         Error() << "Trade::AnyImageConverter::exportToFile(): cannot determine type of file" << filename;

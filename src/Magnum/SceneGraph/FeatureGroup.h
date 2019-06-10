@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,15 +43,24 @@ namespace Magnum { namespace SceneGraph {
 See @ref FeatureGroup.
 */
 template<UnsignedInt dimensions, class T> class AbstractFeatureGroup {
-    template<UnsignedInt, class, class> friend class FeatureGroup;
+    public:
+        /** @brief Object transformation underlying type */
+        typedef T Type;
 
-    explicit AbstractFeatureGroup();
-    virtual ~AbstractFeatureGroup();
+        enum: UnsignedInt {
+            Dimensions = dimensions /**< Dimension count */
+        };
 
-    void add(AbstractFeature<dimensions, T>& feature);
-    void remove(AbstractFeature<dimensions, T>& feature);
+    private:
+        template<UnsignedInt, class, class> friend class FeatureGroup;
 
-    std::vector<std::reference_wrapper<AbstractFeature<dimensions, T>>> _features;
+        explicit AbstractFeatureGroup();
+        virtual ~AbstractFeatureGroup();
+
+        void add(AbstractFeature<dimensions, T>& feature);
+        void remove(AbstractFeature<dimensions, T>& feature);
+
+        std::vector<std::reference_wrapper<AbstractFeature<dimensions, T>>> _features;
 };
 
 /**
@@ -95,7 +104,7 @@ template<UnsignedInt dimensions, class Feature, class T> class FeatureGroup: pub
         }
 
         /**
-         * @brief Add feature to the group
+         * @brief Add a feature to the group
          * @return Reference to self (for method chaining)
          *
          * If the features is part of another group, it is removed from it.
@@ -104,7 +113,7 @@ template<UnsignedInt dimensions, class Feature, class T> class FeatureGroup: pub
         FeatureGroup<dimensions, Feature, T>& add(Feature& feature);
 
         /**
-         * @brief Remove feature from the group
+         * @brief Remove a feature from the group
          * @return Reference to self (for method chaining)
          *
          * The feature must be part of the group.

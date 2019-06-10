@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,8 @@
 #   DEALINGS IN THE SOFTWARE.
 #
 
+set(ADDITIONAL_WEB_FILES "")
+
 if(WITH_ANDROIDAPPLICATION)
     add_library(PlatformAndroidApplicationTest SHARED AndroidApplicationTest.cpp)
     target_link_libraries(PlatformAndroidApplicationTest PRIVATE MagnumAndroidApplication)
@@ -32,16 +34,19 @@ if(WITH_ANDROIDAPPLICATION)
     endif()
 endif()
 
-if(WITH_GLFWAPPLICATION)
-    add_executable(PlatformGlfwApplicationTest GlfwApplicationTest.cpp)
-    target_link_libraries(PlatformGlfwApplicationTest PRIVATE MagnumGlfwApplication)
-    set_target_properties(PlatformGlfwApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
+if(WITH_EMSCRIPTENAPPLICATION)
+    add_executable(PlatformEmscriptenApplicationTest EmscriptenApplicationTest.cpp)
+    target_link_libraries(PlatformEmscriptenApplicationTest PRIVATE MagnumEmscriptenApplication MagnumGL)
+    set_target_properties(PlatformEmscriptenApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
+    # So we can spin up a webserver in the build dir for easy testing
+    list(APPEND ADDITIONAL_WEB_FILES EmscriptenApplicationTest.html)
 endif()
 
-if(WITH_GLUTAPPLICATION)
-    add_executable(PlatformGlutApplicationTest GlutApplicationTest.cpp)
-    target_link_libraries(PlatformGlutApplicationTest PRIVATE MagnumGlutApplication)
-    set_target_properties(PlatformGlutApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
+if(WITH_GLFWAPPLICATION)
+    add_executable(PlatformGlfwApplicationTest GlfwApplicationTest.cpp)
+    # HiDPi.manifest not needed, as GLFW sets that on its own
+    target_link_libraries(PlatformGlfwApplicationTest PRIVATE MagnumGlfwApplication)
+    set_target_properties(PlatformGlfwApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
 endif()
 
 if(WITH_GLXAPPLICATION)
@@ -52,15 +57,17 @@ endif()
 
 if(WITH_SDL2APPLICATION)
     add_executable(PlatformSdl2ApplicationTest Sdl2ApplicationTest.cpp)
+    if(CORRADE_TARGET_WINDOWS AND NOT CORRADE_TARGET_WINDOWS_RT)
+        if(MSVC)
+            target_sources(PlatformSdl2ApplicationTest PRIVATE WindowsHiDPI.manifest)
+        elseif(MINGW)
+            target_sources(PlatformSdl2ApplicationTest PRIVATE WindowsHiDPI.rc)
+        endif()
+    endif()
     target_link_libraries(PlatformSdl2ApplicationTest PRIVATE MagnumSdl2Application)
     set_target_properties(PlatformSdl2ApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
     if(CORRADE_TARGET_EMSCRIPTEN)
-        # So we can spin up a webserver in the build dir for easy testing
-        file(COPY
-            ../EmscriptenApplication.js
-            ../WebApplication.css
-            Sdl2ApplicationTest.html
-            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+        list(APPEND ADDITIONAL_WEB_FILES Sdl2ApplicationTest.html)
     elseif(CORRADE_TARGET_IOS OR CORRADE_TARGET_APPLE)
         # The plist is needed in order to mark the app as DPI-aware
         set_target_properties(PlatformSdl2ApplicationTest PROPERTIES
@@ -88,11 +95,9 @@ if(WITH_WINDOWLESSEGLAPPLICATION)
     set_target_properties(PlatformWindowlessEglApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
     if(CORRADE_TARGET_EMSCRIPTEN)
         # So we can spin up a webserver in the build dir for easy testing
-        file(COPY
+        list(APPEND ADDITIONAL_WEB_FILES
             ../WindowlessEmscriptenApplication.js
-            ../WebApplication.css
-            WindowlessEglApplicationTest.html
-            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+            WindowlessEglApplicationTest.html)
     endif()
 endif()
 
@@ -121,4 +126,14 @@ if(WITH_WINDOWLESSWINDOWSEGLAPPLICATION)
     add_executable(PlatformWindowlessWindowsEglApplicationTest WindowlessWindowsEglApplicationTest.cpp)
     target_link_libraries(PlatformWindowlessWindowsEglApplicationTest PRIVATE MagnumWindowlessWindowsEglApplication)
     set_target_properties(PlatformWindowlessWindowsEglApplicationTest PROPERTIES FOLDER "Magnum/Platform/Test")
+endif()
+
+if(WITH_EMSCRIPTENAPPLICATION OR (WITH_SDL2APPLICATION AND CORRADE_TARGET_EMSCRIPTEN))
+    list(APPEND ADDITIONAL_WEB_FILES ../EmscriptenApplication.js)
+endif()
+
+if(WITH_EMSCRIPTENAPPLICATION OR (WITH_SDL2APPLICATION AND CORRADE_TARGET_EMSCRIPTEN) OR WITH_WINDOWLESSWINDOWSEGLAPPLICATION)
+    # So we can spin up a webserver in the build dir for easy testing
+    file(COPY ../WebApplication.css ${ADDITIONAL_WEB_FILES}
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()

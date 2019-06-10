@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -115,7 +115,6 @@ the components. The optional components are:
 -   `Primitives` --- @ref Primitives library
 -   `SceneGraph` --- @ref SceneGraph library
 -   `Shaders` --- @ref Shaders library
--   `Shapes` @m_class{m-label m-danger} **deprecated** --- @ref Shapes library
 -   `Text` --- @ref Text library
 -   `TextureTools` --- @ref TextureTools library
 -   `Trade` --- @ref Trade library
@@ -123,9 +122,9 @@ the components. The optional components are:
 
 Platform namespace is split into more components:
 
+-   `AndroidApplication` --- @ref Platform::AndroidApplication "AndroidApplication"
+-   `EmscriptenApplication` --- @ref Platform::EmscriptenApplication "EmscriptenApplication"
 -   `GlfwApplication` --- @ref Platform::GlfwApplication "GlfwApplication"
--   `GlutApplication` @m_class{m-label m-danger} **deprecated** ---
-    @ref Platform::GlutApplication "GlutApplication"
 -   `GlxApplication` --- @ref Platform::GlxApplication "GlxApplication"
 -   `Sdl2Application` --- @ref Platform::Sdl2Application "Sdl2Application"
 -   `XEglApplication` --- @ref Platform::XEglApplication "XEglApplication"

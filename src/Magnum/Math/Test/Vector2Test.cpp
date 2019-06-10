@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
-#include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Math/Vector3.h" /* Vector3 used in Vector2Test::cross() */
 #include "Magnum/Math/StrictWeakOrdering.h"
@@ -50,7 +50,7 @@ template<> struct VectorConverter<2, float, Vec2> {
 
 }
 
-namespace Test {
+namespace Test { namespace {
 
 struct Vector2Test: Corrade::TestSuite::Tester {
     explicit Vector2Test();
@@ -74,7 +74,6 @@ struct Vector2Test: Corrade::TestSuite::Tester {
 
     void swizzleType();
     void debug();
-    void configuration();
 };
 
 typedef Math::Vector3<Int> Vector3i;
@@ -100,8 +99,7 @@ Vector2Test::Vector2Test() {
               &Vector2Test::strictWeakOrdering,
 
               &Vector2Test::swizzleType,
-              &Vector2Test::debug,
-              &Vector2Test::configuration});
+              &Vector2Test::debug});
 }
 
 void Vector2Test::construct() {
@@ -119,6 +117,9 @@ void Vector2Test::constructDefault() {
 
     CORRADE_VERIFY(std::is_nothrow_default_constructible<Vector2>::value);
     CORRADE_VERIFY((std::is_nothrow_constructible<Vector2, ZeroInitT>::value));
+
+    /* Implicit construction is not allowed */
+    CORRADE_VERIFY(!(std::is_convertible<ZeroInitT, Vector2>::value));
 }
 
 void Vector2Test::constructNoInit() {
@@ -259,17 +260,6 @@ void Vector2Test::debug() {
     CORRADE_COMPARE(o.str(), "Vector(0.5, 15)\n");
 }
 
-void Vector2Test::configuration() {
-    Corrade::Utility::Configuration c;
-
-    Vector2 vec(3.125f, 9.0f);
-    std::string value("3.125 9");
-
-    c.setValue("vector", vec);
-    CORRADE_COMPARE(c.value("vector"), value);
-    CORRADE_COMPARE(c.value<Vector2>("vector"), vec);
-}
-
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Math::Test::Vector2Test)

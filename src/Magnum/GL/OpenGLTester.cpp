@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,8 @@
 */
 
 #include "OpenGLTester.h"
+
+#include <string>
 
 #include "Magnum/GL/Context.h"
 #include "Magnum/GL/Extensions.h"
@@ -50,7 +52,8 @@ OpenGLTester::OpenGLTester(): TestSuite::Tester{TestSuite::Tester::TesterConfigu
         DebugOutput::setDefaultCallback();
 
         /* Disable "Buffer detailed info" message on NV (too spammy) */
-        DebugOutput::setEnabled(DebugOutput::Source::Api, DebugOutput::Type::Other, {131185}, false);
+        if(Context::current().detectedDriver() & Context::DetectedDriver::NVidia)
+            DebugOutput::setEnabled(DebugOutput::Source::Api, DebugOutput::Type::Other, {131185}, false);
     }
     #endif
 }

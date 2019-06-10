@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,13 +25,13 @@
 
 #include "Magnum/Platform/WindowlessWglApplication.h"
 
-namespace Magnum { namespace Platform { namespace Test {
+namespace Magnum { namespace Platform { namespace Test { namespace {
 
 struct WindowlessWglApplicationTest: Platform::WindowlessApplication {
     explicit WindowlessWglApplicationTest(const Arguments& arguments): Platform::WindowlessApplication{arguments} {}
     int exec() override { return 0; }
 };
 
-}}}
+}}}}
 
 MAGNUM_WINDOWLESSAPPLICATION_MAIN(Magnum::Platform::Test::WindowlessWglApplicationTest)

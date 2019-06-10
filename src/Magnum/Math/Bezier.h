@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2016 Ashwin Ravichandran <ashwinravichandran24@gmail.com>
 
@@ -29,8 +29,6 @@
 /** @file
  * @brief Class @ref Magnum::Math::Bezier, alias @ref Magnum::Math::QuadraticBezier, @ref Magnum::Math::QuadraticBezier2D, @ref Magnum::Math::QuadraticBezier3D, @ref Magnum::Math::CubicBezier, @ref Magnum::Math::CubicBezier2D, @ref Magnum::Math::CubicBezier3D
  */
-
-#include <array>
 
 #include "Magnum/Math/Vector.h"
 
@@ -102,22 +100,19 @@ template<UnsignedInt order, UnsignedInt dimensions, class T> class Bezier {
         /**
          * @brief Default constructor
          *
-         * Construct the curve with all control points being zero vectors.
+         * Equivalent to @ref Bezier(ZeroInitT).
          */
-        constexpr /*implicit*/ Bezier(ZeroInitT = ZeroInit) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Bezier<order, dimensions, T>{typename Implementation::GenerateSequence<order + 1>::Type{}, ZeroInit}
-            #endif
-            {}
+        constexpr /*implicit*/ Bezier() noexcept: Bezier<order, dimensions, T>{typename Implementation::GenerateSequence<order + 1>::Type{}, ZeroInit} {}
+
+        /**
+         * @brief Construct a zero curve
+         *
+         * All control points are zero vectors.
+         */
+        constexpr explicit Bezier(ZeroInitT) noexcept: Bezier<order, dimensions, T>{typename Implementation::GenerateSequence<order + 1>::Type{}, ZeroInit} {}
 
         /** @brief Construct Bézier without initializing the contents */
-        explicit Bezier(NoInitT) noexcept
-            /** @todoc remove workaround when doxygen is sane */
-            #ifndef DOXYGEN_GENERATING_OUTPUT
-            : Bezier<order, dimensions, T>{typename Implementation::GenerateSequence<order + 1>::Type{}, NoInit}
-            #endif
-            {}
+        explicit Bezier(NoInitT) noexcept: Bezier<order, dimensions, T>{typename Implementation::GenerateSequence<order + 1>::Type{}, NoInit} {}
 
         /** @brief Construct Bézier curve with given array of control points */
         template<typename... U> constexpr /*implicit*/ Bezier(const Vector<dimensions, T>& first, U... next) noexcept: _data{first, next...} {
@@ -152,7 +147,7 @@ template<UnsignedInt order, UnsignedInt dimensions, class T> class Bezier {
         /** @brief Equality comparison */
         bool operator==(const Bezier<order, dimensions, T>& other) const {
             for(std::size_t i = 0; i != order + 1; ++i)
-                if((*this)[i] != other[i]) return false;
+                if(_data[i] != other._data[i]) return false;
             return true;
         }
 
@@ -178,7 +173,9 @@ template<UnsignedInt order, UnsignedInt dimensions, class T> class Bezier {
          * @see @ref subdivide()
          */
         Vector<dimensions, T> value(Float t) const {
-            return calculateIntermediatePoints(t)[0][order];
+            Bezier<order, dimensions, T> iPoints[order + 1];
+            calculateIntermediatePoints(iPoints, t);
+            return iPoints[0][order];
         }
 
         /**
@@ -189,7 +186,8 @@ template<UnsignedInt order, UnsignedInt dimensions, class T> class Bezier {
          * @see @ref value()
          */
         std::pair<Bezier<order, dimensions, T>, Bezier<order, dimensions, T>> subdivide(Float t) const {
-            const auto iPoints = calculateIntermediatePoints(t);
+            Bezier<order, dimensions, T> iPoints[order + 1];
+            calculateIntermediatePoints(iPoints, t);
             Bezier<order, dimensions, T> left, right;
             for(std::size_t i = 0; i <= order; ++i)
                 left[i] = iPoints[0][i];
@@ -207,8 +205,7 @@ template<UnsignedInt order, UnsignedInt dimensions, class T> class Bezier {
         template<class U, std::size_t ...sequence> constexpr explicit Bezier(Implementation::Sequence<sequence...>, U): _data{Vector<dimensions, T>((static_cast<void>(sequence), U{typename U::Init{}}))...} {}
 
         /* Calculates and returns all intermediate points generated when using De Casteljau's algorithm */
-        std::array<Bezier<order, dimensions, T>, order + 1> calculateIntermediatePoints(Float t) const {
-            std::array<Bezier<order, dimensions, T>, order + 1> iPoints;
+        void calculateIntermediatePoints(Bezier<order, dimensions, T>(&iPoints)[order + 1], Float t) const {
             for(std::size_t i = 0; i <= order; ++i) {
                 iPoints[i][0] = _data[i];
             }
@@ -217,7 +214,6 @@ template<UnsignedInt order, UnsignedInt dimensions, class T> class Bezier {
                     iPoints[i][r] = (1 - t)*iPoints[i][r - 1] + t*iPoints[i + 1][r - 1];
                 }
             }
-            return iPoints;
         }
 
         Vector<dimensions, T> _data[order + 1];
@@ -293,6 +289,7 @@ Convenience alternative to @cpp CubicBezier<3, T> @ce. See @ref CubicBezier and
 template<class T> using CubicBezier3D = CubicBezier<3, T>;
 #endif
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{Bezier} */
 template<UnsignedInt order, UnsignedInt dimensions, class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Bezier<order, dimensions, T>& value) {
     debug << "Bezier(" << Corrade::Utility::Debug::nospace;
@@ -316,6 +313,7 @@ extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utili
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Bezier<3, 2, Double>&);
 extern template MAGNUM_EXPORT Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug&, const Bezier<3, 3, Double>&);
 #endif
+#endif
 
 namespace Implementation {
 
@@ -337,60 +335,4 @@ template<UnsignedInt order, UnsignedInt dimensions, class T> struct StrictWeakOr
 
 }}
 
-namespace Corrade { namespace Utility {
-
-/** @configurationvalue{Magnum::Math::Bezier} */
-template<Magnum::UnsignedInt order, Magnum::UnsignedInt dimensions, class T> struct ConfigurationValue<Magnum::Math::Bezier<order, dimensions, T>> {
-    ConfigurationValue() = delete;
-
-    /** @brief Writes elements separated with spaces */
-    static std::string toString(const Magnum::Math::Bezier<order, dimensions, T>& value, ConfigurationValueFlags flags) {
-        std::string output;
-
-        for(std::size_t o = 0; o != order + 1; ++o) {
-            for(std::size_t i = 0; i != dimensions; ++i) {
-                if(!output.empty()) output += ' ';
-                output += ConfigurationValue<T>::toString(value[o][i], flags);
-            }
-        }
-
-        return output;
-    }
-
-    /** @brief Reads elements separated with whitespace */
-    static Magnum::Math::Bezier<order, dimensions, T> fromString(const std::string& stringValue, ConfigurationValueFlags flags) {
-        Magnum::Math::Bezier<order, dimensions, T> result;
-
-        std::size_t oldpos = 0, pos = std::string::npos, i = 0;
-        do {
-            pos = stringValue.find(' ', oldpos);
-            std::string part = stringValue.substr(oldpos, pos-oldpos);
-
-            if(!part.empty()) {
-                result[i/dimensions][i%dimensions] = ConfigurationValue<T>::fromString(part, flags);
-                ++i;
-            }
-
-            oldpos = pos+1;
-        } while(pos != std::string::npos);
-
-        return result;
-    }
-};
-
-/* Explicit instantiation for commonly used types */
-#if !defined(DOXYGEN_GENERATING_OUTPUT) && !defined(__MINGW32__)
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<2, 2, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<2, 3, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<3, 2, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<3, 3, Magnum::Float>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<2, 2, Magnum::Double>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<2, 3, Magnum::Double>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<3, 2, Magnum::Double>>;
-extern template struct MAGNUM_EXPORT ConfigurationValue<Magnum::Math::Bezier<3, 3, Magnum::Double>>;
 #endif
-
-}}
-
-#endif
-

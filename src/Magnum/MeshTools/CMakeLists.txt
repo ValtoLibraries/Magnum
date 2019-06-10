@@ -1,7 +1,7 @@
 #
 #   This file is part of Magnum.
 #
-#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+#   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,14 +32,14 @@ set(MagnumMeshTools_GracefulAssert_SRCS
     CombineIndexedArrays.cpp
     CompressIndices.cpp
     FlipNormals.cpp
-    GenerateFlatNormals.cpp)
+    GenerateNormals.cpp)
 
 set(MagnumMeshTools_HEADERS
     CombineIndexedArrays.h
     CompressIndices.h
     Duplicate.h
     FlipNormals.h
-    GenerateFlatNormals.h
+    GenerateNormals.h
     Interleave.h
     RemoveDuplicates.h
     Subdivide.h
@@ -47,6 +47,10 @@ set(MagnumMeshTools_HEADERS
     Transform.h
 
     visibility.h)
+
+if(BUILD_DEPRECATED)
+    list(APPEND MagnumMeshTools_HEADERS GenerateFlatNormals.h)
+endif()
 
 if(TARGET_GL)
     list(APPEND MagnumMeshTools_SRCS

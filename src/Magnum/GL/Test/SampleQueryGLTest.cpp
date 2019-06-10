@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,7 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+#include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Resource.h>
 
@@ -38,7 +39,7 @@
 #include "Magnum/GL/SampleQuery.h"
 #include "Magnum/GL/Shader.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct SampleQueryGLTest: OpenGLTester {
     explicit SampleQueryGLTest();
@@ -89,13 +90,11 @@ void SampleQueryGLTest::wrap() {
     #endif
 }
 
-namespace {
-    struct MyShader: public AbstractShaderProgram {
-        typedef Attribute<0, Vector2> Position;
+struct MyShader: public AbstractShaderProgram {
+    typedef Attribute<0, Vector2> Position;
 
-        explicit MyShader();
-    };
-}
+    explicit MyShader();
+};
 
 #ifndef DOXYGEN_GENERATING_OUTPUT
 MyShader::MyShader() {
@@ -268,6 +267,6 @@ void SampleQueryGLTest::conditionalRender() {
 }
 #endif
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::SampleQueryGLTest)

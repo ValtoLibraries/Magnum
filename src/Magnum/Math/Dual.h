@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,8 +29,11 @@
  * @brief Class @ref Magnum::Math::Dual
  */
 
-#include <cmath>
+#ifndef CORRADE_NO_DEBUG
 #include <Corrade/Utility/Debug.h>
+#endif
+#include <Corrade/Utility/StlMath.h>
+#include <Corrade/Utility/TypeTraits.h>
 
 #include "Magnum/Math/Angle.h"
 #include "Magnum/Math/Tags.h"
@@ -66,11 +69,11 @@ template<class T> class Dual {
 
         /** @brief Construct zero-initialized dual number */
         #ifdef DOXYGEN_GENERATING_OUTPUT
-        constexpr /*implicit*/ Dual(ZeroInitT) noexcept;
+        constexpr explicit Dual(ZeroInitT) noexcept;
         #else
         /* MSVC 2015 can't handle {} instead of ::value */
-        template<class U = T, class = typename std::enable_if<std::is_pod<U>::value>::type> constexpr /*implicit*/ Dual(ZeroInitT) noexcept: _real{}, _dual{} {}
-        template<class U = T, class V = T, class = typename std::enable_if<std::is_constructible<U, ZeroInitT>::value>::type> constexpr /*implicit*/ Dual(ZeroInitT) noexcept: _real{ZeroInit}, _dual{ZeroInit} {}
+        template<class U = T, class = typename std::enable_if<std::is_pod<U>::value>::type> constexpr explicit Dual(ZeroInitT) noexcept: _real{}, _dual{} {}
+        template<class U = T, class V = T, class = typename std::enable_if<std::is_constructible<U, ZeroInitT>::value>::type> constexpr explicit Dual(ZeroInitT) noexcept: _real{ZeroInit}, _dual{ZeroInit} {}
         #endif
 
         /** @brief Construct without initializing the contents */
@@ -104,11 +107,7 @@ template<class T> class Dual {
          * Performs only default casting on the values, no rounding or anything
          * else. Example usage:
          *
-         * @code{.cpp}
-         * Dual<Float> floatingPoint(1.3f, 2.7f);
-         * Dual<Byte> integral(floatingPoint);
-         * // integral == {1, 2}
-         * @endcode
+         * @snippet MagnumMath.cpp Dual-conversion
          */
         template<class U> constexpr explicit Dual(const Dual<U>& other) noexcept: _real{T(other._real)}, _dual{T(other._dual)} {}
 
@@ -349,12 +348,14 @@ template<class T, class U, class V = typename std::enable_if<!Implementation::Is
     }
 #endif
 
+#ifndef CORRADE_NO_DEBUG
 /** @debugoperator{Dual} */
 template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& debug, const Dual<T>& value) {
     return debug << "Dual(" << Corrade::Utility::Debug::nospace
         << value.real() << Corrade::Utility::Debug::nospace << ","
         << value.dual() << Corrade::Utility::Debug::nospace << ")";
 }
+#endif
 
 /** @relatesalso Dual
 @brief Square root of dual number
@@ -362,7 +363,7 @@ template<class T> Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& d
 @f[
     \sqrt{\hat a} = \sqrt{a_0} + \epsilon \frac{a_\epsilon}{2 \sqrt{a_0}}
 @f]
-@see @ref sqrt(const T&)
+@see @ref sqrt(T)
 */
 template<class T> Dual<T> sqrt(const Dual<T>& dual) {
     T sqrt0 = std::sqrt(dual.real());

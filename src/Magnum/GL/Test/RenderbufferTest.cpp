@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 
 #include "Magnum/GL/Renderbuffer.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct RenderbufferTest: TestSuite::Tester {
     explicit RenderbufferTest();
@@ -55,6 +55,6 @@ void RenderbufferTest::constructNoCreate() {
     CORRADE_VERIFY(true);
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::RenderbufferTest)

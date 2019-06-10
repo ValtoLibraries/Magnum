@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,7 +43,7 @@ layout(location = POSITION_ATTRIBUTE_LOCATION)
 in highp vec4 position;
 
 #ifdef EXPLICIT_ATTRIB_LOCATION
-layout(location = 3)
+layout(location = COLOR_ATTRIBUTE_LOCATION)
 #endif
 in lowp vec4 color;
 

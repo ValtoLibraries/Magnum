@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 #include "Renderer.h"
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 
 #include "Magnum/Mesh.h"
 #include "Magnum/GL/Context.h"
@@ -34,6 +35,7 @@
 #include "Magnum/Math/Functions.h"
 #include "Magnum/Shaders/AbstractVector.h"
 #include "Magnum/Text/AbstractFont.h"
+#include "Magnum/Text/GlyphCache.h"
 
 namespace Magnum { namespace Text {
 
@@ -95,7 +97,7 @@ std::tuple<std::vector<Vertex>, Range2D> renderVerticesInternal(AbstractFont& fo
         line.assign(text, prevPos, pos-prevPos);
 
         /* Layout the line */
-        const auto layouter = font.layout(cache, size, line);
+        Containers::Pointer<AbstractLayouter> layouter = font.layout(cache, size, line);
 
         /* Verify that we don't reallocate anything. The only problem might
            arise when the layouter decides to compose one character from more

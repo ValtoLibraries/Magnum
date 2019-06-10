@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,10 +25,11 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/GL/DebugOutput.h"
 
-namespace Magnum { namespace GL { namespace Test {
+namespace Magnum { namespace GL { namespace Test { namespace {
 
 struct DebugOutputTest: TestSuite::Tester {
     explicit DebugOutputTest();
@@ -90,6 +91,6 @@ void DebugOutputTest::debugGroupSource() {
     CORRADE_COMPARE(o.str(), "GL::DebugGroup::Source::ThirdParty GL::DebugGroup::Source(0xdead)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::GL::Test::DebugOutputTest)

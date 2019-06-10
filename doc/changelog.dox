@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,21 +36,501 @@ See also:
 -   @subpage changelog-extras "Extras changelog"
 -   @subpage changelog-examples "Examples changelog"
 
-@section changelog-latest Changes since 2018.10
-
-@subsection changelog-latest-dependencies Dependency changes
-
--   Minimal supported GCC version is now 4.8.1, GCC 4.7 is not supported
-    anymore. Minimal Clang version is now 3.3, since that's the first version
-    with a complete C++11 support.
--   Minimal supported CMake version is now 3.1. Older versions are not
-    supported anymore and all workarounds for them were removed. Download a
-    prebuilt release of a newer version if you need to use Corrade on older
-    systems (such as Ubuntu 14.04 or Debian 8).
+@section changelog-latest Changes since 2019.01
 
 @subsection changelog-latest-new New features
 
-@subsubsection changelog-latest-new-animation Animation library
+-   New @ref Image::pixels(), @ref ImageView::pixels() and
+    @ref Trade::ImageData::pixels() accessors for convenient direct access to
+    pixel data of any image
+
+@subsubsection changelog-latest-new-audio Audio library
+
+-   Ability to (un)queue buffers in @ref Audio::Source (see
+    [mosra/magnum#338](https://github.com/mosra/magnum/pull/338))
+-   Added getters for basic @ref Audio::Buffer properties (see
+    [mosra/magnum#342](https://github.com/mosra/magnum/pull/342))
+-   Implemented support for @al_extension{SOFT,loop_points} in
+    @ref Audio::Buffer (see [mosra/magnum#342](https://github.com/mosra/magnum/pull/342))
+
+@subsubsection changelog-latest-new-debugtools DebugTools library
+
+-   New @ref DebugTools::screenshot() function for convenient saving of
+    screenshots
+
+@subsubsection changelog-latest-new-gl GL library
+
+-   New @ref GL::AbstractFramebuffer::implementationColorReadFormat() and
+    @ref GL::AbstractFramebuffer::implementationColorReadType() queries for
+    more robust checks when doing framebuffer readbacks; together with three
+    new workarounds @cpp "nv-implementation-color-read-format-dsa-broken" @ce,
+    @cpp "intel-windows-implementation-color-read-format-completely-broken" @ce
+    and @cpp "mesa-implementation-color-read-format-dsa-explicit-binding" @ce,
+    because it's 2019 and GL drivers are *still* awful. See
+    @ref opengl-workarounds for more information.
+-   New @cpp "swiftshader-no-es2-draw-instanced-entrypoints" @ce and
+    @cpp "swiftshader-no-es2-oes-texture-3d-entrypoints" @ce workarounds
+    disabling @gl_extension{ANGLE,instanced_arrays} and
+    @gl_extension{OES,texture_3D} extensions on SwiftShader due to missing
+    suffixed entry points. See @ref opengl-workarounds for more information.
+-   New @cpp "swiftshader-broken-xfb-buffer-binding-target" @ce workaround
+    that's fixing misbehaving buffers when using
+    @ref GL::Buffer::TargetHint::TransformFeedback. See @ref opengl-workarounds
+    for more information.
+-   New pseudo-extension `GL_MAGNUM_shader_vertex_id` denoting support of the
+    @glsl gl_VertexID @ce shader builtin. Present on all GL 3.0+, GLES 3.0+ and
+    WebGL 2 contexts, but disabled for SwiftShader as its support is broken
+    (see the @cpp "swiftshader-broken-shader-vertex-id" @ce workaround in
+    @ref opengl-workarounds for more information). This pseudo-extension can be
+    also explicitly disabled using the usual `--magnum-disable-extensions`
+    @ref GL-Context-command-line "command-line option" for testing purposes.
+-   An assorted collection of workarounds for Intel Windows drivers "fixing"
+    various issues related to @gl_extension{ARB,direct_state_access} by using a
+    non-DSA code path in the affected cases --- see
+    @ref opengl-workarounds for more information:
+    -   @cpp "intel-windows-buggy-dsa-bufferdata-for-index-buffers" @ce
+        fixing a nasty hard-to-reproduce synchronization bug when
+        @ref GL::Buffer::setData() is followed by
+        @ref GL::Mesh::setIndexBuffer()
+    -   @cpp "intel-windows-broken-dsa-for-cubemaps" @ce fixing everything
+        about @ref GL::CubeMapTexture (see [mosra/magnum-examples#55](https://github.com/mosra/magnum-examples/issues/55))
+    -   @cpp "intel-windows-half-baked-dsa-texture-bind" @ce fixing texture
+        binding inconsistencies (affected [mosra/magnum-examples#55](https://github.com/mosra/magnum-examples/issues/55)
+        as well)
+    -   @cpp "intel-windows-broken-dsa-layered-cubemap-array-framebuffer-attachment" @ce
+        fixing @ref GL::Framebuffer::attachLayeredTexture() with
+        @ref GL::CubeMapTextureArray
+    -   @cpp "intel-windows-broken-dsa-framebuffer-clear" @ce
+        fixing @ref GL::Framebuffer::clearColor()
+    -   @cpp "intel-windows-broken-dsa-indexed-queries" @ce fixing
+        @ref GL::PrimitiveQuery::begin(UnsignedInt)
+    -   @cpp "intel-windows-broken-dsa-integer-vertex-attributes" @ce fixing
+        @ref GL::Mesh::addVertexBuffer() with @ref Magnum::Short "Short"
+        attributes
+-   New @cpp "arm-mali-timer-queries-oom-in-shell" @ce workaround for
+    @ref GL::Context::DetectedDriver::ArmMali "ARM Mali" drivers on Android
+    disabling the @gl_extension{EXT,disjoint_timer_query} extension in Android
+    shell (as opposed to an APK) because using it causes the
+    @ref GL::Renderer::Error::OutOfMemory error. See @ref opengl-workarounds
+    for more information.
+-   New `--magnum-gpu-validation` @ref GL-Context-command-line "command-line option"
+    and a corresponding environment variable to conveniently enable
+    @gl_extension{KHR,debug} debug output
+-   Detection of SwiftShader and ARM Mali drivers with
+    @ref GL::Context::DetectedDriver::SwiftShader and
+    @ref GL::Context::DetectedDriver::ArmMali
+-   It's now possible to pass @ref std::initializer_list to
+    @ref GL::Buffer::setData() / @ref GL::Buffer::setSubData() for a succint
+    upload of basic types
+
+@subsubsection changelog-latest-new-math Math library
+
+-   @ref Math::Frustum::begin() / @ref Math::Frustum::end() accessors for
+    easy range-for access to @ref Math::Frustum planes
+-   @ref Color3ub and @ref Color4ub can be printed with
+    @ref Corrade::Utility::Debug as actual colors using the
+    @ref Corrade::Utility::Debug::color modifier
+-   Added convenience @ref BoolVector2, @ref BoolVector3 and @ref BoolVector4
+    typedefs to the root namespace
+-   New @ref Math::IsScalar, @ref Math::IsVector, @ref Math::IsIntegral,
+    @ref Math::IsFloatingPoint and @ref Math::IsUnitless type traits and a
+    @ref Math::UnderlyingTypeOf utility
+-   Added batch versions of @ref Math::isInf() and @ref Math::isNan()
+
+@subsubsection changelog-latest-new-meshtools MeshTools library
+
+-   @ref MeshTools::duplicateInto() alternative to @ref MeshTools::duplicate()
+    that writes the output to an existing location
+-   @ref MeshTools::generateFlatNormalsInto() alternative to
+    @ref MeshTools::generateFlatNormals() that writes the output to an existing
+    location
+-   @ref MeshTools::generateSmoothNormals() for generating weighted smooth
+    normals of indexed meshes (see [mosra/magnum#229](https://github.com/mosra/magnum/pull/229))
+-   @ref MeshTools::compile(const Trade::MeshData3D&, CompileFlags) now accepts
+    optional flags to control normal generation
+
+@subsubsection changelog-latest-new-platform Platform libraries
+
+-   Added @ref Platform::EmscriptenApplication, implementing a lightweight and
+    more flexible alternative to @ref Platform::Sdl2Application for Emscripten.
+    This is now the recommended application to use for WebGL builds. See
+    [mosra/magnum#300](https://github.com/mosra/magnum/pull/300).
+-   @ref Platform::Sdl2Application and @ref Platform::GlfwApplication are now
+    DPI-aware on Windows as well. See their documentation,
+    @ref platforms-windows-hidpi and [mosra/magnum#243](https://github.com/mosra/magnum/issues/243)
+    for more information.
+-   Added @ref Platform::Sdl2Application::glContext() to access the underlying
+    `SDL_GLContext` (see [mosra/magnum#325](https://github.com/mosra/magnum/pull/325))
+-   Added @ref Platform::Sdl2Application::setMinWindowSize() and
+    @ref Platform::Sdl2Application::setMinWindowSize() + equivalent APIs for
+    @ref Platform::GlfwApplication (see [mosra/magnum#335](https://github.com/mosra/magnum/pull/335))
+-   New [base-wxwidgets](https://github.com/mosra/magnum-bootstrap/tree/base-wxwidgets)
+    bootstrap project for using Magnum together with wxWidgets (see
+    [mosra/magnum-bootstrap#19](https://github.com/mosra/magnum-bootstrap/pull/19))
+
+@subsubsection changelog-latest-new-scenegraph SceneGraph library
+
+-   Added @ref SceneGraph::AbstractObject::Type /
+    @ref SceneGraph::AbstractFeature::Type /
+    @ref SceneGraph::AbstractFeatureGroup::Type typedefs and
+    @ref SceneGraph::AbstractObject::Dimensions /
+    @ref SceneGraph::AbstractFeature::Dimensions /
+    @ref SceneGraph::AbstractFeatureGroup::Dimensions constants for querying
+    underlying type and dimension template parameters
+
+@subsubsection changelog-latest-new-shaders Shaders library
+
+-   Normal texture support in @ref Shaders::Phong
+-   Added @ref Shaders::Generic3D::Tangent generic vertex attribute definition
+
+@subsubsection changelog-latest-new-text Text library
+
+-   A new @ref Text::AbstractGlyphCache base now makes @ref Text::AbstractFont
+    and @ref Text::AbstractFontConverter independent on the graphics API used,
+    meaning the @ref Text library now has just an optional dependency on
+    @ref GL. The @ref Text::Renderer, @ref Text::GlyphCache and
+    @ref Text::DistanceFieldGlyphCache classes are now built only if
+    `TARGET_GL` is enabled (done by default).
+-   New @ref Text::AbstractFont::setFileCallback() to allow opening multi-file
+    fonts with an API similar to @ref Trade::AbstractImporter
+
+@subsection changelog-latest-changes Changes and improvements
+
+-   The @ref ResourceManager class now accepts also
+    @ref Corrade::Containers::Pointer instances in addition to raw pointers
+-   The @ref AbstractResourceLoader::set() function now accepts also
+    @cpp nullptr @ce for explicitly setting @ref ResourceDataState::Loading or
+    @ref ResourceDataState::NotFound resources
+-   Added comparison operators to @ref Resource (see
+    [mosra/magnum#346](https://github.com/mosra/magnum/pull/346))
+
+@subsubsection changelog-latest-changes-animation Animation library
+
+-   Default extrapolation of @ref Animation::TrackView was changed from
+    @ref Animation::Extrapolation::Extrapolated to
+    @ref Animation::Extrapolation::Constant to be consistent with
+    @ref Animation::Track
+
+@subsubsection changelog-latest-changes-audio Audio library
+
+-   The @ref Audio::AnyImporter "AnyAudioImporter" plugin now correctly
+    recognizes also uppercase file extensions (see
+    [mosra/magnum#312](https://github.com/mosra/magnum/pull/312))
+
+@subsubsection changelog-latest-changes-debugtools DebugTools library
+
+-   @ref DebugTools::CompareImage, @ref DebugTools::CompareImageToFile and
+    other variants are now usable directly through @ref CORRADE_COMPARE_AS(),
+    no need to pass an explicit instance to @ref CORRADE_COMPARE_WITH() when
+    just the default parameters are needed
+-   @ref DebugTools::textureSubImage() for float textures was updated to work
+    with SwiftShader (which has broken @glsl gl_VertexID @ce)
+
+@subsubsection changelog-latest-changes-gl GL library
+
+-   Fully dropped support for @gl_extension{EXT,direct_state_access}. All
+    contemporary drivers supporting @gl_extension{EXT,direct_state_access}
+    support the (newer and better designed) @gl_extension{ARB,direct_state_access},
+    while drivers that don't support the ARB version don't support the EXT
+    flavor either. See also [mosra/magnum#81](https://github.com/mosra/magnum/issues/81).
+-   Reworked @ref GL::Mesh internals to make use of
+    @gl_extension{ARB,direct_state_access} instead of being the last code path
+    stuck on @gl_extension{EXT,direct_state_access}
+-   @ref GL::DebugOutput::setCallback() no longer assumes the debug message
+    callback is called from the same thread as the one with the corresponding
+    GL context (which is the case on Mesa AMD drivers). The documentation was
+    updated to reflect that as well.
+-   @ref GL::AbstractTexture::unbindImage() "GL::*Texture::unbindImage()" now
+    uses a RGBA format instead of a single-channel format because
+    @ref GL::Context::DetectedDriver::ArmMali "ARM Mali" drivers complain about
+    R8 not being renderable (even though the format shouldn't matter when
+    unbinding a texture)
+
+@subsubsection changelog-latest-changes-math Math library
+
+-   @ref Math::BoolVector now implements component-wise @cpp && @ce,
+    @cpp || @ce and @cpp ! @ce for better consistency with boolean operations
+    done on scalar types
+-   Construction using @ref Math::ZeroInit and @ref Math::IdentityInit is
+    now explicit, to be consistent with @ref Math::NoInit construction and
+    avoid ambiguous cases
+-   All scalar/vector functions in the @ref Math namespace now work also with
+    special types such as @ref Deg or @ref Rad --- the only exception is
+    power functions such as @ref Math::sqrt() or @ref Math::log(), as the
+    resulting unit can't be represented. Those accept only unitless types.
+-   All batch functions in @ref Magnum/Math/FunctionsBatch.h now accept
+    @ref Corrade::Containers::StridedArrayView instead of a dense array view to
+    make them usable in more contexts
+-   @ref Math::Vector::min(), @ref Math::Vector::max(),
+    @ref Math::Vector::minmax() and batch
+    @ref Math::min(Containers::StridedArrayView1D<const T>),
+    @ref Math::max(Containers::StridedArrayView1D<const T>) and
+    @ref Math::minmax(Containers::StridedArrayView1D<const T>) functions now
+    ignore NaNs in the data, if possible. Use
+    @ref Math::isNan(const Vector<size, T>&) or the batch
+    @ref Math::isNan(Containers::StridedArrayView1D<const T>) to detect
+    presence of NaN values if needed.
+-   Changed the way @ref Math::operator<<(Corrade::Utility::Debug&, const BoolVector<size>&)
+    works --- the output now has the same bit order as when constructing it
+    using binary literals
+
+@subsubsection changelog-latest-changes-meshtools MeshTools library
+
+-   @ref MeshTools::fullScreenTriangle() was updated to work on ES3 SwiftShader
+    contexts (which have broken @glsl gl_VertexID @ce)
+-   @ref MeshTools::interleave() and @ref MeshTools::interleaveInto() now works
+    also with @ref Corrade::Containers::ArrayView,
+    @ref Corrade::Containers::StridedArrayView and friends
+
+@subsubsection changelog-latest-changes-texturetools TextureTools library
+
+-   @ref TextureTools::distanceField() was updated to work on ES3 SwiftShader
+    contexts (which have broken @glsl gl_VertexID @ce)
+
+@subsubsection changelog-latest-changes-platform Platform libraries
+
+-   @ref Platform::Sdl2Application::anyEvent() is now fired also for window
+    events that are not exposed through
+    @ref Platform::Sdl2Application::viewportEvent() "viewportEvent()" or
+    @ref Platform::Sdl2Application::exitEvent() "exitEvent()"
+-   On OpenGL ES builds, @ref Platform::Sdl2Application now tells SDL whether
+    to use a system GL driver or a dedicated GLES driver based on whether
+    @ref MAGNUM_TARGET_DESKTOP_GLES is defined. This allows for a smoother
+    experience for example when using ANGLE on Windows. See
+    @ref Platform-Sdl2Application-usage-gles for more information.
+-   Replaced uses of `Pointer_stringify()` in @ref Platform::Sdl2Application
+    which was removed in Emscripten 1.38.27
+-   @ref Platform::Sdl2Application and all Emscripten markup was updated to
+    work correctly both with the
+    [`-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1`](https://github.com/emscripten-core/emscripten/pull/7977)
+    option available since Emscripten 1.38.27 and with older versions
+-   @ref Platform::WindowlessEglApplication was adapted to properly create
+    WebGL 2 contexts both in Emscripten 1.38.24 and in older versions
+-   @ref Platform::Sdl2Application::exit() and
+    @ref Platform::GlfwApplication::exit() now have an optional parameter to
+    specify the actual application return code (see
+    [mosra/magnum#332](https://github.com/mosra/magnum/pull/332))
+
+@subsubsection changelog-latest-changes-text Text library
+
+-   For consistency with @ref Trade::AbstractImporter, @ref Text::AbstractFont
+    now doesn't fail when opening empty files --- instead this is handled in
+    the particular plugin implementations
+-   @ref Text::AbstractFont::size(), @ref Text::AbstractFont::ascent(),
+    @ref Text::AbstractFont::descent() and @ref Text::AbstractFont::lineHeight()
+    now expect that a font is opened, consistently with other accessor
+    functions
+
+@subsubsection changelog-latest-changes-trade Trade library
+
+-   The @ref Trade::AnyImageImporter "AnyImageImporter",
+    @ref Trade::AnyImageConverter "AnyImageConverter" and
+    @ref Trade::AnySceneImporter "AnySceneImporter" plugins now correctly
+    recognize also uppercase file extensions (see
+    [mosra/magnum#312](https://github.com/mosra/magnum/pull/312))
+    @ref Trade::TgaImporter "TgaImporter" now properly reports an error message
+    when opening an empty file
+-   @ref Trade::AbstractImporter::setFileCallback() now accepts callbacks with
+    @cpp const @ce references to user data as well
+
+@subsection changelog-latest-buildsystem Build system
+
+-   @ref building-packages-msys "MSYS2 packages" are now in official
+    repositories, installable directly via `pacman`
+-   `FindSDL2.cmake` was updated to work with MinGW version 2.0.5 and newer,
+    since these dropped the old directory hierarchy. Older versions have both
+    the original and the new hierarchy, so it should work with these as well.
+-   Updated *extremely* outdated Emscripten boilerplate from the
+    [base-emscripten bootstrap project](https://github.com/mosra/magnum-bootstrap/tree/base-emscripten)
+    (the HTML markup was unchanged since 2013, heh)
+-   ES 2.0 and ES 3.0 subset of tests requiring GL context is now run on Travis
+    CI using SwiftShader for better code coverage
+-   On CMake 3.13 and up, WebGL2 build on Emscripten (and the `-s USE_WEBGL2=1`
+    flag in particular) is now handled by the `FindOpenGLES3.cmake` module
+    and the new `INTERFACE_LINK_OPTIONS` property instead of `FindMagnum.cmake`. On older versions this is handled in `FindMagnum.cmake` by modifying the
+    global `CMAKE_EXE_LINKER_FLAGS` variable.
+-   It's now possible to use Magnum as a CMake subproject also when building
+    for Emscripten (see [mosra/magnum#219](https://github.com/mosra/magnum/issues/219))
+-   Updated the Vcpkg package to work correctly with Vcpkg's own SDL2 (see
+    [Microsoft/vcpkg#5730](https://github.com/Microsoft/vcpkg/pull/5730))
+-   Updated bundled GL headers to properly define the `GL_VERSION_*` macros to
+    avoid conflicting `GLintptr` and `GLsizeiptr` type definitions on Windows
+    when using Magnum together with Qt
+-   It's now possible to override CMake's
+    [OpenGL_GL_PREFERENCE](https://cmake.org/cmake/help/v3.11/module/FindOpenGL.html#linux-specific)
+    from outside on systems where GLVND doesn't work properly (before the build
+    scripts and `FindMagnum.cmake` always forced GLVND)
+-   `FindMagnum.cmake` now correctly finds debug versions of statically built
+    plugins when using Vcpkg
+-   Fixed linking of static `Any*` plugins when the libraries are otherwise
+    build as dynamic
+-   Removed mention of the outdated Ubuntu PPA from @ref building as it doesn't
+    seem to be maintained anymore (see
+    [mosra/magnum-examples#61](https://github.com/mosra/magnum-examples/issues/61))
+
+@subsection changelog-latest-bugfixes Bug fixes
+
+-   Fixed compilation of the @ref Vk library on 32-bit Windows
+-   @ref Math::pack() was incorrectly not selecting the nearest integral value,
+    causing @ref Math::Color3::toSrgbInt() to not roundtrip, among other
+    things.
+-   The @cb{.cmake} android_create_apk() @ce macro for
+    @ref platforms-android-apps-cmake "Gradle-less Android builds" now properly
+    creates the library output directory beforehand
+-   Fixed a bad interaction of @ref GL::Mesh and @ref GL::Buffer state trackers
+    resulting in corrupted rendering on ES/WebGL platforms and systems without
+    @gl_extension{ARB,direct_state_access}
+-   Fixed @ref GL::Mesh instanced drawing to properly take into account all
+    five @gl_extension{ANGLE,instanced_arrays},
+    @gl_extension{EXT,instanced_arrays}, @gl_extension{EXT,draw_instanced},
+    @gl_extension{NV,instanced_arrays} and @gl_extension{NV,draw_instanced}
+    extensions
+-   @ref Platform::GLContext would crash on destruction if it was constructed
+    with @ref NoCreate but @ref Platform::GLContext::create() was never called
+    (see [mosra/magnum#331](https://github.com/mosra/magnum/pull/331)
+-   Reading of float textures on ES3 contexts using
+    @ref DebugTools::textureSubImage() returned a zero-sized image by accident
+-   @ref MeshTools::compile() was producing an incorrect mesh when
+    @ref Trade::MeshData3D had both colors and texture coordinates
+-   Properly zero-initializing the UTF-8 buffer in
+    @ref Platform::GlfwApplication::textInputEvent() (see
+    [mosra/magnum#324](https://github.com/mosra/magnum/pull/324))
+-   @ref Platform::Sdl2Application::viewportEvent() and
+    @ref Platform::GlfwApplication::viewportEvent() is fixed to behave
+    correctly with @ref platforms-macos-hidpi "Retina-aware" apps on macOS/iOS
+-   @ref Text::AbstractFontConverter::exportFontToFile() and
+    @ref Text::AbstractFontConverter::exportGlyphCacheToFile() now properly
+    returns failure when the underlying data export function returns an empty
+    list of files
+-   Updated the `base-qt` bootstrap project to correctly reset state tracker
+    when going from and back to Qt code, and to use the framebuffer provided by
+    Qt instead of @ref GL::defaultFramebuffer (see
+    [mosra/magnum#322](https://github.com/mosra/magnum/issues/322) and
+    [mosra/magnum-bootstrap#15](https://github.com/mosra/magnum-bootstrap/pull/15))
+
+@subsection changelog-latest-docs Documentation
+
+-   Extended @ref platforms-html5-code-size "Emscripten" documentation with
+    available compiler switches for code size / compile time tradeoffs (instead
+    of unconditionally enabling them by default, see
+    [mosra/magnum#211](https://github.com/mosra/magnum/issues/211))
+-   Fixed Gentoo build instructions (see
+    [mosra/magnum#344](https://github.com/mosra/magnum/pull/344))
+
+@subsection changelog-latest-deprecated Deprecated APIs
+
+-   @cpp Math::Color3::Hsv @ce and @cpp Math::Color4::Hsv @ce tuple typedefs
+    are deprecated in favor of tuple-less @ref Math::ColorHsv, working
+    correctly with the usual @ref Math::NoInit / @ref Math::ZeroInit tags while
+    being faster to compile
+-   @cpp Math::Frustum::planes() @ce are deprecated due to redundancy, use
+    either @ref Math::Frustum::operator[](), @ref Math::Frustum::data() or
+    range access using @ref Math::Frustum::begin() / @ref Math::Frustum::end()
+-   Batch @ref Math::min(Containers::StridedArrayView1D<const T>),
+    @ref Math::max(Containers::StridedArrayView1D<const T>) and
+    @ref Math::minmax(Containers::StridedArrayView1D<const T>) are moved to a
+    new @ref Magnum/Math/FunctionsBatch.h header in order to speed up compile
+    times. This header is included from @ref Magnum/Math/FunctionsBatch.h when
+    building with @ref MAGNUM_BUILD_DEPRECATED enabled, include it explicitly
+    to ensure forward compatibility
+-   @cpp Trade::ImporterFileCallbackPolicy @ce is deprecated as it was moved
+    to @ref InputFileCallbackPolicy in the root namespace to be shared with
+    APIs outside of the @ref Trade namespace. Moreover,
+    @cpp InputFileCallbackPolicy::LoadPernament @ce is deprecated due to a
+    typo, use @ref InputFileCallbackPolicy::LoadPermanent instead.
+-   @cpp DebugTools::ForceRendererOptions::scale() @ce is deprecated in favor
+    of @ref DebugTools::ForceRendererOptions::size(), as that's more consistent
+    with the documentation and the corresponding setter.
+-   @cpp Text::AbstractFont::openSingleData() @ce and
+    @cpp Text::AbstractFont::openData() @ce taking a list of files are
+    deprecated in favor of
+    @ref Text::AbstractFont::openData(Containers::ArrayView<const char>, Float)
+    and @ref Text::AbstractFont::setFileCallback()
+-   @ref GL::Buffer::setData() and @ref GL::Buffer::setSubData() no longer has
+    overloads taking @ref std::vector / @ref std::array, but instead relies on
+    @ref Corrade/Containers/ArrayViewStl.h to provide conversion from these to
+    @ref Corrade::Containers::ArrayView. This header is included automatically
+    when @ref MAGNUM_BUILD_DEPRECATED is enabled, include it explicitly to stay
+    forward compatible.
+-   @cpp Magnum/MeshTools/GenerateFlatNormals.h @ce is deprecated, use
+    @cpp Magnum/MeshTools/GenerateNormals.h @ce instead
+-   @cpp MeshTools::generateFlatNormals(const std::vector<UnsignedInt>&, const std::vector<Vector3>&) @ce
+    is deprecated for doing too many things at once and being too tied to one
+    particular STL container, use @ref MeshTools::generateFlatNormals(const Containers::StridedArrayView1D<const Vector3>&)
+    instead
+
+@subsection changelog-latest-compatibility Potential compatibility breakages, removed APIs
+
+-   Configuration value parsers and writers for @ref Math types were moved to
+    a dedicated @ref Magnum/Math/ConfigurationValue.h header in order to speed
+    up compile times. Backwards compatibility is not provided, when using
+    @ref Math types with @ref Corrade::Utility::Configuration or
+    @ref Corrade::Utility::Arguments you have to include the header explicitly
+-   @ref Audio::Extension::extensions() and @ref GL::Extension::extensions()
+    now return a @ref Corrade::Containers::ArrayView instead of a reference to
+    @ref std::vector in order to reduce binary bloat and compile times
+-   Removed all aliases to @ref GL library functionality in the root namespace
+    (and root include path) which were deprecated in 2018.04 and everything
+    related to this change:
+    -   @cpp GL::Mesh::IndexType @ce and @cpp GL::Mesh::indexSize() @ce,
+        use @ref GL::MeshIndexType and @ref GL::Mesh::indexTypeSize() instead
+-   Removed templated overloads of @ref GL::Buffer::data(),
+    @ref GL::Buffer::subData() and @ref GL::Buffer::map() deprecated since
+    2017. Use the non-templated versions together with
+    @ref Corrade::Containers::arrayCast().
+-   Removed @cpp GL::Context::DetectedDriver::AMD @ce and
+    @cpp GL::Context::DetectedDriver::ProbablyAngle @ce aliases deprecated
+    since 2017, use consistently-named @ref GL::Context::DetectedDriver::Amd
+    and @ref GL::Context::DetectedDriver::Angle instead
+-   Removed @cpp GL::CubeMapTexture::Coordinate @ce deprecated since 2016, use
+    @ref GL::CubeMapCoordinate instead
+-   Removed remaining @ref Platform::Sdl2Application "Platform::*Application"
+    constructors taking @cpp nullptr @ce instead of @ref NoCreate, deprecated
+    since 2017
+-   Removed compatibility code in @ref Audio::Context where
+    @ref Audio::Context::current() would be usable with both @cpp . @ce and
+    @cpp -> @ce, deprecated since 2017
+-   Removed @cpp Audio::Context::hrtfSpecifier() @ce deprecated since 2018.02.
+    Use @ref Audio::Context::hrtfSpecifierString() instead.
+-   Removed the `Shapes` library together with `DebugTools::ShapeRenderer`,
+    which was a failed design experiment deprecated since version 2018.10
+    (see [mosra/magnum#148](https://github.com/mosra/magnum/issues/148))
+-   Removed the `Platform::GlutApplication` as it was based on an outdated
+    toolkit and deprecated since version 2018.10 (see
+    [mosra/magnum#148](https://github.com/mosra/magnum/issues/148) and
+    [mosra/magnum#195](https://github.com/mosra/magnum/pull/195))
+-   In order to be compatible with both Emscripten 1.38.27 and the versions
+    before, all Emscripten markup is now expected to have the HTML @cb{.html} <canvas> @ce element identified by @cb{.css} #canvas @ce. You need to:
+    -   update your HTML markup to use
+        @cb{.html} <canvas id="canvas"> @ce instead of
+        @cb{.html} <canvas id="module"> @ce
+    -   in case you have a copy or a fork of the JS driver file, it needs to
+        define @cb{.js} Module.canvas @ce as
+        @cb{.js} document.getElementById('canvas') @ce (instead of
+        @cb{.js} 'module' @ce)
+    -   and for CSS files, all references to @cb{.css} #module @ce need to be
+        @cb{.css} #canvas @ce now
+
+@section changelog-2019-01 2019.01
+
+Released 2019-02-04, tagged as
+[v2019.01](https://github.com/mosra/magnum/releases/tag/v2019.01).
+
+@subsection changelog-2019-01-dependencies Dependency changes
+
+-   Minimal supported GCC version is now 4.8.1, GCC 4.7 is not supported
+    anymore. Minimal Clang version is now 3.3, since that's the first version
+    with a complete C++11 support. See also
+    [mosra/magnum#274](https://github.com/mosra/magnum/issues/274).
+-   Minimal supported CMake version is now 3.1. Older versions are not
+    supported anymore and all workarounds for them were removed. Download a
+    prebuilt release of a newer version if you need to use Corrade on older
+    systems (such as Ubuntu 14.04 or Debian 8). See also
+    [mosra/magnum#274](https://github.com/mosra/magnum/issues/274).
+
+@subsection changelog-2019-01-new New features
+
+@subsubsection changelog-2019-01-new-animation Animation library
 
 -   New @ref Animation::Easing namespace with a collection of well-documented
     easing functions
@@ -61,19 +541,19 @@ See also:
 -   @ref Animation::Player::resume() that acts the same as
     @ref Animation::Player::play() "play()" except it doesn't restart the
     animation from the start if it is already playing
--   Added @ref Animation::Player::advance(T, std::initializer_list<std::reference_wrapper<Player<T, K>>>)
+-   Added @ref Animation::Player::advance(T, std::initializer_list<Containers::Reference<Player<T, K>>>)
     for advancing multiple players at the same time
 
-@subsubsection changelog-latest-new-math Math library
+@subsubsection changelog-2019-01-new-math Math library
 
 -   Support for using the @ref Math::Deg, @ref Math::Rad, @ref Math::Half,
     @ref Math::Color3 and @ref Math::Color4 literals with the new experimental
     @ref Corrade::Utility::Tweakable utility. See also @ref tweakableliterals.
 -   New @ref Math::StrictWeakOrdering functor making it possible to use Magnum
     math types as keys in ordered STL containers such as @ref std::map or
-    @ref std::set
+    @ref std::set (see also [mosra/magnum#299](https://github.com/mosra/magnum/pull/299))
 
-@subsubsection changelog-latest-new-platform Platform libraries
+@subsubsection changelog-2019-01-new-platform Platform libraries
 
 -   Added @ref Platform::AndroidApplication::framebufferSize(),
     @ref Platform::AndroidApplication::dpiScaling(),
@@ -91,22 +571,35 @@ See also:
     @ref Platform::GlfwApplication::exitEvent() events for responding to
     application window close and possibility to cancel it (for example to
     show an exit confirmation dialog)
+-   New @ref Platform::Sdl2Application::anyEvent() event together with
+    @ref Platform::Sdl2Application::InputEvent::event() "event()" accessors to
+    make it possible to access raw `SDL_Event` data
 
-@subsection changelog-latest-changes Changes and improvements
+@subsubsection changelog-2019-01-new-vk Vk library
 
-@subsubsection changelog-latest-changes-audio Audio library
+-   Conversion between Magnum math types and math-related Vulkan types in a
+    new @ref Magnum/Vk/Integration.h header
+
+@subsection changelog-2019-01-changes Changes and improvements
+
+@subsubsection changelog-2019-01-changes-audio Audio library
 
 -   @ref Audio::Source::play(), @ref Audio::Source::pause(),
     @ref Audio::Source::rewind() and @ref Audio::Source::stop() now return
     a self-reference like all other methods for easier method chaining
 
-@subsubsection changelog-latest-changes-gl GL library
+@subsubsection changelog-2019-01-changes-gl GL library
 
+-   Added a @cpp "nv-egl-incorrect-gl11-function-pointers" @ce workaround that
+    explicitly loads OpenGL 1.0 and 1.1 function pointers on contexts created
+    using EGL on NVidia drivers, because there functions such as
+    @fn_gl{GetString} behave incorrectly when linked statically. See also
+    [mosra/magnum#308](https://github.com/mosra/magnum/pull/308).
 -   New @ref GL::Context::State::BindScratchVao state to make external OpenGL
     code that's not VAO-aware working on core GL profiles (which don't allow
     default VAOs being used for drawing)
 
-@subsubsection changelog-latest-changes-platform Platform libraries
+@subsubsection changelog-2019-01-changes-platform Platform libraries
 
 -   @ref Platform::Sdl2Application::swapBuffers(), "Platform::*Application::swapBuffers()"
     @ref Platform::Sdl2Application::swapInterval() "swapInterval() const" const,
@@ -115,7 +608,13 @@ See also:
     @ref Platform::Sdl2Application::redraw() "redraw()" were changed from
     protected to public to allow calling them from outside
 
-@subsubsection changelog-latest-changes-texturetools TextureTools library
+@subsubsection changelog-2019-01-changes-text Text library
+
+-   The @ref Text::AbstractFont and @ref Text::AbstractFontConverter plugin
+    APIs now return @ref Corrade::Containers::Pointer instead of
+    @ref std::unique_ptr for improved compile times
+
+@subsubsection changelog-2019-01-changes-texturetools TextureTools library
 
 -   Further performance and output quality improvements for
     @ref TextureTools::DistanceField, making the ES2/WebGL 1 consistent with
@@ -123,7 +622,13 @@ See also:
     compared to before. It's now also possible to reuse the internal state for
     batch processing.
 
-@subsection changelog-latest-buildsystem Build system
+@subsubsection changelog-2019-01-changes-trade Trade library
+
+-   The @ref Trade::AbstractImporter plugin API now returns
+    @ref Corrade::Containers::Pointer instead of @ref std::unique_ptr for
+    improved compile times
+
+@subsection changelog-2019-01-buildsystem Build system
 
 -   Experimental support for creating Android APKs directly using CMake without
     Gradle involved. See @ref platforms-android-apps for more information. See
@@ -131,6 +636,9 @@ See also:
     [mosra/toolchains#6](https://github.com/mosra/toolchains/pull/6).
 -   Initial scaffolding for [Hunter](https://hunter.sh) package support (see
     [mosra/magnum#298](https://github.com/mosra/magnum/pull/298))
+-   The `package/msys` directory now contains `PKGBUILD`s for
+    [MSYS2](https://www.msys2.org/). See @ref building-packages-msys for more
+    information. See also [mosra/magnum#307](https://github.com/mosra/magnum/pull/307).
 -   The `Magnum::AndroidApplication` target was missing a few dependency
     libraries when Magnum was used as a CMake subproject
 -   Fixed an ambiguous overload error in @ref Text::GlyphCache when compiling
@@ -138,8 +646,11 @@ See also:
     [mosra/magnum#297](https://github.com/mosra/magnum/pull/297))
 -   Imroved initial Emscripten setup on Windows to be more frictionless (see
     [mosra/toolchains#4](https://github.com/mosra/toolchains/pull/4))
+-   @ref DebugTools no longer unconditionally requires the @ref Trade library
+    in case @ref Corrade::TestSuite is found. The @ref DebugTools::CompareImage
+    documentation was updated to mention the optionality.
 
-@subsection changelog-latest-bugfixes Bug fixes
+@subsection changelog-2019-01-bugfixes Bug fixes
 
 -   Fixed @ref Platform::Sdl2Application and @ref Platform::GlfwApplication to
     properly support the @cb{.sh} $MAGNUM_DPI_SCALING @ce environment variable
@@ -157,26 +668,56 @@ See also:
 -   @ref PixelStorage::imageHeight() and Z value of @ref PixelStorage::skip()
     was not properly handled on ES3 / WebGL 2 builds.
 
-@subsection changelog-latest-docs Documentation
+@subsection changelog-2019-01-docs Documentation
 
 -   Fixed various broken links (see [mosra/magnum#291](https://github.com/mosra/magnum/issues/291))
+-   A dedicated @ref types-thirdparty-integration section listing all
+    provided integrations with 3rd party math APIs
 
-@subsection changelog-latest-deprecated Deprecated APIs
+@subsection changelog-2019-01-deprecated Deprecated APIs
 
--   `TextureTools::distanceField()` is deprecated due to inefficiency of its
-    statelessness when doing batch processing. Use the
+-   All uses of @ref std::unique_ptr in @ref Text::AbstractFont,
+    @ref Text::AbstractFontConverter and @ref Trade::AbstractImporter are
+    replaced with @ref Corrade::Containers::Pointer. The types are implicitly
+    move-convertible to each other if the
+    @ref Corrade/Containers/PointerStl.h header is included. The header is
+    included where needed if @ref MAGNUM_BUILD_DEPRECATED is enabled. To ensure
+    your code keeps with future versions of Magnum, either switch your
+    code to use @ref Corrade::Containers::Pointer as well or include the
+    @ref Corrade/Containers/PointerStl.h header explicitly.
+-   @cpp TextureTools::distanceField() @ce is deprecated due to inefficiency of
+    its statelessness when doing batch processing. Use the
     @ref TextureTools::DistanceField class instead.
+-   @cpp Platform::GlfwApplication::KeyEvent::Key::Smicolon @ce has a typo and
+    so is deprecated in favor of
+    @ref Platform::GlfwApplication::KeyEvent::Key::Semicolon
 
-@subsection changelog-latest-compatibility Potential compatibility breakages, removed APIs
+@subsection changelog-2019-01-compatibility Potential compatibility breakages, removed APIs
 
+-   The @ref MeshTools::fullScreenTriangle() function now returns just a
+    @ref GL::Mesh instead of @ref std::pair of a mesh and a buffer, as the
+    buffer is now owned by the mesh. This change was not possible to be done in
+    a backwards-compatible way.
+-   @ref Animation::Player, @ref Audio::Listener, @ref GL::AbstractShaderProgram,
+    @ref GL::MeshView and @ref GL::Shader APIs that take a
+    @ref std::initializer_list of references were changed to use
+    @ref Corrade::Containers::Reference instead of a @ref std::reference_wrapper.
+    This change should be fully transparent to the user as the type conversion
+    is done implicitly in both cases, but you may need to add an
+    @cpp #include <Corrade/Containers/Reference.h> @ce where appropriate.
+-   Removed deprecated implicit conversion @ref Corrade::Containers::Optional
+    to @ref std::optional, deprecated in January 2018. The class now contains
+    an *explicit* and opt-in STL compatibility, see its documentation for more
+    information. You may need to add an
+    @cpp #include <Corrade/Containers/Optional.h> @ce where appropriate.
 -   Removed the `Magnum/Test/AbstractOpenGLTester.h` header that was deprecated
     in January 2017. Use @ref Magnum/GL/OpenGLTester.h and the
     @ref GL::OpenGLTester library instead. Note that the deprecated
     `Magnum/OpenGLTester.h` header is still present, along with all other
     deprecated GL-specific headers and APIs in the project root.
 -   Removed five-argument @ref Trade::MeshData2D and six-argument
-    @ref Trade::MeshData3D constructors that were deprecated since February
-    2017. Use the full six/seven-argument versions instead.
+    @ref Trade::MeshData3D constructors that were deprecated since
+    February 2017. Use the full six/seven-argument versions instead.
 -   Removed @ref Platform application constructors taking @cpp nullptr @ce,
     deprecated in June 2016 for windowless apps and in March 2017 for windowed
     apps. Use constructors taking the @ref NoCreate tag instead.
@@ -188,8 +729,8 @@ See also:
 -   Removed @cpp Math::normalize() @ce and @cpp Math::denormalize() @ce
     functions, deprecated since December 2016. Use @ref Math::pack() and
     @ref Math::unpack() instead.
--   Removed @cpp Platform::*Application::MouseEvent::BUtton::WheelUp @ce and
-    @cpp Platform::*Application::MouseEvent::BUtton::WheelDown @ce, deprecated
+-   Removed @cpp Platform::*Application::MouseEvent::Button::WheelUp @ce and
+    @cpp Platform::*Application::MouseEvent::Button::WheelDown @ce, deprecated
     since June 2016. Use the dedicated
     @ref Platform::Sdl2Application::mouseScrollEvent() "mouseScrollEvent()"
     API instead.
@@ -645,15 +1186,14 @@ Released 2018-10-23, tagged as
 
 @subsection changelog-2018-10-deprecated Deprecated APIs
 
--   The @ref Magnum::Shapes library is a failed design experiment and is
-    scheduled for removal in a future release, together with
-    @ref DebugTools::ShapeRenderer. Related geometry algorithms were moved to
-    @ref Magnum::Math::Distance and @ref Magnum::Math::Intersection; if you
-    need a full-fledged physics library, please have look at
-    [Bullet](https://bulletphysics.org), which has Magnum integration in
-    @ref Magnum::BulletIntegration, or at [Box2D](https://box2d.org/), which
-    has a @ref examples-box2d "Magnum example" as well.
--   @ref Platform::GlutApplication is based on an outdated toolkit and thus
+-   The `Shapes` library is a failed design experiment and is scheduled for
+    removal in a future release, together with `DebugTools::ShapeRenderer`.
+    Related geometry algorithms were moved to @ref Math::Distance and
+    @ref Math::Intersection; if you need a full-fledged physics library, please
+    have look at [Bullet](https://bulletphysics.org), which has Magnum
+    integration in @ref BulletIntegration, or at [Box2D](https://box2d.org/),
+    which has a @ref examples-box2d "Magnum example" as well.
+-   `Platform::GlutApplication` is based on an outdated toolkit and thus
     scheduled for removal in a future release. Please consider switching to
     @ref Platform::Sdl2Application or @ref Platform::GlfwApplication as soon as
     possible.
@@ -703,8 +1243,8 @@ Released 2018-10-23, tagged as
 
 @subsection changelog-2018-10-compatibility Potential compatibility breakages, removed APIs
 
--   The @ref Magnum::Shapes library is not built by default anymore due to its
-    deprecated status
+-   The `Shapes` library is not built by default anymore due to its deprecated
+    status
 -   @ref Audio::Playable is now by default omnidirectional instead of having
     source in direction of negative Z axis (the direction has effect only when
     setting inner and outer cone properties of @ref Audio::Source).
@@ -1105,8 +1645,8 @@ Released 2018-05-01, tagged as
 -   Removed the @cpp Buffer::Usage @ce enum that was deprecated in 2014.01, use
     the global @ref GL::BufferUsage enum instead
 -   Removed the `Magnum/Query.h` header that was deprecated in 2015.05, use one
-    of @ref Magnum/PrimitiveQuery.h, @ref Magnum/SampleQuery.h or
-    @ref Magnum/TimeQuery.h instead
+    of `Magnum/PrimitiveQuery.h`, `Magnum/SampleQuery.h` or
+    `Magnum/TimeQuery.h` instead
 -   Removed ability to use @ref GL::Buffer::Target as constructor or
     @ref GL::Buffer::setTargetHint() parameter that was deprecated in 2015.05,
     use @ref GL::Buffer::TargetHint instead
@@ -1825,11 +2365,10 @@ a high-level overview.
     `colors` parameter are deprecated, use the full ones instead
 -   @ref Shaders::Generic::Color vertex attribute implicit constructor is
     deprecated, use a constructor with explicit component count instead
--   The bundled `std::optional` implementation was causing serious conflicts
+-   The bundled @ref std::optional implementation was causing serious conflicts
     with C++17 and it's now deprecated in favor of
-    @ref Corrade::Containers::Optional.
-    (Deprecated) aliases and conversion operators are provided for backwards
-    compatibility.
+    @ref Corrade::Containers::Optional. (Deprecated) aliases and conversion
+    operators are provided for backwards compatibility.
 -   `Audio::Context::hrtfSpecifier()` is deprecated, use
     @ref Audio::Context::hrtfSpecifierString() instead
 
@@ -1841,7 +2380,7 @@ a high-level overview.
 -   Removed `Context::majorVersion()` and `Context::minorVersion()` functions,
     use @ref Context::version() instead
 -   Removed deprecated `Magnum/DebugMarker.h` header, use
-    @ref Magnum/DebugOutput.h and @ref GL::DebugMessage "DebugMessage" class
+    `Magnum/DebugOutput.h` and @ref GL::DebugMessage "DebugMessage" class
     instead
 -   Removed deprecated `*Buffer` values from
     @ref GL::FramebufferBlit "FramebufferBlit", use values without the `Buffer`

@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,7 +40,7 @@ namespace Magnum { namespace GL {
 namespace Implementation { template<class> struct Attribute; }
 
 /**
-@brief Base class for attribute location and type
+@brief Base class for vertex attribute location and type
 
 For use in @ref AbstractShaderProgram subclasses. Template parameter @p location
 is vertex attribute location, number between @cpp 0 @ce and
@@ -317,7 +317,7 @@ template<class T> Debug& operator<<(Debug& debug, Attribute<T>::DataType);
 #endif
 
 /**
-@brief Base class for dynamic attribute location and type
+@brief Base class for dynamic vertex attribute location and type
 
 Counterpart to @ref Attribute that allows runtime specification of attribute
 location and base type. Note that unlike the compile-time specification, this
@@ -499,7 +499,7 @@ class DynamicAttribute {
         /** @brief Attribute location */
         constexpr UnsignedInt location() const { return _location; }
 
-        /** @brief Component count of passed data */
+        /** @brief Component count */
         constexpr Components components() const { return _components; }
 
         /** @brief Type of passed data */
@@ -799,24 +799,6 @@ template<class T> struct Attribute<Math::Matrix4<T>>: Attribute<Math::Matrix<4, 
 
 }
 
-}
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-/* Note: needs to be prefixed with Magnum:: otherwise Doxygen can't find it */
-
-/** @brief @copybrief GL::Attribute
- * @deprecated Use @ref GL::Attribute instead.
- */
-#ifndef CORRADE_MSVC2015_COMPATIBILITY /* Multiple definitions still broken */
-template<UnsignedInt location, class T> using Attribute CORRADE_DEPRECATED_ALIAS("use GL::Attribute instead") = Magnum::GL::Attribute<location, T>;
-#endif
-
-/** @brief @copybrief GL::DynamicAttribute
- * @deprecated Use @ref GL::DynamicAttribute instead.
- */
-typedef CORRADE_DEPRECATED("use GL::DynamicAttribute instead") Magnum::GL::DynamicAttribute DynamicAttribute;
-#endif
-
-}
+}}
 
 #endif

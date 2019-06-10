@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,10 +25,11 @@
 
 #include <sstream>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Array.h"
 
-namespace Magnum { namespace Test {
+namespace Magnum { namespace Test { namespace {
 
 struct ArrayTest: TestSuite::Tester {
     explicit ArrayTest();
@@ -121,6 +122,6 @@ void ArrayTest::debug() {
     CORRADE_COMPARE(out.str(), "Array(5, 6, 7, 8) Array(13) Array(71, 2) Array(1, 2, 3)\n");
 }
 
-}}
+}}}
 
 CORRADE_TEST_MAIN(Magnum::Test::ArrayTest)

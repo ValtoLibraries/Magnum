@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,12 +24,15 @@
 */
 
 #include <sstream>
+#include <Corrade/Containers/StridedArrayView.h>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
+#include "Magnum/Math/Color.h"
 #include "Magnum/ImageView.h"
 #include "Magnum/PixelFormat.h"
 
-namespace Magnum { namespace Test {
+namespace Magnum { namespace Test { namespace {
 
 struct ImageViewTest: TestSuite::Tester {
     explicit ImageViewTest();
@@ -56,6 +59,10 @@ struct ImageViewTest: TestSuite::Tester {
 
     void setDataInvalidSize();
     void setDataCompressedInvalidSize();
+
+    void pixels1D();
+    void pixels2D();
+    void pixels3D();
 };
 
 ImageViewTest::ImageViewTest() {
@@ -80,10 +87,12 @@ ImageViewTest::ImageViewTest() {
               &ImageViewTest::setDataCompressed,
 
               &ImageViewTest::setDataInvalidSize,
-              &ImageViewTest::setDataCompressedInvalidSize});
-}
+              &ImageViewTest::setDataCompressedInvalidSize,
 
-namespace {
+              &ImageViewTest::pixels1D,
+              &ImageViewTest::pixels2D,
+              &ImageViewTest::pixels3D});
+}
 
 namespace GL {
     enum class PixelFormat { RGB = 666 };
@@ -111,8 +120,6 @@ namespace Vk {
     }
 
     enum class CompressedPixelFormat { Bc1SRGBAlpha = 42 };
-}
-
 }
 
 void ImageViewTest::constructGeneric() {
@@ -584,6 +591,57 @@ void ImageViewTest::setDataCompressedInvalidSize() {
     }
 }
 
-}}
+void ImageViewTest::pixels1D() {
+    ImageView1D image{
+        PixelStorage{}
+            .setAlignment(1) /** @todo alignment 4 expects 17 bytes. what */
+            .setSkip({3, 0, 0}),
+        PixelFormat::RGB8Unorm, 2,
+        {nullptr, 15}};
+
+    /* Full test is in ImageTest, this is just a sanity check */
+
+    Containers::StridedArrayView1D<const Color3ub> pixels = image.pixels<Color3ub>();
+    CORRADE_COMPARE(pixels.size(), 2);
+    CORRADE_COMPARE(pixels.stride(), 3);
+    CORRADE_COMPARE(pixels.data(), image.data() + 3*3);
+}
+
+void ImageViewTest::pixels2D() {
+    ImageView2D image{
+        PixelStorage{}
+            .setAlignment(4)
+            .setSkip({3, 2, 0})
+            .setRowLength(6),
+        PixelFormat::RGB8Unorm, {2, 4},
+        {nullptr, 120}};
+
+    /* Full test is in ImageTest, this is just a sanity check */
+
+    Containers::StridedArrayView2D<const Color3ub> pixels = image.pixels<Color3ub>();
+    CORRADE_COMPARE(pixels.size(), (Containers::StridedArrayView2D<Color3ub>::Size{4, 2}));
+    CORRADE_COMPARE(pixels.stride(), (Containers::StridedArrayView2D<Color3ub>::Stride{20, 3}));
+    CORRADE_COMPARE(pixels.data(), image.data() + 2*20 + 3*3);
+}
+
+void ImageViewTest::pixels3D() {
+    ImageView3D image{
+        PixelStorage{}
+            .setAlignment(4)
+            .setSkip({3, 2, 1})
+            .setRowLength(6)
+            .setImageHeight(7),
+        PixelFormat::RGB8Unorm, {2, 4, 3},
+        {nullptr, 560}};
+
+    /* Full test is in ImageTest, this is just a sanity check */
+
+    Containers::StridedArrayView3D<const Color3ub> pixels = image.pixels<Color3ub>();
+    CORRADE_COMPARE(pixels.size(), (Containers::StridedArrayView3D<Color3ub>::Size{3, 4, 2}));
+    CORRADE_COMPARE(pixels.stride(), (Containers::StridedArrayView3D<Color3ub>::Stride{140, 20, 3}));
+    CORRADE_COMPARE(pixels.data(), image.data() + 140 + 2*20 + 3*3);
+}
+
+}}}
 
 CORRADE_TEST_MAIN(Magnum::Test::ImageViewTest)

@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,10 +25,12 @@
 
 #include <Corrade/TestSuite/Tester.h>
 
+#include "Magnum/Audio/Buffer.h"
+#include "Magnum/Audio/BufferFormat.h"
 #include "Magnum/Audio/Context.h"
 #include "Magnum/Audio/Source.h"
 
-namespace Magnum { namespace Audio { namespace Test {
+namespace Magnum { namespace Audio { namespace Test { namespace {
 
 struct SourceALTest: TestSuite::Tester {
     explicit SourceALTest();
@@ -46,6 +48,7 @@ struct SourceALTest: TestSuite::Tester {
     void minGain();
     void coneAnglesAndGain();
     void rolloffFactor();
+    void type();
 
     Context _context;
 };
@@ -63,7 +66,8 @@ SourceALTest::SourceALTest() {
               &SourceALTest::maxGain,
               &SourceALTest::minGain,
               &SourceALTest::coneAnglesAndGain,
-              &SourceALTest::rolloffFactor});
+              &SourceALTest::rolloffFactor,
+              &SourceALTest::type});
 }
 
 void SourceALTest::construct() {
@@ -168,6 +172,20 @@ void SourceALTest::rolloffFactor() {
     CORRADE_COMPARE(source.rolloffFactor(), fact);
 }
 
-}}}
+void SourceALTest::type() {
+    Source source;
+    CORRADE_COMPARE(source.type(), Source::Type::Undetermined);
+
+    constexpr char data[] { 25, 17, 24, 122, 67, 24, 48, 96 };
+
+    /* Need to fill the buffer with some data otherwise it's still Undetermined
+       on Apple's OpenAL. OpenAL Soft doesn't need that. */
+    Buffer buffer;
+    buffer.setData(BufferFormat::Mono8, data, 22050);
+    source.setBuffer(&buffer);
+    CORRADE_COMPARE(source.type(), Source::Type::Static);
+}
+
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Audio::Test::SourceALTest)

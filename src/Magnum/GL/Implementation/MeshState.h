@@ -3,7 +3,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,7 +59,7 @@ struct MeshState {
     #endif
 
     #ifdef MAGNUM_TARGET_GLES
-    void(*multiDrawImplementation)(std::initializer_list<std::reference_wrapper<MeshView>>);
+    void(*multiDrawImplementation)(std::initializer_list<Containers::Reference<MeshView>>);
     #endif
 
     void(*bindVAOImplementation)(GLuint);

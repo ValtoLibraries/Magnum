@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,21 +57,7 @@ bool AbstractXApplication::tryCreate(const Configuration& configuration) {
     return tryCreate(configuration, GLConfiguration{});
 }
 
-bool AbstractXApplication::tryCreate(const Configuration& configuration, const GLConfiguration&
-    #ifndef MAGNUM_BUILD_DEPRECATED
-    glConfiguration
-    #else
-    _glConfiguration
-    #endif
-) {
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    GLConfiguration glConfiguration{_glConfiguration};
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    if(configuration.version() != GL::Version::None && glConfiguration.version() == GL::Version::None)
-        glConfiguration.setVersion(configuration.version());
-    CORRADE_IGNORE_DEPRECATED_POP
-    #endif
-
+bool AbstractXApplication::tryCreate(const Configuration& configuration, const GLConfiguration& glConfiguration) {
     CORRADE_ASSERT(_context->version() == GL::Version::None, "Platform::AbstractXApplication::tryCreate(): context already created", false);
 
     _windowSize = configuration.size();
@@ -215,11 +201,7 @@ AbstractXApplication::GLConfiguration::GLConfiguration(): _version(GL::Version::
 AbstractXApplication::GLConfiguration::~GLConfiguration() = default;
 
 AbstractXApplication::Configuration::Configuration():
-    _title("Magnum X Application"), _size(800, 600)
-    #ifdef MAGNUM_BUILD_DEPRECATED
-    , _version(GL::Version::None)
-    #endif
-    {}
+    _title("Magnum X Application"), _size(800, 600) {}
 AbstractXApplication::Configuration::~Configuration() = default;
 
 }}

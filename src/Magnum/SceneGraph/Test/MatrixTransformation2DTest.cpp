@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "Magnum/SceneGraph/MatrixTransformation2D.h"
 #include "Magnum/SceneGraph/Scene.h"
 
-namespace Magnum { namespace SceneGraph { namespace Test {
+namespace Magnum { namespace SceneGraph { namespace Test { namespace {
 
 typedef Object<MatrixTransformation2D> Object2D;
 typedef Scene<MatrixTransformation2D> Scene2D;
@@ -182,6 +182,6 @@ void MatrixTransformation2DTest::reflect() {
     }
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::SceneGraph::Test::MatrixTransformation2DTest)

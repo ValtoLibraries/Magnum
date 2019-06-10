@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
     Copyright © 2015 Jonathan Hale <squareys@googlemail.com>
 
@@ -25,11 +25,13 @@
 */
 
 #include <sstream>
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 
 #include "Magnum/Audio/Context.h"
 
-namespace Magnum { namespace Audio { namespace Test {
+namespace Magnum { namespace Audio { namespace Test { namespace {
 
 struct ContextTest: TestSuite::Tester {
     explicit ContextTest();
@@ -94,6 +96,6 @@ void ContextTest::debugHrtfStatus() {
     CORRADE_COMPARE(out.str(), "Audio::Context::HrtfStatus::Denied Audio::Context::HrtfStatus(0xdead)\n");
 }
 
-}}}
+}}}}
 
 CORRADE_TEST_MAIN(Magnum::Audio::Test::ContextTest)

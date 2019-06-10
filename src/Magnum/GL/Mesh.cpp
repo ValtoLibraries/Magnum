@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,17 +66,6 @@ constexpr MeshIndexType IndexTypeMapping[]{
 }
 
 MeshPrimitive meshPrimitive(const Magnum::MeshPrimitive primitive) {
-    #if defined(MAGNUM_BUILD_DEPRECATED) && defined(MAGNUM_TARGET_GL) && !defined(MAGNUM_TARGET_GLES2) && !defined(MAGNUM_TARGET_WEBGL)
-    CORRADE_IGNORE_DEPRECATED_PUSH
-    if(primitive == Magnum::MeshPrimitive::LinesAdjacency ||
-       primitive == Magnum::MeshPrimitive::LineStripAdjacency ||
-       primitive == Magnum::MeshPrimitive::TrianglesAdjacency ||
-       primitive == Magnum::MeshPrimitive::TriangleStripAdjacency ||
-       primitive == Magnum::MeshPrimitive::Patches)
-        return MeshPrimitive(UnsignedInt(primitive));
-    CORRADE_IGNORE_DEPRECATED_POP
-    #endif
-
     CORRADE_ASSERT(UnsignedInt(primitive) < Containers::arraySize(PrimitiveMapping),
         "GL::meshPrimitive(): invalid primitive" << primitive, {});
     return PrimitiveMapping[UnsignedInt(primitive)];
@@ -198,12 +187,6 @@ Int Mesh::maxElementsVertices() {
         glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &value);
 
     return value;
-}
-#endif
-
-#ifdef MAGNUM_BUILD_DEPRECATED
-std::size_t Mesh::indexSize(Magnum::MeshIndexType type) {
-    return meshIndexTypeSize(type);
 }
 #endif
 
@@ -340,6 +323,11 @@ Mesh& Mesh::setIndexBuffer(Buffer&& buffer, GLintptr offset, MeshIndexType type,
         "GL::Mesh::setIndexBuffer(): the buffer has unexpected target hint, expected" << Buffer::TargetHint::ElementArray << "but got" << buffer.targetHint(), *this);
     #endif
 
+    /* It's IMPORTANT to do this *before* the _indexBuffer is set, since the
+       bindVAO() function called from here is resetting element buffer state
+       tracker to _indexBuffer.id(). */
+    (this->*Context::current().state().mesh->bindIndexBufferImplementation)(buffer);
+
     _indexBuffer = std::move(buffer);
     _indexOffset = offset;
     _indexType = type;
@@ -350,7 +338,6 @@ Mesh& Mesh::setIndexBuffer(Buffer&& buffer, GLintptr offset, MeshIndexType type,
     static_cast<void>(start);
     static_cast<void>(end);
     #endif
-    (this->*Context::current().state().mesh->bindIndexBufferImplementation)(_indexBuffer);
     return *this;
 }
 
@@ -544,6 +531,15 @@ void Mesh::bindVAO() {
         /* Binding the VAO finally creates it */
         _flags |= ObjectFlag::Created;
         bindVAOImplementationVAO(_id);
+
+        /* Reset element buffer binding, because binding a different VAO with a
+           different index buffer will change that binding as well. (GL state,
+           what the hell.). The _indexBuffer.id() is the index buffer that's
+           already attached to this particular VAO (or 0, if there's none). In
+           particular, the setIndexBuffer() buffers call this function *and
+           then* sets the _indexBuffer, which means at this point the ID will
+           be still 0. */
+        Context::current().state().buffer->bindings[Implementation::BufferState::indexForTarget(Buffer::TargetHint::ElementArray)] = _indexBuffer.id();
     }
 }
 
@@ -675,26 +671,40 @@ void Mesh::attributePointerImplementationVAO(AttributeLayout&& attribute) {
 }
 
 #ifndef MAGNUM_TARGET_GLES
-void Mesh::attributePointerImplementationDSAEXT(AttributeLayout&& attribute) {
-    _flags |= ObjectFlag::Created;
-    glEnableVertexArrayAttribEXT(_id, attribute.location);
+void Mesh::attributePointerImplementationVAODSA(AttributeLayout&& attribute) {
+    glEnableVertexArrayAttrib(_id, attribute.location);
 
     #ifndef MAGNUM_TARGET_GLES2
     if(attribute.kind == DynamicAttribute::Kind::Integral)
-        glVertexArrayVertexAttribIOffsetEXT(_id, attribute.buffer.id(), attribute.location, attribute.size, attribute.type, attribute.stride, attribute.offset);
+        glVertexArrayAttribIFormat(_id, attribute.location, attribute.size, attribute.type, 0);
     #ifndef MAGNUM_TARGET_GLES
     else if(attribute.kind == DynamicAttribute::Kind::Long)
-        glVertexArrayVertexAttribLOffsetEXT(_id, attribute.buffer.id(), attribute.location, attribute.size, attribute.type, attribute.stride, attribute.offset);
+        glVertexArrayAttribLFormat(_id, attribute.location, attribute.size, attribute.type, 0);
     #endif
     else
     #endif
     {
-        glVertexArrayVertexAttribOffsetEXT(_id, attribute.buffer.id(), attribute.location, attribute.size, attribute.type, attribute.kind == DynamicAttribute::Kind::GenericNormalized, attribute.stride, attribute.offset);
+        glVertexArrayAttribFormat(_id, attribute.location, attribute.size, attribute.type, attribute.kind == DynamicAttribute::Kind::GenericNormalized, 0);
     }
+
+    glVertexArrayAttribBinding(_id, attribute.location, attribute.location);
+    CORRADE_INTERNAL_ASSERT(attribute.stride != 0);
+    glVertexArrayVertexBuffer(_id, attribute.location, attribute.buffer.id(), attribute.offset, attribute.stride);
 
     if(attribute.divisor)
         (this->*Context::current().state().mesh->vertexAttribDivisorImplementation)(attribute.location, attribute.divisor);
 }
+
+#ifdef CORRADE_TARGET_WINDOWS
+void Mesh::attributePointerImplementationVAODSAIntelWindows(AttributeLayout&& attribute) {
+    /* See the "intel-windows-broken-dsa-integer-vertex-attributes" workaround
+       for more information. */
+    if(attribute.kind == DynamicAttribute::Kind::Integral)
+        return attributePointerImplementationVAO(std::move(attribute));
+    else
+        return attributePointerImplementationVAODSA(std::move(attribute));
+}
+#endif
 #endif
 
 void Mesh::vertexAttribPointer(AttributeLayout& attribute) {
@@ -728,8 +738,8 @@ void Mesh::vertexAttribDivisorImplementationVAO(const GLuint index, const GLuint
     bindVAO();
     glVertexAttribDivisor(index, divisor);
 }
-void Mesh::vertexAttribDivisorImplementationDSAEXT(const GLuint index, const GLuint divisor) {
-    glVertexArrayVertexAttribDivisorEXT(_id, index, divisor);
+void Mesh::vertexAttribDivisorImplementationVAODSA(const GLuint index, const GLuint divisor) {
+    glVertexArrayBindingDivisor(_id, index, divisor);
 }
 #elif defined(MAGNUM_TARGET_GLES2)
 void Mesh::vertexAttribDivisorImplementationANGLE(const GLuint index, const GLuint divisor) {
@@ -769,12 +779,16 @@ void Mesh::bindIndexBufferImplementationDefault(Buffer&) {}
 void Mesh::bindIndexBufferImplementationVAO(Buffer& buffer) {
     bindVAO();
 
-    /* Reset ElementArray binding to force explicit glBindBuffer call later */
-    /** @todo Do this cleaner way */
-    Context::current().state().buffer->bindings[Implementation::BufferState::indexForTarget(Buffer::TargetHint::ElementArray)] = 0;
-
+    /* Binding the VAO in the above function resets element buffer binding,
+       meaning the following will always cause the glBindBuffer() to be called */
     buffer.bindInternal(Buffer::TargetHint::ElementArray);
 }
+
+#ifndef MAGNUM_TARGET_GLES
+void Mesh::bindIndexBufferImplementationVAODSA(Buffer& buffer) {
+    glVertexArrayElementBuffer(_id, buffer.id());
+}
+#endif
 
 void Mesh::bindImplementationDefault() {
     /* Specify vertex attributes */

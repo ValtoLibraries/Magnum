@@ -1,7 +1,7 @@
 /*
     This file is part of Magnum.
 
-    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+    Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019
               Vladimír Vondruš <mosra@centrum.cz>
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,6 @@
 
 #include "ForceRenderer.h"
 
-#include "Magnum/GL/Buffer.h"
 #include "Magnum/GL/Mesh.h"
 #include "Magnum/DebugTools/ResourceManager.h"
 #include "Magnum/SceneGraph/Camera.h"
@@ -41,18 +40,18 @@ template<UnsignedInt dimensions> ResourceKey shaderKey();
 template<> inline ResourceKey shaderKey<2>() { return ResourceKey("FlatShader2D"); }
 template<> inline ResourceKey shaderKey<3>() { return ResourceKey("FlatShader3D"); }
 
-constexpr std::array<Vector2, 4> positions{{
+constexpr Vector2 positions[]{
     {0.0f,  0.0f},
     {1.0f,  0.0f},
     {0.9f,  0.1f},
     {0.9f, -0.1f}
-}};
+};
 
-constexpr std::array<UnsignedByte, 6> indices{{
+constexpr UnsignedByte indices[]{
     0, 1,
     1, 2,
     1, 3
-}};
+};
 
 }
 
@@ -63,34 +62,26 @@ template<UnsignedInt dimensions> ForceRenderer<dimensions>::ForceRenderer(SceneG
 
     /* Mesh and vertex buffer */
     _mesh = ResourceManager::instance().get<GL::Mesh>("force");
-    _vertexBuffer = ResourceManager::instance().get<GL::Buffer>("force-vertices");
-    _indexBuffer = ResourceManager::instance().get<GL::Buffer>("force-indices");
     if(_mesh) return;
 
     /* Create the mesh */
-    GL::Buffer* vertexBuffer = new GL::Buffer{GL::Buffer::TargetHint::Array};
-    GL::Buffer* indexBuffer = new GL::Buffer{GL::Buffer::TargetHint::ElementArray};
-
-    _vertexBuffer->setData(positions, GL::BufferUsage::StaticDraw);
-    ResourceManager::instance().set(_vertexBuffer.key(), vertexBuffer, ResourceDataState::Final, ResourcePolicy::Manual);
-
-    _indexBuffer->setData(indices, GL::BufferUsage::StaticDraw);
-    ResourceManager::instance().set(_indexBuffer.key(), indexBuffer, ResourceDataState::Final, ResourcePolicy::Manual);
-
-    GL::Mesh* mesh = new GL::Mesh;
-    mesh->setPrimitive(GL::MeshPrimitive::Lines)
-        .setCount(indices.size())
-        .addVertexBuffer(*vertexBuffer, 0,
+    GL::Buffer vertexBuffer{GL::Buffer::TargetHint::Array};
+    vertexBuffer.setData(positions, GL::BufferUsage::StaticDraw);
+    GL::Buffer indexBuffer{GL::Buffer::TargetHint::ElementArray};
+    indexBuffer.setData(indices, GL::BufferUsage::StaticDraw);
+    GL::Mesh mesh{GL::MeshPrimitive::Lines};
+    mesh.setCount(Containers::arraySize(indices))
+        .addVertexBuffer(std::move(vertexBuffer), 0,
             typename Shaders::Flat<dimensions>::Position(Shaders::Flat<dimensions>::Position::Components::Two))
-        .setIndexBuffer(*indexBuffer, 0, GL::MeshIndexType::UnsignedByte, 0, positions.size());
-    ResourceManager::instance().set(_mesh.key(), mesh, ResourceDataState::Final, ResourcePolicy::Manual);
+        .setIndexBuffer(std::move(indexBuffer), 0, GL::MeshIndexType::UnsignedByte, 0, Containers::arraySize(positions));
+    ResourceManager::instance().set(_mesh.key(), std::move(mesh), ResourceDataState::Final, ResourcePolicy::Manual);
 }
 
 /* To avoid deleting pointers to incomplete type on destruction of Resource members */
 template<UnsignedInt dimensions> ForceRenderer<dimensions>::~ForceRenderer() = default;
 
 template<UnsignedInt dimensions> void ForceRenderer<dimensions>::draw(const MatrixTypeFor<dimensions, Float>& transformationMatrix, SceneGraph::Camera<dimensions, Float>& camera) {
-    _shader->setTransformationProjectionMatrix(camera.projectionMatrix()*Implementation::forceRendererTransformation<dimensions>(transformationMatrix.transformPoint(_forcePosition), _force)*MatrixTypeFor<dimensions, Float>::scaling(VectorTypeFor<dimensions, Float>{_options->scale()}))
+    _shader->setTransformationProjectionMatrix(camera.projectionMatrix()*Implementation::forceRendererTransformation<dimensions>(transformationMatrix.transformPoint(_forcePosition), _force)*MatrixTypeFor<dimensions, Float>::scaling(VectorTypeFor<dimensions, Float>{_options->size()}))
         .setColor(_options->color());
     _mesh->draw(*_shader);
 }
